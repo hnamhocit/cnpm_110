@@ -1,159 +1,257 @@
-# Turborepo starter
+# 🎬 Film Contest Monorepo
 
-This Turborepo starter is maintained by the Turborepo core team.
+Dự án **Film Contest** là một monorepo chứa toàn bộ mã nguồn của hệ thống: từ Backend API, Web Frontend đến ứng dụng Mobile (Flutter). Dự án được quản lý bằng **[Turborepo](https://turbo.build/)** và sử dụng **[Bun](https://bun.sh/)** làm package manager & runtime chính.
 
-## Using this example
+---
 
-Run the following command:
+## 📌 Mục lục
 
-```sh
-npx create-turbo@latest
+- [Cấu trúc Monorepo](#-cấu-trúc-monorepo)
+- [Yêu cầu hệ thống (Prerequisites)](#-yêu-cầu-hệ-thống-prerequisites)
+- [⚠️ Lưu ý quan trọng: Dùng `bun`, KHÔNG dùng `npm`!](#️-lưu-ý-quan-trọng-dùng-bun-không-dùng-npm)
+- [Hướng dẫn cài đặt nhanh (Quick Start)](#-hướng-dẫn-cài-đặt-nhanh-quick-start)
+- [Khởi chạy dự án (Development)](#-khởi-chạy-dự-án-development)
+  - [1. Chạy song song cả Web và API (Khuyên dùng)](#1-chạy-song-song-cả-web-và-api-khuyên-dùng)
+  - [2. Chạy riêng từng service](#2-chạy-riêng-từng-service)
+  - [3. Chạy ứng dụng Mobile (Flutter)](#3-chạy-ứng-dụng-mobile-flutter)
+- [Các lệnh thường dùng (Scripts)](#-các-lệnh-thường-dùng-scripts)
+- [Cách cài thêm thư viện (Add Dependencies)](#-cách-cài-thêm-thư-viện-add-dependencies)
+- [Xử lý lỗi thường gặp (Troubleshooting)](#-xử-lý-lỗi-thường-gặp-troubleshooting)
+
+---
+
+## 📁 Cấu trúc Monorepo
+
+Hệ thống được tổ chức theo mô hình **Monorepo** với 2 thư mục cốt lõi là `apps/` (các ứng dụng) và `packages/` (cấu hình/thư viện dùng chung):
+
+```text
+film-contest/
+├── apps/
+│   ├── api/               # Backend API xây dựng bằng Hono trên Bun runtime (Port: 8080)
+│   ├── web/               # Frontend Web xây dựng bằng Next.js 16 + React 19 + Tailwind v4 (Port: 3000)
+│   └── mobile/            # Ứng dụng di động đa nền tảng viết bằng Flutter
+│
+├── packages/
+│   ├── typescript-config/ # Cấu hình TypeScript dùng chung (@repo/typescript-config)
+│   └── eslint-config/     # Cấu hình ESLint & Linting rules dùng chung (@repo/eslint-config)
+│
+├── bun.lock               # Lockfile chuẩn của Bun (KHÔNG xoá hoặc dùng npm đè lên)
+├── package.json           # Khai báo workspace root và scripts điều phối Turborepo
+├── turbo.json             # Cấu hình pipeline Turborepo (build, dev, lint, cache...)
+└── README.md
 ```
 
-## What's inside?
+### Chi tiết các app:
 
-This Turborepo includes the following packages/apps:
+- **`apps/api`**: RESTful API service siêu nhanh sử dụng **Hono** chạy native trên **Bun** runtime.
+- **`apps/web`**: Web app người dùng sử dụng **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4** và **Biome**.
+- **`apps/mobile`**: Ứng dụng mobile cross-platform (Android, iOS) viết bằng **Flutter**.
 
-### Apps and Packages
+---
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `@next/eslint-plugin-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+## 🛠 Yêu cầu hệ thống (Prerequisites)
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+Trước khi bắt đầu, hãy đảm bảo máy tính của bạn đã cài đặt các công cụ sau:
 
-### Utilities
+1. **Bun** (>= 1.2, khuyên dùng **1.4.2** trở lên):
+   - Cài đặt trên Linux / macOS:
+     ```bash
+     curl -fsSL https://bun.sh/install | bash
+     ```
+   - Cài đặt trên Windows (PowerShell):
+     ```powershell
+     powershell -c "irm bun.sh/install.ps1 | iex"
+     ```
+   - Kiểm tra phiên bản:
+     ```bash
+     bun --version
+     ```
+2. **Node.js** (>= 24):
+   - Đảm bảo môi trường hỗ trợ Node.js phiên bản 24 trở lên (`node -v`).
+3. **Flutter SDK** _(nếu bạn làm việc với `apps/mobile`)_:
+   - Tải và cài đặt Flutter từ [flutter.dev](https://docs.flutter.dev/get-started/install).
+   - Kiểm tra bằng lệnh: `flutter doctor`.
 
-This Turborepo has some additional tools already setup for you:
+---
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+## ⚠️ Lưu ý quan trọng: Dùng `bun`, KHÔNG dùng `npm`!
 
-### Build
+> [!WARNING]
+> **TUYỆT ĐỐI KHÔNG CHẠY `npm install`, `yarn`, HOẶC `pnpm`!**
+>
+> **Lý do:**
+>
+> 1. Dự án sử dụng file khoá `bun.lock`. Nếu chạy `npm install`, npm sẽ tạo file `package-lock.json` gây xung đột dependency và sai lệch phiên bản thư viện.
+> 2. `apps/api` chạy trực tiếp trên môi trường **Bun runtime** với các thư viện đặc thù của Bun.
+> 3. Cấu hình Workspace monorepo đã được tối ưu cho Bun & Turborepo.
 
-To build all apps and packages, run the following command:
+👉 **Quy tắc vàng:** Luôn dùng lệnh **`bun ...`** thay cho `npm ...` trong mọi thao tác cài đặt package và chạy script.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+---
 
-```sh
-cd my-turborepo
-turbo build
+## 🚀 Hướng dẫn cài đặt nhanh (Quick Start)
+
+### Bước 1: Clone source code
+
+```bash
+git clone <url-repo-film-contest>
+cd film-contest
 ```
 
-Without global `turbo`, use your package manager:
+### Bước 2: Cài đặt toàn bộ dependencies
 
-```sh
-cd my-turborepo
-npx turbo build
-bun exec turbo build
-bun exec turbo build
+Chỉ cần chạy **1 lệnh duy nhất** ở thư mục gốc:
+
+```bash
+bun install
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+> Lệnh này sẽ tự động liên kết các workspace (`apps/web`, `apps/api`, `packages/*`) và cài đặt tất cả dependencies cần thiết trong vài giây nhờ tốc độ của Bun.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+---
 
-```sh
-turbo build --filter=docs
+## 💻 Khởi chạy dự án (Development)
+
+### 1. Chạy song song cả Web và API (Khuyên dùng)
+
+Ở thư mục gốc của dự án, chạy:
+
+```bash
+bun dev
 ```
 
-Without global `turbo`:
+Turborepo sẽ khởi động đồng thời cả 2 dịch vụ:
 
-```sh
-npx turbo build --filter=docs
-bun exec turbo build --filter=docs
-bun exec turbo build --filter=docs
+- 🌐 **Web**: [http://localhost:3000](http://localhost:3000)
+- 🚀 **API**: [http://localhost:8080](http://localhost:8080)
+
+Terminal sẽ hiển thị giao diện TUI của Turborepo giúp bạn dễ dàng theo dõi log của từng dịch vụ.
+
+---
+
+### 2. Chạy riêng từng service
+
+Nếu bạn chỉ cần tập trung làm việc trên một service cụ thể:
+
+#### Chỉ chạy Web (`apps/web`):
+
+```bash
+# Cách 1: Sử dụng filter từ thư mục gốc
+bun --filter web dev
+
+# Cách 2: Di chuyển vào thư mục apps/web
+cd apps/web
+bun dev
 ```
 
-### Develop
+Truy cập: [http://localhost:3000](http://localhost:3000).
 
-To develop all apps and packages, run the following command:
+#### Chỉ chạy API (`apps/api`):
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+```bash
+# Cách 1: Sử dụng filter từ thư mục gốc
+bun --filter api dev
 
-```sh
-cd my-turborepo
-turbo dev
+# Cách 2: Di chuyển vào thư mục apps/api
+cd apps/api
+bun dev
 ```
 
-Without global `turbo`, use your package manager:
+API endpoint mặc định: [http://localhost:8080](http://localhost:8080).
 
-```sh
-cd my-turborepo
-npx turbo dev
-bun exec turbo dev
-bun exec turbo dev
+---
+
+### 3. Chạy ứng dụng Mobile (Flutter)
+
+Do `apps/mobile` là dự án Flutter, bạn quản lý bằng Flutter CLI:
+
+```bash
+# 1. Di chuyển vào thư mục mobile
+cd apps/mobile
+
+# 2. Tải dependencies Flutter
+flutter pub get
+
+# 3. Chạy ứng dụng (trên emulator, web hoặc thiết bị thật)
+flutter run
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+---
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+## 📜 Các lệnh thường dùng (Scripts)
 
-```sh
-turbo dev --filter=web
+Các lệnh này thực thi tại thư mục gốc:
+
+| Lệnh                  | Ý nghĩa                                                  |
+| :-------------------- | :------------------------------------------------------- |
+| `bun dev`             | Chạy dev server cho toàn bộ các workspace trong monorepo |
+| `bun run build`       | Build tất cả workspace (`turbo run build`)               |
+| `bun run lint`        | Chạy kiểm tra linting (`turbo run lint`)                 |
+| `bun run format`      | Định dạng lại code bằng Prettier (`.ts`, `.tsx`, `.md`)  |
+| `bun run check-types` | Kiểm tra type check TypeScript trên toàn bộ monorepo     |
+
+---
+
+## 📦 Cách cài thêm thư viện (Add Dependencies)
+
+Trong mô hình Monorepo, hãy chú ý chọn đúng workspace mà bạn muốn cài đặt package:
+
+### 1. Thêm package cho một app cụ thể:
+
+- **Thêm vào Web (`apps/web`):**
+  ```bash
+  bun --filter web add <ten-package>
+  # hoặc devDependencies:
+  bun --filter web add -d <ten-package>
+  ```
+- **Thêm vào API (`apps/api`):**
+  ```bash
+  bun --filter api add <ten-package>
+  # hoặc devDependencies:
+  bun --filter api add -d <ten-package>
+  ```
+- **Thêm vào Mobile (`apps/mobile`):**
+  ```bash
+  cd apps/mobile && flutter pub add <ten-package>
+  ```
+
+### 2. Thêm package dùng chung cho Root (công cụ build, tooling toàn repo):
+
+```bash
+bun add -d <ten-package>
 ```
 
-Without global `turbo`:
+---
 
-```sh
-npx turbo dev --filter=web
-bun exec turbo dev --filter=web
-bun exec turbo dev --filter=web
-```
+## ❓ Xử lý lỗi thường gặp (Troubleshooting)
 
-### Remote Caching
+1. **Lỗi `command not found: bun`:**
+   - Bạn chưa cài Bun hoặc chưa thêm Bun vào biến môi trường PATH.
+   - Cài lại Bun theo hướng dẫn ở phần Prerequisites và khởi động lại terminal hoặc chạy `source ~/.bashrc` (hoặc `~/.zshrc`).
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+2. **Lỗi `node_modules` hoặc xung đột sau khi vô tình chạy `npm install`:**
+   - Xoá file `package-lock.json` nếu có:
+     ```bash
+     rm -f package-lock.json apps/*/package-lock.json
+     ```
+   - Xoá `node_modules` và cài đặt lại sạch sẽ bằng Bun:
+     ```bash
+     rm -rf node_modules apps/*/node_modules
+     bun install
+     ```
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+3. **Port 3000 hoặc 8080 đã bị chiếm dụng:**
+   - Kiểm tra tiến trình đang chạy cổng đó:
+     ```bash
+     lsof -i :3000
+     lsof -i :8080
+     ```
+   - Kill tiến trình cũ hoặc đổi port cấu hình.
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+4. **Lỗi Flutter không nhận thiết bị hoặc thiếu SDK:**
+   - Chạy `flutter doctor` để kiểm tra chi tiết các thành phần còn thiếu (Android SDK, Chrome, Linux toolchain,...).
+   - Chạy `flutter devices` để xem danh sách thiết bị có sẵn.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+---
 
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-bun exec turbo login
-bun exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-bun exec turbo link
-bun exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+✨ **Chúc bạn có trải nghiệm phát triển mượt mà với Film Contest Monorepo!**
