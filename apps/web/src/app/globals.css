@@ -24,3 +24,15 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+
+:root {
+  --portal-sidebar: #111416;
+  --portal-background: #191D20;
+  --portal-surface: #252A2E;
+  --portal-primary: #f4ca8e;
+  --portal-text: #F2EEE8;
+  --portal-muted: #ABB0B3;
+  --portal-border: #394045;
+}
