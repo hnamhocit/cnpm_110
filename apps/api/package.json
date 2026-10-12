@@ -4,6 +4,7 @@
     "dev": "bun run --hot src/index.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1149.0",
     "hono": "^4.13.13"
   },
   "devDependencies": {
