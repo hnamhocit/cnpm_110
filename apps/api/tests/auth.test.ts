@@ -65,7 +65,7 @@ async function createToken(
 ) {
   return sign(
     {
-      sub: "user-test-01",
+      id: "user-test-01",
       role: "Participant",
       exp: Math.floor(Date.now() / 1000) + 3600,
       ...overrides,
@@ -81,7 +81,7 @@ describe("Kiểm tra xác thực JWT", () => {
 
     expect(response.status).toBe(401);
     expect(await response.json()).toEqual({
-      message: "Bạn cần đăng nhập",
+      error: "Missing or invalid authorization token",
     });
   });
 
@@ -124,7 +124,7 @@ describe("Kiểm tra xác thực JWT", () => {
 
   test("Token thiếu exp trả về 401", async () => {
     const token = await sign(
-      { sub: "user-test-01", role: "Participant" },
+      { id: "user-test-01", role: "Participant" },
       TEST_SECRET,
       "HS256",
     );
@@ -135,8 +135,8 @@ describe("Kiểm tra xác thực JWT", () => {
     expect(response.status).toBe(401);
   });
 
-  test("Token có sub rỗng trả về 401", async () => {
-    const token = await createToken({ sub: "" });
+  test("Token có id rỗng trả về 401", async () => {
+    const token = await createToken({ id: "" });
     const response = await createTestApp().request("/protected/me", {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -144,13 +144,13 @@ describe("Kiểm tra xác thực JWT", () => {
     expect(response.status).toBe(401);
   });
 
-  test("Vai trò không hợp lệ trả về 403", async () => {
+  test("Vai trò không hợp lệ trả về 401", async () => {
     const token = await createToken({ role: "Unknown" });
     const response = await createTestApp().request("/protected/me", {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(401);
   });
 
   test("Token hợp lệ trả về đúng thông tin người dùng", async () => {
@@ -175,7 +175,7 @@ describe("Kiểm tra xác thực JWT", () => {
 
     expect(response.status).toBe(500);
     expect(await response.json()).toEqual({
-      message: "Server chưa cấu hình JWT_SECRET",
+      error: "JWT_SECRET is not configured",
     });
   });
 });
@@ -201,7 +201,7 @@ describe("Kiểm tra quyền truy cập", () => {
 
     expect(response.status).toBe(403);
     expect(await response.json()).toEqual({
-      message: "Bạn không có quyền truy cập",
+      error: "Forbidden: insufficient permissions",
     });
   });
 

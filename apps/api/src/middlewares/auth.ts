@@ -35,12 +35,24 @@ export const authenticate = createMiddleware<AuthEnv>(
     }
 
     try {
-      const payload = await verify(token, secret);
+      const payload = await verify(token, secret, "HS256");
+
+      if (
+        typeof payload.exp !== "number" ||
+        !Number.isFinite(payload.exp) ||
+        payload.exp <= Math.floor(Date.now() / 1000)
+      ) {
+        return c.json({ error: "Invalid or expired token" }, 401);
+      }
 
       const id = payload.id;
       const role = payload.role;
 
-      if (typeof id !== "string" || !isRole(role)) {
+      if (
+        typeof id !== "string" ||
+        id.trim().length === 0 ||
+        !isRole(role)
+      ) {
         return c.json({ error: "Invalid token payload" }, 401);
       }
 
@@ -55,6 +67,13 @@ export const authenticate = createMiddleware<AuthEnv>(
 export function requireRoles(...allowedRoles: Role[]) {
   return createMiddleware<AuthEnv>(async (c, next) => {
     const user = c.get("user");
+
+    if (!user) {
+      return c.json(
+        { error: "Missing or invalid authorization token" },
+        401,
+      );
+    }
 
     if (!allowedRoles.includes(user.role)) {
       return c.json({ error: "Forbidden: insufficient permissions" }, 403);
