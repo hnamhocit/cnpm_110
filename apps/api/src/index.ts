@@ -5,9 +5,9 @@ import { compress } from "hono/compress";
 import { secureHeaders } from "hono/secure-headers";
 import { requestId } from "hono/request-id";
 import { timing } from "hono/timing";
-
+import healthRoute from "./routes/health.route";
 const app = new Hono();
-
+app.route("/health", healthRoute);
 app.use(requestId());
 app.use(logger());
 app.use(timing());
