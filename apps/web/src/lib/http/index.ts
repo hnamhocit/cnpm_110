@@ -1,2 +1,2 @@
-export { http, setAuthFailureHandler } from "./client";
+export { http } from "./client";
 export { type TokenPair, tokenStorage } from "./token-storage";

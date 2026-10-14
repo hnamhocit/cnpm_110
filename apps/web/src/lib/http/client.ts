@@ -8,7 +8,6 @@ const TIMEOUT_MS = 15_000;
 const LOGIN_PATH = "/auth/login";
 const REGISTER_PATH = "/auth/register";
 const REFRESH_PATH = "/auth/refresh";
-const LOGIN_PAGE = "/login";
 
 const AUTH_PATHS = [LOGIN_PATH, REGISTER_PATH, REFRESH_PATH];
 
@@ -64,17 +63,6 @@ function refreshAccessToken(): Promise<string> {
   return refreshPromise;
 }
 
-let onAuthFailure = () => {
-  if (typeof window === "undefined") return;
-  if (window.location.pathname !== LOGIN_PAGE) {
-    window.location.assign(LOGIN_PAGE);
-  }
-};
-
-export function setAuthFailureHandler(handler: () => void) {
-  onAuthFailure = handler;
-}
-
 http.interceptors.request.use((config) => {
   const accessToken = tokenStorage.getAccessToken();
   if (accessToken) {
@@ -105,8 +93,8 @@ http.interceptors.response.use(
       original.headers.set("Authorization", `Bearer ${accessToken}`);
       return http(original);
     } catch (refreshError) {
+      // Chỉ clear token, KHÔNG redirect (guard component xử lý)
       tokenStorage.clear();
-      onAuthFailure();
       return Promise.reject(refreshError);
     }
   },

@@ -1,30 +1,21 @@
-export type TokenPair = {
-  accessToken: string;
-  refreshToken: string;
-};
+import { type TokenPair, useAuthStore } from "@/lib/stores/auth-store";
 
-const ACCESS_KEY = "fc_access_token";
-const REFRESH_KEY = "fc_refresh_token";
-
-// Chỉ chạy ở trình duyệt. Trên server (SSR) trả về null.
-function read(key: string): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(key);
-}
+export type { TokenPair };
 
 export const tokenStorage = {
-  getAccessToken: () => read(ACCESS_KEY),
-  getRefreshToken: () => read(REFRESH_KEY),
-
-  setTokens({ accessToken, refreshToken }: TokenPair) {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(ACCESS_KEY, accessToken);
-    window.localStorage.setItem(REFRESH_KEY, refreshToken);
+  getAccessToken(): string | null {
+    return useAuthStore.getState().accessToken;
   },
 
-  clear() {
-    if (typeof window === "undefined") return;
-    window.localStorage.removeItem(ACCESS_KEY);
-    window.localStorage.removeItem(REFRESH_KEY);
+  getRefreshToken(): string | null {
+    return useAuthStore.getState().refreshToken;
+  },
+
+  setTokens(tokens: TokenPair): void {
+    useAuthStore.getState().setTokens(tokens);
+  },
+
+  clear(): void {
+    useAuthStore.getState().clear();
   },
 };
