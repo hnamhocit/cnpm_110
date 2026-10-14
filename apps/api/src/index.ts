@@ -1,5 +1,6 @@
 import { uploadToR2 } from "./r2";
 import { Hono } from "hono";
+import auth from "./routes/auth";
 import { logger } from "hono/logger";
 import { cors } from "hono/cors";
 import { compress } from "hono/compress";
@@ -13,7 +14,7 @@ import {
 } from "./middlewares/auth";
 
 const app = new Hono();
-
+app.route("/auth", auth);
 app.use(requestId());
 app.use(logger());
 app.use(timing());
