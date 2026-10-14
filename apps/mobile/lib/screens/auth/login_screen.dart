@@ -32,7 +32,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
     await Future<void>.delayed(const Duration(seconds: 1));
     if (!mounted) return;
-    ref.read(authProvider.notifier).login();
+    await ref.read(authProvider.notifier).login(
+      accessToken: 'mock-access-token',
+      refreshToken: 'mock-refresh-token',
+    );
+    if (!mounted) return;
     setState(() => _isLoading = false);
     context.go('/');
   }

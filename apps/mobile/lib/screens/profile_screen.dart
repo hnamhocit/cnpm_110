@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class ProfileScreen extends StatelessWidget {
+import '../core/providers/auth_provider.dart';
+
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   static const _menuItems = [
@@ -16,7 +20,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmLogout(BuildContext context) async {
+  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -39,15 +43,14 @@ class ProfileScreen extends StatelessWidget {
       ),
     );
 
-    if (shouldLogout == true && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã đăng xuất (bản demo).')),
-      );
+        if (shouldLogout == true) {
+      await ref.read(authProvider.notifier).logout();
+      if (context.mounted) context.go('/login');
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+ Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return ListView(
@@ -107,7 +110,7 @@ class ProfileScreen extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () => _confirmLogout(context),
+            onPressed: () => _confirmLogout(context, ref),
             icon: const Icon(Icons.logout),
             label: const Text('Đăng xuất'),
             style: OutlinedButton.styleFrom(
