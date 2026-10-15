@@ -1,15 +1,21 @@
 {
   "name": "api",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "bun run --hot src/index.ts",
+    "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
+    "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
+    "db:check": "drizzle-kit check --config=drizzle.config.ts",
+    "db:seed": "bun run src/db/seed.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1149.0",
+    "drizzle-orm": "^0.45.4",
     "hono": "^4.13.13",
     "pg": "^8.23.1"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/pg": "^8.23.1"
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11"
   }
 }
