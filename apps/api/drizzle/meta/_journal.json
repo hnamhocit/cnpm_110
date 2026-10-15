@@ -8,6 +8,13 @@
       "when": 1792035159426,
       "tag": "0000_curved_mimic",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792064384233,
+      "tag": "0001_faithful_masque",
+      "breakpoints": true
     }
   ]
 }
