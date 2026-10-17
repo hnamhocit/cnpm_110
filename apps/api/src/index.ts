@@ -1,4 +1,4 @@
-import { uploadToR2 } from "./r2";
+import { generateUploadUrl } from "./r2";
 import { Hono } from "hono";
 import auth from "./routes/auth";
 import { logger } from "hono/logger";
@@ -29,55 +29,68 @@ app.route("/api/v1/auth", auth);
 app.get("/", (c) => c.text("Hello Hono!"));
 
 
-app.post("/upload", async (c) => {
-  try {
-    const body = await c.req.parseBody();
-    const file = body["file"];
 
-    if (!(file instanceof File)) {
-      return c.json({ error: "No file uploaded" }, 400);
-    }
+app.post("/api/v1/storage/presigned-url", authenticate, async (c) => {
+  try {
+    const body = await c.req.json();
+    const { filename, contentType, type, size } = body;
 
     const allowedTypes = [
       "image/jpeg",
       "image/png",
-      "image/webp",
+      "image/tiff",
     ];
 
-    if (!allowedTypes.includes(file.type)) {
-      return c.json({ error: "Invalid image type" }, 400);
+    if (
+      typeof filename !== "string" ||
+      typeof contentType !== "string" ||
+      !["avatar", "submission", "proof"].includes(type) ||
+      !Number.isSafeInteger(size) ||
+      size <= 0
+    ) {
+      return c.json({ success: false, error: "Invalid request" }, 400);
     }
 
-    const maxSize = 50 * 1024 * 1024;
-
-    if (file.size > maxSize) {
-      return c.json({ error: "File exceeds 50MB" }, 413);
+    if (!allowedTypes.includes(contentType)) {
+      return c.json({ success: false, error: "Invalid image type" }, 400);
     }
 
-    if (file.size === 0) {
-      return c.json({ error: "Empty file" }, 400);
+    if (size > 50 * 1024 * 1024) {
+      return c.json({ success: false, error: "File exceeds 50MB" }, 413);
     }
 
-    const extension = {
+    const extensions: Record<string, string> = {
       "image/jpeg": "jpg",
       "image/png": "png",
-      "image/webp": "webp",
-    }[file.type];
+      "image/tiff": "tiff",
+    };
 
-    const key = `images/${crypto.randomUUID()}.${extension}`;
+    const extension = extensions[contentType];
 
-    await uploadToR2(file, key);
+    // Tên file do server tạo để tránh ghi đè hoặc dùng đường dẫn tùy ý
+    const key = `temp/${crypto.randomUUID()}.${extension}`;
+
+    const uploadUrl = await generateUploadUrl(key, contentType);
 
     return c.json({
-      message: "Upload successful",
-      key,
-      size: file.size,
+      success: true,
+      data: {
+        uploadUrl,
+        key,
+        expiresIn: 900,
+      },
     });
   } catch (error) {
-    console.error("Upload failed:", error);
-    return c.json({ error: "Upload failed" }, 500);
+    console.error("Presigned URL failed:", error);
+
+    return c.json(
+      { success: false, error: "Cannot generate upload URL" },
+      500
+    );
   }
 });
+ 
+
 // Các API mẫu dùng để kiểm tra middleware.
 app.use("/rbac/*", authenticate);
 
