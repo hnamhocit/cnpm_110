@@ -1,3 +1,4 @@
+
 import {
   pgTable,
   uuid,
@@ -7,6 +8,9 @@ import {
   timestamp,
   primaryKey,
   index,
+  integer,
+  numeric,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -93,5 +97,95 @@ export const refreshTokens = pgTable(
   (table) => [
     index("idx_refresh_tokens_user_id").on(table.userId),
     index("idx_refresh_tokens_expires_at").on(table.expiresAt),
+  ],
+);
+
+export const contests = pgTable(
+  "contests",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: varchar("name", { length: 150 }).notNull(),
+    description: text("description"),
+    startAt: timestamp("start_at", { withTimezone: true }),
+    endAt: timestamp("end_at", { withTimezone: true }),
+    status: varchar("status", { length: 20 })
+      .notNull()
+      .default("draft"),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_contests_created_by").on(table.createdBy),
+    index("idx_contests_status").on(table.status),
+  ],
+);
+
+export const categories = pgTable(
+  "categories",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    contestId: uuid("contest_id")
+      .notNull()
+      .references(() => contests.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 100 }).notNull(),
+    description: text("description"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_categories_contest_id").on(table.contestId),
+    uniqueIndex("uq_categories_contest_name").on(
+      table.contestId,
+      table.name,
+    ),
+  ],
+);
+
+export const scoringCriteria = pgTable(
+  "scoring_criteria",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 150 }).notNull(),
+    description: text("description"),
+    maxScore: numeric("max_score", {
+      precision: 5,
+      scale: 2,
+    })
+      .notNull()
+      .default("10"),
+    weight: numeric("weight", {
+      precision: 5,
+      scale: 2,
+    })
+      .notNull()
+      .default("1"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_scoring_criteria_category_id").on(table.categoryId),
+    uniqueIndex("uq_scoring_criteria_category_name").on(
+      table.categoryId,
+      table.name,
+    ),
   ],
 );
