@@ -14,13 +14,17 @@ import {
 } from "./middlewares/auth";
 
 const app = new Hono();
-app.route("/auth", auth);
+
+// Global middleware phải được đăng ký trước các routes
 app.use(requestId());
 app.use(logger());
 app.use(timing());
 app.use(secureHeaders());
 app.use(cors());
 app.use(compress());
+
+// Đăng ký API Auth theo chuẩn SRS v2.1
+app.route("/api/v1/auth", auth);
 
 app.get("/", (c) => c.text("Hello Hono!"));
 
