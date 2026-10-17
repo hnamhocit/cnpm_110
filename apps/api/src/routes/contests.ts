@@ -10,29 +10,104 @@ import {
 const contests = new Hono<AuthEnv>();
 
 const VALID_STATUSES = ["draft", "published", "ongoing", "completed", "cancelled"];
+const OPEN_STATUSES = ["published", "ongoing"];
 
 function isValidDate(value: unknown): value is string {
   return typeof value === "string" && !Number.isNaN(Date.parse(value));
 }
 
-// GET /contests - Lấy danh sách cuộc thi
+// GET /contests - Get open contests with search, filtering and pagination
 contests.get("/", async (c) => {
+  const search = c.req.query("search")?.trim();
+  const status = c.req.query("status");
+  const pageParam = c.req.query("page") ?? "1";
+  const limitParam = c.req.query("limit") ?? "10";
+
+  if (!/^[1-9]\d*$/.test(pageParam)) {
+    return c.json({ error: "Page must be a positive integer" }, 400);
+  }
+
+  if (!/^[1-9]\d*$/.test(limitParam)) {
+    return c.json({ error: "Limit must be a positive integer" }, 400);
+  }
+
+  const page = Number(pageParam);
+  const limit = Number(limitParam);
+
+  if (!Number.isSafeInteger(page)) {
+    return c.json({ error: "Invalid page value" }, 400);
+  }
+
+  if (!Number.isSafeInteger(limit) || limit > 100) {
+    return c.json({ error: "Limit must be between 1 and 100" }, 400);
+  }
+
+  if (status && !OPEN_STATUSES.includes(status)) {
+    return c.json(
+      { error: "Status must be published or ongoing" },
+      400,
+    );
+  }
+
   try {
+    const conditions = ["status IN ('published', 'ongoing')"];
+    const params: (string | number)[] = [];
+
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`name ILIKE $${params.length}`);
+    }
+
+    if (status) {
+      params.push(status);
+      conditions.push(`status = $${params.length}`);
+    }
+
+    const whereClause = conditions.join(" AND ");
+
+    const countResult = await pool.query(
+      `SELECT COUNT(*) AS total
+       FROM contests
+       WHERE ${whereClause}`,
+      params,
+    );
+
+    const total = Number(countResult.rows[0]?.total ?? 0);
+    const offset = (page - 1) * limit;
+
+    if (!Number.isSafeInteger(offset)) {
+      return c.json({ error: "Page value is too large" }, 400);
+    }
+
+    const listParams = [...params, limit, offset];
+
     const result = await pool.query(
       `SELECT id, name, description, start_at, end_at, status,
               created_by, created_at, updated_at
        FROM contests
-       ORDER BY created_at DESC`,
+       WHERE ${whereClause}
+       ORDER BY created_at DESC
+       LIMIT $${params.length + 1}
+       OFFSET $${params.length + 2}`,
+      listParams,
     );
 
-    return c.json({ data: result.rows });
+    return c.json({
+      data: result.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Get contests failed:", error);
     return c.json({ error: "Failed to get contests" }, 500);
   }
 });
 
-// GET /contests/:id - Lấy chi tiết cuộc thi
+// GET /contests/:id - Get contest details
 contests.get("/:id", async (c) => {
   const { id } = c.req.param();
 
@@ -56,7 +131,7 @@ contests.get("/:id", async (c) => {
   }
 });
 
-// POST /contests - Tạo cuộc thi
+// POST /contests - Create contest
 contests.post("/", authenticate, requireRoles("Admin", "Organizer"), async (c) => {
   let body: {
     name?: unknown;
@@ -132,14 +207,17 @@ contests.post("/", authenticate, requireRoles("Admin", "Organizer"), async (c) =
       [name, description, startAt, endAt, status, user.id],
     );
 
-    return c.json({ message: "Contest created successfully", data: result.rows[0] }, 201);
+    return c.json(
+      { message: "Contest created successfully", data: result.rows[0] },
+      201,
+    );
   } catch (error) {
     console.error("Create contest failed:", error);
     return c.json({ error: "Failed to create contest" }, 500);
   }
 });
 
-// PUT /contests/:id - Cập nhật cuộc thi
+// PUT /contests/:id - Update contest
 contests.put(
   "/:id",
   authenticate,
@@ -296,7 +374,7 @@ contests.put(
   },
 );
 
-// DELETE /contests/:id - Xóa cuộc thi
+// DELETE /contests/:id - Delete contest
 contests.delete(
   "/:id",
   authenticate,
