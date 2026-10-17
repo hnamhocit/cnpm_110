@@ -1,10 +1,4 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  test,
-} from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { Hono } from "hono";
 import { sign } from "hono/jwt";
 import {
@@ -45,10 +39,8 @@ function createTestApp() {
     return c.json({ message: "Admin truy cập thành công" });
   });
 
-  app.get(
-    "/protected/manage",
-    requireRoles("Admin", "Organizer"),
-    (c) => c.json({ message: "Được phép quản lý" }),
+  app.get("/protected/manage", requireRoles("Admin", "Organizer"), (c) =>
+    c.json({ message: "Được phép quản lý" }),
   );
 
   // Kiểm tra requireRoles khi chưa chạy authenticate.

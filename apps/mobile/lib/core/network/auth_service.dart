@@ -67,9 +67,8 @@ class DioAuthService implements AuthService {
         'Token refresh response has an invalid refreshToken.',
       );
     }
-    final String? validRefreshToken = newRefreshToken is String
-        ? newRefreshToken
-        : null;
+    final String? validRefreshToken =
+        newRefreshToken is String ? newRefreshToken : null;
 
     await _tokenStorage.saveTokens(
       accessToken: accessToken,

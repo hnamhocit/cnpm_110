@@ -1,4 +1,3 @@
-
 import {
   pgTable,
   uuid,
@@ -74,5 +73,25 @@ export const rolePermissions = pgTable(
   (table) => [
     primaryKey({ columns: [table.roleId, table.permissionId] }),
     index("idx_role_permissions_permission_id").on(table.permissionId),
+  ],
+);
+
+export const refreshTokens = pgTable(
+  "refresh_tokens",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_refresh_tokens_user_id").on(table.userId),
+    index("idx_refresh_tokens_expires_at").on(table.expiresAt),
   ],
 );

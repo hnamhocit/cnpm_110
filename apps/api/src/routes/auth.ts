@@ -1,4 +1,3 @@
-
 import { Hono } from "hono";
 import { sign } from "hono/jwt";
 import { createHash, randomBytes } from "node:crypto";
@@ -85,8 +84,7 @@ auth.post("/register", async (c) => {
     typeof body.fullName === "string" ? body.fullName.trim() : "";
   const email =
     typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-  const password =
-    typeof body.password === "string" ? body.password : "";
+  const password = typeof body.password === "string" ? body.password : "";
 
   if (!fullName || fullName.length > 100) {
     return c.json(
@@ -128,10 +126,7 @@ auth.post("/register", async (c) => {
     if (!roleResult.rowCount) {
       await client.query("ROLLBACK");
       console.error("Participant role is missing from the database");
-      return c.json(
-        { error: "Registration is temporarily unavailable" },
-        500,
-      );
+      return c.json({ error: "Registration is temporarily unavailable" }, 500);
     }
 
     const passwordHash = await Bun.password.hash(password);
@@ -150,10 +145,7 @@ auth.post("/register", async (c) => {
       [user.id, roleResult.rows[0].id],
     );
 
-    const accessToken = await createAccessToken(
-      user.id,
-      "Participant",
-    );
+    const accessToken = await createAccessToken(user.id, "Participant");
     const refreshToken = createRefreshToken();
 
     await client.query(
@@ -345,11 +337,7 @@ auth.post("/refresh", async (c) => {
     await client.query(
       `INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
        VALUES ($1, $2, NOW() + ($3 * INTERVAL '1 day'))`,
-      [
-        tokenRow.user_id,
-        hashToken(refreshToken),
-        REFRESH_TOKEN_TTL_DAYS,
-      ],
+      [tokenRow.user_id, hashToken(refreshToken), REFRESH_TOKEN_TTL_DAYS],
     );
 
     await client.query("COMMIT");

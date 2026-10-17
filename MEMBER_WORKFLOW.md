@@ -1,4 +1,3 @@
-
 # Member Git & Jira Workflow
 
 ## 1. Nhận Task

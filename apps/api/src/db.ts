@@ -1,26 +1,29 @@
-
 import { Pool } from "pg";
 
-const requiredEnv = [
-  "DB_HOST",
-  "DB_PORT",
-  "DB_NAME",
-  "DB_USER",
-  "DB_PASSWORD",
-] as const;
-
-for (const key of requiredEnv) {
-  if (!Bun.env[key]) {
-    throw new Error(`Missing database configuration: ${key}`);
+function getPoolConfig() {
+  const connectionString = Bun.env.DATABASE_URL ?? process.env.DATABASE_URL;
+  if (connectionString) {
+    return { connectionString };
   }
+
+  const host = Bun.env.DB_HOST;
+  const port = Bun.env.DB_PORT ? Number(Bun.env.DB_PORT) : undefined;
+  const database = Bun.env.DB_NAME;
+  const user = Bun.env.DB_USER;
+  const password = Bun.env.DB_PASSWORD;
+
+  if (host && port && database && user && password) {
+    return { host, port, database, user, password };
+  }
+
+  return {
+    connectionString:
+      "postgresql://postgres:postgres@localhost:5432/film_contest",
+  };
 }
 
 export const pool = new Pool({
-  host: Bun.env.DB_HOST,
-  port: Number(Bun.env.DB_PORT),
-  database: Bun.env.DB_NAME,
-  user: Bun.env.DB_USER,
-  password: Bun.env.DB_PASSWORD,
+  ...getPoolConfig(),
   max: 10,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5_000,
