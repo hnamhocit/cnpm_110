@@ -7,11 +7,7 @@ import { compress } from "hono/compress";
 import { secureHeaders } from "hono/secure-headers";
 import { requestId } from "hono/request-id";
 import { timing } from "hono/timing";
-import {
-  authenticate,
-  requireRoles,
-  type AuthEnv,
-} from "./middlewares/auth";
+import { authenticate, requireRoles, type AuthEnv } from "./middlewares/auth";
 
 const app = new Hono();
 app.route("/auth", auth);
@@ -24,7 +20,6 @@ app.use(compress());
 
 app.get("/", (c) => c.text("Hello Hono!"));
 
-
 app.post("/upload", async (c) => {
   try {
     const body = await c.req.parseBody();
@@ -34,11 +29,7 @@ app.post("/upload", async (c) => {
       return c.json({ error: "No file uploaded" }, 400);
     }
 
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-    ];
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
 
     if (!allowedTypes.includes(file.type)) {
       return c.json({ error: "Invalid image type" }, 400);
@@ -94,13 +85,9 @@ app.get("/rbac/participant", requireRoles("Participant"), (c) => {
 });
 
 // Ví dụ một API cho phép nhiều vai trò.
-app.get(
-  "/rbac/manage-contest",
-  requireRoles("Admin", "Organizer"),
-  (c) => {
-    return c.json({ message: "Bạn được phép quản lý cuộc thi" });
-  }
-);
+app.get("/rbac/manage-contest", requireRoles("Admin", "Organizer"), (c) => {
+  return c.json({ message: "Bạn được phép quản lý cuộc thi" });
+});
 
 export default {
   port: 8080,

@@ -1,19 +1,19 @@
-
 # PM Git & Jira Workflow
 
 ## 1. Jira
 
 PM chịu trách nhiệm:
 
-* Tạo và quản lý Jira tasks.
-* Mỗi task có:
+- Tạo và quản lý Jira tasks.
+- Mỗi task có:
 
-  * Title rõ ràng.
-  * Description.
-  * Assignee.
-  * Priority.
-  * Acceptance Criteria nếu cần.
-* Theo dõi trạng thái task.
+  - Title rõ ràng.
+  - Description.
+  - Assignee.
+  - Priority.
+  - Acceptance Criteria nếu cần.
+
+- Theo dõi trạng thái task.
 
 ### Jira Flow
 
@@ -77,13 +77,13 @@ PM → xử lý conflict
 
 ## 5. PM Daily Checklist
 
-* [ ] Jira task đã có đầy đủ thông tin.
-* [ ] Task đã assign đúng người.
-* [ ] Member đã chuyển task sang `In Progress`.
-* [ ] PR đã được tạo.
-* [ ] PR đã được review.
-* [ ] Code đã merge.
-* [ ] Jira đã được update.
+- [ ] Jira task đã có đầy đủ thông tin.
+- [ ] Task đã assign đúng người.
+- [ ] Member đã chuyển task sang `In Progress`.
+- [ ] PR đã được tạo.
+- [ ] PR đã được review.
+- [ ] Code đã merge.
+- [ ] Jira đã được update.
 
 ---
 

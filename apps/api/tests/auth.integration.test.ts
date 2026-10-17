@@ -115,8 +115,9 @@ describe("Integration test xác thực và refresh token", () => {
     expect(tokenResult.rows[0].token_hash).toBe(hashToken(body.refreshToken));
     expect(tokenResult.rows[0].token_hash).not.toBe(body.refreshToken);
     expect(tokenResult.rows[0].revoked_at).toBeNull();
-    expect(new Date(tokenResult.rows[0].expires_at).getTime())
-      .toBeGreaterThan(Date.now());
+    expect(new Date(tokenResult.rows[0].expires_at).getTime()).toBeGreaterThan(
+      Date.now(),
+    );
 
     const payload = await verify(body.accessToken, TEST_SECRET, "HS256");
     expect(payload.id).toBe(body.user.id);
@@ -134,10 +135,9 @@ describe("Integration test xác thực và refresh token", () => {
 
     expect(response.status).toBe(409);
 
-    const result = await pool.query(
-      "SELECT id FROM users WHERE email = $1",
-      [email],
-    );
+    const result = await pool.query("SELECT id FROM users WHERE email = $1", [
+      email,
+    ]);
     expect(result.rows).toHaveLength(1);
   });
 

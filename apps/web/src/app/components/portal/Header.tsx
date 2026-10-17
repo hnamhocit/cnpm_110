@@ -1,4 +1,3 @@
-
 "use client";
 
 import { usePathname } from "next/navigation";
@@ -7,9 +6,7 @@ type HeaderProps = {
   onMenuClick: () => void;
 };
 
-export default function Header({
-  onMenuClick,
-}: HeaderProps) {
+export default function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
 
   const pageName =
@@ -21,10 +18,8 @@ export default function Header({
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-white/10 bg-[var(--portal-header)] px-4 py-3 sm:px-6 lg:px-8">
-
       {/* LEFT SIDE */}
       <div className="flex min-w-0 items-center gap-3">
-
         {/* MOBILE MENU BUTTON */}
         <button
           type="button"
@@ -51,9 +46,7 @@ export default function Header({
 
       {/* RIGHT SIDE - PROFILE MENU */}
       <details className="relative shrink-0">
-
         <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl p-1.5 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-[var(--portal-primary)] [&::-webkit-details-marker]:hidden">
-
           <span className="hidden text-sm font-medium text-gray-200 sm:block">
             Demo Judge
           </span>
@@ -63,22 +56,15 @@ export default function Header({
             JD
           </span>
 
-          <span className="hidden text-xs text-gray-300 sm:block">
-            ▼
-          </span>
+          <span className="hidden text-xs text-gray-300 sm:block">▼</span>
         </summary>
 
         {/* PROFILE DROPDOWN */}
         <div className="absolute right-0 top-full z-40 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-white/10 bg-[#303437] p-3 text-white shadow-2xl">
-
           <div className="border-b border-white/10 pb-3">
-            <p className="font-semibold">
-              Demo Judge
-            </p>
+            <p className="font-semibold">Demo Judge</p>
 
-            <p className="mt-1 text-xs text-gray-400">
-              Judge Account
-            </p>
+            <p className="mt-1 text-xs text-gray-400">Judge Account</p>
           </div>
 
           <div className="mt-3 space-y-1">
@@ -90,7 +76,6 @@ export default function Header({
               Logout (Coming soon)
             </p>
           </div>
-
         </div>
       </details>
     </header>

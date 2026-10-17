@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌐 Film Contest - Web Application
 
-## Getting Started
+Ứng dụng Frontend cho dự án Film Contest, được xây dựng bằng **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4** và **Biome**.
 
-First, run the development server:
+---
+
+## 📌 Công nghệ sử dụng
+
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router với Turbopack)
+- **UI Library**: [React 19](https://react.dev/), [Radix UI](https://www.radix-ui.com/), [Lucide React](https://lucide.dev/)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Linter & Formatter**: [Biome](https://biomejs.dev/)
+- **State Management**: [Zustand](https://github.com/pmndrs/zustand)
+- **HTTP Client**: Axios với Interceptor xử lý tự động refresh token
+
+---
+
+## 🚀 Hướng dẫn khởi chạy
+
+> [!IMPORTANT]
+> Dự án sử dụng **Bun** làm package manager. **Không** dùng `npm`, `yarn`, hoặc `pnpm`.
+
+### 1. Cấu hình biến môi trường
+
+Tạo file `.env.local` trong thư mục `apps/web/` dựa trên `.env.example`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Nội dung cấu hình mẫu:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8080
+API_INTERNAL_URL=http://localhost:8080
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 2. Cài đặt dependencies (từ thư mục gốc repo)
 
-## Learn More
+```bash
+bun install
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Chạy môi trường phát triển (Development)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Chạy riêng service Web:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# Từ thư mục gốc monorepo:
+bun --filter web dev
+```
 
-## Deploy on Vercel
+Ứng dụng chạy tại: [http://localhost:3000](http://localhost:3000)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📜 Các lệnh khả dụng
+
+| Lệnh                           | Ý nghĩa                                         |
+| :----------------------------- | :---------------------------------------------- |
+| `bun --filter web dev`         | Chạy Next.js dev server                         |
+| `bun --filter web build`       | Build ứng dụng cho môi trường production        |
+| `bun --filter web start`       | Chạy production server sau khi đã build         |
+| `bun --filter web lint`        | Kiểm tra lỗi code bằng Biome (`biome check`)    |
+| `bun --filter web format`      | Tự động format code bằng Biome (`biome format`) |
+| `bun --filter web test`        | Chạy unit tests bằng Bun test runner            |
+| `bun --filter web check-types` | Kiểm tra lỗi kiểu TypeScript (`tsc --noEmit`)   |
+
+---
+
+## 📁 Cấu trúc thư mục
+
+```text
+apps/web/
+├── src/
+│   ├── app/                      # Next.js App Router pages & layouts
+│   │   ├── (auth)/               # Các trang đăng nhập/đăng ký
+│   │   │   ├── judge/login/      # Đăng nhập dành cho Giám khảo
+│   │   │   ├── login/            # Đăng nhập chung
+│   │   │   └── register/         # Đăng ký tài khoản
+│   │   ├── portal/               # Khu vực quản trị / ban giám khảo (Guard route)
+│   │   │   ├── contests/         # Quản lý cuộc thi
+│   │   │   └── reports/          # Báo cáo thống kê
+│   │   ├── forbidden/            # Trang 403 Forbidden
+│   │   ├── globals.css           # Cấu hình styles toàn cục (Tailwind v4)
+│   │   └── page.tsx              # Trang chủ Landing page
+│   ├── components/               # UI components dùng chung (shadcn / radix)
+│   └── lib/                      # Tiện ích, HTTP client, Auth guards
+├── biome.json                    # Cấu hình Biome
+├── next.config.ts                # Cấu hình Next.js
+├── package.json
+└── tsconfig.json
+```

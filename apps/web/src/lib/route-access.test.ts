@@ -1,4 +1,3 @@
-
 import { describe, expect, test } from "bun:test";
 
 import { getRouteDecision } from "./route-access";
@@ -21,9 +20,9 @@ describe("FPC-19 Route Guards", () => {
 
   test("Judge and Participant cannot access Portal", () => {
     expect(getRouteDecision("/portal", "Judge")).toBe("forbidden");
-    expect(
-      getRouteDecision("/portal/contests", "Participant")
-    ).toBe("forbidden");
+    expect(getRouteDecision("/portal/contests", "Participant")).toBe(
+      "forbidden",
+    );
   });
 
   test("Other routes are not mistaken for Portal", () => {
