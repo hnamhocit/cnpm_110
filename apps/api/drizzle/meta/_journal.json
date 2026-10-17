@@ -15,6 +15,13 @@
       "when": 1792064384233,
       "tag": "0001_faithful_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792240043476,
+      "tag": "0002_gray_serpent_society",
+      "breakpoints": true
     }
   ]
 }
