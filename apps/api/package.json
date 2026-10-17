@@ -12,8 +12,7 @@
     "test:all": "bun test"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1149.0",
-    "drizzle-orm": "^0.45.4",
+    "@hono/node-server": "^2.1.5",
     "hono": "^4.13.13",
     "pg": "^8.23.1"
   },
