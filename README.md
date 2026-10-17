@@ -35,6 +35,7 @@ film-contest/
 │   ├── typescript-config/ # Cấu hình TypeScript dùng chung (@repo/typescript-config)
 │   └── eslint-config/     # Cấu hình ESLint & Linting rules dùng chung (@repo/eslint-config)
 │
+├── docs/                  # Tài liệu đặc tả API (OpenAPI 3.0 YAML & Postman Collection)
 ├── bun.lock               # Lockfile chuẩn của Bun (KHÔNG xoá hoặc dùng npm đè lên)
 ├── package.json           # Khai báo workspace root và scripts điều phối Turborepo
 ├── turbo.json             # Cấu hình pipeline Turborepo (build, dev, lint, cache...)
@@ -107,6 +108,30 @@ bun install
 ```
 
 > Lệnh này sẽ tự động liên kết các workspace (`apps/web`, `apps/api`, `packages/*`) và cài đặt tất cả dependencies cần thiết trong vài giây nhờ tốc độ của Bun.
+
+### Bước 3: Thiết lập môi trường & Database
+
+1. **Cấu hình API**:
+
+   ```bash
+   cp apps/api/.env.example apps/api/.env
+   ```
+
+   Cập nhật `DATABASE_URL` và `JWT_SECRET` trong `apps/api/.env`.
+
+2. **Chạy Migration & Seed dữ liệu**:
+
+   ```bash
+   bun --filter api db:migrate
+   bun --filter api db:seed
+   ```
+
+   _(Xem chi tiết tại [README-DATABASE.md](apps/api/README-DATABASE.md))_
+
+3. **Cấu hình Web**:
+   ```bash
+   cp apps/web/.env.example apps/web/.env.local
+   ```
 
 ---
 
@@ -189,6 +214,7 @@ Các lệnh này thực thi tại thư mục gốc:
 | `bun run lint`        | Chạy kiểm tra linting (`turbo run lint`)                 |
 | `bun run format`      | Định dạng lại code bằng Prettier (`.ts`, `.tsx`, `.md`)  |
 | `bun run check-types` | Kiểm tra type check TypeScript trên toàn bộ monorepo     |
+| `bun run test`        | Chạy unit test trên toàn bộ monorepo (`turbo run test`)  |
 
 ---
 
