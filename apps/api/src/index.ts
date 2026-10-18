@@ -1,3 +1,4 @@
+import { authenticate, requireRoles } from "./middlewares/auth";
 import { uploadToR2 } from "./r2";
 import { Hono } from "hono";
 import auth from "./routes/auth";
