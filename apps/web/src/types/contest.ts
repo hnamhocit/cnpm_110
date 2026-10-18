@@ -5,6 +5,29 @@ export type ContestStatus =
   | "completed"
   | "cancelled";
 
+export interface Judge {
+  id: string;
+  name: string;
+  role: string;
+  bio: string;
+  avatar_url?: string;
+}
+
+export interface Prize {
+  id: string;
+  rank: string; // "Giải Nhất", "Giải Nhì", "Giải Ba", v.v.
+  name: string;
+  reward: string; // "30.000.000 VNĐ + Máy ảnh Leica M6"
+  description?: string;
+}
+
+export interface Criteria {
+  id: string;
+  name: string;
+  weight: number; // Tỷ trọng phần trăm (ví dụ: 30%)
+  description: string;
+}
+
 export interface Contest {
   id: string;
   name: string;
@@ -15,12 +38,21 @@ export interface Contest {
   created_by?: string;
   created_at?: string;
   updated_at?: string;
-  /** Thể loại phim (ví dụ: 35mm, Medium Format, Trắng đen) */
   category?: string;
-  /** Phần thưởng hoặc ghi chú thêm (nếu có) */
   prize?: string;
-  /** Ảnh bìa cuộc thi (nếu có) */
   cover_image?: string;
+
+  // Các trường chi tiết cho FPC-38
+  rules?: string[];
+  film_requirements?: {
+    formats: string[]; // ["35mm", "120 Medium Format"]
+    types: string[]; // ["Color Negative", "Black & White", "Slide/Color Reversal"]
+    max_photos_per_submission: number;
+    allow_digital_editing: boolean;
+  };
+  judges?: Judge[];
+  prizes?: Prize[];
+  criteria?: Criteria[];
 }
 
 export interface ContestListResponse {
