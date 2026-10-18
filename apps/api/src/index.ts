@@ -9,6 +9,7 @@ import { secureHeaders } from "hono/secure-headers";
 import { requestId } from "hono/request-id";
 import { timing } from "hono/timing";
 import healthRoute from "./routes/health.route";
+import submissionRoute from "./routes/submissions";
 const app = new Hono();
 app.route("/health", healthRoute);
 app.use(requestId());
@@ -17,7 +18,8 @@ app.use(timing());
 app.use(secureHeaders());
 app.use(cors());
 app.use(compress());
-
+app.route("/auth", auth);
+app.route("/api/v1/submissions", submissionRoute);
 app.get("/", (c) => c.text("Hello Hono!"));
 
 app.post("/upload", async (c) => {
