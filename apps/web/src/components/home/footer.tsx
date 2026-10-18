@@ -112,8 +112,7 @@ export function Footer() {
 
         <div className="pt-8 border-t border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
           <div>
-            &copy; {new Date().getFullYear()} Film Photography Contest Platform.
-            All rights reserved.
+            &copy; 2026 Film Photography Contest Platform. All rights reserved.
           </div>
           <div className="flex items-center gap-1">
             <span>Xây dựng với</span>
