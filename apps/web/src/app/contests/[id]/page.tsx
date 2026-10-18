@@ -1,16 +1,12 @@
 import {
-  AlertCircle,
   ArrowLeft,
   Award,
   Calendar,
-  CheckCircle2,
   Clock,
   Coins,
-  Cpu,
   FileText,
   Film,
   Scale,
-  Share2,
   Sparkles,
   Upload,
   UserCheck,
@@ -245,7 +241,10 @@ export default async function ContestDetailPage({
                 {/* Danh sách quy định */}
                 <div className="space-y-3.5">
                   {(contest.rules ?? []).map((rule, index) => (
-                    <div key={index} className="flex items-start gap-3">
+                    <div
+                      key={`rule-${rule.slice(0, 20)}`}
+                      className="flex items-start gap-3"
+                    >
                       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400/20 text-[11px] font-bold text-amber-300 mt-0.5">
                         {index + 1}
                       </span>

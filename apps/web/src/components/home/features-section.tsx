@@ -1,13 +1,4 @@
-import {
-  Award,
-  Camera,
-  CheckCircle2,
-  Cpu,
-  Eye,
-  Film,
-  Sparkles,
-  Upload,
-} from "lucide-react";
+import { Award, Camera, CheckCircle2, Cpu, Sparkles } from "lucide-react";
 
 export function FeaturesSection() {
   return (
