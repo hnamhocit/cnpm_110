@@ -23,31 +23,19 @@ import { formatContestDate } from "@/lib/contest-utils";
 import { DETAILED_CONTESTS } from "@/lib/mock-contest-details";
 import type { Contest } from "@/types/contest";
 
+export function generateStaticParams() {
+  return Object.keys(DETAILED_CONTESTS).map((id) => ({ id }));
+}
+
 interface ContestDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-async function getContestDetail(id: string): Promise<Contest | null> {
-  // 1. Thử gọi API Backend nếu Backend đang chạy
-  try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
-    const res = await fetch(`${apiUrl}/contests/${id}`, {
-      cache: "no-store",
-    });
-    if (res.ok) {
-      const json = await res.json();
-      if (json.data) return json.data;
-    }
-  } catch {
-    // Backend offline -> Fallback vào mock data phong phú
-  }
-
-  // 2. Fallback mock data
+function getContestDetail(id: string): Contest | null {
   if (DETAILED_CONTESTS[id]) {
     return DETAILED_CONTESTS[id];
   }
 
-  // Nếu không có id cụ thể, dùng contest-1 làm mặc định hiển thị
   return {
     ...DETAILED_CONTESTS["contest-1"],
     id,
