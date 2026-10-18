@@ -114,6 +114,72 @@ export const DETAILED_CONTESTS: Record<string, Contest> = {
           "Độ tin cậy của thông số máy/phim và sự thuần khiết quang học không can thiệp số.",
       },
     ],
+    registration_info: {
+      fee: "Miễn phí tham gia",
+      eligibility: [
+        "Mọi công dân Việt Nam và quốc tế đang sinh sống, làm việc tại Việt Nam từ 16 tuổi trở lên.",
+        "Nhiếp ảnh gia chuyên nghiệp, nghiệp dư hoặc người đam mê nhiếp ảnh bằng thiết bị cơ khí/phim truyền thống.",
+        "Tác phẩm phải do chính tác giả bấm máy bằng máy ảnh chụp phim thực tế, không chấp nhận ảnh render hoặc AI.",
+      ],
+      technical_specs: {
+        file_formats: ["JPEG", "PNG", "TIFF"],
+        max_file_size: "25 MB / file",
+        min_resolution: "Tối thiểu 3000px chiều dài nhất (tương đương scan 2400 DPI trở lên)",
+        color_space: "sRGB hoặc Adobe RGB (1998)",
+      },
+      steps: [
+        {
+          step: 1,
+          title: "Sáng tác & Tráng Scan Phim",
+          description:
+            "Thực hiện chụp bằng máy phim 35mm hoặc 120 (Medium Format). Tráng và scan tại các Lab phim uy tín ở độ phân giải tiêu chuẩn.",
+          tip: "Nên giữ lại dải phim âm bản (negatives) để Ban tổ chức đối chiếu khi vào vòng chung khảo.",
+        },
+        {
+          step: 2,
+          title: "Tạo tài khoản & Đăng nhập",
+          description:
+            "Đăng ký tài khoản trên nền tảng Film Contest bằng Email hoặc tài khoản Google/GitHub chỉ trong 30 giây.",
+          tip: "Cập nhật đúng số điện thoại và họ tên thật để nhận thông báo giải thưởng.",
+        },
+        {
+          step: 3,
+          title: "Tải ảnh & Nhập thông số tác phẩm",
+          description:
+            "Tải lên từ 1 đến 5 bức ảnh đẹp nhất kèm: Tiêu đề tác phẩm, Loại phim (Film Stock), Dòng máy ảnh, Ống kính và đôi lời chia sẻ về khoảnh khắc.",
+          tip: "Ảnh scan sạch bụi bẩn, không chèn chữ ký (watermark) lớn gây ảnh hưởng thẩm mỹ.",
+        },
+        {
+          step: 4,
+          title: "Kiểm tra Tính nguyên bản AI & Chấm điểm",
+          description:
+            "Hệ thống tự động phân tích cấu trúc hạt phim (grain pattern) và EXIF để xác thực, sau đó chuyển tới Hội đồng Ban giám khảo.",
+          tip: "Bạn có thể theo dõi trực tiếp trạng thái bài thi trong trang Portal cá nhân.",
+        },
+      ],
+      faqs: [
+        {
+          question: "Tôi có thể chỉnh sửa màu sắc bằng Lightroom/Photoshop không?",
+          answer:
+            "Chỉ chấp nhận các chỉnh sửa cơ bản tương đương quá trình rọi ảnh buồng tối truyền thống như: cân bằng sáng/tối (Dodge & Burn nhẹ), tương phản, khử bụi xước scan. Không chấp nhận cắt ghép vật thể, thay đổi bối cảnh hoặc can thiệp bằng bộ lọc màu kỹ thuật số làm mất chất ảnh phim.",
+        },
+        {
+          question: "Nếu tôi chụp bằng máy ảnh tự chế (Pinhole) hoặc máy dùng phim 120 có được nộp không?",
+          answer:
+            "Hoàn toàn được! Cuộc thi khuyến khích sự đa dạng về thiết bị analog, từ máy 35mm SLR, Rangefinder, Point & Shoot cho đến Medium Format 120, TLR và cả Pinhole camera.",
+        },
+        {
+          question: "Ảnh đã từng đăng mạng xã hội (Facebook, Instagram) có được tham gia không?",
+          answer:
+            "Ảnh đã đăng trên tài khoản cá nhân vẫn được phép tham gia. Tuy nhiên tác phẩm chưa từng đoạt giải Nhất, Nhì, Ba tại các cuộc thi nhiếp ảnh cấp quốc gia hoặc quốc tế trước đó.",
+        },
+        {
+          question: "Tôi có mất phí khi nộp bài dự thi không?",
+          answer:
+            "Cuộc thi mở cổng hoàn toàn miễn phí cho tất cả các thí sinh nhằm khuyến khích phong trào nhiếp ảnh phim tại Việt Nam.",
+        },
+      ],
+    },
   },
   "contest-2": {
     id: "contest-2",
@@ -198,5 +264,57 @@ export const DETAILED_CONTESTS: Record<string, Contest> = {
           "Độ chân thực của cuộn phim đen trắng gốc không giả lập số.",
       },
     ],
+    registration_info: {
+      fee: "Miễn phí tham gia",
+      eligibility: [
+        "Tất cả người yêu thích nhiếp ảnh đen trắng nghệ thuật tại Việt Nam.",
+        "Sử dụng phim đen trắng chuyên dụng (Kodak Tri-X, Ilford HP5+, Fomapan...) hoặc tự tráng tay.",
+      ],
+      technical_specs: {
+        file_formats: ["JPEG", "PNG", "TIFF"],
+        max_file_size: "25 MB / file",
+        min_resolution: "Tối thiểu 3000px chiều dài nhất",
+        color_space: "Grayscale hoặc sRGB",
+      },
+      steps: [
+        {
+          step: 1,
+          title: "Sáng tác với phim B&W",
+          description:
+            "Lựa chọn đề tài kiến trúc, đường phố hoặc chân dung thể hiện tốt tương phản ánh sáng.",
+          tip: "Tận dụng kính lọc vàng (yellow filter) hoặc đỏ (red filter) để tăng độ tương phản mây trời.",
+        },
+        {
+          step: 2,
+          title: "Scan & Chuẩn bị file",
+          description:
+            "File ảnh đen trắng giữ nguyên quang sai và hạt phim tự nhiên, không áp preset giả lập.",
+        },
+        {
+          step: 3,
+          title: "Nộp bài dự thi",
+          description:
+            "Tải ảnh lên hệ thống cùng thông số cuộn phim và thời gian chụp.",
+        },
+        {
+          step: 4,
+          title: "Bình chọn & Chấm giải",
+          description:
+            "Hội đồng giám khảo thẩm định độ sâu chi tiết và tính nguyên bản.",
+        },
+      ],
+      faqs: [
+        {
+          question: "Ảnh chụp phim màu rồi chuyển sang đen trắng trên máy tính có được không?",
+          answer:
+            "Không được chấp nhận. Cuộc thi chỉ dành riêng cho tác phẩm được ghi nhận trực tiếp bằng phim đen trắng nguyên bản (true B&W film stock).",
+        },
+        {
+          question: "Tự tráng phim tại nhà (Home develop) có được tính không?",
+          answer:
+            "Hoàn toàn được và rất được khuyến khích! Thí sinh có thể ghi rõ công thức thuốc tráng (D-76, Rodinal...) trong phần mô tả.",
+        },
+      ],
+    },
   },
 };

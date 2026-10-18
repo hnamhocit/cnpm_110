@@ -42,13 +42,33 @@ export interface Contest {
   prize?: string;
   cover_image?: string;
 
-  // Các trường chi tiết cho FPC-38
+  // Các trường chi tiết cho FPC-38 & FPC-39
   rules?: string[];
   film_requirements?: {
     formats: string[]; // ["35mm", "120 Medium Format"]
     types: string[]; // ["Color Negative", "Black & White", "Slide/Color Reversal"]
     max_photos_per_submission: number;
     allow_digital_editing: boolean;
+  };
+  registration_info?: {
+    fee: string; // "Miễn phí"
+    eligibility: string[];
+    technical_specs: {
+      file_formats: string[];
+      max_file_size: string;
+      min_resolution: string;
+      color_space: string;
+    };
+    steps: {
+      step: number;
+      title: string;
+      description: string;
+      tip?: string;
+    }[];
+    faqs: {
+      question: string;
+      answer: string;
+    }[];
   };
   judges?: Judge[];
   prizes?: Prize[];
