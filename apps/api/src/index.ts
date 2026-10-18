@@ -1,3 +1,4 @@
+import { authenticate, requireRoles } from "./middlewares/auth";
 import { uploadToR2 } from "./r2";
 import { Hono } from "hono";
 import auth from "./routes/auth";
@@ -31,6 +32,20 @@ app.route("/contests", contests);
 app.get("/", (c) => c.text("Hello Hono!"));
 
 // Upload ảnh lên Cloudflare R2
+import healthRoute from "./routes/health.route";
+import submissionRoute from "./routes/submissions";
+const app = new Hono();
+app.route("/health", healthRoute);
+app.use(requestId());
+app.use(logger());
+app.use(timing());
+app.use(secureHeaders());
+app.use(cors());
+app.use(compress());
+app.route("/auth", auth);
+app.route("/api/v1/submissions", submissionRoute);
+app.get("/", (c) => c.text("Hello Hono!"));
+
 app.post("/upload", async (c) => {
   try {
     const body = await c.req.parseBody();
@@ -40,11 +55,7 @@ app.post("/upload", async (c) => {
       return c.json({ error: "No file uploaded" }, 400);
     }
 
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-    ];
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
 
     if (!allowedTypes.includes(file.type)) {
       return c.json({ error: "Invalid image type" }, 400);
@@ -110,6 +121,10 @@ app.get(
     });
   },
 );
+// Ví dụ một API cho phép nhiều vai trò.
+app.get("/rbac/manage-contest", requireRoles("Admin", "Organizer"), (c) => {
+  return c.json({ message: "Bạn được phép quản lý cuộc thi" });
+});
 
 export default {
   port: 8080,
