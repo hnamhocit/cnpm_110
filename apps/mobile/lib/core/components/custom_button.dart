@@ -45,8 +45,7 @@ class CustomButton extends StatelessWidget {
               color: foregroundColor,
             ),
           )
-        else if (icon != null)
-          icon!,
+        else ?icon,
         if (isLoading || icon != null) const SizedBox(width: 8),
         Text(label),
       ],

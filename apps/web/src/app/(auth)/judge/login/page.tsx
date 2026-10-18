@@ -1,4 +1,3 @@
-
 import type { Metadata } from "next";
 
 import { JudgeLoginForm } from "@/components/auth/judge-login-form";

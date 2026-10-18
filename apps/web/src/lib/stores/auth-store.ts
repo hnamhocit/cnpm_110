@@ -1,18 +1,30 @@
-﻿import { create } from "zustand";
+import { create } from "zustand";
 
-export type Role = "Admin" | "Organizer" | "Judge" | "Participant";
+import type { Role } from "@/lib/route-access";
+
+export type TokenPair = {
+  accessToken: string;
+  refreshToken?: string;
+  role?: Role;
+};
 
 type AuthState = {
   accessToken: string | null;
-  userRole: Role | null; // Thêm biến lưu Role
-  setTokens: (tokens: { accessToken: string; refreshToken?: string; role?: Role }) => void;
+  refreshToken: string | null;
+  userRole: Role | null;
+  setTokens: (tokens: TokenPair) => void;
   clear: () => void;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
+  refreshToken: null,
   userRole: null,
-  setTokens: ({ accessToken, role }) => 
-    set({ accessToken, userRole: role || "Organizer" }), // Mặc định là Organizer nếu không có
-  clear: () => set({ accessToken: null, userRole: null }),
+  setTokens: ({ accessToken, refreshToken, role }) =>
+    set((state) => ({
+      accessToken,
+      refreshToken: refreshToken ?? state.refreshToken,
+      userRole: role ?? state.userRole,
+    })),
+  clear: () => set({ accessToken: null, refreshToken: null, userRole: null }),
 }));
