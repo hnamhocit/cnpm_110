@@ -124,7 +124,8 @@ export const DETAILED_CONTESTS: Record<string, Contest> = {
       technical_specs: {
         file_formats: ["JPEG", "PNG", "TIFF"],
         max_file_size: "25 MB / file",
-        min_resolution: "Tối thiểu 3000px chiều dài nhất (tương đương scan 2400 DPI trở lên)",
+        min_resolution:
+          "Tối thiểu 3000px chiều dài nhất (tương đương scan 2400 DPI trở lên)",
         color_space: "sRGB hoặc Adobe RGB (1998)",
       },
       steps: [
@@ -159,17 +160,20 @@ export const DETAILED_CONTESTS: Record<string, Contest> = {
       ],
       faqs: [
         {
-          question: "Tôi có thể chỉnh sửa màu sắc bằng Lightroom/Photoshop không?",
+          question:
+            "Tôi có thể chỉnh sửa màu sắc bằng Lightroom/Photoshop không?",
           answer:
             "Chỉ chấp nhận các chỉnh sửa cơ bản tương đương quá trình rọi ảnh buồng tối truyền thống như: cân bằng sáng/tối (Dodge & Burn nhẹ), tương phản, khử bụi xước scan. Không chấp nhận cắt ghép vật thể, thay đổi bối cảnh hoặc can thiệp bằng bộ lọc màu kỹ thuật số làm mất chất ảnh phim.",
         },
         {
-          question: "Nếu tôi chụp bằng máy ảnh tự chế (Pinhole) hoặc máy dùng phim 120 có được nộp không?",
+          question:
+            "Nếu tôi chụp bằng máy ảnh tự chế (Pinhole) hoặc máy dùng phim 120 có được nộp không?",
           answer:
             "Hoàn toàn được! Cuộc thi khuyến khích sự đa dạng về thiết bị analog, từ máy 35mm SLR, Rangefinder, Point & Shoot cho đến Medium Format 120, TLR và cả Pinhole camera.",
         },
         {
-          question: "Ảnh đã từng đăng mạng xã hội (Facebook, Instagram) có được tham gia không?",
+          question:
+            "Ảnh đã từng đăng mạng xã hội (Facebook, Instagram) có được tham gia không?",
           answer:
             "Ảnh đã đăng trên tài khoản cá nhân vẫn được phép tham gia. Tuy nhiên tác phẩm chưa từng đoạt giải Nhất, Nhì, Ba tại các cuộc thi nhiếp ảnh cấp quốc gia hoặc quốc tế trước đó.",
         },
@@ -305,7 +309,8 @@ export const DETAILED_CONTESTS: Record<string, Contest> = {
       ],
       faqs: [
         {
-          question: "Ảnh chụp phim màu rồi chuyển sang đen trắng trên máy tính có được không?",
+          question:
+            "Ảnh chụp phim màu rồi chuyển sang đen trắng trên máy tính có được không?",
           answer:
             "Không được chấp nhận. Cuộc thi chỉ dành riêng cho tác phẩm được ghi nhận trực tiếp bằng phim đen trắng nguyên bản (true B&W film stock).",
         },

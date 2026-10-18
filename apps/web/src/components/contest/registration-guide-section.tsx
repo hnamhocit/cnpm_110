@@ -1,14 +1,14 @@
-import Link from "next/link";
 import {
   CheckCircle2,
+  FileCheck2,
   HelpCircle,
   Info,
   ShieldCheck,
+  Sparkles,
   Upload,
   UserCheck,
-  FileCheck2,
-  Sparkles,
 } from "lucide-react";
+import Link from "next/link";
 import type { Contest } from "@/types/contest";
 
 interface RegistrationGuideSectionProps {
@@ -35,14 +35,19 @@ export function RegistrationGuideSection({
             Thông tin Đăng ký & Quy trình Dự thi
           </h2>
           <p className="mt-1 text-sm text-zinc-400">
-            Hướng dẫn đầy đủ từ chuẩn bị file ảnh, điều kiện hợp lệ đến các bước nộp bài
+            Hướng dẫn đầy đủ từ chuẩn bị file ảnh, điều kiện hợp lệ đến các bước
+            nộp bài
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-700/60 text-right">
-            <div className="text-[10px] uppercase font-mono text-zinc-400">Lệ phí nộp bài</div>
-            <div className="text-sm font-bold text-emerald-400">{regInfo.fee}</div>
+            <div className="text-[10px] uppercase font-mono text-zinc-400">
+              Lệ phí nộp bài
+            </div>
+            <div className="text-sm font-bold text-emerald-400">
+              {regInfo.fee}
+            </div>
           </div>
           <Link
             href="/login"
@@ -105,9 +110,9 @@ export function RegistrationGuideSection({
             Điều kiện & Đối tượng tham dự
           </h4>
           <ul className="space-y-3">
-            {regInfo.eligibility.map((item, idx) => (
+            {regInfo.eligibility.map((item) => (
               <li
-                key={`eligibility-${idx}`}
+                key={`eligibility-${item.slice(0, 25)}`}
                 className="flex items-start gap-3 text-xs sm:text-sm text-zinc-300 leading-relaxed"
               >
                 <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
@@ -131,19 +136,25 @@ export function RegistrationGuideSection({
               </strong>
             </div>
             <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800">
-              <span className="text-zinc-500 block mb-1">Dung lượng tối đa:</span>
+              <span className="text-zinc-500 block mb-1">
+                Dung lượng tối đa:
+              </span>
               <strong className="text-white">
                 {regInfo.technical_specs.max_file_size}
               </strong>
             </div>
             <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 col-span-2">
-              <span className="text-zinc-500 block mb-1">Độ phân giải yêu cầu:</span>
+              <span className="text-zinc-500 block mb-1">
+                Độ phân giải yêu cầu:
+              </span>
               <strong className="text-zinc-200">
                 {regInfo.technical_specs.min_resolution}
               </strong>
             </div>
             <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 col-span-2">
-              <span className="text-zinc-500 block mb-1">Không gian màu (Color Profile):</span>
+              <span className="text-zinc-500 block mb-1">
+                Không gian màu (Color Profile):
+              </span>
               <strong className="text-zinc-200">
                 {regInfo.technical_specs.color_space}
               </strong>
@@ -160,9 +171,9 @@ export function RegistrationGuideSection({
         </h4>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {regInfo.faqs.map((faq, idx) => (
+          {regInfo.faqs.map((faq) => (
             <div
-              key={`faq-${idx}`}
+              key={`faq-${faq.question.slice(0, 25)}`}
               className="p-5 rounded-2xl bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 transition-colors"
             >
               <h5 className="text-sm font-bold text-white mb-2 flex items-start gap-2">
@@ -184,7 +195,8 @@ export function RegistrationGuideSection({
             Sẵn sàng chia sẻ góc nhìn của bạn?
           </div>
           <div className="text-xs text-zinc-400 mt-1">
-            Cổng nhận bài dự thi đang mở. Hãy đăng nhập để hoàn tất nộp ảnh dự thi.
+            Cổng nhận bài dự thi đang mở. Hãy đăng nhập để hoàn tất nộp ảnh dự
+            thi.
           </div>
         </div>
         <div className="flex items-center gap-3 shrink-0 w-full sm:w-auto">
@@ -205,4 +217,3 @@ export function RegistrationGuideSection({
     </section>
   );
 }
-
