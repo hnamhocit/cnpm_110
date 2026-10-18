@@ -7,14 +7,18 @@
     "db:check": "drizzle-kit check --config=drizzle.config.ts",
     "db:seed": "bun run src/db/seed.ts",
     "check-types": "tsc --noEmit",
-    "test": "bun test tests/auth.test.ts",
+    "test": "bun test tests/auth.test.ts tests/validate-image.test.ts",
     "test:integration": "bun test tests/auth.integration.test.ts",
     "test:all": "bun test"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1149.0",
+    "@aws-sdk/lib-storage": "^3.1152.0",
     "@hono/node-server": "^2.1.5",
+    "drizzle-orm": "^0.45.4",
     "hono": "^4.13.13",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@types/bun": "latest",

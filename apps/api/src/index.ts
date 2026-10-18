@@ -1,23 +1,33 @@
+import { authenticate, requireRoles } from "./middlewares/auth";
 import { uploadToR2 } from "./r2";
 import { Hono } from "hono";
 import auth from "./routes/auth";
+import contests from "./routes/contests";
+import healthRoute from "./routes/health.route";
+import submissionRoute from "./routes/submissions";
 import { logger } from "hono/logger";
 import { cors } from "hono/cors";
 import { compress } from "hono/compress";
 import { secureHeaders } from "hono/secure-headers";
 import { requestId } from "hono/request-id";
 import { timing } from "hono/timing";
-import healthRoute from "./routes/health.route";
+
 const app = new Hono();
+
+app.use("*", requestId());
+app.use("*", logger());
+app.use("*", timing());
+app.use("*", secureHeaders());
+app.use("*", cors());
+app.use("*", compress());
+
 app.route("/health", healthRoute);
-app.use(requestId());
-app.use(logger());
-app.use(timing());
-app.use(secureHeaders());
-app.use(cors());
-app.use(compress());
+app.route("/auth", auth);
+app.route("/contests", contests);
+app.route("/api/v1/submissions", submissionRoute);
 
 app.get("/", (c) => c.text("Hello Hono!"));
+
 
 app.post("/upload", async (c) => {
   try {
@@ -64,7 +74,8 @@ app.post("/upload", async (c) => {
     return c.json({ error: "Upload failed" }, 500);
   }
 });
-// Các API mẫu dùng để kiểm tra middleware.
+
+// Các API mẫu kiểm tra phân quyền RBAC
 app.use("/rbac/*", authenticate);
 
 app.get("/rbac/admin", requireRoles("Admin"), (c) => {
@@ -83,6 +94,16 @@ app.get("/rbac/participant", requireRoles("Participant"), (c) => {
   return c.json({ message: "Participant truy cập thành công" });
 });
 
+// API cho phép Admin và Organizer quản lý cuộc thi
+app.get(
+  "/rbac/manage-contest",
+  requireRoles("Admin", "Organizer"),
+  (c) => {
+    return c.json({
+      message: "Bạn được phép quản lý cuộc thi",
+    });
+  },
+);
 // Ví dụ một API cho phép nhiều vai trò.
 app.get("/rbac/manage-contest", requireRoles("Admin", "Organizer"), (c) => {
   return c.json({ message: "Bạn được phép quản lý cuộc thi" });
