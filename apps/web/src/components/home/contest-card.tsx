@@ -59,10 +59,10 @@ export function ContestCard({ contest }: ContestCardProps) {
         {/* Action Button */}
         <div className="flex items-center justify-between gap-3">
           <Link
-            href="/login"
+            href={`/contests/${contest.id}`}
             className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-zinc-800 px-4 py-2.5 text-xs font-semibold text-zinc-200 hover:bg-amber-400 hover:text-black transition-colors"
           >
-            <span>Tham gia nộp ảnh</span>
+            <span>Xem chi tiết &amp; Nộp ảnh</span>
             <ChevronRight className="h-3.5 w-3.5" />
           </Link>
           <Link
