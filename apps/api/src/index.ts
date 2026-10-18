@@ -7,10 +7,9 @@ import { compress } from "hono/compress";
 import { secureHeaders } from "hono/secure-headers";
 import { requestId } from "hono/request-id";
 import { timing } from "hono/timing";
-import { authenticate, requireRoles, type AuthEnv } from "./middlewares/auth";
-
+import healthRoute from "./routes/health.route";
 const app = new Hono();
-app.route("/auth", auth);
+app.route("/health", healthRoute);
 app.use(requestId());
 app.use(logger());
 app.use(timing());
