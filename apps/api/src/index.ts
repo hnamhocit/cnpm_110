@@ -3,20 +3,17 @@ import { uploadToR2 } from "./r2";
 import { Hono } from "hono";
 import auth from "./routes/auth";
 import contests from "./routes/contests";
+import healthRoute from "./routes/health.route";
+import submissionRoute from "./routes/submissions";
 import { logger } from "hono/logger";
 import { cors } from "hono/cors";
 import { compress } from "hono/compress";
 import { secureHeaders } from "hono/secure-headers";
 import { requestId } from "hono/request-id";
 import { timing } from "hono/timing";
-import {
-  authenticate,
-  requireRoles,
-} from "./middlewares/auth";
 
 const app = new Hono();
 
-// Middleware toàn cục
 app.use("*", requestId());
 app.use("*", logger());
 app.use("*", timing());
@@ -24,27 +21,13 @@ app.use("*", secureHeaders());
 app.use("*", cors());
 app.use("*", compress());
 
-// Đăng ký API routes
+app.route("/health", healthRoute);
 app.route("/auth", auth);
 app.route("/contests", contests);
-
-// API gốc
-app.get("/", (c) => c.text("Hello Hono!"));
-
-// Upload ảnh lên Cloudflare R2
-import healthRoute from "./routes/health.route";
-import submissionRoute from "./routes/submissions";
-const app = new Hono();
-app.route("/health", healthRoute);
-app.use(requestId());
-app.use(logger());
-app.use(timing());
-app.use(secureHeaders());
-app.use(cors());
-app.use(compress());
-app.route("/auth", auth);
 app.route("/api/v1/submissions", submissionRoute);
+
 app.get("/", (c) => c.text("Hello Hono!"));
+
 
 app.post("/upload", async (c) => {
   try {
