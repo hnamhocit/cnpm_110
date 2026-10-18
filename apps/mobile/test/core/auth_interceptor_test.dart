@@ -3,9 +3,9 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_application_17/core/network/auth_interceptor.dart';
-import 'package:flutter_application_17/core/network/auth_service.dart';
-import 'package:flutter_application_17/core/network/auth_token_storage.dart';
+import 'package:flutter_application_2/core/network/auth_interceptor.dart';
+import 'package:flutter_application_2/core/network/auth_service.dart';
+import 'package:flutter_application_2/core/network/auth_token_storage.dart';
 
 void main() {
   group('AuthInterceptor', () {

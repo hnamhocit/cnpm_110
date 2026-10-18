@@ -1,14 +1,6 @@
-import {
-  afterEach,
-  describe,
-  expect,
-  mock,
-  spyOn,
-  test,
-} from "bun:test";
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 
 import { checkPortalAccess } from "./portal-auth";
-
 
 afterEach(() => {
   // Khôi phục các hàm được mock sau mỗi test
@@ -17,11 +9,8 @@ afterEach(() => {
 
 function mockApiResponse(status: number) {
   // Giả lập fetch mà không gán đè trực tiếp
-  spyOn(globalThis, "fetch").mockResolvedValue(
-    new Response(null, { status })
-  );
+  spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status }));
 }
-
 
 describe("FPC-19 Portal Authentication", () => {
   test("No token -> Login", async () => {
@@ -57,8 +46,8 @@ describe("FPC-19 Portal Authentication", () => {
   test("500 -> Throw an error", async () => {
     mockApiResponse(500);
 
-    await expect(
-      checkPortalAccess("test-token")
-    ).rejects.toThrow("Authentication API error: 500");
+    await expect(checkPortalAccess("test-token")).rejects.toThrow(
+      "Authentication API error: 500",
+    );
   });
 });
