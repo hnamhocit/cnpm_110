@@ -12,6 +12,7 @@ import {
   check,
   numeric,
   uniqueIndex,
+  bigint,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -208,32 +209,37 @@ export const submissions = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
 
-    userId: uuid("user_id")
+    contestId: uuid("contest_id")
+      .notNull()
+      .references(() => contests.id, { onDelete: "restrict" }),
+
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "restrict" }),
+
+    participantId: uuid("participant_id")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
 
-    categoryId: uuid("category_id")
-  .notNull()
-  .references(() => categories.id, { onDelete: "restrict" }),
-    filmRollId: uuid("film_roll_id")
-      .notNull()
-      .references(() => filmRolls.id, { onDelete: "restrict" }),
-
-    title: varchar("title", { length: 200 }).notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
 
     description: text("description"),
 
-    imageKey: text("image_key").notNull(),
+    imageOriginalPath: text("image_original_path").notNull(),
 
-    proofKey: text("proof_key"),
+    imagePreviewPath: text("image_preview_path"),
 
-    status: varchar("status", { length: 20 })
+    negativeProofPath: text("negative_proof_path"),
+
+    fileSizeBytes: bigint("file_size_bytes", { mode: "bigint" }),
+
+    width: integer("width"),
+
+    height: integer("height"),
+
+    status: varchar("status", { length: 30 })
       .notNull()
-      .default("draft"),
-
-    submittedAt: timestamp("submitted_at", {
-      withTimezone: true,
-    }),
+      .default("PENDING_AI"),
 
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -244,18 +250,15 @@ export const submissions = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index("idx_submissions_user_id").on(table.userId),
-
+    index("idx_submissions_contest_id").on(table.contestId),
     index("idx_submissions_category_id").on(table.categoryId),
-
-    index("idx_submissions_film_roll_id").on(table.filmRollId),
-
+    index("idx_submissions_participant_id").on(table.participantId),
     index("idx_submissions_status").on(table.status),
 
     check(
       "submissions_status_valid",
       sql`${table.status} IN (
-        'draft', 'submitted', 'approved', 'rejected'
+        'PENDING_AI', 'FLAGGED', 'APPROVED', 'DISQUALIFIED'
       )`,
     ),
 
@@ -265,8 +268,23 @@ export const submissions = pgTable(
     ),
 
     check(
-      "submissions_image_key_not_empty",
-      sql`length(trim(${table.imageKey})) > 0`,
+      "submissions_original_path_not_empty",
+      sql`length(trim(${table.imageOriginalPath})) > 0`,
+    ),
+
+    check(
+      "submissions_file_size_positive",
+      sql`${table.fileSizeBytes} > 0`,
+    ),
+
+    check(
+      "submissions_width_positive",
+      sql`${table.width} > 0`,
+    ),
+
+    check(
+      "submissions_height_positive",
+      sql`${table.height} > 0`,
     ),
   ],
 );
@@ -283,43 +301,39 @@ export const filmMetadata = pgTable(
         onDelete: "cascade",
       }),
 
-    camera: varchar("camera", { length: 150 }),
+    filmBrand: varchar("film_brand", { length: 100 }).notNull(),
+
+    filmStock: varchar("film_stock", { length: 150 }).notNull(),
+
+    filmFormat: varchar("film_format", { length: 50 }).notNull(),
+
+    isoRated: integer("iso_rated").notNull(),
+
+    isoShot: integer("iso_shot").notNull(),
+
+    cameraBody: varchar("camera_body", { length: 150 }).notNull(),
 
     lens: varchar("lens", { length: 150 }),
 
-    aperture: varchar("aperture", { length: 30 }),
+    rollId: varchar("roll_id", { length: 100 }),
 
-    shutterSpeed: varchar("shutter_speed", { length: 30 }),
+    frameNumber: varchar("frame_number", { length: 20 }),
 
-    focalLengthMm: integer("focal_length_mm"),
+    devLabName: varchar("dev_lab_name", { length: 150 }),
 
-    frameNumber: integer("frame_number"),
+    devChemistry: varchar("dev_chemistry", { length: 50 }),
 
-    labName: varchar("lab_name", { length: 150 }),
-
-    scanDetails: text("scan_details"),
-
-    capturedAt: timestamp("captured_at", {
-      withTimezone: true,
-    }),
-
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    scannerModel: varchar("scanner_model", { length: 150 }),
   },
   (table) => [
     check(
-      "film_metadata_focal_length_positive",
-      sql`${table.focalLengthMm} > 0`,
+      "film_metadata_iso_rated_positive",
+      sql`${table.isoRated} > 0`,
     ),
 
     check(
-      "film_metadata_frame_number_non_negative",
-      sql`${table.frameNumber} >= 0`,
+      "film_metadata_iso_shot_positive",
+      sql`${table.isoShot} > 0`,
     ),
   ],
 );
