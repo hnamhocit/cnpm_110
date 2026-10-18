@@ -1,7 +1,6 @@
 export type Role = "Admin" | "Organizer" | "Judge" | "Participant";
 
 // Những Role được phép truy cập Portal quản lý.
-
 export const PORTAL_ALLOWED_ROLES: readonly Role[] = ["Admin", "Organizer"];
 
 // Kiểm tra một đường dẫn có thuộc Portal không.
@@ -18,7 +17,9 @@ export function hasRequiredRole(
     return false;
   }
 
-  return allowedRoles.includes(userRole);
+  const normalizedUserRole = userRole.toLowerCase();
+  const normalizedAllowedRoles = allowedRoles.map((role) => role.toLowerCase());
+  return normalizedAllowedRoles.includes(normalizedUserRole);
 }
 
 // Kiểm tra quyền truy cập Portal.
