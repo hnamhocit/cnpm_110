@@ -28,7 +28,9 @@ async function AuthGuard({ children }: { children: ReactNode }) {
 export default function PortalTemplate({ children }: PortalTemplateProps) {
   return (
     <Suspense
-      fallback={<div className="p-8 text-sm text-gray-400">Loading portal...</div>}
+      fallback={
+        <div className="p-8 text-sm text-gray-400">Loading portal...</div>
+      }
     >
       <AuthGuard>{children}</AuthGuard>
     </Suspense>
