@@ -1,3 +1,7 @@
+import {
+  validateImage,
+  ImageValidationError,
+} from "../utils/validate-image";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -13,7 +17,7 @@ import { deleteFromR2, uploadToR2 } from "../r2";
 const route = new Hono<AuthEnv>();
 const MiB = 1024 * 1024;
 
-class InputError extends Error {}
+class InputError extends Error { }
 
 function textField(
   form: FormData,
@@ -92,39 +96,6 @@ function fileField(form: FormData, name: string, required: boolean) {
   return value;
 }
 
-async function imageExtension(file: File) {
-  const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
-
-  if (
-    file.type === "image/jpeg" &&
-    bytes[0] === 0xff &&
-    bytes[1] === 0xd8 &&
-    bytes[2] === 0xff
-  ) {
-    return "jpg";
-  }
-
-  const png = [137, 80, 78, 71, 13, 10, 26, 10];
-
-  if (
-    file.type === "image/png" &&
-    png.every((byte, index) => bytes[index] === byte)
-  ) {
-    return "png";
-  }
-
-  const signature = new TextDecoder().decode(bytes);
-
-  if (
-    file.type === "image/webp" &&
-    signature.slice(0, 4) === "RIFF" &&
-    signature.slice(8, 12) === "WEBP"
-  ) {
-    return "webp";
-  }
-
-  throw new InputError("File must have a matching JPEG, PNG or WebP signature");
-}
 
 route.post(
   "/",
@@ -193,9 +164,25 @@ route.post(
         );
       }
 
-      const extension = await imageExtension(image);
-      const proofExtension = proof ? await imageExtension(proof) : null;
+      // Proposed limits for testing; confirm with the team before merging.
+      const validatedImage = await validateImage(image, {
+        maxBytes: 100 * MiB,
+        minWidth: 1000,
+        minHeight: 1000,
+        maxPixels: 100_000_000,
+      });
 
+      const validatedProof = proof
+        ? await validateImage(proof, {
+          maxBytes: 20 * MiB,
+          minWidth: 1,
+          minHeight: 1,
+          maxPixels: 100_000_000,
+        })
+        : null;
+
+      const extension = validatedImage.extension;
+      const proofExtension = validatedProof?.extension ?? null;
       const [participant] = await db
         .select({ id: users.id })
         .from(users)
@@ -234,11 +221,20 @@ route.post(
         : null;
 
       cleanupKeys.push(imageKey);
-      await uploadToR2(image, imageKey);
+      const uploadImage = new File([image], image.name, {
+        type: validatedImage.contentType,
+      });
 
-      if (proof && proofKey) {
+      await uploadToR2(uploadImage, imageKey);
+
+      if (proof && proofKey && validatedProof) {
         cleanupKeys.push(proofKey);
-        await uploadToR2(proof, proofKey);
+
+        const uploadProof = new File([proof], proof.name, {
+          type: validatedProof.contentType,
+        });
+
+        await uploadToR2(uploadProof, proofKey);
       }
 
       await db.transaction(async (tx) => {
@@ -252,6 +248,8 @@ route.post(
           imageOriginalPath: imageKey,
           negativeProofPath: proofKey,
           fileSizeBytes: BigInt(image.size),
+          width: validatedImage.width,
+          height: validatedImage.height,
           status: "PENDING_AI",
         });
 
@@ -275,6 +273,8 @@ route.post(
             imageOriginalPath: imageKey,
             negativeProofPath: proofKey,
             fileSizeBytes: image.size,
+            width: validatedImage.width,
+            height: validatedImage.height,
             status: "PENDING_AI",
           },
         },
@@ -291,6 +291,12 @@ route.post(
         }
       }
 
+      if (error instanceof ImageValidationError) {
+        return c.json(
+          { success: false, message: error.message },
+          error.status,
+        );
+      }
       if (error instanceof InputError) {
         return c.json({ success: false, message: error.message }, 400);
       }
