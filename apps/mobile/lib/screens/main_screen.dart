@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'home_screen.dart';
+import 'contest/contest_list_screen.dart';
 import 'notifications_screen.dart';
 import 'profile_screen.dart';
 import 'search_screen.dart';
@@ -23,7 +23,7 @@ class _MainScreenState extends State<MainScreen> {
   ];
 
   static const _tabs = [
-    HomeScreen(),
+    ContestListScreen(),
     SearchScreen(),
     NotificationsScreen(),
     ProfileScreen(),
