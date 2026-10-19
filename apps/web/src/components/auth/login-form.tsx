@@ -1,5 +1,6 @@
 "use client";
 
+import axios from "axios";
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 
@@ -31,6 +32,36 @@ export function LoginForm() {
     // TODO(FPC-16): gọi API đăng nhập qua HTTP client sau khi client được merge.
   }
 
+<<<<<<< Updated upstream
+=======
+    try {
+      const res = await http.post("/api/v1/auth/login", {
+        email: email.trim(),
+        password: password,
+      });
+
+      const data = res.data.data;
+
+      useAuthStore.getState().setTokens({
+        accessToken: data.accessToken,
+        role: data.user?.role || "Organizer",
+      });
+
+      router.push("/portal");
+    } catch (err: unknown) {
+      console.error(err);
+      let errorMessage =
+        "Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu!";
+      if (axios.isAxiosError(err)) {
+        errorMessage = err.response?.data?.message || errorMessage;
+      }
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+>>>>>>> Stashed changes
   return (
     <Card>
       <form onSubmit={handleSubmit} noValidate>
@@ -61,9 +92,16 @@ export function LoginForm() {
           />
 
           {error ? (
+<<<<<<< Updated upstream
             <p role="alert" className="text-sm text-destructive">
+=======
+            <output
+              role="alert"
+              className="block text-sm text-destructive font-medium"
+            >
+>>>>>>> Stashed changes
               {error}
-            </p>
+            </output>
           ) : null}
 
           <Button type="submit" className="w-full">

@@ -1,10 +1,9 @@
-
 "use client";
 
-import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import Header from "../components/portal/Header";
 
 // Các mục điều hướng của Portal
@@ -25,7 +24,6 @@ function Sidebar({ onClose }: SidebarProps) {
 
   return (
     <aside className="flex h-full w-full flex-col overflow-y-auto bg-[var(--portal-sidebar)] px-5 py-6 text-white">
-
       {/* LOGO */}
       <div className="mb-10 flex items-center justify-between gap-2">
         <Link
@@ -66,9 +64,7 @@ function Sidebar({ onClose }: SidebarProps) {
                   : "text-gray-300 hover:bg-white/10 hover:text-white"
               }`}
             >
-              <span className="text-xs opacity-70">
-                {item.number}
-              </span>
+              <span className="text-xs opacity-70">{item.number}</span>
 
               {item.label}
             </Link>
@@ -78,12 +74,8 @@ function Sidebar({ onClose }: SidebarProps) {
 
       {/* FOOTER */}
       <div className="mt-auto border-t border-white/10 pt-5">
-        <p className="text-xs text-gray-400">
-          Film Photography Contest
-        </p>
-        <p className="mt-1 text-xs text-gray-500">
-          Portal Workspace
-        </p>
+        <p className="text-xs text-gray-400">Film Photography Contest</p>
+        <p className="mt-1 text-xs text-gray-500">Portal Workspace</p>
       </div>
     </aside>
   );
@@ -94,9 +86,7 @@ type PortalLayoutProps = {
   children: ReactNode;
 };
 
-export default function PortalLayout({
-  children,
-}: PortalLayoutProps) {
+export default function PortalLayout({ children }: PortalLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Nhấn Escape để đóng Sidebar
@@ -122,7 +112,6 @@ export default function PortalLayout({
 
   return (
     <div className="flex min-h-dvh bg-[var(--portal-background)] text-[var(--portal-text)]">
-
       {/* DESKTOP SIDEBAR */}
       <div className="hidden w-64 shrink-0 md:block">
         <div className="sticky top-0 h-dvh">
@@ -133,7 +122,6 @@ export default function PortalLayout({
       {/* MOBILE SIDEBAR */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-
           {/* Overlay: bấm bên ngoài để đóng */}
           <button
             type="button"
@@ -151,7 +139,6 @@ export default function PortalLayout({
 
       {/* MAIN SECTION */}
       <div className="flex min-w-0 flex-1 flex-col">
-
         {/* HEADER */}
         <Header onMenuClick={() => setMobileOpen(true)} />
 
@@ -159,7 +146,6 @@ export default function PortalLayout({
         <main className="mx-auto w-full max-w-7xl min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           {children}
         </main>
-
       </div>
     </div>
   );

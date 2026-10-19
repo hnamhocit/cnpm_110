@@ -1,6 +1,8 @@
-
 "use client";
 
+import axios from "axios";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { AuthField } from "@/components/auth/auth-field";
@@ -8,137 +10,121 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { http } from "@/lib/http";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 export function JudgeLoginForm() {
-  const [credential, setCredential] = useState("");
-  const [loginMethod, setLoginMethod] = useState<"email" | "invite">("email");
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [notice, setNotice] = useState("");
 
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setNotice("");
 
-
-function handleSubmit(event: FormEvent<HTMLFormElement>) {
-  event.preventDefault();
-
-  const input = credential.trim();
-  setNotice("");
-
-  // 1. Kiểm tra bỏ trống
-  if (!input) {
-    setError(
-      loginMethod === "email"
-        ? "Please enter your email."
-        : "Please enter your invitation code."
-    );
-    return;
-  }
-
-  // 2. Nếu đăng nhập bằng Email
-  if (loginMethod === "email") {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailRegex.test(input)) {
-      setError("Please enter the correct mail.");
+    if (!email.trim() || !password) {
+      setError("Vui lòng nhập email và mật khẩu.");
       return;
     }
-  }
 
-  // 3. Nếu đăng nhập bằng Invitation Code
-  if (loginMethod === "invite") {
-    // Ví dụ định dạng: JUDGE-2026-ABC
-    const codeRegex = /^JUDGE-\d{4}-[A-Z0-9]{3,}$/;
+    setIsLoading(true);
 
-    if (!codeRegex.test(input)) {
-      setError("Please enter the correct code.");
-      return;
+    try {
+      const res = await http.post("/api/v1/auth/login", {
+        email: email.trim(),
+        password: password,
+      });
+
+      const data = res.data.data;
+
+      if (data.user?.role !== "Judge") {
+        setError(
+          "Tài khoản của bạn không có quyền truy cập với tư cách Giám khảo.",
+        );
+        return;
+      }
+
+      useAuthStore.getState().setTokens({
+        accessToken: data.accessToken,
+        role: "Judge",
+      });
+
+      router.push("/portal");
+    } catch (err: unknown) {
+      console.error(err);
+      let errorMessage = "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!";
+      if (axios.isAxiosError(err)) {
+        errorMessage = err.response?.data?.message || errorMessage;
+      }
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   }
-
-  // 4. Dữ liệu đạt kiểm tra định dạng
-  setError("");
-  setNotice("Login API is not connected yet.");
-}
-
-
 
   return (
-    <Card className="mx-auto w-full max-w-md">
+    <Card>
       <form onSubmit={handleSubmit} noValidate>
         <CardHeader>
-          <CardTitle className="text-xl">
-            Login as a Judge
-          </CardTitle>
+          <CardTitle className="text-xl">Đăng nhập Giám khảo</CardTitle>
+          <CardDescription>
+            Dành riêng cho Ban giám khảo của cuộc thi nhiếp ảnh phim.
+          </CardDescription>
         </CardHeader>
-<CardContent className="flex flex-col gap-4 py-6">
-<div className="grid grid-cols-2 gap-2">
- <Button
-    type="button"
-    variant={loginMethod === "email" ? "default" : "outline"}
-    onClick={() => {
-      setLoginMethod("email");
-      setCredential("");
-      setError("");
-      setNotice("");
-    }}
-  >
-    Email
-  </Button>
 
-  <Button
-    type="button"
-    variant={loginMethod === "invite" ? "default" : "outline"}
-    onClick={() => {
-      setLoginMethod("invite");
-      setCredential("");
-      setError("");
-      setNotice("");
-    }}
-  >
-    Invitation Code
-  </Button>
-</div>
-
+        <CardContent className="flex flex-col gap-4 py-6">
           <AuthField
-            id="judge-credential"
-            label={loginMethod === "email" ? "Email address" : "Invitation code"}
-type={loginMethod === "email" ? "email" : "text"}
-placeholder={
-  loginMethod === "email"
-    ? "judge@example.com"
-    : "Enter your invitation code"
-}
-            value={credential}
-            onChange={(event) => {
-              setCredential(event.target.value);
-              setError("");
-              setNotice("");
-            }}
+            id="email"
+            label="Email"
+            type="email"
+            autoComplete="email"
+            placeholder="judge@example.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+          <AuthField
+            id="password"
+            label="Mật khẩu"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
           />
 
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
+          {error ? (
+            <output
+              role="alert"
+              className="block text-sm text-destructive font-medium"
+            >
               {error}
-            </p>
-          )}
+            </output>
+          ) : null}
 
-          {notice && (
-            <p role="status" className="text-sm text-muted-foreground">
+          {notice ? (
+            <output className="block text-sm text-muted-foreground">
               {notice}
-            </p>
-          )}
+            </output>
+          ) : null}
 
-          <Button type="submit" className="w-full">
-            Login
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Đang xác thực..." : "Đăng nhập"}
           </Button>
-
-          <p className="text-center text-xs text-muted-foreground">
-            This feature is under development.
-            Please contact the contest organizer for access.
-          </p>
         </CardContent>
+
+        <CardFooter className="justify-center text-sm text-muted-foreground">
+          <Link href="/login" className="font-medium text-foreground underline">
+            Quay lại trang Đăng nhập chung
+          </Link>
+        </CardFooter>
       </form>
     </Card>
   );

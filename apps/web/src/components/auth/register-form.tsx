@@ -1,6 +1,8 @@
 "use client";
 
+import axios from "axios";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { AuthField } from "@/components/auth/auth-field";
@@ -13,20 +15,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { http } from "@/lib/http";
 
 const MIN_PASSWORD_LENGTH = 8;
 
 export function RegisterForm() {
+  const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [organization, setOrganization] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   function validate() {
-    if (!fullName.trim() || !email.trim() || !organization.trim()) {
-      return "Điền đủ họ tên, email và tên tổ chức.";
+    if (!fullName.trim() || !email.trim()) {
+      return "Vui lòng điền đủ họ tên và email.";
     }
     if (password.length < MIN_PASSWORD_LENGTH) {
       return `Mật khẩu cần ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`;
@@ -37,14 +41,39 @@ export function RegisterForm() {
     return "";
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setError("");
 
     const message = validate();
-    setError(message);
-    if (message) return;
+    if (message) {
+      setError(message);
+      return;
+    }
 
-    // TODO(FPC-16): gọi API đăng ký qua HTTP client sau khi client được merge.
+    setIsLoading(true);
+
+    try {
+      await http.post("/api/v1/auth/register", {
+        fullName: fullName.trim(),
+        email: email.trim(),
+        password: password,
+        role: "ORGANIZER",
+      });
+
+      alert("Đăng ký thành công! Vui lòng đăng nhập.");
+      router.push("/login");
+    } catch (err: unknown) {
+      console.error(err);
+      let errorMessage =
+        "Đăng ký thất bại. Email có thể đã tồn tại hoặc lỗi kết nối!";
+      if (axios.isAxiosError(err)) {
+        errorMessage = err.response?.data?.message || errorMessage;
+      }
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -75,14 +104,6 @@ export function RegisterForm() {
             onChange={(event) => setEmail(event.target.value)}
           />
           <AuthField
-            id="organization"
-            label="Tên tổ chức"
-            autoComplete="organization"
-            placeholder="Câu lạc bộ, trường hoặc lab phim"
-            value={organization}
-            onChange={(event) => setOrganization(event.target.value)}
-          />
-          <AuthField
             id="password"
             label="Mật khẩu"
             type="password"
@@ -100,13 +121,16 @@ export function RegisterForm() {
           />
 
           {error ? (
-            <p role="alert" className="text-sm text-destructive">
+            <output
+              role="alert"
+              className="block text-sm text-destructive font-medium"
+            >
               {error}
-            </p>
+            </output>
           ) : null}
 
-          <Button type="submit" className="w-full">
-            Tạo tài khoản
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
           </Button>
         </CardContent>
 
