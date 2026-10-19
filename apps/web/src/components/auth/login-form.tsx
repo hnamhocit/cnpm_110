@@ -2,6 +2,7 @@
 
 import axios from "axios";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { AuthField } from "@/components/auth/auth-field";
@@ -14,26 +15,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { http } from "@/lib/http";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 export function LoginForm() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setError("");
 
     if (!email.trim() || !password) {
-      setError("Nhập email và mật khẩu để đăng nhập.");
+      setError("Vui lòng nhập email và mật khẩu.");
       return;
     }
 
-    setError("");
-    // TODO(FPC-16): gọi API đăng nhập qua HTTP client sau khi client được merge.
-  }
+    setIsLoading(true);
 
-<<<<<<< Updated upstream
-=======
     try {
       const res = await http.post("/api/v1/auth/login", {
         email: email.trim(),
@@ -61,7 +63,6 @@ export function LoginForm() {
     }
   }
 
->>>>>>> Stashed changes
   return (
     <Card>
       <form onSubmit={handleSubmit} noValidate>
@@ -92,20 +93,13 @@ export function LoginForm() {
           />
 
           {error ? (
-<<<<<<< Updated upstream
-            <p role="alert" className="text-sm text-destructive">
-=======
-            <output
-              role="alert"
-              className="block text-sm text-destructive font-medium"
-            >
->>>>>>> Stashed changes
+            <div role="alert" className="text-sm text-destructive font-medium">
               {error}
-            </output>
+            </div>
           ) : null}
 
-          <Button type="submit" className="w-full">
-            Đăng nhập
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
           </Button>
         </CardContent>
 
