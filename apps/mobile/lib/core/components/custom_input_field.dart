@@ -12,6 +12,8 @@ class CustomInputField extends StatefulWidget {
     this.isPassword = false,
     this.keyboardType,
     this.errorText,
+    this.onChanged,
+    this.maxLines = 1,
   });
 
   final String? labelText;
@@ -23,6 +25,8 @@ class CustomInputField extends StatefulWidget {
   final bool isPassword;
   final TextInputType? keyboardType;
   final String? errorText;
+  final ValueChanged<String>? onChanged;
+  final int? maxLines;
 
   @override
   State<CustomInputField> createState() => _CustomInputFieldState();
@@ -41,6 +45,8 @@ class _CustomInputFieldState extends State<CustomInputField> {
       validator: widget.validator,
       keyboardType: widget.keyboardType,
       obscureText: widget.isPassword && _obscureText,
+      onChanged: widget.onChanged,
+      maxLines: widget.isPassword ? 1 : widget.maxLines,
       decoration: InputDecoration(
         labelText: widget.labelText,
         hintText: widget.hintText,
