@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/splash_screen.dart';
+import '../screens/film_dev_scan/film_dev_scan_screen.dart';
+import '../screens/film_params/film_params_screen.dart';
 import '../screens/main_screen.dart';
 import '../screens/profile_screen.dart';
 
@@ -32,6 +34,14 @@ final GoRouter appRouter = GoRouter(
         appBar: AppBar(title: const Text('Cá nhân')),
         body: const ProfileScreen(),
       ),
+    ),
+    GoRoute(
+      path: '/film-params',
+      builder: (context, state) => const FilmParamsScreen(),
+    ),
+    GoRoute(
+      path: '/dev-scan-params',
+      builder: (context, state) => const FilmDevScanScreen(),
     ),
   ],
 );
