@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { AuthField } from "@/components/auth/auth-field";
@@ -13,22 +14,55 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { http } from "@/lib/http";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 export function LoginForm() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setError("");
 
     if (!email.trim() || !password) {
-      setError("Nhập email và mật khẩu để đăng nhập.");
+      setError("Vui lòng nhập email và mật khẩu.");
       return;
     }
 
-    setError("");
-    // TODO(FPC-16): gọi API đăng nhập qua HTTP client sau khi client được merge.
+    setIsLoading(true);
+
+    try {
+      const res = await http.post('/api/v1/auth/login', { 
+        email: email.trim(), 
+        password: password 
+      });
+
+      // Lấy dữ liệu trả về từ API (tùy thuộc vào BE của bạn)
+      const data = res.data.data;
+
+      // Lưu token VÀ role vào Zustand
+      useAuthStore.getState().setTokens({ 
+        accessToken: data.accessToken, 
+        // Nếu Backend trả về role thì lấy, không thì mặc định là Organizer
+        role: data.user?.role || "Organizer" 
+      });
+
+      // Chuyển hướng sang Dashboard
+      router.push('/portal');
+      
+    } catch (err: any) {
+      console.error(err);
+      setError(
+        err.response?.data?.message || 
+        "Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu!"
+      );
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -61,22 +95,19 @@ export function LoginForm() {
           />
 
           {error ? (
-            <p role="alert" className="text-sm text-destructive">
+            <p role="alert" className="text-sm text-destructive font-medium">
               {error}
             </p>
           ) : null}
 
-          <Button type="submit" className="w-full">
-            Đăng nhập
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
           </Button>
         </CardContent>
 
         <CardFooter className="justify-center text-sm text-muted-foreground">
           Chưa có tài khoản?&nbsp;
-          <Link
-            href="/register"
-            className="font-medium text-foreground underline"
-          >
+          <Link href="/register" className="font-medium text-foreground underline">
             Tạo tài khoản
           </Link>
         </CardFooter>
