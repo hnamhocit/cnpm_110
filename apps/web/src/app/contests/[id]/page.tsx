@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { RegistrationGuideSection } from "@/components/contest/registration-guide-section";
 import { Footer } from "@/components/home/footer";
 import { Navbar } from "@/components/home/navbar";
 import { formatContestDate } from "@/lib/contest-utils";
@@ -411,6 +412,9 @@ export default async function ContestDetailPage({
               </section>
             </div>
           </div>
+
+          {/* KHỐI DÀNH CHO THÍ SINH ĐĂNG KÝ (FPC-39) */}
+          <RegistrationGuideSection contest={contest} />
         </div>
       </main>
 
