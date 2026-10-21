@@ -1,44 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/components/custom_button.dart';
 import '../../core/components/custom_input_field.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/utils/validators.dart';
 
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _fullNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    await Future<void>.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Đăng ký thành công! Vui lòng đăng nhập.')),
-    );
-    context.go('/login');
+
+    try {
+      await ref.read(authProvider.notifier).register(
+            fullName: _fullNameController.text.trim(),
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
+      if (!mounted) return;
+      context.go('/');
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -46,7 +63,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Tạo tài khoản')),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -58,20 +74,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Icon(
+                      Icons.photo_camera_outlined,
+                      size: 64,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(height: 16),
                     Text(
-                      'Đăng ký tham gia cuộc thi',
+                      'Đăng ký tài khoản',
                       textAlign: TextAlign.center,
-                      style: theme.textTheme.titleLarge?.copyWith(
+                      style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                     CustomInputField(
-                      controller: _nameController,
+                      controller: _fullNameController,
                       labelText: 'Họ và tên',
                       prefixIcon: const Icon(Icons.person_outline),
-                      validator: (value) =>
-                          Validators.notEmpty(value, field: 'Họ và tên'),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Vui lòng nhập họ và tên';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
                     CustomInputField(
@@ -91,11 +117,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 16),
                     CustomInputField(
-                      controller: _confirmController,
+                      controller: _confirmPasswordController,
                       labelText: 'Xác nhận mật khẩu',
                       isPassword: true,
-                      prefixIcon: const Icon(Icons.lock_reset_outlined),
-                      validator: Validators.confirmPassword(_passwordController),
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      validator: (value) {
+                        if (value != _passwordController.text) {
+                          return 'Mật khẩu không khớp';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 24),
                     CustomButton(
@@ -110,7 +141,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       children: [
                         const Text('Đã có tài khoản?'),
                         TextButton(
-                          onPressed: () => context.go('/login'),
+                          onPressed: () => context.pop(),
                           child: const Text('Đăng nhập'),
                         ),
                       ],

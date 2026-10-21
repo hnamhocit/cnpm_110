@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/utils/date_format.dart';
 import '../../models/contest.dart';
@@ -8,96 +9,124 @@ class ContestCard extends StatelessWidget {
 
   final Contest contest;
 
-  String get _dateRange {
-    final start = contest.startAt;
-    final end = contest.endAt;
-    if (start == null && end == null) return 'Chưa công bố thời gian';
-    if (start != null && end != null) {
-      return '${formatDate(start)} - ${formatDate(end)}';
-    }
-    if (start != null) return 'Từ ${formatDate(start)}';
-    return 'Đến ${formatDate(end!)}';
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    // Xử lý an toàn khi ngày tháng có thể bị null
+    final startDateStr = contest.startAt != null ? formatDate(contest.startAt!) : 'Chưa cập nhật';
+    final endDateStr = contest.endAt != null ? formatDate(contest.endAt!) : 'Chưa cập nhật';
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/contests/${contest.id}'),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      contest.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _StatusChip(status: contest.status),
+                ],
+              ),
+              if (contest.description != null &&
+                  contest.description!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  contest.description!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$startDateStr - $endDateStr',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.status});
+
+  final ContestStatus status;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final description = contest.description;
+    
+    Color backgroundColor;
+    Color textColor;
 
-    final (background, foreground) = switch (contest.status) {
-      ContestStatus.ongoing => (
-        scheme.primaryContainer,
-        scheme.onPrimaryContainer,
-      ),
-      ContestStatus.published => (
-        scheme.tertiaryContainer,
-        scheme.onTertiaryContainer,
-      ),
-      _ => (scheme.surfaceContainerHighest, scheme.onSurfaceVariant),
-    };
+    switch (status) {
+      case ContestStatus.published:
+        backgroundColor = theme.colorScheme.primaryContainer;
+        textColor = theme.colorScheme.onPrimaryContainer;
+        break;
+      case ContestStatus.ongoing:
+        backgroundColor = Colors.green.shade100;
+        textColor = Colors.green.shade800;
+        break;
+      case ContestStatus.draft:
+        backgroundColor = theme.colorScheme.surfaceContainerHighest;
+        textColor = theme.colorScheme.onSurfaceVariant;
+        break;
+      default:
+        backgroundColor = theme.colorScheme.surfaceContainerHighest;
+        textColor = theme.colorScheme.onSurfaceVariant;
+        break;
+    }
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    contest.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: background,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    contest.status.label,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: foreground,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (description != null && description.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_today_outlined,
-                  size: 16,
-                  color: scheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 6),
-                Text(_dateRange, style: theme.textTheme.bodySmall),
-              ],
-            ),
-          ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        status.label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: textColor,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
