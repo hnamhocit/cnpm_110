@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/utils/date_format.dart';
 import '../../models/contest.dart';
@@ -13,34 +14,13 @@ class ContestCard extends StatelessWidget {
   final Contest contest;
   final VoidCallback? onTap;
 
-  String get _dateRange {
-    final start = contest.startAt;
-    final end = contest.endAt;
-    if (start == null && end == null) return 'Chưa công bố thời gian';
-    if (start != null && end != null) {
-      return '${formatDate(start)} - ${formatDate(end)}';
-    }
-    if (start != null) return 'Từ ${formatDate(start)}';
-    return 'Đến ${formatDate(end!)}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final description = contest.description;
 
-    final (background, foreground) = switch (contest.status) {
-      ContestStatus.ongoing => (
-        scheme.primaryContainer,
-        scheme.onPrimaryContainer,
-      ),
-      ContestStatus.published => (
-        scheme.tertiaryContainer,
-        scheme.onTertiaryContainer,
-      ),
-      _ => (scheme.surfaceContainerHighest, scheme.onSurfaceVariant),
-    };
+    // Xử lý an toàn khi ngày tháng có thể bị null
+    final startDateStr = contest.startAt != null ? formatDate(contest.startAt!) : 'Chưa cập nhật';
+    final endDateStr = contest.endAt != null ? formatDate(contest.endAt!) : 'Chưa cập nhật';
 
     return Card(
       clipBehavior: Clip.antiAlias,

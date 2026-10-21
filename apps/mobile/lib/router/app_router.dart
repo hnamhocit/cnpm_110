@@ -29,6 +29,13 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const MainScreen(),
     ),
     GoRoute(
+      path: '/contests/:id',
+      builder: (context, state) {
+        final contestId = state.pathParameters['id']!;
+        return ContestDetailScreen(contestId: contestId);
+      },
+    ),
+    GoRoute(
       path: '/profile',
       builder: (context, state) => Scaffold(
         appBar: AppBar(title: const Text('Cá nhân')),
