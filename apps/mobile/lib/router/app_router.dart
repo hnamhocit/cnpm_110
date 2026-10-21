@@ -46,5 +46,12 @@ final GoRouter appRouter = GoRouter(
       path: '/film-params',
       builder: (context, state) => const FilmParamsScreen(),
     ),
+    GoRoute(
+      path: '/contests/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        return ContestDetailScreen(contestId: id);
+      },
+    ),
   ],
 );

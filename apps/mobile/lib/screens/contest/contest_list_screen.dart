@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../core/providers/contest_provider.dart';
@@ -101,7 +102,11 @@ class _ContestListScreenState extends ConsumerState<ContestListScreen> {
                             ref.read(contestListProvider.notifier).loadMore(),
                       );
                     }
-                    return ContestCard(contest: state.items[index]);
+                    final contest = state.items[index];
+                    return ContestCard(
+                      contest: contest,
+                      onTap: () => context.push('/contests/${contest.id}'),
+                    );
                   },
                 ),
               );

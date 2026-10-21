@@ -1,25 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../core/providers/auth_provider.dart';
 import '../../core/providers/contest_detail_provider.dart';
 import '../../core/utils/date_format.dart';
 import '../../models/contest.dart';
-
-class RegisteredContestsNotifier extends Notifier<Set<String>> {
-  @override
-  Set<String> build() => <String>{};
-
-  void register(String contestId) {
-    state = {...state, contestId};
-  }
-}
-
-final registeredContestsProvider =
-    NotifierProvider<RegisteredContestsNotifier, Set<String>>(
-  RegisteredContestsNotifier.new,
-);
 
 class ContestDetailScreen extends ConsumerWidget {
   const ContestDetailScreen({super.key, required this.contestId});
@@ -36,64 +20,25 @@ class ContestDetailScreen extends ConsumerWidget {
       ),
       body: asyncContest.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => ErrorView(
+        error: (error, _) => _ErrorView(
           message: error.toString(),
           onRetry: () => ref.invalidate(contestDetailProvider(contestId)),
         ),
-        data: (contest) => ContestDetailBody(contest: contest),
+        data: (contest) => _ContestDetailBody(contest: contest),
       ),
     );
   }
 }
 
-class ContestDetailBody extends ConsumerWidget {
-  const ContestDetailBody({super.key, required this.contest});
+class _ContestDetailBody extends StatelessWidget {
+  const _ContestDetailBody({required this.contest});
 
   final Contest contest;
 
-  void _handleRegister(BuildContext context, WidgetRef ref) {
-    final authState = ref.read(authProvider);
-
-    if (!authState.isLoggedIn) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng đăng nhập để đăng ký tham gia cuộc thi'),
-        ),
-      );
-      context.push('/login');
-      return;
-    }
-
-    if (authState.role != null && authState.role != 'Participant') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Tài khoản vai trò ${authState.role} không thể đăng ký. Chỉ thí sinh mới được tham gia.',
-          ),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-      return;
-    }
-
-    ref.read(registeredContestsProvider.notifier).register(contest.id);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đăng ký tham gia cuộc thi thành công!'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final registeredSet = ref.watch(registeredContestsProvider);
-    final isRegistered = registeredSet.contains(contest.id);
-
-    final canRegister = (contest.status == ContestStatus.published ||
-            contest.status == ContestStatus.ongoing) &&
-        !isRegistered;
+  Widget build(BuildContext context) {
+    final canRegister = contest.status == ContestStatus.published ||
+        contest.status == ContestStatus.ongoing;
 
     return Column(
       children: [
@@ -103,7 +48,7 @@ class ContestDetailBody extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                StatusChip(status: contest.status),
+                _StatusChip(status: contest.status),
                 const SizedBox(height: 12),
                 Text(
                   contest.name,
@@ -112,12 +57,12 @@ class ContestDetailBody extends ConsumerWidget {
                       ),
                 ),
                 const SizedBox(height: 16),
-                DateRow(
+                _DateRow(
                   label: 'Bắt đầu',
                   value: contest.startAt,
                 ),
                 const SizedBox(height: 8),
-                DateRow(
+                _DateRow(
                   label: 'Kết thúc',
                   value: contest.endAt,
                 ),
@@ -147,13 +92,17 @@ class ContestDetailBody extends ConsumerWidget {
               width: double.infinity,
               child: FilledButton(
                 onPressed: canRegister
-                    ? () => _handleRegister(context, ref)
+                    ? () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Chức năng đăng ký sẽ được hoàn thiện ở FPC-42',
+                            ),
+                          ),
+                        );
+                      }
                     : null,
-                child: Text(
-                  isRegistered
-                      ? 'Đã đăng ký tham gia'
-                      : 'Đăng ký tham gia',
-                ),
+                child: const Text('Đăng ký tham gia'),
               ),
             ),
           ),
@@ -163,8 +112,8 @@ class ContestDetailBody extends ConsumerWidget {
   }
 }
 
-class StatusChip extends StatelessWidget {
-  const StatusChip({super.key, required this.status});
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.status});
 
   final ContestStatus status;
 
@@ -177,8 +126,8 @@ class StatusChip extends StatelessWidget {
   }
 }
 
-class DateRow extends StatelessWidget {
-  const DateRow({super.key, required this.label, required this.value});
+class _DateRow extends StatelessWidget {
+  const _DateRow({required this.label, required this.value});
 
   final String label;
   final DateTime? value;
@@ -208,8 +157,8 @@ class DateRow extends StatelessWidget {
   }
 }
 
-class ErrorView extends StatelessWidget {
-  const ErrorView({super.key, required this.message, required this.onRetry});
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;

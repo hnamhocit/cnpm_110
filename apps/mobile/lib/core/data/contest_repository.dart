@@ -54,10 +54,12 @@ class ApiContestRepository implements ContestRepository {
   @override
   Future<Contest> fetchContest(String id) async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>('/contests/$id');
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/contests/$id',
+      );
+
       final body = response.data ?? const <String, dynamic>{};
       final data = body['data'] as Map<String, dynamic>?;
-
       if (data == null) {
         throw const ApiException('Không tìm thấy cuộc thi');
       }
