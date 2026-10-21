@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/splash_screen.dart';
+import '../screens/contest/contest_detail_screen.dart';
 import '../screens/film_params/film_params_screen.dart';
 import '../screens/main_screen.dart';
 import '../screens/profile_screen.dart';
@@ -26,6 +27,13 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/',
       builder: (context, state) => const MainScreen(),
+    ),
+    GoRoute(
+      path: '/contests/:id',
+      builder: (context, state) {
+        final contestId = state.pathParameters['id']!;
+        return ContestDetailScreen(contestId: contestId);
+      },
     ),
     GoRoute(
       path: '/profile',

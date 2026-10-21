@@ -30,15 +30,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    await Future<void>.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-    await ref.read(authProvider.notifier).login(
-      accessToken: 'mock-access-token',
-      refreshToken: 'mock-refresh-token',
-    );
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-    context.go('/');
+
+    try {
+      await ref.read(authProvider.notifier).login(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
+      if (!mounted) return;
+      context.go('/');
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
