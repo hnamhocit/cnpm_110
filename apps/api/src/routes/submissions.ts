@@ -1,8 +1,9 @@
+
 import {
   validateImage,
   ImageValidationError,
 } from "../utils/validate-image";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { db } from "../db/index";
@@ -17,7 +18,7 @@ import { deleteFromR2, uploadToR2 } from "../r2";
 const route = new Hono<AuthEnv>();
 const MiB = 1024 * 1024;
 
-class InputError extends Error { }
+class InputError extends Error {}
 
 function textField(
   form: FormData,
@@ -53,7 +54,11 @@ function textField(
 function uuidField(form: FormData, name: string) {
   const value = textField(form, name, 36, true)!;
 
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) {
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+  ) {
     throw new InputError(`${name} must be a UUID`);
   }
 
@@ -69,7 +74,11 @@ function positiveInteger(form: FormData, name: string) {
 
   const number = Number(value);
 
-  if (!Number.isSafeInteger(number) || number <= 0 || number > 2147483647) {
+  if (
+    !Number.isSafeInteger(number) ||
+    number <= 0 ||
+    number > 2147483647
+  ) {
     throw new InputError(`${name} is outside the allowed range`);
   }
 
@@ -96,7 +105,102 @@ function fileField(form: FormData, name: string, required: boolean) {
   return value;
 }
 
+// GET /api/v1/submissions
+// Organizer lấy danh sách bài nộp, lọc theo trạng thái và cờ cảnh báo AI.
+route.get(
+  "/",
+  authenticate,
+  requireRoles("Organizer"),
+  async (c) => {
+    const status = c.req.query("status");
+    const aiFlagged = c.req.query("aiFlagged");
 
+    const validStatuses = [
+      "PENDING_AI",
+      "FLAGGED",
+      "APPROVED",
+      "DISQUALIFIED",
+    ] as const;
+
+    if (
+      status &&
+      !validStatuses.includes(
+        status as (typeof validStatuses)[number],
+      )
+    ) {
+      return c.json(
+        {
+          success: false,
+          message: "Invalid status",
+          allowedStatuses: validStatuses,
+        },
+        400,
+      );
+    }
+
+    if (
+      aiFlagged !== undefined &&
+      aiFlagged !== "true" &&
+      aiFlagged !== "false"
+    ) {
+      return c.json(
+        {
+          success: false,
+          message: "aiFlagged must be true or false",
+        },
+        400,
+      );
+    }
+
+    const statusFilter = status
+      ? eq(submissions.status, status)
+      : undefined;
+
+    // Schema hiện tại chưa có cột aiFlagged.
+    // Tạm dùng status FLAGGED làm dấu hiệu cảnh báo AI.
+    const aiFilter =
+      aiFlagged === "true"
+        ? eq(submissions.status, "FLAGGED")
+        : aiFlagged === "false"
+          ? ne(submissions.status, "FLAGGED")
+          : undefined;
+
+    const where =
+      statusFilter && aiFilter
+        ? and(statusFilter, aiFilter)
+        : statusFilter ?? aiFilter;
+
+    try {
+      const rows = await db
+        .select()
+        .from(submissions)
+        .where(where)
+        .orderBy(desc(submissions.createdAt));
+
+      return c.json({
+        success: true,
+        data: rows.map((row) => ({
+          ...row,
+          fileSizeBytes: row.fileSizeBytes?.toString() ?? null,
+          aiFlagged: row.status === "FLAGGED",
+        })),
+      });
+        } catch (error) {
+      console.error("Failed to list submissions:", error);
+      return c.json(
+        {
+          success: false,
+          message: "Failed to retrieve submissions",
+          detail: error instanceof Error ? error.message : String(error),
+        },
+        500,
+      );
+    }
+  },
+);
+
+// POST /api/v1/submissions
+// Participant nộp bài dự thi kèm ảnh phim.
 route.post(
   "/",
   authenticate,
@@ -108,7 +212,10 @@ route.post(
   }),
   async (c) => {
     if (
-      !c.req.header("Content-Type")?.toLowerCase().startsWith("multipart/form-data")
+      !c.req
+        .header("Content-Type")
+        ?.toLowerCase()
+        .startsWith("multipart/form-data")
     ) {
       return c.json(
         { success: false, message: "Use multipart/form-data" },
@@ -158,7 +265,8 @@ route.post(
         return c.json(
           {
             success: false,
-            message: "Image limit: 100 MiB; negative proof limit: 20 MiB",
+            message:
+              "Image limit: 100 MiB; negative proof limit: 20 MiB",
           },
           413,
         );
@@ -174,19 +282,25 @@ route.post(
 
       const validatedProof = proof
         ? await validateImage(proof, {
-          maxBytes: 20 * MiB,
-          minWidth: 1,
-          minHeight: 1,
-          maxPixels: 100_000_000,
-        })
+            maxBytes: 20 * MiB,
+            minWidth: 1,
+            minHeight: 1,
+            maxPixels: 100_000_000,
+          })
         : null;
 
       const extension = validatedImage.extension;
       const proofExtension = validatedProof?.extension ?? null;
+
       const [participant] = await db
         .select({ id: users.id })
         .from(users)
-        .where(and(eq(users.id, participantId), eq(users.isActive, true)))
+        .where(
+          and(
+            eq(users.id, participantId),
+            eq(users.isActive, true),
+          ),
+        )
         .limit(1);
 
       if (!participant) {
@@ -209,7 +323,10 @@ route.post(
 
       if (!category) {
         return c.json(
-          { success: false, message: "Category does not belong to this contest" },
+          {
+            success: false,
+            message: "Category does not belong to this contest",
+          },
           400,
         );
       }
@@ -221,6 +338,7 @@ route.post(
         : null;
 
       cleanupKeys.push(imageKey);
+
       const uploadImage = new File([image], image.name, {
         type: validatedImage.contentType,
       });
@@ -287,7 +405,10 @@ route.post(
 
       for (let index = 0; index < cleanupResults.length; index++) {
         if (cleanupResults[index]?.status === "rejected") {
-          console.error("R2 cleanup failed for key:", cleanupKeys[index]);
+          console.error(
+            "R2 cleanup failed for key:",
+            cleanupKeys[index],
+          );
         }
       }
 
@@ -297,8 +418,12 @@ route.post(
           error.status,
         );
       }
+
       if (error instanceof InputError) {
-        return c.json({ success: false, message: error.message }, 400);
+        return c.json(
+          { success: false, message: error.message },
+          400,
+        );
       }
 
       console.error("Submission upload failed:", error);

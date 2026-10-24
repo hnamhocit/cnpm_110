@@ -370,7 +370,53 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+
   /api/v1/submissions:
+    get:
+      summary: Lấy danh sách bài nộp cho Organizer
+      tags:
+        - Submissions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - PENDING_AI
+              - FLAGGED
+              - APPROVED
+              - DISQUALIFIED
+        - name: aiFlagged
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Lấy danh sách bài nộp thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Submission'
+        '400':
+          description: Tham số lọc không hợp lệ
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          description: Lỗi máy chủ
     post:
       summary: Nộp bài dự thi kèm ảnh phim
       tags:
@@ -406,21 +452,6 @@ paths:
           description: Request hoặc file vượt quá giới hạn kích thước
         '415':
           description: Content-Type không phải multipart/form-data
-
-  /rbac/admin:
-    get:
-      summary: API yêu cầu quyền Admin
-      tags:
-        - RBAC
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Truy cập thành công
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
 
   /rbac/organizer:
     get:
