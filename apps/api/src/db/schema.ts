@@ -32,7 +32,8 @@ export const users = pgTable("users", {
 export const roles = pgTable("roles", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 50 }).notNull().unique(),
-  description: text("description"),
+
+
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -224,6 +225,7 @@ export const submissions = pgTable(
     title: varchar("title", { length: 255 }).notNull(),
 
     description: text("description"),
+    rejectionReason: text("rejection_reason"),
 
     imageOriginalPath: text("image_original_path").notNull(),
 

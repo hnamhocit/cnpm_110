@@ -311,4 +311,162 @@ route.post(
   },
 );
 
+route.post(
+  "/:id/approve",
+  authenticate,
+  requireRoles("Organizer"),
+  async (c) => {
+    const id = c.req.param("id");
+
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    ) {
+      return c.json(
+        { success: false, message: "Invalid submission ID" },
+        400,
+      );
+    }
+
+    const [submission] = await db
+      .select({ id: submissions.id, status: submissions.status })
+      .from(submissions)
+      .where(eq(submissions.id, id))
+      .limit(1);
+
+    if (!submission) {
+      return c.json(
+        { success: false, message: "Submission not found" },
+        404,
+      );
+    }
+
+    if (!["PENDING_AI", "FLAGGED"].includes(submission.status)) {
+      return c.json(
+        { success: false, message: "Submission has already been processed" },
+        409,
+      );
+    }
+
+    const [updated] = await db
+      .update(submissions)
+      .set({
+        status: "APPROVED",
+        rejectionReason: null,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(submissions.id, id),
+          eq(submissions.status, submission.status),
+        ),
+      )
+      .returning({
+        id: submissions.id,
+        status: submissions.status,
+        updatedAt: submissions.updatedAt,
+      });
+
+    if (!updated) {
+      return c.json(
+        { success: false, message: "Submission status changed; try again" },
+        409,
+      );
+    }
+
+    return c.json({ success: true, data: updated });
+  },
+);
+
+route.post(
+  "/:id/reject",
+  authenticate,
+  requireRoles("Organizer"),
+  async (c) => {
+    const id = c.req.param("id");
+
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    ) {
+      return c.json(
+        { success: false, message: "Invalid submission ID" },
+        400,
+      );
+    }
+
+    let body: { reason?: unknown };
+
+    try {
+      body = await c.req.json<{ reason?: unknown }>();
+    } catch {
+      return c.json(
+        { success: false, message: "Invalid JSON body" },
+        400,
+      );
+    }
+
+    if (
+      typeof body.reason !== "string" ||
+      !body.reason.trim() ||
+      body.reason.trim().length > 1000
+    ) {
+      return c.json(
+        {
+          success: false,
+          message: "Reason is required and must not exceed 1000 characters",
+        },
+        400,
+      );
+    }
+
+    const [submission] = await db
+      .select({ id: submissions.id, status: submissions.status })
+      .from(submissions)
+      .where(eq(submissions.id, id))
+      .limit(1);
+
+    if (!submission) {
+      return c.json(
+        { success: false, message: "Submission not found" },
+        404,
+      );
+    }
+
+    if (!["PENDING_AI", "FLAGGED"].includes(submission.status)) {
+      return c.json(
+        { success: false, message: "Submission has already been processed" },
+        409,
+      );
+    }
+
+    const [updated] = await db
+      .update(submissions)
+      .set({
+        status: "DISQUALIFIED",
+        rejectionReason: body.reason.trim(),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(submissions.id, id),
+          eq(submissions.status, submission.status),
+        ),
+      )
+      .returning({
+        id: submissions.id,
+        status: submissions.status,
+        rejectionReason: submissions.rejectionReason,
+        updatedAt: submissions.updatedAt,
+      });
+
+    if (!updated) {
+      return c.json(
+        { success: false, message: "Submission status changed; try again" },
+        409,
+      );
+    }
+
+    return c.json({ success: true, data: updated });
+  },
+);
+
 export default route;
