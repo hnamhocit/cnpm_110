@@ -14,6 +14,7 @@
 | `camera_body_id` | UUID | FK (CameraBody), Not Null | Thân máy ảnh sử dụng |
 | `lab_id` | UUID | FK (Lab), Nullable | Phòng Lab tráng/scan |
 | `load_date` | Date | Not Null | Ngày lắp phim |
+| `negative_proof_url` | String | Nullable | Link ảnh chụp dải phim âm bản (Bằng chứng vật lý) |
 | `status` | ENUM | Default 'SHOOTING' | Trạng thái: `SHOOTING`, `DEVELOPED`, `SCANNED` |
 | `created_at` | Timestamp | Not Null | Thời điểm tạo |
 | `deleted_at` | Timestamp | Nullable | Thời điểm xóa mềm (BR-03) |
@@ -38,8 +39,8 @@
     *   Khổ `135` (35mm): Tối đa `39` frame.
     *   Khổ `120_645`: Tối đa `16` frame.
     *   Khổ `120_66`: Tối đa `12` frame.
-*   **BR-05 (Liên kết nộp bài):** Một khung hình (cặp `roll_id` và `frame_number`) đã được dùng để nộp cho cuộc thi A, thì không được phép chọn để nộp cho bài thi khác trong cùng 1 cuộc thi.
-*   **Quy tắc chống trùng lặp:** Cặp giá trị (`roll_id`, `frame_number`) là duy nhất trong bảng `FilmFrame`. Trả về lỗi `MSG-12` nếu vi phạm.
+*   **Quy tắc chống trùng lặp (Tại Logbook):** Cặp giá trị (`roll_id`, `frame_number`) là duy nhất trong bảng `FilmFrame`. Trả về lỗi `MSG-12` nếu vi phạm.
+*   **Mối quan hệ với Module Submission (FPC-131):** Film Logbook đóng vai trò là "Nguồn dữ liệu gốc". Ràng buộc BR-05 (Không nộp trùng bài thi trong cùng 1 cuộc thi) sẽ do API của module Submission kiểm tra, dựa trên các `roll_id` và `frame_number` được chọn từ Logbook.
 *   **Quy tắc phân quyền:** Chỉ chủ sở hữu (`user_id` trùng với ID người dùng đăng nhập) mới có quyền Xem/Sửa/Xóa `FilmRoll` và `FilmFrame` của mình.
 
 ---
@@ -109,8 +110,8 @@
 ### 5.2 Màn hình "Roll Details" (Chi tiết cuộn phim)
 *   **Thao tác:** User chọn 1 card -> Chuyển sang màn hình chi tiết.
 *   **Hiển thị:** Thông tin Header (Film, ISO, Camera). Danh sách các Frame.
-*   **Hành động:** Nút "+ Thêm Khung hình".
+*   **Hành động:** Nút "+ Thêm Khung hình" và Nút "Upload ảnh Âm bản" (Negative Proof).
 
 ### 5.3 Form "Log Frame Metadata" (Popup/Drawer)
 *   **Client-side Validation:** Khi user nhập số `40` cho cuộn 135, viền ô input lập tức chuyển màu đỏ, hiển thị text cảnh báo `MSG-10` ngay bên dưới. Vô hiệu hóa nút "Lưu".
-*   **Lưu thành công:** Hiển thị Toast `MSG-09`, cập nhật lại bộ đếm `12/36 -> 13/36` trên UI mà không cần load lại trang
+*   **Lưu thành công:** Hiển thị Toast `MSG-09`, cập nhật lại bộ đếm `12/36 -> 13/36` trên UI mà không cần load lại trang.
