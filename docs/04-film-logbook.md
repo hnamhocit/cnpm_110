@@ -113,4 +113,4 @@
 
 ### 5.3 Form "Log Frame Metadata" (Popup/Drawer)
 *   **Client-side Validation:** Khi user nhập số `40` cho cuộn 135, viền ô input lập tức chuyển màu đỏ, hiển thị text cảnh báo `MSG-10` ngay bên dưới. Vô hiệu hóa nút "Lưu".
-*   **Lưu thành công:** Hiển thị Toast `MSG-09`, cập nhật lại bộ đếm `12/36 -> 13/36` trên UI mà không cần load lại trang.s
+*   **Lưu thành công:** Hiển thị Toast `MSG-09`, cập nhật lại bộ đếm `12/36 -> 13/36` trên UI mà không cần load lại trang
