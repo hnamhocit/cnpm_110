@@ -16,7 +16,6 @@
 | `load_date` | Date | Not Null | Ngày lắp phim |
 | `status` | ENUM | Default 'SHOOTING' | Trạng thái: `SHOOTING`, `DEVELOPED`, `SCANNED` |
 | `created_at` | Timestamp | Not Null | Thời điểm tạo |
-| `updated_at` | Timestamp | Nullable | Thời điểm cập nhật cuối |
 | `deleted_at` | Timestamp | Nullable | Thời điểm xóa mềm (BR-03) |
 
 ### 1.2 Bảng `FilmFrame` (Khung hình)
@@ -29,20 +28,18 @@
 | `aperture` | String | Nullable | Khẩu độ (VD: f/2.8) |
 | `shutter_speed`| String | Nullable | Tốc độ màn trập (VD: 1/250) |
 | `notes` | Text | Nullable | Địa điểm, ghi chú bối cảnh |
-| `created_at` | Timestamp | Not Null | Thời điểm tạo |
 
 ---
 
 ## 2. Business Rules & Logic Ràng Buộc
 
 *   **BR-03 (Xóa mềm):** Tuyệt đối không xóa cứng (hard delete) dữ liệu khỏi Database. Khi người dùng xóa cuộn phim/khung hình, chỉ cập nhật `deleted_at = now()`.
-*   **BR-04 (Giới hạn vật lý của Frame):** Hệ thống từ chối (block) thao tác lưu nếu `frame_number` vượt quá giới hạn vật lý của khổ phim:
+*   **BR-23 (Giới hạn vật lý của Frame):** Hệ thống từ chối thao tác lưu nếu `frame_number` vượt quá giới hạn vật lý của khổ phim:
     *   Khổ `135` (35mm): Tối đa `39` frame.
     *   Khổ `120_645`: Tối đa `16` frame.
     *   Khổ `120_66`: Tối đa `12` frame.
-*   **BR-05 (Liên kết nộp bài):** Khi Thí sinh nộp bài thi (Module Submission), nếu chọn trích xuất thông tin từ Khung hình, hệ thống phải kiểm tra xem cặp (`roll_id`, `frame_number`) này đã được dùng để nộp cho cuộc thi hiện tại chưa. Nếu rồi -> Báo lỗi trùng lặp.
-*   **BR-23 (Lưu trữ ISO thực tế):** Cho phép thí sinh nhập ISO thực tế khác với ISO danh định của phim (VD: Đẩy sáng 1 stop thì nhập `ISO 800` cho phim 400).
-*   **BR-30 (Chống trùng lặp Frame):** Cặp giá trị (`roll_id`, `frame_number`) là duy nhất. Trả về lỗi `MSG-12` nếu vi phạm.
+*   **BR-05 (Liên kết nộp bài):** Một khung hình (cặp `roll_id` và `frame_number`) đã được dùng để nộp cho cuộc thi A, thì không được phép chọn để nộp cho bài thi khác trong cùng 1 cuộc thi.
+*   **Quy tắc chống trùng lặp:** Cặp giá trị (`roll_id`, `frame_number`) là duy nhất trong bảng `FilmFrame`. Trả về lỗi `MSG-12` nếu vi phạm.
 *   **Quy tắc phân quyền:** Chỉ chủ sở hữu (`user_id` trùng với ID người dùng đăng nhập) mới có quyền Xem/Sửa/Xóa `FilmRoll` và `FilmFrame` của mình.
 
 ---
@@ -92,7 +89,7 @@
       "notes": "Chụp tại Hồ Gươm"
     }
     ```
-*   **Response Payload (400 Bad Request - Vi phạm BR-04):**
+*   **Response Payload (400 Bad Request - Vi phạm BR-23):**
     ```json
     {
       "status": "error",
@@ -116,5 +113,4 @@
 
 ### 5.3 Form "Log Frame Metadata" (Popup/Drawer)
 *   **Client-side Validation:** Khi user nhập số `40` cho cuộn 135, viền ô input lập tức chuyển màu đỏ, hiển thị text cảnh báo `MSG-10` ngay bên dưới. Vô hiệu hóa nút "Lưu".
-*   **Lưu thành công:** Hiển thị Toast `MSG-09`, cập nhật lại bộ đếm `12/36 -> 13/36` trên UI mà không cần load lại trang.
-```
+*   **Lưu thành công:** Hiển thị Toast `MSG-09`, cập nhật lại bộ đếm `12/36 -> 13/36` trên UI mà không cần load lại trang.s
