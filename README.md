@@ -61,11 +61,11 @@ Dự án áp dụng phương pháp tiếp cận **AI-First Software Specificatio
 | :--- | :--- | :---: | :--- |
 | **01** | [`01-auth-and-rbac.md`](docs/01-auth-and-rbac.md) | ✅ Hoàn thành | Xác thực JWT, phân quyền RBAC Matrix, Token Rotation, Audit Log |
 | **02** | [`02-analog-master-data.md`](docs/02-analog-master-data.md) | ✅ Hoàn thành | Danh mục Film Stock, Camera, Lens, Film Lab, Zod Schema |
-| **03** | `03-contest-lifecycle.md` | ⏳ Đang bổ sung | Vòng đời cuộc thi, cấu hình ngưỡng AI, mốc thời gian BR-08 |
-| **04** | [`04-film-logbook.md`](docs/04-film-logbook.md) | ✅ Đã merge | Quản lý nhật ký cuộn phim (`FilmRoll`) và khung hình (`FilmFrame`) |
+| **03** | [`03-contest-lifecycle.md`](docs/03-contest-lifecycle.md) | ✅ Đã merge | Vòng đời cuộc thi, cấu hình ngưỡng AI, mốc thời gian BR-08 |
+| **04** | [`04-film-logbook.md`](docs/04-film-logbook.md) | ✅ Đã merge | Quản lý nhật ký cuộn phim (`film_rolls`) và khung hình (`film_frames`) |
 | **05** | [`05-submission-and-proof.md`](docs/05-submission-and-proof.md) | ✅ Đã merge | Nộp bài dự thi, quy định 48h nộp ảnh âm bản đối chứng (BR-06, BR-19) |
 | **06** | [`06-ai-verification.md`](docs/06-ai-verification.md) | ✅ Hoàn thành | Giám định AI ($P_{AI} \ge 75\%$), pHash DCT 64-bit, pgvector CLIP, Redis Worker |
-| **07** | `07-blind-judging.md` | ⏳ Đang bổ sung | Chấm thi ẩn danh kép (BR-12), phát hiện lệch điểm BR-14, tính điểm BR-25 |
+| **07** | [`07-blind-judging.md`](docs/07-blind-judging.md) | ✅ Đã merge | Chấm thi ẩn danh kép (BR-12), phát hiện lệch điểm BR-14, tính điểm BR-25 |
 | **08** | [`08-archive-and-exhibition.md`](docs/08-archive-and-exhibition.md) | ✅ Hoàn thành | Triển lãm số, Faceted search theo AI tags, bảo vệ bản quyền ảnh BR-16, BR-17 |
 | **09** | [`09-api-contracts.md`](docs/09-api-contracts.md) | ✅ Hoàn thành | Chuẩn hóa Envelope Response `{ success, data, error, meta }`, DTOs chung |
 | **10** | [`10-database-and-storage.md`](docs/10-database-and-storage.md) | ✅ Hoàn thành | PostgreSQL 16 + pgvector, Cloudflare R2 / AWS S3 presigned URLs |
