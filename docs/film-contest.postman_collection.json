@@ -20,6 +20,16 @@
       "key": "refreshToken",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "contestId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -186,6 +196,97 @@
               "host": ["{{baseUrl}}"],
               "path": ["upload"]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contests",
+      "item": [
+        {
+          "name": "List Open Contests",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/contests?search=&status=published&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["contests"],
+              "query": [
+                {"key": "search", "value": ""},
+                {"key": "status", "value": "published"},
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "10"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Contest Detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/contests/{{contestId}}"
+          }
+        },
+        {
+          "name": "Create Contest (Admin or Organizer)",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hanoi Analog Film Contest\",\n  \"description\": \"Open film photography contest\",\n  \"startAt\": \"2026-11-01T00:00:00Z\",\n  \"endAt\": \"2026-12-01T00:00:00Z\",\n  \"status\": \"draft\"\n}"
+            },
+            "url": "{{baseUrl}}/contests"
+          }
+        },
+        {
+          "name": "Update Contest (Admin or Organizer)",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"status\": \"published\"\n}"},
+            "url": "{{baseUrl}}/contests/{{contestId}}"
+          }
+        },
+        {
+          "name": "Delete Contest (Admin or Organizer)",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}", "type": "string"}]},
+            "method": "DELETE",
+            "url": "{{baseUrl}}/contests/{{contestId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Submissions",
+      "item": [
+        {
+          "name": "Upload Submission (Participant)",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}", "type": "string"}]},
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "contestId", "value": "{{contestId}}", "type": "text"},
+                {"key": "categoryId", "value": "{{categoryId}}", "type": "text"},
+                {"key": "title", "value": "Rainy afternoon", "type": "text"},
+                {"key": "description", "value": "A sample film submission", "type": "text"},
+                {"key": "filmBrand", "value": "Kodak", "type": "text"},
+                {"key": "filmStock", "value": "Portra 400", "type": "text"},
+                {"key": "filmFormat", "value": "35mm", "type": "text"},
+                {"key": "isoRated", "value": "400", "type": "text"},
+                {"key": "isoShot", "value": "400", "type": "text"},
+                {"key": "cameraBody", "value": "Nikon F3", "type": "text"},
+                {"key": "lens", "value": "50mm f/1.8", "type": "text"},
+                {"key": "image", "type": "file", "src": ""},
+                {"key": "negativeProof", "type": "file", "src": ""}
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/submissions"
           }
         }
       ]

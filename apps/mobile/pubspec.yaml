@@ -38,6 +38,7 @@ dependencies:
   go_router: ^18.0.2
   flutter_secure_storage: 9.2.4
   dio: ^5.8.0+1
+  image_picker: ^1.2.4
 
 dev_dependencies:
   flutter_test:

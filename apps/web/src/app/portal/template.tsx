@@ -9,13 +9,9 @@ type PortalTemplateProps = {
 };
 
 async function AuthGuard({ children }: { children: ReactNode }) {
-  // Lấy JWT từ cookie trên Server
   const cookieStore = await cookies();
-
-  // TODO(FPC-16): Thống nhất tên cookie với hệ thống Auth.
   const accessToken = cookieStore.get("access_token")?.value ?? null;
 
-  // Gọi Backend xác minh JWT và quyền truy cập
   const decision = await checkPortalAccess(accessToken);
 
   if (decision === "login") {
@@ -25,8 +21,6 @@ async function AuthGuard({ children }: { children: ReactNode }) {
   if (decision === "forbidden") {
     redirect("/forbidden");
   }
-
-  return <>{children}</>;
 }
 
 export default function PortalTemplate({ children }: PortalTemplateProps) {

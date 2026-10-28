@@ -7,6 +7,7 @@ Dự án **Film Contest** là một monorepo chứa toàn bộ mã nguồn của
 ## 📌 Mục lục
 
 - [Cấu trúc Monorepo](#-cấu-trúc-monorepo)
+- [Tài liệu Đặc tả AI-First (Specifications)](#-tài-liệu-đặc-tả-ai-first-specifications)
 - [Yêu cầu hệ thống (Prerequisites)](#-yêu-cầu-hệ-thống-prerequisites)
 - [⚠️ Lưu ý quan trọng: Dùng `bun`, KHÔNG dùng `npm`!](#️-lưu-ý-quan-trọng-dùng-bun-không-dùng-npm)
 - [Hướng dẫn cài đặt nhanh (Quick Start)](#-hướng-dẫn-cài-đặt-nhanh-quick-start)
@@ -35,7 +36,7 @@ film-contest/
 │   ├── typescript-config/ # Cấu hình TypeScript dùng chung (@repo/typescript-config)
 │   └── eslint-config/     # Cấu hình ESLint & Linting rules dùng chung (@repo/eslint-config)
 │
-├── docs/                  # Tài liệu đặc tả API (OpenAPI 3.0 YAML & Postman Collection)
+├── docs/                  # Tài liệu đặc tả hệ thống AI-First Specs, OpenAPI 3.0 & Postman Collection
 ├── bun.lock               # Lockfile chuẩn của Bun (KHÔNG xoá hoặc dùng npm đè lên)
 ├── package.json           # Khai báo workspace root và scripts điều phối Turborepo
 ├── turbo.json             # Cấu hình pipeline Turborepo (build, dev, lint, cache...)
@@ -47,6 +48,36 @@ film-contest/
 - **`apps/api`**: RESTful API service siêu nhanh sử dụng **Hono** chạy native trên **Bun** runtime.
 - **`apps/web`**: Web app người dùng sử dụng **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4** và **Biome**.
 - **`apps/mobile`**: Ứng dụng mobile cross-platform (Android, iOS) viết bằng **Flutter**.
+
+---
+
+## 📚 Tài liệu Đặc tả AI-First (Specifications)
+
+Dự án áp dụng phương pháp tiếp cận **AI-First Software Specification** nhằm xây dựng Single Source of Truth (SSOT) cho cả lập trình viên và các AI Coding Assistant (Cursor, Copilot, Antigravity). Mọi tính năng mới hoặc chỉnh sửa bắt buộc phải tuân theo tài liệu đặc tả nằm trong thư mục [`docs/`](docs/).
+
+### 1. Danh sách Module Specifications
+
+| Module | Tên tệp | Trạng thái | Mô tả cốt lõi |
+| :--- | :--- | :---: | :--- |
+| **01** | [`01-auth-and-rbac.md`](docs/01-auth-and-rbac.md) | ✅ Hoàn thành | Xác thực JWT, phân quyền RBAC Matrix, Token Rotation, Audit Log |
+| **02** | [`02-analog-master-data.md`](docs/02-analog-master-data.md) | ✅ Hoàn thành | Danh mục Film Stock, Camera, Lens, Film Lab, Zod Schema |
+| **03** | `03-contest-lifecycle.md` | ⏳ Đang bổ sung | Vòng đời cuộc thi, cấu hình ngưỡng AI, mốc thời gian BR-08 |
+| **04** | [`04-film-logbook.md`](docs/04-film-logbook.md) | ✅ Đã merge | Quản lý nhật ký cuộn phim (`FilmRoll`) và khung hình (`FilmFrame`) |
+| **05** | [`05-submission-and-proof.md`](docs/05-submission-and-proof.md) | ✅ Đã merge | Nộp bài dự thi, quy định 48h nộp ảnh âm bản đối chứng (BR-06, BR-19) |
+| **06** | [`06-ai-verification.md`](docs/06-ai-verification.md) | ✅ Hoàn thành | Giám định AI ($P_{AI} \ge 75\%$), pHash DCT 64-bit, pgvector CLIP, Redis Worker |
+| **07** | `07-blind-judging.md` | ⏳ Đang bổ sung | Chấm thi ẩn danh kép (BR-12), phát hiện lệch điểm BR-14, tính điểm BR-25 |
+| **08** | [`08-archive-and-exhibition.md`](docs/08-archive-and-exhibition.md) | ✅ Hoàn thành | Triển lãm số, Faceted search theo AI tags, bảo vệ bản quyền ảnh BR-16, BR-17 |
+| **09** | [`09-api-contracts.md`](docs/09-api-contracts.md) | ✅ Hoàn thành | Chuẩn hóa Envelope Response `{ success, data, error, meta }`, DTOs chung |
+| **10** | [`10-database-and-storage.md`](docs/10-database-and-storage.md) | ✅ Hoàn thành | PostgreSQL 16 + pgvector, Cloudflare R2 / AWS S3 presigned URLs |
+
+### 2. Quy chuẩn 5 phần bắt buộc cho tài liệu AI-First
+
+Mọi tài liệu đặc tả kỹ thuật trong dự án bắt buộc phải tuân theo cấu trúc 5 phần chuẩn:
+1. **Domain Entities & Database Mapping**: Schema bảng, kiểu dữ liệu, ràng buộc, quan hệ FK, Mermaid ERD.
+2. **Business Rules & Logic Ràng buộc**: Trích xuất BR từ SRS, điều kiện deterministic, Zod schema, mã lỗi `MSG-xxx`.
+3. **State Machine & Lifecycle**: Sơ đồ trạng thái Mermaid, bảng chuyển đổi trạng thái, tác nhân & guard condition.
+4. **Shared API Contracts**: Method, Path, Headers, Request Body Zod schema, Response Envelope, Error format.
+5. **UI/UX Functional Requirements**: User journey flow, trạng thái giao diện (Default, Loading, Empty, Error).
 
 ---
 

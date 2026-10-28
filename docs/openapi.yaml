@@ -230,6 +230,183 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /contests:
+    get:
+      summary: Lấy danh sách cuộc thi đang mở
+      tags:
+        - Contests
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Tìm theo tên cuộc thi
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [published, ongoing]
+          description: Lọc theo trạng thái
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: Danh sách cuộc thi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Contest'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      summary: Tạo cuộc thi
+      tags:
+        - Contests
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContestInput'
+      responses:
+        '201':
+          description: Tạo cuộc thi thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContestMutationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /contests/{id}:
+    get:
+      summary: Lấy chi tiết cuộc thi
+      tags:
+        - Contests
+      parameters:
+        - $ref: '#/components/parameters/ContestId'
+      responses:
+        '200':
+          description: Chi tiết cuộc thi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Contest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Cập nhật cuộc thi
+      tags:
+        - Contests
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ContestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/ContestInput'
+              description: Gửi ít nhất một field cần cập nhật.
+      responses:
+        '200':
+          description: Cập nhật cuộc thi thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContestMutationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      summary: Xoá cuộc thi
+      tags:
+        - Contests
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ContestId'
+      responses:
+        '200':
+          description: Xoá cuộc thi thành công
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/submissions:
+    post:
+      summary: Nộp bài dự thi kèm ảnh phim
+      tags:
+        - Submissions
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubmissionForm'
+      responses:
+        '201':
+          description: Nộp bài thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Submission'
+        '400':
+          $ref: '#/components/responses/SubmissionBadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: Request hoặc file vượt quá giới hạn kích thước
+        '415':
+          description: Content-Type không phải multipart/form-data
+
   /rbac/admin:
     get:
       summary: API yêu cầu quyền Admin
@@ -313,6 +490,186 @@ components:
       bearerFormat: JWT
 
   schemas:
+    Contest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        description:
+          type: string
+          nullable: true
+        start_at:
+          type: string
+          format: date-time
+          nullable: true
+        end_at:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum: [draft, published, ongoing, completed, cancelled]
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ContestInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 150
+          example: Hanoi Analog Film Contest
+        description:
+          type: string
+          nullable: true
+        startAt:
+          type: string
+          format: date-time
+          nullable: true
+        endAt:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum: [draft, published, ongoing, completed, cancelled]
+          default: draft
+
+    ContestMutationResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Contest'
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+
+    SubmissionForm:
+      type: object
+      required:
+        - contestId
+        - categoryId
+        - title
+        - filmBrand
+        - filmStock
+        - filmFormat
+        - isoRated
+        - isoShot
+        - cameraBody
+        - image
+      properties:
+        contestId:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 5000
+        filmBrand:
+          type: string
+          maxLength: 100
+        filmStock:
+          type: string
+          maxLength: 150
+        filmFormat:
+          type: string
+          maxLength: 50
+        isoRated:
+          type: integer
+          minimum: 1
+        isoShot:
+          type: integer
+          minimum: 1
+        cameraBody:
+          type: string
+          maxLength: 150
+        lens:
+          type: string
+          maxLength: 150
+        rollId:
+          type: string
+          maxLength: 100
+        frameNumber:
+          type: string
+          maxLength: 20
+        devLabName:
+          type: string
+          maxLength: 150
+        devChemistry:
+          type: string
+          maxLength: 50
+        scannerModel:
+          type: string
+          maxLength: 150
+        image:
+          type: string
+          format: binary
+          description: Ảnh chính, tối đa 100 MiB, tối thiểu 1000x1000 pixels.
+        negativeProof:
+          type: string
+          format: binary
+          description: Ảnh proof tuỳ chọn, tối đa 20 MiB.
+
+    Submission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        contestId:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        participantId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        imageOriginalPath:
+          type: string
+        negativeProofPath:
+          type: string
+          nullable: true
+        fileSizeBytes:
+          type: integer
+          format: int64
+        width:
+          type: integer
+        height:
+          type: integer
+        status:
+          type: string
+          example: PENDING_AI
+
     UserResponse:
       type: object
       properties:
@@ -359,3 +716,33 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Không tìm thấy tài nguyên
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    SubmissionBadRequest:
+      description: Dữ liệu multipart không hợp lệ
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+
+  parameters:
+    ContestId:
+      name: id
+      in: path
+      required: true
+      description: UUID của cuộc thi
+      schema:
+        type: string
+        format: uuid
