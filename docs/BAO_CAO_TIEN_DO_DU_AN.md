@@ -59,11 +59,11 @@ Tất cả 10 module đặc tả kỹ thuật đã được hợp nhất tại t
 | :---: | :--- | :--- | :---: |
 | **01** | [`01-auth-and-rbac.md`](01-auth-and-rbac.md) | Xác thực JWT, Token Rotation, phân quyền RBAC Matrix 4 vai trò, Audit Log, Zod Schemas đầy đủ. | ✅ Hoàn thành |
 | **02** | [`02-analog-master-data.md`](02-analog-master-data.md) | Master Data: Film Stock, Camera, Lens, Film Lab, Mermaid ERD, Seed Data mẫu, Zod Schemas. | ✅ Hoàn thành |
-| **03** | [`03-contest-lifecycle.md`](03-contest-lifecycle.md) | Vòng đời cuộc thi, cấu hình mốc thời gian BR-08, thiết lập ngưỡng AI kiểm duyệt ($P_{AI}$, pHash). | ✅ Đã merge |
-| **04** | [`04-film-logbook.md`](04-film-logbook.md) | Quản lý nhật ký cuộn phim (`film_rolls`) và từng khung hình chụp (`film_frames`) theo BR-03, BR-23. | ✅ Đã merge |
-| **05** | [`05-submission-and-proof.md`](05-submission-and-proof.md) | Luồng nộp bài thi, cơ chế nộp ảnh âm bản đối chứng trong 48 giờ theo BR-06, BR-19. | ✅ Đã merge |
+| **03** | [`03-contest-lifecycle.md`](03-contest-lifecycle.md) | Vòng đời cuộc thi, cấu hình mốc thời gian BR-08, thiết lập ngưỡng AI kiểm duyệt ($P_{AI}$, pHash). | ✅ Hoàn thành |
+| **04** | [`04-film-logbook.md`](04-film-logbook.md) | Quản lý nhật ký cuộn phim (`film_rolls`) và từng khung hình chụp (`film_frames`) theo BR-03, BR-23. | ✅ Hoàn thành |
+| **05** | [`05-submission-and-proof.md`](05-submission-and-proof.md) | Luồng nộp bài thi, cơ chế nộp ảnh âm bản đối chứng trong 48 giờ theo BR-06, BR-19. | ✅ Hoàn thành |
 | **06** | [`06-ai-verification.md`](06-ai-verification.md) | Giám định ảnh AI ($P_{AI} \ge 75\%$), pHash DCT 64-bit, pgvector CLIP 512-dim, Redis BullMQ Worker. | ✅ Hoàn thành |
-| **07** | [`07-blind-judging.md`](07-blind-judging.md) | Chấm thi ẩn danh kép BR-12, thuật toán phát hiện lệch điểm BR-14, tính điểm tổng kết có trọng số. | ✅ Đã merge |
+| **07** | [`07-blind-judging.md`](07-blind-judging.md) | Chấm thi ẩn danh kép BR-12, thuật toán phát hiện lệch điểm BR-14, tính điểm tổng kết có trọng số. | ✅ Hoàn thành |
 | **08** | [`08-archive-and-exhibition.md`](08-archive-and-exhibition.md) | Triển lãm số, tìm kiếm nâng cao (faceted search theo AI tags), bảo vệ bản quyền & watermark ảnh BR-16. | ✅ Hoàn thành |
 | **09** | [`09-api-contracts.md`](09-api-contracts.md) | Chuẩn hóa Envelope Response `{success, data, error, meta}`, bộ DTOs TypeScript, chuẩn mã lỗi `MSG-xxx`. | ✅ Hoàn thành |
 | **10** | [`10-database-and-storage.md`](10-database-and-storage.md) | Kiến trúc PostgreSQL 16 + pgvector, presigned URLs Cloudflare R2 / AWS S3, cấu hình pool kết nối. | ✅ Hoàn thành |
