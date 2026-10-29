@@ -2,6 +2,8 @@
 
 Dự án **Film Contest** là một monorepo chứa toàn bộ mã nguồn của hệ thống: từ Backend API, Web Frontend đến ứng dụng Mobile (Flutter). Dự án được quản lý bằng **[Turborepo](https://turbo.build/)** và sử dụng **[Bun](https://bun.sh/)** làm package manager & runtime chính.
 
+-Confluence Docs: https://hnamhocit.atlassian.net/wiki/x/BAAF
+
 ---
 
 ## 📌 Mục lục
