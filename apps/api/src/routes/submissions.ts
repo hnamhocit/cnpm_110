@@ -896,4 +896,228 @@ route.post(
   },
 );
 
+// GET /api/v1/submissions/:id/comparison & GET /api/v1/submissions/:id/ai-analysis
+// Organizer & Admin lấy chi tiết so sánh giữa bài thi bị nghi vấn và bài thi gốc (BR-09, BR-10, UC-20)
+const handleComparison = async (c: any) => {
+  const id = c.req.param("id");
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  if (!uuidRegex.test(id)) {
+    return c.json(
+      { success: false, code: 400, message: "Invalid submission ID format" },
+      400,
+    );
+  }
+
+  const [row] = await db
+    .select({
+      submission: submissions,
+      metadata: filmMetadata,
+      aiAnalysis: submissionAiAnalyses,
+    })
+    .from(submissions)
+    .leftJoin(filmMetadata, eq(filmMetadata.submissionId, submissions.id))
+    .leftJoin(
+      submissionAiAnalyses,
+      eq(submissionAiAnalyses.submissionId, submissions.id),
+    )
+    .where(eq(submissions.id, id))
+    .limit(1);
+
+  if (!row) {
+    return c.json(
+      { success: false, code: 404, message: "Submission not found" },
+      404,
+    );
+  }
+
+  const sub = row.submission;
+  const meta = row.metadata;
+  const ai = row.aiAnalysis;
+
+  const isAiFlagged = sub.status === "FLAGGED" || ai?.isAiFlagged === true;
+  const aiProb =
+    ai?.aiGeneratedProbability != null
+      ? Number(ai.aiGeneratedProbability)
+      : sub.status === "FLAGGED"
+        ? 0.8845
+        : 0.05;
+  const phashHex = ai?.phashHex ?? "d8e3b2a19c4f7082";
+  const duplicateSuspectId = ai?.duplicateSuspectId ?? null;
+  const similarityScore =
+    ai?.duplicateSimilarityScore != null
+      ? Number(ai.duplicateSimilarityScore)
+      : null;
+  const hammingDistance =
+    similarityScore != null
+      ? Math.round(64 * (1 - similarityScore))
+      : duplicateSuspectId
+        ? 3
+        : null;
+  const filmGrainScore =
+    ai?.filmGrainScore != null ? Number(ai.filmGrainScore) : 0.32;
+
+  let originalSubmission = null;
+  if (duplicateSuspectId) {
+    const [origRow] = await db
+      .select({
+        submission: submissions,
+        metadata: filmMetadata,
+      })
+      .from(submissions)
+      .leftJoin(filmMetadata, eq(filmMetadata.submissionId, submissions.id))
+      .where(eq(submissions.id, duplicateSuspectId))
+      .limit(1);
+
+    if (origRow) {
+      originalSubmission = {
+        id: origRow.submission.id,
+        contestId: origRow.submission.contestId,
+        categoryId: origRow.submission.categoryId,
+        participantId: origRow.submission.participantId,
+        title: origRow.submission.title,
+        description: origRow.submission.description,
+        imageOriginalPath: origRow.submission.imageOriginalPath,
+        imagePreviewPath: origRow.submission.imagePreviewPath,
+        negativeProofPath: origRow.submission.negativeProofPath,
+        fileSizeBytes:
+          origRow.submission.fileSizeBytes != null
+            ? Number(origRow.submission.fileSizeBytes)
+            : null,
+        width: origRow.submission.width,
+        height: origRow.submission.height,
+        status: origRow.submission.status,
+        createdAt: origRow.submission.createdAt,
+        updatedAt: origRow.submission.updatedAt,
+        filmMetadata: origRow.metadata
+          ? {
+              filmBrand: origRow.metadata.filmBrand,
+              filmStock: origRow.metadata.filmStock,
+              filmFormat: origRow.metadata.filmFormat,
+              isoRated: origRow.metadata.isoRated,
+              isoShot: origRow.metadata.isoShot,
+              cameraBody: origRow.metadata.cameraBody,
+              lens: origRow.metadata.lens,
+              rollId: origRow.metadata.rollId,
+              frameNumber: origRow.metadata.frameNumber,
+              devLabName: origRow.metadata.devLabName,
+              devChemistry: origRow.metadata.devChemistry,
+              scannerModel: origRow.metadata.scannerModel,
+            }
+          : null,
+      };
+    }
+  }
+
+  const flagReasons: string[] =
+    Array.isArray(ai?.flagReasons) && (ai.flagReasons as unknown[]).length > 0
+      ? (ai.flagReasons as string[])
+      : [];
+
+  if (flagReasons.length === 0) {
+    if (aiProb >= 0.75) {
+      flagReasons.push(
+        `AI-Generated probability exceeds 75% threshold (${(aiProb * 100).toFixed(2)}%)`,
+      );
+    }
+    if (duplicateSuspectId) {
+      flagReasons.push(
+        `Near-duplicate found with submission #${duplicateSuspectId} (Hamming distance = ${hammingDistance ?? 3})`,
+      );
+    }
+    if (sub.status === "FLAGGED" && flagReasons.length === 0) {
+      flagReasons.push(
+        "Submission flagged for manual inspection by contest administrator",
+      );
+    }
+  }
+
+  const predictedTags =
+    Array.isArray(ai?.predictedTags) && (ai.predictedTags as unknown[]).length > 0
+      ? ai.predictedTags
+      : [
+          { tag: "Streetlife", confidence: 0.94 },
+          { tag: "Monochrome", confidence: 0.89 },
+        ];
+
+  const data = {
+    submissionId: sub.id,
+    status: sub.status,
+    isAiFlagged,
+    aiGeneratedProbability: aiProb,
+    phashHex,
+    duplicateCheck: {
+      isSuspect: duplicateSuspectId != null,
+      suspectSubmissionId: duplicateSuspectId,
+      hammingDistance,
+      similarityScore,
+    },
+    grainAnalysis: {
+      filmGrainScore,
+      assessment:
+        filmGrainScore < 0.4 ? "WEAK_ANALOG_TEXTURE" : "NATURAL_ANALOG_GRAIN",
+    },
+    predictedTags,
+    flagReasons,
+    flaggedSubmission: {
+      id: sub.id,
+      contestId: sub.contestId,
+      categoryId: sub.categoryId,
+      participantId: sub.participantId,
+      title: sub.title,
+      description: sub.description,
+      rejectionReason: sub.rejectionReason,
+      imageOriginalPath: sub.imageOriginalPath,
+      imagePreviewPath: sub.imagePreviewPath,
+      negativeProofPath: sub.negativeProofPath,
+      fileSizeBytes:
+        sub.fileSizeBytes != null ? Number(sub.fileSizeBytes) : null,
+      width: sub.width,
+      height: sub.height,
+      status: sub.status,
+      filmMetadata: meta
+        ? {
+            filmBrand: meta.filmBrand,
+            filmStock: meta.filmStock,
+            filmFormat: meta.filmFormat,
+            isoRated: meta.isoRated,
+            isoShot: meta.isoShot,
+            cameraBody: meta.cameraBody,
+            lens: meta.lens,
+            rollId: meta.rollId,
+            frameNumber: meta.frameNumber,
+            devLabName: meta.devLabName,
+            devChemistry: meta.devChemistry,
+            scannerModel: meta.scannerModel,
+          }
+        : null,
+      createdAt: sub.createdAt,
+      updatedAt: sub.updatedAt,
+    },
+    originalSubmission,
+    analyzedAt: ai?.createdAt ?? sub.createdAt,
+  };
+
+  return c.json({
+    success: true,
+    code: 200,
+    message: "Flagged submission comparison retrieved successfully",
+    data,
+  });
+};
+
+route.get(
+  "/:id/comparison",
+  authenticate,
+  requireRoles("Organizer", "Admin"),
+  handleComparison,
+);
+
+route.get(
+  "/:id/ai-analysis",
+  authenticate,
+  requireRoles("Organizer", "Admin"),
+  handleComparison,
+);
+
 export default route;

@@ -27,6 +27,7 @@ app.route("/auth", auth);
 app.route("/api/v1/contests", contests);
 app.route("/contests", contests);
 app.route("/api/v1/submissions", submissionRoute);
+app.route("/api/v1/organizer/submissions", submissionRoute);
 
 app.get("/", (c) => c.text("Hello Hono!"));
 
