@@ -1,6 +1,7 @@
-# Module Spec: Archive & Exhibition
+# Module Spec: 08 - Archive & Exhibition
 
 ## 1. Domain Entities & Database Mapping
+
 ### 1.1. Mô tả chức năng
 
 Module Archive & Exhibition chịu trách nhiệm lưu trữ kết quả cuộc thi sau khi công bố, bảo vệ dữ liệu điểm số và giải thưởng, tạo ảnh triển lãm có watermark và cung cấp chức năng tìm kiếm tác phẩm.
@@ -105,6 +106,7 @@ Các bảng dưới đây chưa xuất hiện trong schema hiện tại và cầ
 - Các bảng lưu trữ kết quả cần tuân thủ nguyên tắc Soft Delete theo BR-03.
 - Cần bổ sung cơ chế khóa kết quả ở tầng backend; schema hiện tại chưa thể hiện đầy đủ cơ chế này.
 ## 2. Business Rules & Logic Ràng Buộc
+
 ### 2.1. Các Business Rules liên quan
 
 Module Archive & Exhibition phải tuân thủ các quy tắc nghiệp vụ được quy định trong SRS.
@@ -224,18 +226,29 @@ Các mã lỗi trên là đề xuất cho API, cần thống nhất với chuẩ
 - Kiểm tra quyền tại backend, không chỉ ẩn nút chỉnh sửa ở giao diện.
 - Bảo đảm dữ liệu kết quả đã công bố không bị thay đổi thông qua các API khác.
 ## 3. State Machine & Lifecycle
+
 ### 3.1. Contest Results Lifecycle
 
 Mô tả vòng đời công bố kết quả cuộc thi và khóa dữ liệu theo BR-16.
 
-**State Diagram:**
+**Quy trình công bố và lưu trữ kết quả:**
 
-```mermaid
-flowchart TD
-    A["IN_JUDGING"] --> B["RESULTS_FINALIZED"]
-    B --> C["PUBLISHED"]
-    C --> D["ARCHIVED"]
-```
+1. **IN_JUDGING (Đang chấm thi)**
+   - Giám khảo đang thực hiện đánh giá tác phẩm.
+   - Khi hoàn tất chấm điểm và giải quyết các vấn đề liên quan, kết quả được chuẩn bị để xác nhận.
+
+2. **RESULTS_FINALIZED (Đã xác nhận kết quả)**
+   - Organizer xác nhận kết quả cuối cùng.
+   - Kiểm tra các điều kiện trước khi công bố chính thức.
+
+3. **PUBLISHED (Đã công bố)**
+   - Organizer công bố kết quả cuộc thi.
+   - Điểm số, thứ hạng và thông tin tác phẩm đạt giải chuyển sang Read-Only theo BR-16.
+
+4. **ARCHIVED (Đã lưu trữ)**
+   - Các tác phẩm đạt giải và vào chung kết được đưa vào Digital Archive.
+   - Dữ liệu kết quả tiếp tục được bảo vệ và không được chỉnh sửa.
+
 
 **Giải thích các trạng thái:**
 
@@ -270,16 +283,30 @@ flowchart TD
 
 Mô tả quá trình xử lý và công bố ảnh triển lãm theo BR-17.
 
-**State Diagram:**
 
-```mermaid
-flowchart TD
-    A["PENDING"] --> B["PROCESSING"]
-    B --> C["READY"]
-    B --> D["FAILED"]
-    D --> B
-    C --> E["PUBLISHED"]
-```
+**Quy trình xử lý ảnh triển lãm:**
+
+1. **PENDING (Chờ xử lý)**
+   - Hệ thống xác định tác phẩm đủ điều kiện lưu trữ.
+   - Kiểm tra ảnh Master trong Private Bucket.
+
+2. **PROCESSING (Đang xử lý)**
+   - Hệ thống tạo ảnh WebP đã tối ưu.
+   - Áp dụng watermark bản quyền.
+
+3. **READY (Sẵn sàng)**
+   - Ảnh WebP được tạo thành công và có watermark.
+   - Ảnh Master tiếp tục được bảo vệ trong Private Bucket.
+
+4. **FAILED (Xử lý thất bại)**
+   - Hệ thống ghi nhận lỗi khi tạo ảnh hoặc đóng watermark.
+   - Không công khai ảnh chưa xử lý hoàn tất.
+   - Có thể yêu cầu xử lý lại để quay về `PROCESSING`.
+
+5. **PUBLISHED (Đã công khai)**
+   - Ảnh đã sẵn sàng được đưa vào triển lãm.
+   - Người dùng chỉ truy cập bản ảnh công khai có watermark.
+
 
 **Giải thích các trạng thái:**
 

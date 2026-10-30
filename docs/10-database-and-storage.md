@@ -8,7 +8,7 @@ Hệ thống sử dụng cơ sở dữ liệu quan hệ **PostgreSQL 16+** kết
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgvector";
+CREATE EXTENSION IF NOT EXISTS vector;
 
 -- Định nghĩa các kiểu ENUM dùng chung
 CREATE TYPE user_role AS ENUM ('ADMIN', 'ORGANIZER', 'JUDGE', 'PARTICIPANT');
@@ -106,32 +106,34 @@ WITH (m = 16, ef_construction = 64);
 
 ## 3. State Machine & Lifecycle (Vòng đời Tệp & Quá trình Cấp URL)
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Client as Web / Mobile Client
-    participant API as Backend Server (API)
-    participant DB as PostgreSQL (DB)
-    participant Storage as Cloud Storage (S3 / R2)
+### 3.1. Presigned Upload URL Lifecycle
 
-    Note over Client,Storage: 1. Giai đoạn Xin cấp phép Upload (Presigned URL)
-    Client->>API: POST /api/v1/storage/presigned-upload-url (kèm mimeType, fileSize, sha256)
-    API->>API: Validate file size (<= 50MB) & MimeType
-    API->>Storage: Khởi tạo Signed PUT URL (TTL: 15 mins)
-    Storage-->>API: Trả về Presigned Upload URL + ObjectKey
-    API-->>Client: Trả về Upload URL & Asset ID tạm thời
+Quy trình tải tệp từ Web/Mobile lên Cloud Storage:
 
-    Note over Client,Storage: 2. Giai đoạn Tải trực tiếp lên Cloud
-    Client->>Storage: PUT Direct Upload (Binary Payload)
-    Storage-->>Client: 200 OK (Upload thành công)
+1. **Request Upload URL:** Client gửi yêu cầu cấp Presigned Upload URL đến Backend, kèm thông tin `mimeType`, `fileSizeBytes` và `sha256`.
+2. **Validate Request:** Backend kiểm tra định dạng tệp, kích thước và quyền truy cập.
+3. **Generate Presigned URL:** Backend tạo URL tải lên có thời hạn 15 phút và trả về thông tin URL, `assetId`, `objectKey`.
+4. **Direct Upload:** Client sử dụng Presigned URL để tải tệp trực tiếp lên Cloudflare R2 hoặc S3.
+5. **Confirm Upload:** Sau khi tải lên thành công, Client gửi yêu cầu xác nhận đến Backend.
+6. **Verify Object:** Backend kiểm tra tệp đã tồn tại trên Cloud Storage bằng thao tác `HeadObject`.
+7. **Save Metadata:** Backend lưu metadata của tệp vào bảng `digital_assets`.
+8. **Complete:** Backend xác nhận tài nguyên đã sẵn sàng để sử dụng.
 
-    Note over Client,Storage: 3. Xác nhận và Chốt Metadata
-    Client->>API: POST /api/v1/storage/confirm-upload (Asset ID)
-    API->>Storage: HeadObject kiểm tra tệp thực tế tồn tại
-    API->>DB: INSERT INTO digital_assets (Lưu metadata, trạng thái hoàn tất)
-    DB-->>API: Ghi nhận thành công
-    API-->>Client: Hoàn tất liên kết tệp
-```
+### 3.2. Upload Failure Lifecycle
+
+- Nếu dữ liệu yêu cầu không hợp lệ, Backend từ chối cấp Presigned URL.
+- Nếu URL hết hạn, Client cần yêu cầu URL mới trước khi tiếp tục tải lên.
+- Nếu quá trình tải lên thất bại, Client hiển thị lỗi và cho phép thử lại.
+- Nếu Backend không tìm thấy tệp trên Cloud Storage khi xác nhận, không được đánh dấu upload thành công.
+- Nếu lưu metadata thất bại, hệ thống cần xử lý để tránh dữ liệu không đồng bộ giữa Database và Cloud Storage.
+
+### 3.3. Lifecycle Notes
+
+- Tệp gốc và ảnh âm bản phải được lưu trong vùng lưu trữ riêng tư.
+- Client không được truy cập trực tiếp bằng Access Key hoặc Secret Key của Cloud Storage.
+- Presigned Upload URL có thời hạn 15 phút theo BR-20.
+- Signed Download URL dành cho người có quyền truy cập có thời hạn tối đa 60 phút theo BR-20.
+- Các bước trên mô tả quy trình thiết kế, chưa xác nhận tất cả endpoint đã được triển khai trong Backend.
 
 ---
 

@@ -1,26 +1,89 @@
-# 09. Shared API Contracts
+# Module Spec: 09 - Shared API Contracts
 
-## 1. Overview
+## 1. Domain Entities & Database Mapping
 
-### 1.1. Purpose
+### 1.1 Tổng quan
 
-Tài liệu này định nghĩa các DTO và chuẩn Request/Response
+Tài liệu định nghĩa các DTO và hợp đồng API dùng chung
+cho Backend, Web Next.js và Mobile Flutter.
 
-JSON dùng chung cho Backend, Web Next.js và Mobile Flutter.
+### 1.2 Các nhóm DTO
 
-### 1.2. Scope
+- Authentication DTOs
+- Contest DTOs
+- Submission DTOs
+- Archive & Exhibition DTOs
+- Common Response DTO
+- Pagination DTO
 
-- Chuẩn hóa cấu trúc API Response.
+### 1.3 Database Mapping
 
-- Định nghĩa Request DTO và Response DTO.
+Tài liệu API Contracts không trực tiếp định nghĩa
+cấu trúc bảng database.
 
-- Xây dựng danh mục mã thông báo MSG001–MSG028.
+Việc ánh xạ giữa DTO và database cần đối chiếu
+với schema chính thức của Backend.
 
-- Thống nhất cách xử lý lỗi giữa Backend, Web và Mobile.
 
-## 2. Standard API Response
+## 2. Business Rules & Logic Ràng Buộc
 
-### 2.1. Standard Success Response
+### 2.1. API Response Standardization
+
+- Các API cần sử dụng cấu trúc Response thống nhất giữa Backend, Web và Mobile.
+- Chuẩn Response đề xuất gồm ba trường: `code`, `message`, `data`.
+- HTTP Status phải phản ánh đúng kết quả xử lý.
+- Không trả về mật khẩu, token hoặc dữ liệu bí mật trong thông báo lỗi.
+
+### 2.2. DTO Validation Rules
+
+- Backend phải kiểm tra các trường bắt buộc.
+- UUID, email và DateTime phải đúng định dạng.
+- Các trường số và chuỗi phải tuân thủ giới hạn đã định nghĩa.
+- Web và Mobile sử dụng chung các DTO đã được nhóm thống nhất.
+
+### 2.3. Error Handling Rules
+
+- Các lỗi cần được ánh xạ sang HTTP Status phù hợp.
+- Danh mục `MSG001–MSG028` hiện là đề xuất, cần được nhóm xác nhận.
+- Không trả về stack trace hoặc thông tin nội bộ trong Response.
+- Client không nên phụ thuộc vào chuỗi `message` để phân loại lỗi.
+
+### 2.4. Implementation Notes
+
+- OpenAPI hiện tại chưa hoàn toàn thống nhất với cấu trúc `{ code, message, data }`.
+- Việc thay đổi hợp đồng API cần được nhóm thống nhất trước khi triển khai.
+
+
+## 3. State Machine & Lifecycle
+
+### 3.1. API Request Lifecycle
+
+Quy trình xử lý một yêu cầu API:
+
+1. **Receive Request:** Backend tiếp nhận HTTP Request từ Web hoặc Mobile.
+2. **Validate Input:** Kiểm tra dữ liệu đầu vào theo Request DTO.
+3. **Authenticate & Authorize:** Kiểm tra JWT và quyền RBAC đối với API yêu cầu xác thực.
+4. **Process Request:** Thực hiện xử lý nghiệp vụ và truy cập dữ liệu khi cần.
+5. **Generate Response:** Trả về HTTP Status và Response DTO tương ứng.
+
+### 3.2. Error Handling Lifecycle
+
+1. Backend phát hiện lỗi validation, xác thực, phân quyền hoặc nghiệp vụ.
+2. Xác định HTTP Status phù hợp.
+3. Ánh xạ mã MSG001–MSG028 nếu danh mục đã được nhóm phê duyệt.
+4. Trả về thông báo lỗi theo API Contract đã thống nhất.
+5. Web và Mobile hiển thị thông báo phù hợp.
+
+### 3.3. Lifecycle Notes
+
+- Đây là quy trình xử lý API ở mức tài liệu, không phải các trạng thái được lưu trong database.
+- Không phải API nào cũng yêu cầu JWT hoặc RBAC.
+- Cấu trúc Response và mã MSG cần được thống nhất với OpenAPI và backend trước khi triển khai.
+
+
+## 4. Shared API Contracts
+
+### 4.1. Standard Success Response
 
 Tất cả API thuộc phạm vi chuẩn hóa sử dụng cấu trúc JSON thống nhất:
 
@@ -50,7 +113,7 @@ Tất cả API thuộc phạm vi chuẩn hóa sử dụng cấu trúc JSON thố
 
 | `data` | Object / Array / Null | Dữ liệu trả về từ API |
 
-### 2.2. Success Response Example
+### 4.2. Success Response Example
 
 Ví dụ API lấy thông tin cuộc thi:
 
@@ -76,7 +139,7 @@ Ví dụ API lấy thông tin cuộc thi:
 
 ```
 
-### 2.3. Error Response Example
+### 4.3. Error Response Example
 
 Đề xuất cấu trúc phản hồi lỗi:
 
@@ -94,7 +157,7 @@ Ví dụ API lấy thông tin cuộc thi:
 
 ```
 
-### 2.4. HTTP Status Codes
+### 4.4. HTTP Status Codes
 
 | HTTP Status | Description |
 
@@ -118,9 +181,9 @@ Ví dụ API lấy thông tin cuộc thi:
 
 **Implementation Note:** Đây là chuẩn Response theo yêu cầu Jira. OpenAPI hiện tại vẫn có những cấu trúc Response khác, vì vậy cần được nhóm thống nhất trước khi áp dụng trên toàn bộ backend.
 
-## 3. Common DTO Definitions
+### 4.5 Common DTO Definitions
 
-### 3.1. DTO Overview
+#### 4.5.1. DTO Overview
 
 Data Transfer Object (DTO) là cấu trúc dữ liệu dùng để trao đổi thông tin giữa Client (Web Next.js, Mobile Flutter) và Backend API.
 
@@ -132,7 +195,7 @@ DTO được chia thành hai loại chính:
 
 Mục tiêu của việc chuẩn hóa DTO là đảm bảo Web và Mobile sử dụng thống nhất tên trường, kiểu dữ liệu và cấu trúc JSON.
 
-### 3.2. Common Response DTO
+#### 4.5.2. Common Response DTO
 
 Tất cả API thuộc phạm vi chuẩn hóa sử dụng cấu trúc Response chung:
 
@@ -160,7 +223,7 @@ Tất cả API thuộc phạm vi chuẩn hóa sử dụng cấu trúc Response c
 
 | `data` | Object / Array / Null | Yes | Dữ liệu trả về |
 
-### 3.3. Pagination DTO
+#### 4.5.3. Pagination DTO
 
 Pagination DTO được sử dụng cho các API trả về danh sách dữ liệu có phân trang, ví dụ danh sách cuộc thi hoặc tác phẩm triển lãm.
 
@@ -194,7 +257,7 @@ Pagination DTO được sử dụng cho các API trả về danh sách dữ li�
 
 | `totalPages` | Integer | Tổng số trang |
 
-### 3.4. Common Data Types
+#### 4.5.4. Common Data Types
 
 | Data Type | Description | Example |
 
@@ -218,7 +281,7 @@ Pagination DTO được sử dụng cho các API trả về danh sách dữ li�
 
 | Null | Không có giá trị | `null` |
 
-### 3.5. DTO Validation Rules
+#### 4.5.5. DTO Validation Rules
 
 - Các trường bắt buộc phải được kiểm tra trước khi xử lý.
 
@@ -234,7 +297,7 @@ Pagination DTO được sử dụng cho các API trả về danh sách dữ li�
 
 - Backend phải kiểm tra dữ liệu đầu vào, không chỉ dựa vào validation của Web hoặc Mobile.
 
-### 3.6. Naming Convention
+#### 4.5.6. Naming Convention
 
 - Sử dụng `camelCase` cho tên trường JSON, ví dụ: `contestId`, `participantId`, `createdAt`.
 
@@ -244,9 +307,9 @@ Pagination DTO được sử dụng cho các API trả về danh sách dữ li�
 
 **Implementation Note:** Các quy ước DTO trong tài liệu này là đề xuất chuẩn hóa theo yêu cầu Jira. Một số API hiện tại có thể sử dụng tên trường hoặc cấu trúc Response khác, cần thống nhất với nhóm trước khi áp dụng.
 
-## 4. Authentication DTOs
+### 4.6. Authentication DTOs
 
-### 4.1. Authentication DTO Overview
+#### 4.6.1. Authentication DTO Overview
 
 Authentication DTOs định nghĩa cấu trúc dữ liệu trao đổi giữa Client (Web Next.js, Mobile Flutter) và Backend trong quá trình xác thực người dùng.
 
@@ -262,7 +325,7 @@ Các chức năng bao gồm:
 
 Các endpoint hiện được khai báo trong OpenAPI gồm `/auth/register`, `/auth/login`, `/auth/refresh` và `/auth/logout`.
 
-### 4.2. Register Request DTO
+#### 4.6.2. Register Request DTO
 
 **Endpoint:** `POST /auth/register`
 
@@ -308,7 +371,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/auth/register`, `/
 
 - Không cho phép Client tự cấp quyền Admin hoặc Organizer khi đăng ký thông thường.
 
-### 4.3. Register Response DTO
+#### 4.6.3. Register Response DTO
 
 **HTTP Status:** `201 Created`
 
@@ -356,7 +419,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/auth/register`, `/
 
 - Cách truyền và lưu Refresh Token phải tuân thủ chính sách bảo mật được nhóm thống nhất.
 
-### 4.4. Login Request DTO
+#### 4.6.4. Login Request DTO
 
 **Endpoint:** `POST /auth/login`
 
@@ -392,7 +455,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/auth/register`, `/
 
 - Tài khoản bị khóa không được phép đăng nhập.
 
-### 4.5. Login Response DTO
+#### 4.6.5. Login Response DTO
 
 **HTTP Status:** `200 OK`
 
@@ -440,7 +503,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/auth/register`, `/
 
 - Refresh Token phải được bảo vệ và không ghi vào log.
 
-### 4.6. Refresh Token Request DTO
+#### 4.6.6. Refresh Token Request DTO
 
 **Endpoint:** `POST /auth/refresh`
 
@@ -472,7 +535,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/auth/register`, `/
 
 - Backend thực hiện Token Rotation theo cơ chế xác thực của hệ thống.
 
-### 4.7. Refresh Token Response DTO
+#### 4.6.7. Refresh Token Response DTO
 
 **HTTP Status:** `200 OK`
 
@@ -506,7 +569,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/auth/register`, `/
 
 - Không công khai token trong log hoặc thông báo lỗi.
 
-### 4.8. Logout Request DTO
+#### 4.6.8. Logout Request DTO
 
 **Endpoint:** `POST /auth/logout`
 
@@ -530,7 +593,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/auth/register`, `/
 
 | `refreshToken` | String | Yes | Token cần thu hồi |
 
-### 4.9. Logout Response DTO
+#### 4.6.9. Logout Response DTO
 
 **HTTP Status:** `200 OK`
 
@@ -558,7 +621,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/auth/register`, `/
 
 - Không cho phép sử dụng lại Refresh Token đã bị thu hồi.
 
-### 4.10. Authentication Error Handling
+#### 4.6.10. Authentication Error Handling
 
 | HTTP Status | Error Scenario | Description |
 
@@ -592,7 +655,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/auth/register`, `/
 
 Các trường hợp lỗi sẽ được ánh xạ với mã thông báo `MSG001–MSG028` sau khi danh mục mã được thống nhất.
 
-### 4.11. Security Requirements
+#### 4.6.11. Security Requirements
 
 - Sử dụng HTTPS khi triển khai môi trường production.
 
@@ -610,9 +673,9 @@ Các trường hợp lỗi sẽ được ánh xạ với mã thông báo `MSG001
 
 **Implementation Note:** Tên trường Request dựa trên OpenAPI hiện tại. Các Response đã được bọc trong cấu trúc `{ code, message, data }` theo yêu cầu Jira nên là hợp đồng chuẩn hóa đề xuất, chưa phải phản hồi đã được xác nhận từ backend.
 
-## 5. Contest DTOs
+### 4.7. Contest DTOs
 
-### 5.1. Contest DTO Overview
+#### 4.7.1. Contest DTO Overview
 
 Contest DTOs định nghĩa cấu trúc dữ liệu trao đổi giữa Web Next.js, Mobile Flutter và Backend trong quá trình quản lý cuộc thi nhiếp ảnh phim.
 
@@ -630,7 +693,7 @@ Các chức năng bao gồm:
 
 Các endpoint hiện được khai báo trong OpenAPI gồm `/contests` và `/contests/{id}`.
 
-### 5.2. Create Contest Request DTO
+#### 4.7.2. Create Contest Request DTO
 
 **Endpoint:** `POST /contests`
 
@@ -688,7 +751,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/contests` và `/co
 
 `draft`, `published`, `ongoing`, `completed`, `cancelled`.
 
-### 5.3. Create Contest Response DTO
+#### 4.7.3. Create Contest Response DTO
 
 **HTTP Status:** `201 Created`
 
@@ -738,7 +801,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/contests` và `/co
 
 - Không trả về dữ liệu nhạy cảm không cần thiết.
 
-### 5.4. Get Contest List Request DTO
+#### 4.7.4. Get Contest List Request DTO
 
 **Endpoint:** `GET /contests`
 
@@ -766,7 +829,7 @@ GET /contests?status=published&page=1&limit=10
 
 ```
 
-### 5.5. Get Contest List Response DTO
+#### 4.7.5. Get Contest List Response DTO
 
 **HTTP Status:** `200 OK`
 
@@ -826,7 +889,7 @@ GET /contests?status=published&page=1&limit=10
 
 **Implementation Note:** OpenAPI hiện tại sử dụng `data` là mảng cuộc thi và `pagination` nằm ngoài `data`. Cấu trúc `data.items` và `data.pagination` ở ví dụ trên là đề xuất chuẩn hóa, cần được nhóm xác nhận.
 
-### 5.6. Get Contest Detail DTO
+#### 4.7.6. Get Contest Detail DTO
 
 **Endpoint:** `GET /contests/{id}`
 
@@ -878,7 +941,7 @@ GET /contests?status=published&page=1&limit=10
 
 - Nếu không tìm thấy, trả về HTTP 404.
 
-### 5.7. Update Contest Request DTO
+#### 4.7.7. Update Contest Request DTO
 
 **Endpoint:** `PUT /contests/{id}`
 
@@ -926,7 +989,7 @@ GET /contests?status=published&page=1&limit=10
 
 - Không cho phép cập nhật dữ liệu kết quả đã khóa trái với BR-16.
 
-### 5.8. Update Contest Response DTO
+#### 4.7.8. Update Contest Response DTO
 
 **HTTP Status:** `200 OK`
 
@@ -964,7 +1027,7 @@ GET /contests?status=published&page=1&limit=10
 
 - Các thay đổi phải tuân thủ quy tắc nghiệp vụ của cuộc thi.
 
-### 5.9. Delete Contest DTO
+#### 4.7.9. Delete Contest DTO
 
 **Endpoint:** `DELETE /contests/{id}`
 
@@ -1002,7 +1065,7 @@ GET /contests?status=published&page=1&limit=10
 
 **Implementation Note:** OpenAPI hiện tại có endpoint DELETE nhưng chưa xác định rõ cơ chế Soft Delete. Cần thống nhất cách triển khai với nhóm.
 
-### 5.10. Contest Error Handling
+#### 4.7.10. Contest Error Handling
 
 | HTTP Status | Error Scenario | Description |
 
@@ -1036,7 +1099,7 @@ GET /contests?status=published&page=1&limit=10
 
 Các trường hợp lỗi cần được ánh xạ với danh mục `MSG001–MSG028` sau khi nhóm thống nhất nội dung từng mã.
 
-### 5.11. Security & Integration Requirements
+#### 4.7.11. Security & Integration Requirements
 
 - Các API tạo, cập nhật và xóa cuộc thi yêu cầu JWT Access Token.
 
@@ -1052,9 +1115,9 @@ Các trường hợp lỗi cần được ánh xạ với danh mục `MSG001–M
 
 **Implementation Note:** Các Request DTO và endpoint dựa trên OpenAPI hiện tại. Response được chuẩn hóa theo cấu trúc `{ code, message, data }` của Jira và chưa phải hợp đồng đã triển khai. OpenAPI hiện dùng `snake_case` trong một số trường Contest Response, trong khi Request sử dụng `camelCase`; việc thống nhất tên trường cần được nhóm quyết định.
 
-## 6. Submission DTOs
+### 4.8. Submission DTOs
 
-### 6.1. Submission DTO Overview
+#### 4.8.1. Submission DTO Overview
 
 Submission DTOs định nghĩa cấu trúc dữ liệu trao đổi giữa Client (Web Next.js, Mobile Flutter) và Backend khi người tham gia gửi tác phẩm dự thi nhiếp ảnh phim.
 
@@ -1076,7 +1139,7 @@ Theo OpenAPI hiện tại, chức năng nộp bài sử dụng endpoint:
 
 Request sử dụng `multipart/form-data` để gửi dữ liệu và file ảnh, không phải JSON thuần túy.
 
-### 6.2. Create Submission Request DTO
+#### 4.8.2. Create Submission Request DTO
 
 **Endpoint:** `POST /api/v1/submissions`
 
@@ -1172,7 +1235,7 @@ Request sử dụng `multipart/form-data` để gửi dữ liệu và file ảnh
 
 - Hạng mục được chọn phải thuộc cuộc thi tương ứng.
 
-### 6.3. Film Metadata DTO
+#### 4.8.3. Film Metadata DTO
 
 Film Metadata DTO lưu thông tin kỹ thuật liên quan đến ảnh phim.
 
@@ -1242,7 +1305,7 @@ Film Metadata DTO lưu thông tin kỹ thuật liên quan đến ảnh phim.
 
 **Implementation Note:** JSON trên chỉ minh họa nhóm trường metadata. Khi gửi `POST /api/v1/submissions`, các trường được truyền trực tiếp trong `multipart/form-data`, không gửi một đối tượng JSON `filmMetadata` riêng trừ khi API được thay đổi.
 
-### 6.4. Submission Response DTO
+#### 4.8.4. Submission Response DTO
 
 **HTTP Status:** `201 Created`
 
@@ -1294,7 +1357,7 @@ Film Metadata DTO lưu thông tin kỹ thuật liên quan đến ảnh phim.
 
 **Implementation Note:** OpenAPI hiện tại trả về `success` và `data` cho endpoint nộp bài. Ví dụ trên là cấu trúc Response đề xuất theo chuẩn Jira.
 
-### 6.5. Submission Status
+#### 4.8.5. Submission Status
 
 Theo database schema hiện tại, trường `submissions.status` hỗ trợ các trạng thái:
 
@@ -1320,7 +1383,7 @@ Theo database schema hiện tại, trường `submissions.status` hỗ trợ cá
 
 - Khi kết quả cuộc thi đã công bố, thông tin bài thi đạt giải phải tuân thủ BR-16.
 
-### 6.6. Image & Negative Proof DTO
+#### 4.8.6. Image & Negative Proof DTO
 
 **Image File:**
 
@@ -1344,7 +1407,7 @@ Theo database schema hiện tại, trường `submissions.status` hỗ trợ cá
 
 - Ảnh công khai cho triển lãm phải sử dụng bản WebP đã xử lý và có watermark theo BR-17.
 
-### 6.7. Submission Error Handling
+#### 4.8.7. Submission Error Handling
 
 | HTTP Status | Error Scenario | Description |
 
@@ -1378,7 +1441,7 @@ Theo database schema hiện tại, trường `submissions.status` hỗ trợ cá
 
 Các trường hợp lỗi cần được ánh xạ với danh mục `MSG001–MSG028` sau khi nhóm thống nhất nội dung từng mã.
 
-### 6.8. Security & Integration Requirements
+#### 4.8.8. Security & Integration Requirements
 
 - API nộp bài yêu cầu JWT Access Token.
 
@@ -1398,9 +1461,9 @@ Các trường hợp lỗi cần được ánh xạ với danh mục `MSG001–M
 
 **Implementation Note:** Request DTO và giới hạn dữ liệu dựa trên OpenAPI hiện tại. Response DTO được chuẩn hóa theo `{ code, message, data }` theo yêu cầu Jira và cần được nhóm xác nhận trước khi áp dụng vào Backend.
 
-## 7. Archive & Exhibition DTOs
+### 4.9. Archive & Exhibition DTOs
 
-### 7.1. Archive & Exhibition DTO Overview
+#### 4.9.1. Archive & Exhibition DTO Overview
 
 Archive & Exhibition DTOs định nghĩa cấu trúc dữ liệu trao đổi giữa Web Next.js, Mobile Flutter và Backend trong quá trình công bố kết quả, lưu trữ tác phẩm và tổ chức triển lãm ảnh trực tuyến.
 
@@ -1422,7 +1485,7 @@ Các chức năng chính bao gồm:
 
 **Implementation Status:** Các endpoint trong mục này là đề xuất dựa trên SRS và tài liệu `08-archive-and-exhibition.md`. Chúng chưa được khai báo trong OpenAPI hiện tại và cần được nhóm thống nhất trước khi triển khai.
 
-### 7.2. Publish Official Results DTO
+#### 4.9.2. Publish Official Results DTO
 
 **Endpoint:** `POST /api/v1/contests/{contestId}/publish-results`
 
@@ -1488,7 +1551,7 @@ Các chức năng chính bao gồm:
 
 **Status Note:** SRS sử dụng `PUBLISHED`, trong khi OpenAPI hiện tại sử dụng `published`. Ví dụ Response dùng chữ thường để phù hợp OpenAPI; nhóm cần thống nhất cách biểu diễn trước khi triển khai.
 
-### 7.3. Archive Contest Results DTO
+#### 4.9.3. Archive Contest Results DTO
 
 **Endpoint:** `POST /api/v1/contests/{contestId}/archive`
 
@@ -1558,7 +1621,7 @@ Các chức năng chính bao gồm:
 
 - Không công khai ảnh khi quá trình tạo WebP hoặc watermark chưa hoàn thành.
 
-### 7.4. Get Published Contest Results DTO
+#### 4.9.4. Get Published Contest Results DTO
 
 **Endpoint:** `GET /api/v1/contests/{contestId}/results`
 
@@ -1616,7 +1679,7 @@ Các chức năng chính bao gồm:
 
 - API này không cho phép thay đổi dữ liệu kết quả.
 
-### 7.5. Exhibition Gallery & Faceted Search DTO
+#### 4.9.5. Exhibition Gallery & Faceted Search DTO
 
 **Endpoint:** `GET /api/v1/exhibitions`
 
@@ -1720,7 +1783,7 @@ GET /api/v1/exhibitions?filmStock=Portra&filmFormat=35mm&year=2026&page=1&limit=
 
 - Hỗ trợ phân trang.
 
-### 7.6. Exhibition Detail DTO
+#### 4.9.6. Exhibition Detail DTO
 
 **Endpoint:** `GET /api/v1/exhibitions/{id}`
 
@@ -1782,7 +1845,7 @@ GET /api/v1/exhibitions?filmStock=Portra&filmFormat=35mm&year=2026&page=1&limit=
 
 - Nếu không tìm thấy tác phẩm, trả về HTTP 404.
 
-### 7.7. Process Exhibition Image DTO
+#### 4.9.7. Process Exhibition Image DTO
 
 **Endpoint:** `POST /api/v1/exhibitions/{id}/process`
 
@@ -1846,7 +1909,7 @@ GET /api/v1/exhibitions?filmStock=Portra&filmFormat=35mm&year=2026&page=1&limit=
 
 - Yêu cầu xử lý lặp lại phải được kiểm soát để tránh tạo dữ liệu trùng.
 
-### 7.8. Exhibition Processing Status DTO
+#### 4.9.8. Exhibition Processing Status DTO
 
 **Endpoint:** `GET /api/v1/exhibitions/{id}/status`
 
@@ -1896,7 +1959,7 @@ GET /api/v1/exhibitions?filmStock=Portra&filmFormat=35mm&year=2026&page=1&limit=
 
 Các trạng thái trên là đề xuất của module Archive & Exhibition, chưa được khai báo đầy đủ trong database hiện tại.
 
-### 7.9. Archive & Exhibition Error Handling
+#### 4.9.9. Archive & Exhibition Error Handling
 
 | HTTP Status | Error Scenario | Description |
 
@@ -1938,7 +2001,7 @@ Các trạng thái trên là đề xuất của module Archive & Exhibition, ch�
 
 Các trường hợp lỗi sẽ được ánh xạ với danh mục `MSG001–MSG028` sau khi nhóm thống nhất mã thông báo.
 
-### 7.10. Security & Integration Requirements
+#### 4.9.10. Security & Integration Requirements
 
 - Các API quản lý yêu cầu JWT Access Token và RBAC.
 
@@ -1958,9 +2021,11 @@ Các trường hợp lỗi sẽ được ánh xạ với danh mục `MSG001–MS
 
 **Implementation Note:** Các API và DTO Archive & Exhibition trong mục này là thiết kế đề xuất, không phải các endpoint đã được xác nhận triển khai. Một số dữ liệu như giải thưởng, điểm số, AI tags và trạng thái xử lý ảnh cần được hỗ trợ bởi schema hoặc logic backend tương ứng.
 
-## 8. Message Code Catalog (MSG001–MSG028)
+## 5. UI/UX Functional Requirements
 
-### 8.1. Message Code Overview
+### 5.1. Message Code Catalog (MSG001–MSG028)
+
+#### 5.1.1. Message Code Overview
 
 Message Code Catalog định nghĩa danh mục mã thông báo dùng chung cho Backend, Web Next.js và Mobile Flutter.
 
@@ -1980,7 +2045,7 @@ Mục tiêu:
 
 Danh mục `MSG001–MSG028` dưới đây là đề xuất cho dự án, chưa được xác nhận là danh mục mã chính thức của nhóm.
 
-### 8.2. Message Code Catalog
+#### 5.1.2. Message Code Catalog
 
 | Message Code | HTTP Status | Message | Description |
 
@@ -2042,7 +2107,7 @@ Danh mục `MSG001–MSG028` dưới đây là đề xuất cho dự án, chưa 
 
 | `MSG028` | 500 | Internal server error | Lỗi máy chủ nội bộ |
 
-### 8.3. Message Code Usage
+#### 5.1.3. Message Code Usage
 
 Để Client nhận biết mã thông báo một cách ổn định, đề xuất bổ sung trường `messageCode` vào cấu trúc Response.
 
@@ -2080,7 +2145,7 @@ Danh mục `MSG001–MSG028` dưới đây là đề xuất cho dự án, chưa 
 
 Do đó, trường `messageCode` ở trên chỉ là phương án mở rộng đề xuất. Nếu nhóm yêu cầu giữ đúng ba trường Response, có thể dùng danh mục MSG trong logic Backend hoặc thống nhất phương án khác.
 
-### 8.4. Authentication Message Examples
+#### 5.1.4. Authentication Message Examples
 
 **Invalid Credentials:**
 
@@ -2118,7 +2183,7 @@ Do đó, trường `messageCode` ở trên chỉ là phương án mở rộng đ
 
 ```
 
-### 8.5. Contest Message Examples
+#### 5.1.5. Contest Message Examples
 
 **Contest Not Found:**
 
@@ -2156,7 +2221,7 @@ Do đó, trường `messageCode` ở trên chỉ là phương án mở rộng đ
 
 ```
 
-### 8.6. Submission Message Examples
+#### 5.1.6. Submission Message Examples
 
 **File Too Large:**
 
@@ -2194,7 +2259,7 @@ Do đó, trường `messageCode` ở trên chỉ là phương án mở rộng đ
 
 ```
 
-### 8.7. Archive & Exhibition Message Examples
+#### 5.1.7. Archive & Exhibition Message Examples
 
 **Results Already Locked:**
 
@@ -2232,7 +2297,7 @@ Do đó, trường `messageCode` ở trên chỉ là phương án mở rộng đ
 
 ```
 
-### 8.8. Message Code Management Rules
+#### 5.1.8. Message Code Management Rules
 
 - Mỗi mã MSG phải có ý nghĩa duy nhất.
 
@@ -2250,7 +2315,7 @@ Do đó, trường `messageCode` ở trên chỉ là phương án mở rộng đ
 
 - Khi cần thêm mã mới, phải cập nhật tài liệu API Contracts và thông báo cho nhóm.
 
-### 8.9. Integration Requirements
+#### 5.1.9. Integration Requirements
 
 **Backend:**
 
@@ -2280,9 +2345,9 @@ Do đó, trường `messageCode` ở trên chỉ là phương án mở rộng đ
 
 **Implementation Note:** Danh mục `MSG001–MSG028`, cách ánh xạ HTTP Status và trường `messageCode` trong mục này đều là đề xuất. Trước khi áp dụng, nhóm cần đối chiếu với SRS, các tài liệu nghiệp vụ và hợp đồng API đã thống nhất.
 
-## 9. Validation & Error Handling
+### 5.2. Validation & Error Handling
 
-### 9.1. Validation & Error Handling Overview
+#### 5.2.1. Validation & Error Handling Overview
 
 Validation & Error Handling định nghĩa các quy tắc kiểm tra dữ liệu đầu vào và cách xử lý lỗi thống nhất giữa Backend, Web Next.js và Mobile Flutter.
 
@@ -2300,7 +2365,7 @@ Mục tiêu:
 
 Backend chịu trách nhiệm kiểm tra dữ liệu đầu vào ngay cả khi Client đã thực hiện validation.
 
-### 9.2. General Validation Rules
+#### 5.2.2. General Validation Rules
 
 Các Request DTO phải tuân thủ những quy tắc sau:
 
@@ -2342,7 +2407,7 @@ Các Request DTO phải tuân thủ những quy tắc sau:
 
 - Kiểm tra các điều kiện nghiệp vụ trước khi lưu dữ liệu.
 
-### 9.3. Standard Error Response
+#### 5.2.3. Standard Error Response
 
 Các API thuộc phạm vi chuẩn hóa sử dụng cấu trúc phản hồi lỗi:
 
@@ -2384,7 +2449,7 @@ Các API thuộc phạm vi chuẩn hóa sử dụng cấu trúc phản hồi l�
 
 - Không trả về HTTP 200 cho một yêu cầu thực sự thất bại.
 
-### 9.4. Field Validation Error DTO
+#### 5.2.4. Field Validation Error DTO
 
 Đề xuất sử dụng `data.errors` để mô tả các trường không hợp lệ khi cần hiển thị lỗi chi tiết trên Web hoặc Mobile.
 
@@ -2446,7 +2511,7 @@ Các API thuộc phạm vi chuẩn hóa sử dụng cấu trúc phản hồi l�
 
 - Cấu trúc `data.errors` là đề xuất mở rộng, cần được nhóm xác nhận.
 
-### 9.5. HTTP Error Status Mapping
+#### 5.2.5. HTTP Error Status Mapping
 
 | HTTP Status | Error Type | Description |
 
@@ -2470,7 +2535,7 @@ Các API thuộc phạm vi chuẩn hóa sử dụng cấu trúc phản hồi l�
 
 Backend phải trả về HTTP Status phù hợp với kết quả xử lý thực tế.
 
-### 9.6. Authentication Error Handling
+#### 5.2.6. Authentication Error Handling
 
 Các API Authentication phải xử lý những trường hợp lỗi sau:
 
@@ -2516,7 +2581,7 @@ Các API Authentication phải xử lý những trường hợp lỗi sau:
 
 - Backend phải kiểm tra JWT và quyền truy cập trước khi thực hiện thao tác được bảo vệ.
 
-### 9.7. Contest Error Handling
+#### 5.2.7. Contest Error Handling
 
 Các API Contest phải kiểm tra dữ liệu và trạng thái cuộc thi.
 
@@ -2558,7 +2623,7 @@ Các API Contest phải kiểm tra dữ liệu và trạng thái cuộc thi.
 
 - Không cho phép sửa kết quả đã khóa theo BR-16.
 
-### 9.8. Submission Error Handling
+#### 5.2.8. Submission Error Handling
 
 Các API Submission phải kiểm tra dữ liệu bài dự thi và file được tải lên.
 
@@ -2606,7 +2671,7 @@ Các API Submission phải kiểm tra dữ liệu bài dự thi và file đượ
 
 - Không tin tưởng `participantId` do Client tự cung cấp.
 
-### 9.9. Archive & Exhibition Error Handling
+#### 5.2.9. Archive & Exhibition Error Handling
 
 Các API Archive & Exhibition phải kiểm tra điều kiện công bố kết quả và quyền truy cập tài nguyên.
 
@@ -2652,7 +2717,7 @@ Các API Archive & Exhibition phải kiểm tra điều kiện công bố kết 
 
 - Chỉ cho phép người có quyền thực hiện thao tác quản lý.
 
-### 9.10. Backend Error Handling Requirements
+#### 5.2.10. Backend Error Handling Requirements
 
 Backend phải thực hiện các yêu cầu sau:
 
@@ -2674,7 +2739,7 @@ Backend phải thực hiện các yêu cầu sau:
 
 - Đảm bảo lỗi không làm thay đổi dữ liệu một cách không nhất quán.
 
-### 9.11. Web & Mobile Error Handling Requirements
+#### 5.2.11. Web & Mobile Error Handling Requirements
 
 **Web Next.js:**
 
@@ -2700,7 +2765,7 @@ Backend phải thực hiện các yêu cầu sau:
 
 - Xử lý trường hợp Access Token hết hạn theo cơ chế xác thực đã thống nhất.
 
-### 9.12. Error Handling Implementation Notes
+#### 5.2.12. Error Handling Implementation Notes
 
 - Cấu trúc `{ code, message, data }` là chuẩn Response theo yêu cầu Jira.
 
@@ -2714,9 +2779,9 @@ Backend phải thực hiện các yêu cầu sau:
 
 - Backend, Web và Mobile cần thống nhất hợp đồng API trước khi thay đổi cách xử lý lỗi trong mã nguồn.
 
-## 10. Web & Mobile Integration Requirements
+### 5.3. Web & Mobile Integration
 
-### 10.1. Integration Overview
+#### 5.3.1. Integration Overview
 
 Web & Mobile Integration Requirements định nghĩa các quy tắc tích hợp API dùng chung giữa Backend, Web Next.js và Mobile Flutter.
 
@@ -2734,7 +2799,7 @@ Mục tiêu:
 
 Các yêu cầu trong mục này là hợp đồng tích hợp đề xuất, cần được nhóm thống nhất trước khi áp dụng trên toàn bộ hệ thống.
 
-### 10.2. Shared API Response Structure
+#### 5.3.2. Shared API Response Structure
 
 Web và Mobile phải xử lý cấu trúc Response chuẩn theo yêu cầu Jira:
 
@@ -2778,7 +2843,7 @@ Web và Mobile phải xử lý cấu trúc Response chuẩn theo yêu cầu Jira
 
 - Khi Backend thay đổi hợp đồng API, tài liệu phải được cập nhật tương ứng.
 
-### 10.3. Web Next.js Integration Requirements
+#### 5.3.3. Web Next.js Integration Requirements
 
 Web Next.js sử dụng các API Backend để thực hiện chức năng đăng ký, đăng nhập, quản lý cuộc thi, nộp bài và xem triển lãm.
 
@@ -2852,7 +2917,7 @@ GET /contests?page=1&limit=10
 
 ```
 
-### 10.4. Mobile Flutter Integration Requirements
+#### 5.3.4. Mobile Flutter Integration Requirements
 
 Mobile Flutter sử dụng cùng Backend API với Web Next.js.
 
@@ -2922,7 +2987,7 @@ Mobile Flutter sử dụng cùng Backend API với Web Next.js.
 
 **Implementation Note:** Cách truyền Refresh Token trên Mobile cần được nhóm thống nhất riêng với cơ chế cookie `HttpOnly` của Web và chính sách bảo mật Backend.
 
-### 10.5. Authentication & Authorization Integration
+#### 5.3.5. Authentication & Authorization Integration
 
 Web và Mobile sử dụng JWT Access Token để gọi các API yêu cầu xác thực.
 
@@ -2964,7 +3029,7 @@ Authorization: Bearer <access_token>
 
 | Participant | Tham gia cuộc thi và gửi bài dự thi |
 
-### 10.6. Request Content-Type Requirements
+#### 5.3.6. Request Content-Type Requirements
 
 | API Category | Content-Type | Description |
 
@@ -2990,7 +3055,7 @@ Authorization: Bearer <access_token>
 
 - Các API GET thông thường không yêu cầu JSON body.
 
-### 10.7. Message Code Integration
+#### 5.3.7. Message Code Integration
 
 Web và Mobile sử dụng chung danh mục mã thông báo `MSG001–MSG028` sau khi được nhóm phê duyệt.
 
@@ -3008,7 +3073,7 @@ Web và Mobile sử dụng chung danh mục mã thông báo `MSG001–MSG028` sa
 
 **Implementation Note:** Trường `messageCode` chưa nằm trong cấu trúc ba trường bắt buộc của Jira. Việc truyền mã MSG qua trường riêng cần được nhóm xác nhận.
 
-### 10.8. Pagination & Filtering Integration
+#### 5.3.8. Pagination & Filtering Integration
 
 Các API trả về danh sách cần hỗ trợ phân trang và lọc dữ liệu khi phù hợp.
 
@@ -3038,7 +3103,7 @@ Các API chuyên biệt có thể bổ sung tham số khác, ví dụ `filmStock
 
 - Cấu trúc phân trang phải thống nhất giữa các ứng dụng.
 
-### 10.9. DateTime & Naming Convention
+#### 5.3.9. DateTime & Naming Convention
 
 **DateTime Rules:**
 
@@ -3062,7 +3127,7 @@ Các API chuyên biệt có thể bổ sung tham số khác, ví dụ `filmStock
 
 **Compatibility Note:** OpenAPI hiện tại còn sử dụng `snake_case` ở một số Contest Response. Cần thống nhất tên trường trước khi triển khai đồng bộ Web và Mobile.
 
-### 10.10. API Contract Versioning
+#### 5.3.10. API Contract Versioning
 
 Các thay đổi đối với API Contract phải được quản lý để tránh làm hỏng ứng dụng Web hoặc Mobile.
 
@@ -3080,7 +3145,7 @@ Các thay đổi đối với API Contract phải được quản lý để trá
 
 **Implementation Note:** OpenAPI hiện tại sử dụng các đường dẫn API chưa hoàn toàn thống nhất tiền tố `/api/v1`. Nhóm cần xác nhận quy ước endpoint trước khi phát triển đồng bộ.
 
-### 10.11. API Integration Testing Requirements
+#### 5.3.11. API Integration Testing Requirements
 
 Các nhóm Backend, Web và Mobile cần kiểm tra khả năng tích hợp theo hợp đồng API.
 
@@ -3126,7 +3191,7 @@ Các nhóm Backend, Web và Mobile cần kiểm tra khả năng tích hợp theo
 
 - Kiểm tra dữ liệu giữa Web, Mobile và Backend có thống nhất hay không.
 
-### 10.12. Final Integration Notes
+#### 5.3.12. Final Integration Notes
 
 Tài liệu `09-api-contracts.md` đóng vai trò là bản đặc tả DTO và hợp đồng API dùng chung cho Backend, Web Next.js và Mobile Flutter.
 
