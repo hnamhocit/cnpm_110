@@ -343,6 +343,30 @@ export const filmMetadata = pgTable(
   ],
 );
 
+export const submissionModerationLogs = pgTable(
+  "submission_moderation_logs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    submissionId: uuid("submission_id")
+      .notNull()
+      .references(() => submissions.id, { onDelete: "cascade" }),
+    moderatorId: uuid("moderator_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    action: varchar("action", { length: 50 }).notNull(),
+    reason: text("reason").notNull(),
+    previousStatus: varchar("previous_status", { length: 40 }).notNull(),
+    newStatus: varchar("new_status", { length: 40 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_moderation_logs_submission_id").on(table.submissionId),
+    index("idx_moderation_logs_moderator_id").on(table.moderatorId),
+  ],
+);
+
 export const submissionAiAnalyses = pgTable(
   "submission_ai_analyses",
   {

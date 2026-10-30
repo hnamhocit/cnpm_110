@@ -10,6 +10,7 @@ import {
   categories,
   filmMetadata,
   submissionAiAnalyses,
+  submissionModerationLogs,
   submissions,
   users,
 } from "../db/schema";
@@ -549,6 +550,349 @@ route.post(
         500,
       );
     }
+  },
+);
+
+// POST /api/v1/submissions/:id/approve
+// Organizer & Admin phê duyệt bài dự thi
+route.post(
+  "/:id/approve",
+  authenticate,
+  requireRoles("Organizer", "Admin"),
+  async (c) => {
+    const id = c.req.param("id");
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    if (!uuidRegex.test(id)) {
+      return c.json(
+        { success: false, code: 400, message: "Invalid submission ID format" },
+        400,
+      );
+    }
+
+    let body: { reason?: unknown } = {};
+    try {
+      body = await c.req.json<{ reason?: unknown }>().catch(() => ({}));
+    } catch {
+      body = {};
+    }
+
+    const [submission] = await db
+      .select({ id: submissions.id, status: submissions.status })
+      .from(submissions)
+      .where(eq(submissions.id, id))
+      .limit(1);
+
+    if (!submission) {
+      return c.json(
+        { success: false, code: 404, message: "Submission not found" },
+        404,
+      );
+    }
+
+    if (submission.status === "APPROVED" || submission.status === "APPROVED_FOR_JUDGING") {
+      return c.json(
+        { success: false, code: 409, message: "Submission has already been processed" },
+        409,
+      );
+    }
+
+    const moderatorId = c.get("user").id;
+    const approvalReason =
+      typeof body.reason === "string" && body.reason.trim()
+        ? body.reason.trim()
+        : "Approved for judging by organizer";
+
+    const [updated] = await db
+      .update(submissions)
+      .set({
+        status: "APPROVED",
+        rejectionReason: null,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(submissions.id, id),
+          eq(submissions.status, submission.status),
+        ),
+      )
+      .returning({
+        id: submissions.id,
+        status: submissions.status,
+        updatedAt: submissions.updatedAt,
+      });
+
+    if (!updated) {
+      return c.json(
+        { success: false, code: 409, message: "Submission status changed; please try again" },
+        409,
+      );
+    }
+
+    await db.insert(submissionModerationLogs).values({
+      submissionId: id,
+      moderatorId,
+      action: "APPROVE_FOR_JUDGING",
+      reason: approvalReason,
+      previousStatus: submission.status,
+      newStatus: "APPROVED",
+    });
+
+    return c.json({
+      success: true,
+      code: 200,
+      message: "Submission approved successfully",
+      data: updated,
+    });
+  },
+);
+
+// POST /api/v1/submissions/:id/reject
+// Organizer & Admin từ chối bài dự thi (Bắt buộc lý do >= 10 ký tự theo BR-18)
+route.post(
+  "/:id/reject",
+  authenticate,
+  requireRoles("Organizer", "Admin"),
+  async (c) => {
+    const id = c.req.param("id");
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    if (!uuidRegex.test(id)) {
+      return c.json(
+        { success: false, code: 400, message: "Invalid submission ID format" },
+        400,
+      );
+    }
+
+    let body: { reason?: unknown };
+    try {
+      body = await c.req.json<{ reason?: unknown }>();
+    } catch {
+      return c.json(
+        { success: false, code: 400, message: "Invalid JSON body" },
+        400,
+      );
+    }
+
+    // BR-18: Bắt buộc nhập lý do chi tiết tối thiểu 10 ký tự
+    if (
+      typeof body.reason !== "string" ||
+      body.reason.trim().length < 10
+    ) {
+      return c.json(
+        {
+          success: false,
+          code: "MSG021",
+          message:
+            "Vui lòng nhập lý do cụ thể trước khi phê duyệt hoặc loại tác phẩm dự thi (Tối thiểu 10 ký tự).",
+        },
+        422,
+      );
+    }
+
+    const trimmedReason = body.reason.trim();
+    if (trimmedReason.length > 1000) {
+      return c.json(
+        {
+          success: false,
+          code: 400,
+          message: "Reason must not exceed 1000 characters",
+        },
+        400,
+      );
+    }
+
+    const [submission] = await db
+      .select({ id: submissions.id, status: submissions.status })
+      .from(submissions)
+      .where(eq(submissions.id, id))
+      .limit(1);
+
+    if (!submission) {
+      return c.json(
+        { success: false, code: 404, message: "Submission not found" },
+        404,
+      );
+    }
+
+    if (submission.status === "DISQUALIFIED" || submission.status === "DISQUALIFIED_NO_PROOF") {
+      return c.json(
+        { success: false, code: 409, message: "Submission has already been processed" },
+        409,
+      );
+    }
+
+    const moderatorId = c.get("user").id;
+
+    const [updated] = await db
+      .update(submissions)
+      .set({
+        status: "DISQUALIFIED",
+        rejectionReason: trimmedReason,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(submissions.id, id),
+          eq(submissions.status, submission.status),
+        ),
+      )
+      .returning({
+        id: submissions.id,
+        status: submissions.status,
+        rejectionReason: submissions.rejectionReason,
+        updatedAt: submissions.updatedAt,
+      });
+
+    if (!updated) {
+      return c.json(
+        { success: false, code: 409, message: "Submission status changed; please try again" },
+        409,
+      );
+    }
+
+    await db.insert(submissionModerationLogs).values({
+      submissionId: id,
+      moderatorId,
+      action: "DISQUALIFY",
+      reason: trimmedReason,
+      previousStatus: submission.status,
+      newStatus: "DISQUALIFIED",
+    });
+
+    return c.json({
+      success: true,
+      code: 200,
+      message: "Submission rejected successfully",
+      data: updated,
+    });
+  },
+);
+
+// POST /api/v1/submissions/:id/moderate
+// Hợp đồng kiểm duyệt tổng quát theo Module 05 Section 4.5
+route.post(
+  "/:id/moderate",
+  authenticate,
+  requireRoles("Organizer", "Admin"),
+  async (c) => {
+    const id = c.req.param("id");
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    if (!uuidRegex.test(id)) {
+      return c.json(
+        { success: false, code: 400, message: "Invalid submission ID format" },
+        400,
+      );
+    }
+
+    let body: { action?: unknown; reason?: unknown };
+    try {
+      body = await c.req.json<{ action?: unknown; reason?: unknown }>();
+    } catch {
+      return c.json(
+        { success: false, code: 400, message: "Invalid JSON body" },
+        400,
+      );
+    }
+
+    const validActions = [
+      "APPROVE_FOR_JUDGING",
+      "DISQUALIFY",
+      "REQUEST_PROOF",
+      "OVERRIDE_AI_FLAG",
+    ] as const;
+
+    if (
+      typeof body.action !== "string" ||
+      !validActions.includes(body.action as (typeof validActions)[number])
+    ) {
+      return c.json(
+        {
+          success: false,
+          code: 400,
+          message: `Invalid action. Allowed actions: ${validActions.join(", ")}`,
+        },
+        400,
+      );
+    }
+
+    const action = body.action as (typeof validActions)[number];
+    const reasonText = typeof body.reason === "string" ? body.reason.trim() : "";
+
+    // BR-18: Bắt buộc lý do >= 10 ký tự cho DISQUALIFY, REQUEST_PROOF, OVERRIDE_AI_FLAG
+    if (["DISQUALIFY", "REQUEST_PROOF", "OVERRIDE_AI_FLAG"].includes(action)) {
+      if (reasonText.length < 10) {
+        return c.json(
+          {
+            success: false,
+            code: "MSG021",
+            message:
+              "Vui lòng nhập lý do cụ thể trước khi phê duyệt hoặc loại tác phẩm dự thi (Tối thiểu 10 ký tự).",
+          },
+          422,
+        );
+      }
+    }
+
+    const [submission] = await db
+      .select({ id: submissions.id, status: submissions.status })
+      .from(submissions)
+      .where(eq(submissions.id, id))
+      .limit(1);
+
+    if (!submission) {
+      return c.json(
+        { success: false, code: 404, message: "Submission not found" },
+        404,
+      );
+    }
+
+    let newStatus = submission.status;
+    let rejectionReason: string | null = null;
+
+    if (action === "APPROVE_FOR_JUDGING" || action === "OVERRIDE_AI_FLAG") {
+      newStatus = "APPROVED";
+      rejectionReason = null;
+    } else if (action === "DISQUALIFY") {
+      newStatus = "DISQUALIFIED";
+      rejectionReason = reasonText;
+    } else if (action === "REQUEST_PROOF") {
+      newStatus = "PROOF_REQUESTED";
+    }
+
+    const moderatorId = c.get("user").id;
+
+    const [updated] = await db
+      .update(submissions)
+      .set({
+        status: newStatus,
+        ...(rejectionReason !== undefined ? { rejectionReason } : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(submissions.id, id))
+      .returning({
+        id: submissions.id,
+        status: submissions.status,
+        rejectionReason: submissions.rejectionReason,
+        updatedAt: submissions.updatedAt,
+      });
+
+    await db.insert(submissionModerationLogs).values({
+      submissionId: id,
+      moderatorId,
+      action,
+      reason: reasonText || "Action performed by organizer",
+      previousStatus: submission.status,
+      newStatus,
+    });
+
+    return c.json({
+      success: true,
+      code: 200,
+      message: "Submission moderation updated successfully",
+      data: updated,
+    });
   },
 );
 

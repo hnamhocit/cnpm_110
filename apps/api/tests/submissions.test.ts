@@ -104,3 +104,95 @@ describe("FPC-49: GET /api/v1/submissions (Organizer submission list & filters)"
     expect(body.pagination.limit).toBe(10);
   });
 });
+
+describe("FPC-50: POST /api/v1/submissions/:id/approve & reject (Approve/Reject with BR-18)", () => {
+  const app = createTestApp();
+  const testSubId = "99999999-9999-9999-9999-999999999999";
+
+  test("Approve rejects non-organizer (403)", async () => {
+    const token = await createToken("Participant");
+    const res = await app.request(`/api/v1/submissions/${testSubId}/approve`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  test("Approve returns 404 for non-existent submission", async () => {
+    const token = await createToken("Organizer");
+    const res = await app.request(`/api/v1/submissions/${testSubId}/approve`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(res.status).toBe(404);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(false);
+    expect(body.code).toBe(404);
+  });
+
+  test("Reject returns 422 with MSG021 if reason is missing (BR-18)", async () => {
+    const token = await createToken("Organizer");
+    const res = await app.request(`/api/v1/submissions/${testSubId}/reject`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(false);
+    expect(body.code).toBe("MSG021");
+  });
+
+  test("Reject returns 422 with MSG021 if reason is shorter than 10 characters (BR-18)", async () => {
+    const token = await createToken("Organizer");
+    const res = await app.request(`/api/v1/submissions/${testSubId}/reject`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ reason: "too short" }),
+    });
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(false);
+    expect(body.code).toBe("MSG021");
+  });
+
+  test("Reject returns 404 for non-existent submission with valid reason", async () => {
+    const token = await createToken("Organizer");
+    const res = await app.request(`/api/v1/submissions/${testSubId}/reject`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        reason: "Ảnh scan có viền đen bất thường, nghi vấn ảnh dựng đồ họa.",
+      }),
+    });
+    expect(res.status).toBe(404);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(false);
+    expect(body.code).toBe(404);
+  });
+
+  test("Moderate returns 422 with MSG021 for DISQUALIFY action without reason (BR-18)", async () => {
+    const token = await createToken("Organizer");
+    const res = await app.request(`/api/v1/submissions/${testSubId}/moderate`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "DISQUALIFY" }),
+    });
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(false);
+    expect(body.code).toBe("MSG021");
+  });
+});
