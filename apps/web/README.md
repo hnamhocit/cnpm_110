@@ -2,6 +2,8 @@
 
 Ứng dụng Frontend cho dự án Film Contest, được xây dựng bằng **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4** và **Biome**.
 
+Mọi chức năng, giao diện và luồng người dùng bắt buộc tuân theo **[Master SRS](../../docs/srs.md)** và các tài liệu đặc tả liên quan trong thư mục [`docs/`](../../docs/).
+
 ---
 
 ## 📌 Công nghệ sử dụng

@@ -2,6 +2,8 @@
 
 Ứng dụng di động đa nền tảng (Android, iOS) cho dự án Film Contest, được xây dựng bằng **[Flutter](https://flutter.dev/)**, sử dụng **[Riverpod](https://riverpod.dev/)** quản lý state và **[GoRouter](https://pub.dev/packages/go_router)** điều hướng.
 
+Quy chuẩn nghiệp vụ sổ tay cuộn phim (Film Logbook) và chụp ảnh âm bản đối chứng tuân theo **[Master SRS](../../docs/srs.md)** và **[`docs/04-film-logbook.md`](../../docs/04-film-logbook.md)**.
+
 ---
 
 ## 📌 Công nghệ & Thư viện chính

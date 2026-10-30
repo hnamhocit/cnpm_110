@@ -1,0 +1,26 @@
+# Cursor AI Rules - FilmContest Monorepo
+
+## MANDATORY: READ SPECIFICATIONS BEFORE CODING
+You are working on the AI-powered Film Photography Contest Platform (FilmContest-AI).
+Before writing, modifying, or planning any code, you MUST inspect:
+1. `docs/srs.md` - Master Software Requirements Specification.
+2. The specific module document in `docs/` matching your task:
+   - `docs/01-auth-and-rbac.md` -> Auth, RBAC, JWT, Accounts
+   - `docs/02-analog-master-data.md` -> Film stocks, Cameras, Lenses, Labs
+   - `docs/03-contest-lifecycle.md` -> Contests, Categories, Scoring Criteria, Timeline BR-08, 100% weight BR-15
+   - `docs/04-film-logbook.md` -> Film rolls, Frame logs, Physical frame limits BR-04/BR-23, Push/Pull ISO
+   - `docs/05-submission-and-proof.md` -> Submissions, Negative proof, 48h deadline BR-19, Technical standard BR-07
+   - `docs/06-ai-verification.md` -> AI verification, pHash, P_AI threshold BR-09/BR-10
+   - `docs/07-blind-judging.md` -> Double-blind judging BR-12, Discrepancy alert BR-14, Average scoring BR-25
+   - `docs/08-archive-and-exhibition.md` -> Immutability BR-16, Dual digital asset storage BR-17
+   - `docs/09-api-contracts.md` -> Shared DTOs and API envelopes
+   - `docs/10-database-and-storage.md` -> PostgreSQL 16+, pgvector, digital_assets table
+
+## STRICT DOMAIN CONSTRAINTS
+- NEVER guess business rules, database schema, or API contracts.
+- Strictly respect Double-Blind Judging (BR-12): Strip participant identity from judge endpoints at the backend DTO layer.
+- Strictly enforce physical frame limits (BR-04, BR-23): 135 (max 39), 120_645 (max 16), 120_66 (max 12), 120_67 (max 10), 4x5 (max 1).
+- Strictly enforce 48h negative proof countdown timer (BR-19).
+- Total scoring weights for a category must sum to exactly 100% (1.0000) (BR-15).
+- Soft delete only (`is_deleted = true`) - never hard delete core entities (BR-03).
+- Always use `bun` instead of `npm`, `yarn`, or `pnpm`.

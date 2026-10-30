@@ -1,5 +1,13 @@
 # Module Spec: 01-auth-and-rbac.md
 
+> **Module Name**: Authentication & Role-Based Access Control (Xác thực & Phân quyền Người dùng)  
+> **Status**: READY FOR CODE GENERATION  
+> **Version**: 1.0.0  
+> **Target Audience**: AI Coding Assistants (Cursor, Copilot), Backend Engineers, Frontend/Mobile Engineers  
+> **Standard**: AI-First Spec (Explicit schemas, deterministic business logic, exhaustive error codes, Zero ambiguity)
+
+---
+
 ## 1. Domain Entities & Database Mapping
 
 Hệ thống cơ sở dữ liệu sử dụng **PostgreSQL 16+** (hỗ trợ native `UUIDv7` hoặc extension `pgcrypto`/`uuid-ossp`). Toàn bộ khóa chính (PK) được định dạng `UUID` nhằm đảm bảo tính phân tán và bảo mật ID. Thời gian được lưu trữ theo chuẩn `TIMESTAMPTZ` (UTC). Quy ước đặt tên bảng và cột theo chuẩn `snake_case`.
