@@ -13,6 +13,7 @@ import {
   numeric,
   uniqueIndex,
   bigint,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -227,6 +228,8 @@ export const submissions = pgTable(
 
     description: text("description"),
 
+    rejectionReason: text("rejection_reason"),
+
     imageOriginalPath: text("image_original_path").notNull(),
 
     imagePreviewPath: text("image_preview_path"),
@@ -337,6 +340,65 @@ export const filmMetadata = pgTable(
       "film_metadata_iso_shot_positive",
       sql`${table.isoShot} > 0`,
     ),
+  ],
+);
+
+export const submissionModerationLogs = pgTable(
+  "submission_moderation_logs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    submissionId: uuid("submission_id")
+      .notNull()
+      .references(() => submissions.id, { onDelete: "cascade" }),
+    moderatorId: uuid("moderator_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    action: varchar("action", { length: 50 }).notNull(),
+    reason: text("reason").notNull(),
+    previousStatus: varchar("previous_status", { length: 40 }).notNull(),
+    newStatus: varchar("new_status", { length: 40 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_moderation_logs_submission_id").on(table.submissionId),
+    index("idx_moderation_logs_moderator_id").on(table.moderatorId),
+  ],
+);
+
+export const submissionAiAnalyses = pgTable(
+  "submission_ai_analyses",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    submissionId: uuid("submission_id")
+      .notNull()
+      .unique()
+      .references(() => submissions.id, { onDelete: "cascade" }),
+    phashHex: varchar("phash_hex", { length: 16 }),
+    aiGeneratedProbability: numeric("ai_generated_probability", {
+      precision: 5,
+      scale: 4,
+    }).notNull(),
+    isAiFlagged: boolean("is_ai_flagged").notNull().default(false),
+    duplicateSuspectId: uuid("duplicate_suspect_id").references(
+      () => submissions.id,
+      { onDelete: "set null" },
+    ),
+    duplicateSimilarityScore: numeric("duplicate_similarity_score", {
+      precision: 5,
+      scale: 4,
+    }),
+    filmGrainScore: numeric("film_grain_score", { precision: 5, scale: 4 }),
+    predictedTags: jsonb("predicted_tags").notNull().default([]),
+    flagReasons: jsonb("flag_reasons").notNull().default([]),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_ai_analyses_submission_id").on(table.submissionId),
+    index("idx_ai_analyses_is_flagged").on(table.isAiFlagged),
   ],
 );
 
