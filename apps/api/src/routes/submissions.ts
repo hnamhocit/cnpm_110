@@ -2,11 +2,17 @@ import {
   validateImage,
   ImageValidationError,
 } from "../utils/validate-image";
-import { and, eq } from "drizzle-orm";
+import { and, count, desc, eq, ilike, ne, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { db } from "../db/index";
-import { categories, filmMetadata, submissions, users } from "../db/schema";
+import {
+  categories,
+  filmMetadata,
+  submissionAiAnalyses,
+  submissions,
+  users,
+} from "../db/schema";
 import {
   authenticate,
   requireRoles,
@@ -96,6 +102,241 @@ function fileField(form: FormData, name: string, required: boolean) {
   return value;
 }
 
+const VALID_SUBMISSION_STATUSES = [
+  "PENDING_AI",
+  "FLAGGED",
+  "APPROVED",
+  "DISQUALIFIED",
+  "PROOF_REQUESTED",
+  "PROOF_SUBMITTED",
+  "WITHDRAWN",
+  "APPROVED_FOR_JUDGING",
+  "DISQUALIFIED_NO_PROOF",
+] as const;
+
+// GET /api/v1/submissions
+// Organizer & Admin lấy danh sách bài nộp kèm bộ lọc trạng thái và cờ cảnh báo AI
+route.get(
+  "/",
+  authenticate,
+  requireRoles("Organizer", "Admin"),
+  async (c) => {
+    const statusParam = c.req.query("status");
+    const aiFlaggedParam = c.req.query("aiFlagged");
+    const contestId = c.req.query("contestId");
+    const categoryId = c.req.query("categoryId");
+    const search = c.req.query("search")?.trim();
+    const page = Math.max(1, parseInt(c.req.query("page") || "1", 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(c.req.query("limit") || "20", 10) || 20));
+    const offset = (page - 1) * limit;
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    if (contestId && !uuidRegex.test(contestId)) {
+      return c.json(
+        { success: false, code: 400, message: "Invalid contestId format" },
+        400,
+      );
+    }
+
+    if (categoryId && !uuidRegex.test(categoryId)) {
+      return c.json(
+        { success: false, code: 400, message: "Invalid categoryId format" },
+        400,
+      );
+    }
+
+    if (
+      statusParam &&
+      !VALID_SUBMISSION_STATUSES.includes(
+        statusParam as (typeof VALID_SUBMISSION_STATUSES)[number],
+      )
+    ) {
+      return c.json(
+        {
+          success: false,
+          code: 400,
+          message: `Invalid status. Allowed statuses: ${VALID_SUBMISSION_STATUSES.join(", ")}`,
+        },
+        400,
+      );
+    }
+
+    if (
+      aiFlaggedParam !== undefined &&
+      aiFlaggedParam !== "true" &&
+      aiFlaggedParam !== "false"
+    ) {
+      return c.json(
+        {
+          success: false,
+          code: 400,
+          message: "aiFlagged must be 'true' or 'false'",
+        },
+        400,
+      );
+    }
+
+    const conditions = [];
+
+    if (contestId) {
+      conditions.push(eq(submissions.contestId, contestId));
+    }
+
+    if (categoryId) {
+      conditions.push(eq(submissions.categoryId, categoryId));
+    }
+
+    if (statusParam) {
+      conditions.push(eq(submissions.status, statusParam));
+    }
+
+    if (aiFlaggedParam === "true") {
+      conditions.push(
+        or(
+          eq(submissions.status, "FLAGGED"),
+          eq(submissionAiAnalyses.isAiFlagged, true),
+        ),
+      );
+    } else if (aiFlaggedParam === "false") {
+      conditions.push(
+        and(
+          ne(submissions.status, "FLAGGED"),
+          or(
+            sql`${submissionAiAnalyses.isAiFlagged} IS NULL`,
+            eq(submissionAiAnalyses.isAiFlagged, false),
+          ),
+        ),
+      );
+    }
+
+    if (search) {
+      conditions.push(
+        or(
+          ilike(submissions.title, `%${search}%`),
+          ilike(submissions.description, `%${search}%`),
+        ),
+      );
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    try {
+      const [countResult] = await db
+        .select({ value: count() })
+        .from(submissions)
+        .leftJoin(
+          submissionAiAnalyses,
+          eq(submissionAiAnalyses.submissionId, submissions.id),
+        )
+        .where(whereClause);
+
+      const total = Number(countResult?.value ?? 0);
+
+      const rows = await db
+        .select({
+          submission: submissions,
+          metadata: filmMetadata,
+          aiAnalysis: submissionAiAnalyses,
+        })
+        .from(submissions)
+        .leftJoin(filmMetadata, eq(filmMetadata.submissionId, submissions.id))
+        .leftJoin(
+          submissionAiAnalyses,
+          eq(submissionAiAnalyses.submissionId, submissions.id),
+        )
+        .where(whereClause)
+        .orderBy(desc(submissions.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      const data = rows.map((row) => {
+        const sub = row.submission;
+        const meta = row.metadata;
+        const ai = row.aiAnalysis;
+        const isAiFlagged = sub.status === "FLAGGED" || ai?.isAiFlagged === true;
+
+        return {
+          id: sub.id,
+          contestId: sub.contestId,
+          categoryId: sub.categoryId,
+          participantId: sub.participantId,
+          title: sub.title,
+          description: sub.description,
+          rejectionReason: sub.rejectionReason,
+          imageOriginalPath: sub.imageOriginalPath,
+          imagePreviewPath: sub.imagePreviewPath,
+          negativeProofPath: sub.negativeProofPath,
+          fileSizeBytes: sub.fileSizeBytes != null ? Number(sub.fileSizeBytes) : null,
+          width: sub.width,
+          height: sub.height,
+          status: sub.status,
+          aiFlagged: isAiFlagged,
+          filmMetadata: meta
+            ? {
+                filmBrand: meta.filmBrand,
+                filmStock: meta.filmStock,
+                filmFormat: meta.filmFormat,
+                isoRated: meta.isoRated,
+                isoShot: meta.isoShot,
+                cameraBody: meta.cameraBody,
+                lens: meta.lens,
+                rollId: meta.rollId,
+                frameNumber: meta.frameNumber,
+                devLabName: meta.devLabName,
+                devChemistry: meta.devChemistry,
+                scannerModel: meta.scannerModel,
+              }
+            : null,
+          aiAnalysis: ai
+            ? {
+                aiGeneratedProbability: Number(ai.aiGeneratedProbability),
+                isAiFlagged: ai.isAiFlagged,
+                phashHex: ai.phashHex,
+                duplicateSuspectId: ai.duplicateSuspectId,
+                duplicateSimilarityScore:
+                  ai.duplicateSimilarityScore != null
+                    ? Number(ai.duplicateSimilarityScore)
+                    : null,
+                filmGrainScore:
+                  ai.filmGrainScore != null
+                    ? Number(ai.filmGrainScore)
+                    : null,
+                predictedTags: ai.predictedTags,
+                flagReasons: ai.flagReasons,
+              }
+            : null,
+          createdAt: sub.createdAt,
+          updatedAt: sub.updatedAt,
+        };
+      });
+
+      return c.json({
+        success: true,
+        code: 200,
+        message: "Submissions retrieved successfully",
+        data,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit) || 1,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to list submissions:", error);
+      return c.json(
+        {
+          success: false,
+          code: 500,
+          message: "Failed to retrieve submissions",
+          detail: error instanceof Error ? error.message : String(error),
+        },
+        500,
+      );
+    }
+  },
+);
 
 route.post(
   "/",
