@@ -1,316 +1,170 @@
-# 🎬 Film Contest Monorepo
+# 🎬 Film Contest Platform - Monorepo
 
-Dự án **Film Contest** là một monorepo chứa toàn bộ mã nguồn của hệ thống: từ Backend API, Web Frontend đến ứng dụng Mobile (Flutter). Dự án được quản lý bằng **[Turborepo](https://turbo.build/)** và sử dụng **[Bun](https://bun.sh/)** làm package manager & runtime chính.
+Nền tảng Quản lý Cuộc thi Nhiếp ảnh Phim tích hợp Trí tuệ Nhân tạo (**FilmContest-AI**) là hệ thống Monorepo toàn diện bao gồm: Backend RESTful API, Web Frontend và Mobile App (Flutter).
 
-- 📖 **Confluence Docs**: https://hnamhocit.atlassian.net/wiki/x/BAAF
+Dự án được điều phối bằng **[Turborepo](https://turbo.build/)** và sử dụng **[Bun](https://bun.sh/)** làm Package Manager & Runtime chính.
 
 ---
 
 ## 📌 Mục lục
 
 - [Cấu trúc Monorepo](#-cấu-trúc-monorepo)
-- [Tài liệu Đặc tả AI-First (Specifications)](#-tài-liệu-đặc-tả-ai-first-specifications)
-- [Yêu cầu hệ thống (Prerequisites)](#-yêu-cầu-hệ-thống-prerequisites)
-- [⚠️ Lưu ý quan trọng: Dùng `bun`, KHÔNG dùng `npm`!](#️-lưu-ý-quan-trọng-dùng-bun-không-dùng-npm)
-- [Hướng dẫn cài đặt nhanh (Quick Start)](#-hướng-dẫn-cài-đặt-nhanh-quick-start)
-- [Khởi chạy dự án (Development)](#-khởi-chạy-dự-án-development)
-  - [1. Chạy song song cả Web và API (Khuyên dùng)](#1-chạy-song-song-cả-web-và-api-khuyên-dùng)
-  - [2. Chạy riêng từng service](#2-chạy-riêng-từng-service)
-  - [3. Chạy ứng dụng Mobile (Flutter)](#3-chạy-ứng-dụng-mobile-flutter)
-- [Các lệnh thường dùng (Scripts)](#-các-lệnh-thường-dùng-scripts)
-- [Cách cài thêm thư viện (Add Dependencies)](#-cách-cài-thêm-thư-viện-add-dependencies)
-- [Xử lý lỗi thường gặp (Troubleshooting)](#-xử-lý-lỗi-thường-gặp-troubleshooting)
+- [Tài liệu Đặc tả AI-First (SSOT)](#-tài-liệu-đặc-tả-ai-first-ssot)
+- [Yêu cầu Môi trường (Prerequisites)](#-yêu-cầu-môi-trường-prerequisites)
+- [Khởi động Nhanh (Quick Start)](#-khởi-động-nhanh-quick-start)
+- [Các lệnh Điều phối Dự án (Scripts)](#-các-lệnh-điều-phối-dự-án-scripts)
+- [Cài đặt Thư viện mới (Add Dependencies)](#-cài-đặt-thư-viện-mới-add-dependencies)
+- [Quy chuẩn AI Coding Assistant](#-quy-chuẩn-ai-coding-assistant)
 
 ---
 
 ## 📁 Cấu trúc Monorepo
 
-Hệ thống được tổ chức theo mô hình **Monorepo** với 2 thư mục cốt lõi là `apps/` (các ứng dụng) và `packages/` (cấu hình/thư viện dùng chung):
-
 ```text
 film-contest/
 ├── apps/
-│   ├── api/               # Backend API xây dựng bằng Hono trên Bun runtime (Port: 8080)
-│   ├── web/               # Frontend Web xây dựng bằng Next.js 16 + React 19 + Tailwind v4 (Port: 3000)
-│   └── mobile/            # Ứng dụng di động đa nền tảng viết bằng Flutter
+│   ├── api/               # Backend RESTful API (Hono + Bun + Drizzle ORM, Port: 8080)
+│   ├── web/               # Web Application (Next.js 16 + React 19 + Tailwind v4, Port: 3000)
+│   └── mobile/            # Mobile App đa nền tảng (Flutter + Riverpod + GoRouter)
 │
 ├── packages/
 │   ├── typescript-config/ # Cấu hình TypeScript dùng chung (@repo/typescript-config)
-│   └── eslint-config/     # Cấu hình ESLint & Linting rules dùng chung (@repo/eslint-config)
+│   └── eslint-config/     # Cấu hình ESLint & Linting rules (@repo/eslint-config)
 │
-├── docs/                  # Tài liệu đặc tả hệ thống AI-First Specs, OpenAPI 3.0 & Postman Collection
-├── bun.lock               # Lockfile chuẩn của Bun (KHÔNG xoá hoặc dùng npm đè lên)
-├── package.json           # Khai báo workspace root và scripts điều phối Turborepo
-├── turbo.json             # Cấu hình pipeline Turborepo (build, dev, lint, cache...)
-└── README.md
+├── docs/                  # Tài liệu đặc tả Master SRS, 10 Module Specs, OpenAPI 3.0 & Postman
+├── AGENTS.md              # Chỉ dẫn bắt buộc dành cho AI Coding Agents
+├── .cursorrules           # Cấu hình kiểm soát context cho Cursor AI
+├── bun.lock               # Lockfile chính thức của Bun (KHÔNG xoá, KHÔNG dùng npm)
+├── package.json           # Điều phối workspace monorepo
+└── turbo.json             # Pipeline cấu hình cache và build của Turborepo
 ```
 
-### Chi tiết các app:
+### Các Ứng dụng Thành phần:
 
-- **`apps/api`**: RESTful API service siêu nhanh sử dụng **Hono** chạy native trên **Bun** runtime.
-- **`apps/web`**: Web app người dùng sử dụng **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4** và **Biome**.
-- **`apps/mobile`**: Ứng dụng mobile cross-platform (Android, iOS) viết bằng **Flutter**.
-
----
-
-## 📚 Tài liệu Đặc tả AI-First (Specifications)
-
-Dự án áp dụng phương pháp tiếp cận **AI-First Software Specification** nhằm xây dựng Single Source of Truth (SSOT) cho cả lập trình viên và các AI Coding Assistant (Cursor, Copilot, Antigravity). Mọi tính năng mới hoặc chỉnh sửa bắt buộc phải tuân theo tài liệu đặc tả nằm trong thư mục [`docs/`](docs/).
-
-### 1. Danh sách Module Specifications
-
-| Module | Tên tệp | Trạng thái | Mô tả cốt lõi |
-| :--- | :--- | :---: | :--- |
-| **01** | [`01-auth-and-rbac.md`](docs/01-auth-and-rbac.md) | ✅ Hoàn thành | Xác thực JWT, phân quyền RBAC Matrix, Token Rotation, Audit Log |
-| **02** | [`02-analog-master-data.md`](docs/02-analog-master-data.md) | ✅ Hoàn thành | Danh mục Film Stock, Camera, Lens, Film Lab, Zod Schema |
-| **03** | [`03-contest-lifecycle.md`](docs/03-contest-lifecycle.md) | ✅ Hoàn thành | Vòng đời cuộc thi, cấu hình ngưỡng AI, mốc thời gian BR-08 |
-| **04** | [`04-film-logbook.md`](docs/04-film-logbook.md) | ✅ Hoàn thành | Quản lý nhật ký cuộn phim (`film_rolls`) và khung hình (`film_frames`) |
-| **05** | [`05-submission-and-proof.md`](docs/05-submission-and-proof.md) | ✅ Hoàn thành | Nộp bài dự thi, quy định 48h nộp ảnh âm bản đối chứng (BR-06, BR-19) |
-| **06** | [`06-ai-verification.md`](docs/06-ai-verification.md) | ✅ Hoàn thành | Giám định AI ($P_{AI} \ge 75\%$), pHash DCT 64-bit, pgvector CLIP, Redis Worker |
-| **07** | [`07-blind-judging.md`](docs/07-blind-judging.md) | ✅ Hoàn thành | Chấm thi ẩn danh kép (BR-12), phát hiện lệch điểm BR-14, tính điểm BR-25 |
-| **08** | [`08-archive-and-exhibition.md`](docs/08-archive-and-exhibition.md) | ✅ Hoàn thành | Triển lãm số, Faceted search theo AI tags, bảo vệ bản quyền ảnh BR-16, BR-17 |
-| **09** | [`09-api-contracts.md`](docs/09-api-contracts.md) | ✅ Hoàn thành | Chuẩn hóa Envelope Response `{ success, data, error, meta }`, DTOs chung |
-| **10** | [`10-database-and-storage.md`](docs/10-database-and-storage.md) | ✅ Hoàn thành | PostgreSQL 16 + pgvector, Cloudflare R2 / AWS S3 presigned URLs |
-
-### 2. Quy chuẩn 5 phần bắt buộc cho tài liệu AI-First
-
-Mọi tài liệu đặc tả kỹ thuật trong dự án bắt buộc phải tuân theo cấu trúc 5 phần chuẩn:
-1. **Domain Entities & Database Mapping**: Schema bảng, kiểu dữ liệu, ràng buộc, quan hệ FK, Mermaid ERD.
-2. **Business Rules & Logic Ràng buộc**: Trích xuất BR từ SRS, điều kiện deterministic, Zod schema, mã lỗi `MSG-xxx`.
-3. **State Machine & Lifecycle**: Sơ đồ trạng thái Mermaid, bảng chuyển đổi trạng thái, tác nhân & guard condition.
-4. **Shared API Contracts**: Method, Path, Headers, Request Body Zod schema, Response Envelope, Error format.
-5. **UI/UX Functional Requirements**: User journey flow, trạng thái giao diện (Default, Loading, Empty, Error).
+*   **[`apps/api`](apps/api/)**: RESTful API service hiệu năng cao với **Hono**, chạy native trên **Bun runtime**, tích hợp **PostgreSQL 16+**, **`pgvector`** và **Drizzle ORM**.
+*   **[`apps/web`](apps/web/)**: Ứng dụng Web dành cho Quản trị viên, Ban tổ chức, Giám khảo và Thí sinh xây dựng trên **Next.js 16 (App Router)**, **React 19**, **Tailwind CSS v4** và **Biome**.
+*   **[`apps/mobile`](apps/mobile/)**: Ứng dụng di động (iOS / Android) bằng **Flutter**, phục vụ ghi chép sổ tay cuộn phim ngoài hiện trường (Offline-First) và chụp tải dải phim âm bản đối chứng.
 
 ---
 
-## 🛠 Yêu cầu hệ thống (Prerequisites)
+## 📚 Tài liệu Đặc tả AI-First (SSOT)
 
-Trước khi bắt đầu, hãy đảm bảo máy tính của bạn đã cài đặt các công cụ sau:
+Dự án áp dụng phương pháp **AI-First Specification** làm nguồn chân lý duy nhất (Single Source of Truth). Mọi tác vụ lập trình (của con người hoặc AI Assistant) bắt buộc phải đối chiếu theo hệ thống tài liệu trong thư mục [`docs/`](docs/):
 
-1. **Bun** (>= 1.2, khuyên dùng **1.4.2** trở lên):
-   - Cài đặt trên Linux / macOS:
-     ```bash
-     curl -fsSL https://bun.sh/install | bash
-     ```
-   - Cài đặt trên Windows (PowerShell):
-     ```powershell
-     powershell -c "irm bun.sh/install.ps1 | iex"
-     ```
-   - Kiểm tra phiên bản:
-     ```bash
-     bun --version
-     ```
-2. **Node.js** (>= 24):
-   - Đảm bảo môi trường hỗ trợ Node.js phiên bản 24 trở lên (`node -v`).
-3. **Flutter SDK** _(nếu bạn làm việc với `apps/mobile`)_:
-   - Tải và cài đặt Flutter từ [flutter.dev](https://docs.flutter.dev/get-started/install).
-   - Kiểm tra bằng lệnh: `flutter doctor`.
+### Tài liệu Tổng thể (Master SRS)
+*   📖 **[Master SRS Specification](docs/srs.md)**: Đặc tả toàn diện hệ thống, 43 Use Cases cốt lõi, sơ đồ kiến trúc Mermaid, ma trận phân quyền màn hình, 25 Business Rules (`BR-01` $\to$ `BR-25`), 7 Common Rules và 28 Mã thông báo chuẩn.
 
----
+### Danh mục Module Specifications
 
-## ⚠️ Lưu ý quan trọng: Dùng `bun`, KHÔNG dùng `npm`!
+| Module | Tệp đặc tả | Phạm vi nghiệp vụ cốt lõi |
+| :---: | :--- | :--- |
+| **01** | [`docs/01-auth-and-rbac.md`](docs/01-auth-and-rbac.md) | Xác thực JWT, Refresh Token Rotation, Ma trận phân quyền RBAC, Chống brute-force |
+| **02** | [`docs/02-analog-master-data.md`](docs/02-analog-master-data.md) | Danh mục Phim (Film Stocks), Máy ảnh, Ống kính, Phòng Lab tráng/quét phim |
+| **03** | [`docs/03-contest-lifecycle.md`](docs/03-contest-lifecycle.md) | Vòng đời cuộc thi, Hạng mục, Chuẩn hóa trọng số 100% (BR-15), Lịch trình tuần tự (BR-08) |
+| **04** | [`docs/04-film-logbook.md`](docs/04-film-logbook.md) | Sổ tay cuộn phim, Khung hình, Giới hạn vật lý khổ phim (BR-04, BR-23), Push/Pull ISO |
+| **05** | [`docs/05-submission-and-proof.md`](docs/05-submission-and-proof.md) | Nộp bài thi, Chống trùng lặp (BR-05), Đồng hồ 48h nộp âm bản (BR-19), Chuẩn ảnh (BR-07) |
+| **06** | [`docs/06-ai-verification.md`](docs/06-ai-verification.md) | Giám định AI ($P_{AI} \ge 75\%$), Trùng lặp pHash 64-bit, Vector CLIP, Redis Worker Queue |
+| **07** | [`docs/07-blind-judging.md`](docs/07-blind-judging.md) | Chấm thi ẩn danh kép (BR-12), Giám khảo độc lập (BR-13), Lệch điểm > 30% (BR-14) |
+| **08** | [`docs/08-archive-and-exhibition.md`](docs/08-archive-and-exhibition.md) | Tính bất biến kết quả (BR-16), Lưu trữ 2 vùng Private/Public Watermark (BR-17) |
+| **09** | [`docs/09-api-contracts.md`](docs/09-api-contracts.md) | Chuẩn hóa DTO, Response Envelopes và hợp đồng API dùng chung đa nền tảng |
+| **10** | [`docs/10-database-and-storage.md`](docs/10-database-and-storage.md) | DDL PostgreSQL 16+, Extension `pgvector`, Bảng `digital_assets`, Cloud Storage S3/R2 |
 
-> [!WARNING]
-> **TUYỆT ĐỐI KHÔNG CHẠY `npm install`, `yarn`, HOẶC `pnpm`!**
->
-> **Lý do:**
->
-> 1. Dự án sử dụng file khoá `bun.lock`. Nếu chạy `npm install`, npm sẽ tạo file `package-lock.json` gây xung đột dependency và sai lệch phiên bản thư viện.
-> 2. `apps/api` chạy trực tiếp trên môi trường **Bun runtime** với các thư viện đặc thù của Bun.
-> 3. Cấu hình Workspace monorepo đã được tối ưu cho Bun & Turborepo.
-
-👉 **Quy tắc vàng:** Luôn dùng lệnh **`bun ...`** thay cho `npm ...` trong mọi thao tác cài đặt package và chạy script.
+*   **API Testing**: [`docs/openapi.yaml`](docs/openapi.yaml) (OpenAPI 3.0) & [`docs/film-contest.postman_collection.json`](docs/film-contest.postman_collection.json) (Postman Collection tự động hóa lưu Token).
 
 ---
 
-## 🚀 Hướng dẫn cài đặt nhanh (Quick Start)
+## 🛠️ Yêu cầu Môi trường (Prerequisites)
 
-### Bước 1: Clone source code
+- **Bun**: `>= 1.1.0` (Cài đặt: `curl -fsSL https://bun.sh/install | bash`)
+- **Node.js**: `>= 20.0.0` (Hỗ trợ tương thích công cụ tooling)
+- **PostgreSQL**: `>= 16.0` (Kèm extension `uuid-ossp` và `vector`)
+- **Flutter SDK**: `>= 3.19.0` (Nếu phát triển ứng dụng di động)
 
-```bash
-git clone <url-repo-film-contest>
-cd film-contest
-```
+> [!IMPORTANT]
+> Dự án sử dụng **Bun** làm runtime và package manager duy nhất. **Tuyệt đối KHÔNG sử dụng `npm`, `yarn` hoặc `pnpm`** để tránh xung đột file lock và hỏng workspace resolution.
 
-### Bước 2: Cài đặt toàn bộ dependencies
+---
 
-Chỉ cần chạy **1 lệnh duy nhất** ở thư mục gốc:
+## 🚀 Khởi động Nhanh (Quick Start)
 
+### 1. Cài đặt Dependencies
+Tại thư mục gốc của repository:
 ```bash
 bun install
 ```
 
-> Lệnh này sẽ tự động liên kết các workspace (`apps/web`, `apps/api`, `packages/*`) và cài đặt tất cả dependencies cần thiết trong vài giây nhờ tốc độ của Bun.
+### 2. Cấu hình Môi trường
+```bash
+# Backend API
+cp apps/api/.env.example apps/api/.env
 
-### Bước 3: Thiết lập môi trường & Database
+# Web Frontend
+cp apps/web/.env.example apps/web/.env.local
+```
 
-1. **Cấu hình API**:
+### 3. Khởi tạo Cơ sở Dữ liệu
+```bash
+bun --filter api db:migrate
+bun --filter api db:seed
+```
 
-   ```bash
-   cp apps/api/.env.example apps/api/.env
-   ```
+### 4. Chạy Môi trường Phát triển (Development)
 
-   Cập nhật `DATABASE_URL` và `JWT_SECRET` trong `apps/api/.env`.
-
-2. **Chạy Migration & Seed dữ liệu**:
-
-   ```bash
-   bun --filter api db:migrate
-   bun --filter api db:seed
-   ```
-
-   _(Xem chi tiết tại [README-DATABASE.md](apps/api/README-DATABASE.md))_
-
-3. **Cấu hình Web**:
-   ```bash
-   cp apps/web/.env.example apps/web/.env.local
-   ```
-
----
-
-## 💻 Khởi chạy dự án (Development)
-
-### 1. Chạy song song cả Web và API (Khuyên dùng)
-
-Ở thư mục gốc của dự án, chạy:
-
+Chạy đồng thời cả Web và API:
 ```bash
 bun dev
 ```
+*   🌐 **Web App**: [http://localhost:3000](http://localhost:3000)
+*   🚀 **API Endpoint**: [http://localhost:8080](http://localhost:8080)
 
-Turborepo sẽ khởi động đồng thời cả 2 dịch vụ:
-
-- 🌐 **Web**: [http://localhost:3000](http://localhost:3000)
-- 🚀 **API**: [http://localhost:8080](http://localhost:8080)
-
-Terminal sẽ hiển thị giao diện TUI của Turborepo giúp bạn dễ dàng theo dõi log của từng dịch vụ.
-
----
-
-### 2. Chạy riêng từng service
-
-Nếu bạn chỉ cần tập trung làm việc trên một service cụ thể:
-
-#### Chỉ chạy Web (`apps/web`):
-
+Chạy ứng dụng Mobile (Flutter):
 ```bash
-# Cách 1: Sử dụng filter từ thư mục gốc
-bun --filter web dev
-
-# Cách 2: Di chuyển vào thư mục apps/web
-cd apps/web
-bun dev
-```
-
-Truy cập: [http://localhost:3000](http://localhost:3000).
-
-#### Chỉ chạy API (`apps/api`):
-
-```bash
-# Cách 1: Sử dụng filter từ thư mục gốc
-bun --filter api dev
-
-# Cách 2: Di chuyển vào thư mục apps/api
-cd apps/api
-bun dev
-```
-
-API endpoint mặc định: [http://localhost:8080](http://localhost:8080).
-
----
-
-### 3. Chạy ứng dụng Mobile (Flutter)
-
-Do `apps/mobile` là dự án Flutter, bạn quản lý bằng Flutter CLI:
-
-```bash
-# 1. Di chuyển vào thư mục mobile
 cd apps/mobile
-
-# 2. Tải dependencies Flutter
 flutter pub get
-
-# 3. Chạy ứng dụng (trên emulator, web hoặc thiết bị thật)
 flutter run
 ```
 
 ---
 
-## 📜 Các lệnh thường dùng (Scripts)
+## 📜 Các lệnh Điều phối Dự án (Scripts)
 
-Các lệnh này thực thi tại thư mục gốc:
+Các lệnh thực thi tại thư mục gốc:
 
-| Lệnh                  | Ý nghĩa                                                  |
-| :-------------------- | :------------------------------------------------------- |
-| `bun dev`             | Chạy dev server cho toàn bộ các workspace trong monorepo |
-| `bun run build`       | Build tất cả workspace (`turbo run build`)               |
-| `bun run lint`        | Chạy kiểm tra linting (`turbo run lint`)                 |
-| `bun run format`      | Định dạng lại code bằng Prettier (`.ts`, `.tsx`, `.md`)  |
-| `bun run check-types` | Kiểm tra type check TypeScript trên toàn bộ monorepo     |
-| `bun run test`        | Chạy unit test trên toàn bộ monorepo (`turbo run test`)  |
+| Lệnh | Mô tả chức năng |
+| :--- | :--- |
+| `bun dev` | Chạy đồng thời dev server toàn bộ workspace qua Turborepo |
+| `bun run build` | Build production cho tất cả ứng dụng (`turbo run build`) |
+| `bun run lint` | Kiểm tra cú pháp và chất lượng mã nguồn (`turbo run lint`) |
+| `bun run format` | Định dạng code bằng Prettier / Biome (`turbo run format`) |
+| `bun run check-types` | Kiểm tra tĩnh kiểu dữ liệu TypeScript toàn bộ dự án |
+| `bun run test` | Chạy unit test trên toàn monorepo (`turbo run test`) |
 
 ---
 
-## 📦 Cách cài thêm thư viện (Add Dependencies)
+## 📦 Cài đặt Thư viện mới (Add Dependencies)
 
-Trong mô hình Monorepo, hãy chú ý chọn đúng workspace mà bạn muốn cài đặt package:
-
-### 1. Thêm package cho một app cụ thể:
-
-- **Thêm vào Web (`apps/web`):**
-  ```bash
-  bun --filter web add <ten-package>
-  # hoặc devDependencies:
-  bun --filter web add -d <ten-package>
-  ```
-- **Thêm vào API (`apps/api`):**
-  ```bash
-  bun --filter api add <ten-package>
-  # hoặc devDependencies:
-  bun --filter api add -d <ten-package>
-  ```
-- **Thêm vào Mobile (`apps/mobile`):**
-  ```bash
-  cd apps/mobile && flutter pub add <ten-package>
-  ```
-
-### 2. Thêm package dùng chung cho Root (công cụ build, tooling toàn repo):
+Luôn sử dụng cờ `--filter` để cài đặt đúng workspace:
 
 ```bash
-bun add -d <ten-package>
+# Thêm package vào Web:
+bun --filter web add <package-name>
+
+# Thêm package vào Backend API:
+bun --filter api add <package-name>
+
+# Thêm tooling dùng chung vào Root repo:
+bun add -d <package-name>
+
+# Thêm package vào Mobile (Flutter):
+cd apps/mobile && flutter pub add <package-name>
 ```
 
 ---
 
-## ❓ Xử lý lỗi thường gặp (Troubleshooting)
+## 🤖 Quy chuẩn AI Coding Assistant
 
-1. **Lỗi `command not found: bun`:**
-   - Bạn chưa cài Bun hoặc chưa thêm Bun vào biến môi trường PATH.
-   - Cài lại Bun theo hướng dẫn ở phần Prerequisites và khởi động lại terminal hoặc chạy `source ~/.bashrc` (hoặc `~/.zshrc`).
-
-2. **Lỗi `node_modules` hoặc xung đột sau khi vô tình chạy `npm install`:**
-   - Xoá file `package-lock.json` nếu có:
-     ```bash
-     rm -f package-lock.json apps/*/package-lock.json
-     ```
-   - Xoá `node_modules` và cài đặt lại sạch sẽ bằng Bun:
-     ```bash
-     rm -rf node_modules apps/*/node_modules
-     bun install
-     ```
-
-3. **Port 3000 hoặc 8080 đã bị chiếm dụng:**
-   - Kiểm tra tiến trình đang chạy cổng đó:
-     ```bash
-     lsof -i :3000
-     lsof -i :8080
-     ```
-   - Kill tiến trình cũ hoặc đổi port cấu hình.
-
-4. **Lỗi Flutter không nhận thiết bị hoặc thiếu SDK:**
-   - Chạy `flutter doctor` để kiểm tra chi tiết các thành phần còn thiếu (Android SDK, Chrome, Linux toolchain,...).
-   - Chạy `flutter devices` để xem danh sách thiết bị có sẵn.
-
----
-
-✨ **Chúc bạn có trải nghiệm phát triển mượt mà với Film Contest Monorepo!**
+Dự án đã tích hợp các bộ quy tắc tự động bắt buộc tất cả AI Assistant (Cursor, GitHub Copilot, Claude Code, Devin...) phải đọc tài liệu đặc tả trước khi code:
+*   **[`AGENTS.md`](AGENTS.md)**: Hướng dẫn cốt lõi cho các Agent tự hành.
+*   **[`.cursorrules`](.cursorrules)** & **[`.cursor/rules/srs-context.mdc`](.cursor/rules/srs-context.mdc)**: Ép buộc Cursor AI nạp context từ `docs/srs.md`.
+*   **[`.github/copilot-instructions.md`](.github/copilot-instructions.md)**: Chỉ dẫn chuẩn hóa cho GitHub Copilot.
+*   **[`CLAUDE.md`](CLAUDE.md)**: Chỉ dẫn cho Claude Code CLI.
