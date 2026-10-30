@@ -1,19 +1,33 @@
 enum ContestStatus {
   draft('Bản nháp'),
-  published('Sắp diễn ra'),
+  open('Mở nộp bài'),
+  underReview('Chờ thẩm định'),
+  judging('Đang chấm thi'),
+  published('Đã công bố'),
+  archived('Lưu trữ di sản'),
+  cancelled('Đã hủy'),
   ongoing('Đang diễn ra'),
-  completed('Đã kết thúc'),
-  cancelled('Đã hủy');
+  completed('Đã kết thúc');
 
   const ContestStatus(this.label);
 
   final String label;
 
   static ContestStatus fromApi(String? value) {
-    return ContestStatus.values.firstWhere(
-      (status) => status.name == value,
-      orElse: () => ContestStatus.draft,
-    );
+    if (value == null) return ContestStatus.draft;
+    final normalized = value.toLowerCase().replaceAll('-', '_');
+    return switch (normalized) {
+      'draft' => ContestStatus.draft,
+      'open' => ContestStatus.open,
+      'under_review' => ContestStatus.underReview,
+      'judging' => ContestStatus.judging,
+      'published' => ContestStatus.published,
+      'archived' => ContestStatus.archived,
+      'cancelled' => ContestStatus.cancelled,
+      'ongoing' => ContestStatus.ongoing,
+      'completed' => ContestStatus.completed,
+      _ => ContestStatus.draft,
+    };
   }
 }
 

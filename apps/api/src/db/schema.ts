@@ -94,6 +94,7 @@ export const contests = pgTable(
     status: varchar("status", { length: 20 })
       .notNull()
       .default("draft"),
+    isDeleted: boolean("is_deleted").notNull().default(false),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
@@ -107,6 +108,7 @@ export const contests = pgTable(
   (table) => [
     index("idx_contests_created_by").on(table.createdBy),
     index("idx_contests_status").on(table.status),
+    index("idx_contests_is_deleted").on(table.isDeleted),
   ],
 );
 

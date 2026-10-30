@@ -22,7 +22,9 @@ app.use("*", cors());
 app.use("*", compress());
 
 app.route("/health", healthRoute);
+app.route("/api/v1/auth", auth);
 app.route("/auth", auth);
+app.route("/api/v1/contests", contests);
 app.route("/contests", contests);
 app.route("/api/v1/submissions", submissionRoute);
 

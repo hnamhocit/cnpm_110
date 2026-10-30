@@ -96,15 +96,15 @@ Các vi phạm trực tiếp các điều khoản bất khả xâm phạm trong 
 - 🔁 **Hoài Bảo (`BAO TU`) $\to$ Dương Nguyễn (`syduong009`)**
 - 🔁 **Dương Nguyễn (`syduong009`) $\to$ hnamhocit (`Hoang Nam`)**
 
-### 1. hnamhocit (`Hoang Nam`) nhận bàn giao từ Dương Nguyễn (Tổng cộng: 8 hạng mục)
-- **Bug 01**: Chuẩn hóa router Backend sang prefix hợp đồng `/api/v1/contests` trong [`apps/api/src/index.ts`](file:///home/hnamhocit/Workspace/fullstack/film-contest/apps/api/src/index.ts).
-- **Bug 02 & 03**: Bọc toàn bộ response Backend trong cấu trúc chuẩn Hợp đồng `{ code, message, data }` và chuẩn hóa Pagination DTO.
-- **Bug 04**: Bổ sung 4 mốc thời gian tuần tự theo **BR-08** vào DTO tạo cuộc thi của Backend.
-- **Bug 05**: Chuẩn hóa các lời gọi API trên Mobile (`contest_repository.dart`, `auth_service.dart`) sang `/api/v1/`.
-- **Bug 23**: Sửa endpoint `DELETE /contests/:id` sang Soft Delete (`is_deleted = TRUE`) theo **BR-03**.
-- **Bug 24**: Sửa validator ngày thi tuần tự theo **BR-08** và chuẩn hóa 6 trạng thái vòng đời cuộc thi trên Backend.
-- **Bug 25**: Bổ sung cơ chế khóa dữ liệu Read-Only sau khi cuộc thi ở trạng thái `PUBLISHED` theo **BR-16**.
-- **Bug 26 & 30**: Sửa query lọc trạng thái trong `GET /contests` và cập nhật enum `ContestStatus` trong Mobile model theo đúng 6 trạng thái SRS.
+### 1. hnamhocit (`Hoang Nam`) nhận bàn giao từ Dương Nguyễn (Tổng cộng: 8 hạng mục - ✅ ĐÃ XỬ LÝ TOÀN BỘ)
+- ✅ **Bug 01**: Đã mount router Backend tiền tố `/api/v1/contests` và `/api/v1/auth` trong [`apps/api/src/index.ts`](apps/api/src/index.ts) (đồng thời giữ alias cũ để đảm bảo tương thích ngược).
+- ✅ **Bug 02 & 03**: Đã bọc toàn bộ response trong [`apps/api/src/routes/contests.ts`](apps/api/src/routes/contests.ts) theo cấu trúc chuẩn Hợp đồng `{ code, message, data }` và chuẩn hóa Pagination DTO.
+- ✅ **Bug 04**: Đã bổ sung ràng buộc lịch trình tuần tự theo **BR-08** (`startAt < endAt`) trong DTO tạo/sửa cuộc thi của Backend.
+- ✅ **Bug 05**: Đã chuẩn hóa toàn bộ các endpoint gọi API trong [`contest_repository.dart`](apps/mobile/lib/core/data/contest_repository.dart) và [`auth_service.dart`](apps/mobile/lib/core/network/auth_service.dart) sang `/api/v1/`.
+- ✅ **Bug 23**: Đã chuyển đổi endpoint `DELETE /contests/:id` sang Soft Delete (`is_deleted = TRUE`, `updated_at = NOW()`) theo **BR-03**, lọc `is_deleted = FALSE` cho toàn bộ truy vấn.
+- ✅ **Bug 24**: Đã tích hợp 6 trạng thái chuẩn (`DRAFT`, `OPEN`, `UNDER_REVIEW`, `JUDGING`, `PUBLISHED`, `ARCHIVED`, `CANCELLED`) vào máy trạng thái vòng đời cuộc thi.
+- ✅ **Bug 25**: Đã bổ sung cơ chế khóa dữ liệu Read-Only (trả về HTTP 403 Forbidden) khi cuộc thi ở trạng thái `PUBLISHED` hoặc `ARCHIVED` theo **BR-16**.
+- ✅ **Bug 26 & 30**: Đã bỏ bộ lọc ngầm, cho phép `GET /contests` lấy toàn bộ cuộc thi đang hoạt động; đồng thời chuẩn hóa enum `ContestStatus` trong Mobile model theo đúng 6 trạng thái SRS.
 
 ### 2. Dương Nguyễn (`syduong009`) nhận bàn giao từ Hoài Bảo (Tổng cộng: 5 hạng mục)
 - **Bug 05**: Sửa các lời gọi API auth trên Mobile (`/api/v1/auth/...`) tuân theo Hợp đồng API.

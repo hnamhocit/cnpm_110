@@ -11,7 +11,7 @@ class DioAuthService implements AuthService {
   factory DioAuthService({
     required String baseUrl,
     required AuthTokenStorage tokenStorage,
-    String refreshPath = '/auth/refresh',
+    String refreshPath = '/api/v1/auth/refresh',
     Duration connectTimeout = const Duration(seconds: 15),
     Duration receiveTimeout = const Duration(seconds: 15),
   }) {

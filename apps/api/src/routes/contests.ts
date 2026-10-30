@@ -1,4 +1,3 @@
-
 import { Hono } from "hono";
 import { pool } from "../db";
 import {
@@ -9,48 +8,83 @@ import {
 
 const contests = new Hono<AuthEnv>();
 
-const VALID_STATUSES = ["draft", "published", "ongoing", "completed", "cancelled"];
-const OPEN_STATUSES = ["published", "ongoing"];
+// 6 trạng thái chuẩn theo Module 03 & SRS, kèm các alias chữ thường để tương thích ngược
+const VALID_STATUSES = [
+  "DRAFT",
+  "OPEN",
+  "UNDER_REVIEW",
+  "JUDGING",
+  "PUBLISHED",
+  "ARCHIVED",
+  "CANCELLED",
+  "draft",
+  "open",
+  "under_review",
+  "judging",
+  "published",
+  "archived",
+  "cancelled",
+  "ongoing",
+  "completed",
+];
 
 function isValidDate(value: unknown): value is string {
   return typeof value === "string" && !Number.isNaN(Date.parse(value));
 }
 
-// GET /contests - Get open contests with search, filtering and pagination
+// GET /contests - Tra cứu danh sách cuộc thi kèm phân trang và tìm kiếm
 contests.get("/", async (c) => {
   const search = c.req.query("search")?.trim();
-  const status = c.req.query("status");
+  const status = c.req.query("status")?.trim();
   const pageParam = c.req.query("page") ?? "1";
   const limitParam = c.req.query("limit") ?? "10";
 
   if (!/^[1-9]\d*$/.test(pageParam)) {
-    return c.json({ error: "Page must be a positive integer" }, 400);
+    return c.json(
+      { code: 400, message: "Page must be a positive integer", data: null, error: "Page must be a positive integer" },
+      400,
+    );
   }
 
   if (!/^[1-9]\d*$/.test(limitParam)) {
-    return c.json({ error: "Limit must be a positive integer" }, 400);
+    return c.json(
+      { code: 400, message: "Limit must be a positive integer", data: null, error: "Limit must be a positive integer" },
+      400,
+    );
   }
 
   const page = Number(pageParam);
   const limit = Number(limitParam);
 
   if (!Number.isSafeInteger(page)) {
-    return c.json({ error: "Invalid page value" }, 400);
+    return c.json(
+      { code: 400, message: "Invalid page value", data: null, error: "Invalid page value" },
+      400,
+    );
   }
 
   if (!Number.isSafeInteger(limit) || limit > 100) {
-    return c.json({ error: "Limit must be between 1 and 100" }, 400);
+    return c.json(
+      { code: 400, message: "Limit must be between 1 and 100", data: null, error: "Limit must be between 1 and 100" },
+      400,
+    );
   }
 
-  if (status && !OPEN_STATUSES.includes(status)) {
+  if (status && !VALID_STATUSES.some((s) => s.toLowerCase() === status.toLowerCase())) {
     return c.json(
-      { error: "Status must be published or ongoing" },
+      {
+        code: 400,
+        message: "Invalid contest status filter",
+        data: null,
+        error: "Invalid contest status filter",
+      },
       400,
     );
   }
 
   try {
-    const conditions = ["status IN ('published', 'ongoing')"];
+    // BR-03: Chỉ lấy các bản ghi chưa bị xóa mềm
+    const conditions = ["is_deleted = FALSE"];
     const params: (string | number)[] = [];
 
     if (search) {
@@ -60,7 +94,7 @@ contests.get("/", async (c) => {
 
     if (status) {
       params.push(status);
-      conditions.push(`status = $${params.length}`);
+      conditions.push(`status ILIKE $${params.length}`);
     }
 
     const whereClause = conditions.join(" AND ");
@@ -76,7 +110,10 @@ contests.get("/", async (c) => {
     const offset = (page - 1) * limit;
 
     if (!Number.isSafeInteger(offset)) {
-      return c.json({ error: "Page value is too large" }, 400);
+      return c.json(
+        { code: 400, message: "Page value is too large", data: null, error: "Page value is too large" },
+        400,
+      );
     }
 
     const listParams = [...params, limit, offset];
@@ -92,7 +129,10 @@ contests.get("/", async (c) => {
       listParams,
     );
 
+    // Cấu trúc envelope chuẩn hóa theo docs/09-api-contracts.md Section 4.1
     return c.json({
+      code: 200,
+      message: "Contests retrieved successfully",
       data: result.rows,
       pagination: {
         page,
@@ -103,35 +143,49 @@ contests.get("/", async (c) => {
     });
   } catch (error) {
     console.error("Get contests failed:", error);
-    return c.json({ error: "Failed to get contests" }, 500);
+    return c.json(
+      { code: 500, message: "Failed to get contests", data: null, error: "Failed to get contests" },
+      500,
+    );
   }
 });
 
-// GET /contests/:id - Get contest details
+// GET /contests/:id - Chi tiết cuộc thi
 contests.get("/:id", async (c) => {
   const { id } = c.req.param();
 
   try {
+    // BR-03: Không đọc bản ghi đã bị xóa mềm
     const result = await pool.query(
       `SELECT id, name, description, start_at, end_at, status,
               created_by, created_at, updated_at
        FROM contests
-       WHERE id = $1`,
+       WHERE id = $1 AND is_deleted = FALSE`,
       [id],
     );
 
     if (!result.rowCount) {
-      return c.json({ error: "Contest not found" }, 404);
+      return c.json(
+        { code: 404, message: "Contest not found", data: null, error: "Contest not found" },
+        404,
+      );
     }
 
-    return c.json({ data: result.rows[0] });
+    return c.json({
+      code: 200,
+      message: "Contest retrieved successfully",
+      data: result.rows[0],
+    });
   } catch (error) {
     console.error("Get contest failed:", error);
-    return c.json({ error: "Failed to get contest" }, 500);
+    return c.json(
+      { code: 500, message: "Failed to get contest", data: null, error: "Failed to get contest" },
+      500,
+    );
   }
 });
 
-// POST /contests - Create contest
+// POST /contests - Tạo cuộc thi mới (Admin, Organizer)
 contests.post("/", authenticate, requireRoles("Admin", "Organizer"), async (c) => {
   let body: {
     name?: unknown;
@@ -144,7 +198,10 @@ contests.post("/", authenticate, requireRoles("Admin", "Organizer"), async (c) =
   try {
     body = await c.req.json();
   } catch {
-    return c.json({ error: "Invalid JSON body" }, 400);
+    return c.json(
+      { code: 400, message: "Invalid JSON body", data: null, error: "Invalid JSON body" },
+      400,
+    );
   }
 
   const name = typeof body.name === "string" ? body.name.trim() : "";
@@ -154,7 +211,12 @@ contests.post("/", authenticate, requireRoles("Admin", "Organizer"), async (c) =
 
   if (!name || name.length > 150) {
     return c.json(
-      { error: "Name is required and must be at most 150 characters" },
+      {
+        code: 400,
+        message: "Name is required and must be at most 150 characters",
+        data: null,
+        error: "Name is required and must be at most 150 characters",
+      },
       400,
     );
   }
@@ -164,11 +226,20 @@ contests.post("/", authenticate, requireRoles("Admin", "Organizer"), async (c) =
     body.description !== null &&
     typeof body.description !== "string"
   ) {
-    return c.json({ error: "Description must be a string or null" }, 400);
+    return c.json(
+      { code: 400, message: "Description must be a string or null", data: null, error: "Description must be a string or null" },
+      400,
+    );
   }
 
-  if (typeof status !== "string" || !VALID_STATUSES.includes(status)) {
-    return c.json({ error: "Invalid contest status" }, 400);
+  if (
+    typeof status !== "string" ||
+    !VALID_STATUSES.some((s) => s.toLowerCase() === status.toLowerCase())
+  ) {
+    return c.json(
+      { code: 400, message: "Invalid contest status", data: null, error: "Invalid contest status" },
+      400,
+    );
   }
 
   if (
@@ -176,7 +247,10 @@ contests.post("/", authenticate, requireRoles("Admin", "Organizer"), async (c) =
     body.startAt !== null &&
     !isValidDate(body.startAt)
   ) {
-    return c.json({ error: "Invalid startAt date" }, 400);
+    return c.json(
+      { code: 400, message: "Invalid startAt date", data: null, error: "Invalid startAt date" },
+      400,
+    );
   }
 
   if (
@@ -184,15 +258,27 @@ contests.post("/", authenticate, requireRoles("Admin", "Organizer"), async (c) =
     body.endAt !== null &&
     !isValidDate(body.endAt)
   ) {
-    return c.json({ error: "Invalid endAt date" }, 400);
+    return c.json(
+      { code: 400, message: "Invalid endAt date", data: null, error: "Invalid endAt date" },
+      400,
+    );
   }
 
   const startAt =
     typeof body.startAt === "string" ? new Date(body.startAt) : null;
   const endAt = typeof body.endAt === "string" ? new Date(body.endAt) : null;
 
-  if (startAt && endAt && startAt > endAt) {
-    return c.json({ error: "startAt must be before or equal to endAt" }, 400);
+  // BR-08: Ràng buộc lịch trình tuần tự (startAt < endAt)
+  if (startAt && endAt && startAt >= endAt) {
+    return c.json(
+      {
+        code: 400,
+        message: "startAt must be strictly before endAt (BR-08: Sequential Schedule)",
+        data: null,
+        error: "startAt must be strictly before endAt (BR-08: Sequential Schedule)",
+      },
+      400,
+    );
   }
 
   const user = c.get("user");
@@ -200,24 +286,31 @@ contests.post("/", authenticate, requireRoles("Admin", "Organizer"), async (c) =
   try {
     const result = await pool.query(
       `INSERT INTO contests
-         (name, description, start_at, end_at, status, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6)
+         (name, description, start_at, end_at, status, is_deleted, created_by)
+       VALUES ($1, $2, $3, $4, $5, FALSE, $6)
        RETURNING id, name, description, start_at, end_at, status,
                  created_by, created_at, updated_at`,
       [name, description, startAt, endAt, status, user.id],
     );
 
     return c.json(
-      { message: "Contest created successfully", data: result.rows[0] },
+      {
+        code: 201,
+        message: "Contest created successfully",
+        data: result.rows[0],
+      },
       201,
     );
   } catch (error) {
     console.error("Create contest failed:", error);
-    return c.json({ error: "Failed to create contest" }, 500);
+    return c.json(
+      { code: 500, message: "Failed to create contest", data: null, error: "Failed to create contest" },
+      500,
+    );
   }
 });
 
-// PUT /contests/:id - Update contest
+// PUT /contests/:id - Cập nhật thông tin cuộc thi (Admin, Organizer)
 contests.put(
   "/:id",
   authenticate,
@@ -236,7 +329,10 @@ contests.put(
     try {
       body = await c.req.json();
     } catch {
-      return c.json({ error: "Invalid JSON body" }, 400);
+      return c.json(
+        { code: 400, message: "Invalid JSON body", data: null, error: "Invalid JSON body" },
+        400,
+      );
     }
 
     if (
@@ -246,7 +342,10 @@ contests.put(
       body.endAt === undefined &&
       body.status === undefined
     ) {
-      return c.json({ error: "At least one field is required" }, 400);
+      return c.json(
+        { code: 400, message: "At least one field is required", data: null, error: "At least one field is required" },
+        400,
+      );
     }
 
     if (
@@ -255,7 +354,10 @@ contests.put(
         !body.name.trim() ||
         body.name.trim().length > 150)
     ) {
-      return c.json({ error: "Invalid contest name" }, 400);
+      return c.json(
+        { code: 400, message: "Invalid contest name", data: null, error: "Invalid contest name" },
+        400,
+      );
     }
 
     if (
@@ -263,15 +365,21 @@ contests.put(
       body.description !== null &&
       typeof body.description !== "string"
     ) {
-      return c.json({ error: "Description must be a string or null" }, 400);
+      return c.json(
+        { code: 400, message: "Description must be a string or null", data: null, error: "Description must be a string or null" },
+        400,
+      );
     }
 
     if (
       body.status !== undefined &&
       (typeof body.status !== "string" ||
-        !VALID_STATUSES.includes(body.status))
+        !VALID_STATUSES.some((s) => s.toLowerCase() === (body.status as string).toLowerCase()))
     ) {
-      return c.json({ error: "Invalid contest status" }, 400);
+      return c.json(
+        { code: 400, message: "Invalid contest status", data: null, error: "Invalid contest status" },
+        400,
+      );
     }
 
     if (
@@ -279,7 +387,10 @@ contests.put(
       body.startAt !== null &&
       !isValidDate(body.startAt)
     ) {
-      return c.json({ error: "Invalid startAt date" }, 400);
+      return c.json(
+        { code: 400, message: "Invalid startAt date", data: null, error: "Invalid startAt date" },
+        400,
+      );
     }
 
     if (
@@ -287,7 +398,10 @@ contests.put(
       body.endAt !== null &&
       !isValidDate(body.endAt)
     ) {
-      return c.json({ error: "Invalid endAt date" }, 400);
+      return c.json(
+        { code: 400, message: "Invalid endAt date", data: null, error: "Invalid endAt date" },
+        400,
+      );
     }
 
     const client = await pool.connect();
@@ -295,20 +409,39 @@ contests.put(
     try {
       await client.query("BEGIN");
 
+      // BR-03: Kiểm tra cuộc thi còn tồn tại và chưa bị xóa mềm
       const existing = await client.query(
         `SELECT id, name, description, start_at, end_at, status
          FROM contests
-         WHERE id = $1
+         WHERE id = $1 AND is_deleted = FALSE
          FOR UPDATE`,
         [id],
       );
 
       if (!existing.rowCount) {
         await client.query("ROLLBACK");
-        return c.json({ error: "Contest not found" }, 404);
+        return c.json(
+          { code: 404, message: "Contest not found", data: null, error: "Contest not found" },
+          404,
+        );
       }
 
       const current = existing.rows[0];
+
+      // BR-16: Tính bất biến của kết quả - Khi cuộc thi ở trạng thái PUBLISHED hoặc ARCHIVED, cấm chỉnh sửa dữ liệu
+      const immutableStatuses = ["published", "archived", "completed"];
+      if (immutableStatuses.includes(String(current.status).toLowerCase())) {
+        await client.query("ROLLBACK");
+        return c.json(
+          {
+            code: 403,
+            message: "Cannot modify contest after results have been published (BR-16: Result Immutability)",
+            data: null,
+            error: "Cannot modify contest after results have been published (BR-16: Result Immutability)",
+          },
+          403,
+        );
+      }
 
       const name =
         body.name === undefined ? current.name : (body.name as string).trim();
@@ -331,10 +464,16 @@ contests.put(
       const status =
         body.status === undefined ? current.status : body.status;
 
-      if (startAt && endAt && new Date(startAt) > new Date(endAt)) {
+      // BR-08: Ràng buộc tuần tự mốc thời gian
+      if (startAt && endAt && new Date(startAt) >= new Date(endAt)) {
         await client.query("ROLLBACK");
         return c.json(
-          { error: "startAt must be before or equal to endAt" },
+          {
+            code: 400,
+            message: "startAt must be strictly before endAt (BR-08: Sequential Schedule)",
+            data: null,
+            error: "startAt must be strictly before endAt (BR-08: Sequential Schedule)",
+          },
           400,
         );
       }
@@ -347,7 +486,7 @@ contests.put(
              end_at = $4,
              status = $5,
              updated_at = NOW()
-         WHERE id = $6
+         WHERE id = $6 AND is_deleted = FALSE
          RETURNING id, name, description, start_at, end_at, status,
                    created_by, created_at, updated_at`,
         [name, description, startAt, endAt, status, id],
@@ -356,6 +495,7 @@ contests.put(
       await client.query("COMMIT");
 
       return c.json({
+        code: 200,
         message: "Contest updated successfully",
         data: updated.rows[0],
       });
@@ -363,18 +503,21 @@ contests.put(
       try {
         await client.query("ROLLBACK");
       } catch {
-        // Ignore rollback errors if the transaction has already ended.
+        // Bỏ qua lỗi rollback
       }
 
       console.error("Update contest failed:", error);
-      return c.json({ error: "Failed to update contest" }, 500);
+      return c.json(
+        { code: 500, message: "Failed to update contest", data: null, error: "Failed to update contest" },
+        500,
+      );
     } finally {
       client.release();
     }
   },
 );
 
-// DELETE /contests/:id - Delete contest
+// DELETE /contests/:id - Xóa mềm cuộc thi (BR-03: Soft Delete Only)
 contests.delete(
   "/:id",
   authenticate,
@@ -383,21 +526,34 @@ contests.delete(
     const { id } = c.req.param();
 
     try {
+      // BR-03: Tuyệt đối không DELETE vật lý, cập nhật is_deleted = TRUE
       const result = await pool.query(
-        `DELETE FROM contests
-         WHERE id = $1
+        `UPDATE contests
+         SET is_deleted = TRUE,
+             updated_at = NOW()
+         WHERE id = $1 AND is_deleted = FALSE
          RETURNING id`,
         [id],
       );
 
       if (!result.rowCount) {
-        return c.json({ error: "Contest not found" }, 404);
+        return c.json(
+          { code: 404, message: "Contest not found or already deleted", data: null, error: "Contest not found or already deleted" },
+          404,
+        );
       }
 
-      return c.json({ message: "Contest deleted successfully" });
+      return c.json({
+        code: 200,
+        message: "Contest deleted successfully (BR-03: Soft Delete)",
+        data: { id: result.rows[0].id },
+      });
     } catch (error) {
       console.error("Delete contest failed:", error);
-      return c.json({ error: "Failed to delete contest" }, 500);
+      return c.json(
+        { code: 500, message: "Failed to delete contest", data: null, error: "Failed to delete contest" },
+        500,
+      );
     }
   },
 );
