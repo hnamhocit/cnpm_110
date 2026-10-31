@@ -141,7 +141,7 @@ describe("FPC-53: Duplicate detection integration", () => {
                 .from(submissionAiAnalyses)
                 .where(eq(submissionAiAnalyses.submissionId, secondId));
 
-       
+
             expect(updatedRow?.duplicateSuspectId).toBeNull();
             expect(updatedRow?.duplicateSimilarityScore).toBeNull();
             expect(updatedRow?.aiGeneratedProbability).toBe("0.1500");
