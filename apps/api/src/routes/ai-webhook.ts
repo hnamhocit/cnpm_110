@@ -6,7 +6,8 @@ import {
   submissions,
   submissionAiAnalyses,
 } from "../db/schema";
-import { eq } from "drizzle-orm";
+import { eq, ne, and, isNotNull } from "drizzle-orm";
+import { findClosestDuplicate } from "../services/duplicate-detection";
 
 const route = new Hono();
 
@@ -128,7 +129,7 @@ route.post(
       );
     }
 
-    
+
     try {
       const submissionId = data.submissionId as string;
       const phashHex = data.phashHex as string;
@@ -155,7 +156,34 @@ route.post(
           404,
         );
       }
+      // FPC-53: Find potentially duplicate submissions
+      const existingAnalyses = await db
+        .select({
+          submissionId: submissionAiAnalyses.submissionId,
+          phashHex: submissionAiAnalyses.phashHex,
+        })
+        .from(submissionAiAnalyses)
+        .where(
+          and(
+            ne(submissionAiAnalyses.submissionId, submissionId),
+            isNotNull(submissionAiAnalyses.phashHex),
+          ),
+        );
 
+      const candidates = existingAnalyses
+        .filter(
+          (item): item is { submissionId: string; phashHex: string } =>
+            item.phashHex !== null,
+        )
+        .map((item) => ({
+          submissionId: item.submissionId,
+          phashHex: item.phashHex,
+        }));
+
+      const duplicate = findClosestDuplicate(
+        phashHex.toLowerCase(),
+        candidates,
+      );
       // Insert AI analysis or update the existing result
       await db
         .insert(submissionAiAnalyses)
@@ -166,6 +194,10 @@ route.post(
             aiGeneratedProbability.toFixed(4),
           predictedTags,
           isAiFlagged: false,
+          duplicateSuspectId: duplicate?.submissionId ?? null,
+          duplicateSimilarityScore: duplicate
+            ? duplicate.similarityScore.toFixed(4)
+            : null,
         })
         .onConflictDoUpdate({
           target: submissionAiAnalyses.submissionId,
@@ -174,6 +206,10 @@ route.post(
             aiGeneratedProbability:
               aiGeneratedProbability.toFixed(4),
             predictedTags,
+            duplicateSuspectId: duplicate?.submissionId ?? null,
+            duplicateSimilarityScore: duplicate
+              ? duplicate.similarityScore.toFixed(4)
+              : null,
           },
         });
 
