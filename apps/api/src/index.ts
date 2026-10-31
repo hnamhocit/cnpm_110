@@ -23,16 +23,14 @@ app.use("*", compress());
 
 app.route("/health", healthRoute);
 app.route("/api/v1/auth", auth);
-app.route("/auth", auth);
 app.route("/api/v1/contests", contests);
-app.route("/contests", contests);
 app.route("/api/v1/submissions", submissionRoute);
 app.route("/api/v1/organizer/submissions", submissionRoute);
 
 app.get("/", (c) => c.text("Hello Hono!"));
 
 
-app.post("/upload", async (c) => {
+app.post("/api/v1/upload", async (c) => {
   try {
     const body = await c.req.parseBody();
     const file = body["file"];
@@ -78,28 +76,29 @@ app.post("/upload", async (c) => {
   }
 });
 
-// Các API mẫu kiểm tra phân quyền RBAC
-app.use("/rbac/*", authenticate);
 
-app.get("/rbac/admin", requireRoles("Admin"), (c) => {
+// Các API mẫu kiểm tra phân quyền RBAC
+app.use("/api/v1/rbac/*", authenticate);
+
+app.get("/api/v1/rbac/admin", requireRoles("Admin"), (c) => {
   return c.json({ message: "Admin truy cập thành công" });
 });
 
-app.get("/rbac/organizer", requireRoles("Organizer"), (c) => {
+app.get("/api/v1/rbac/organizer", requireRoles("Organizer"), (c) => {
   return c.json({ message: "Organizer truy cập thành công" });
 });
 
-app.get("/rbac/judge", requireRoles("Judge"), (c) => {
+app.get("/api/v1/rbac/judge", requireRoles("Judge"), (c) => {
   return c.json({ message: "Judge truy cập thành công" });
 });
 
-app.get("/rbac/participant", requireRoles("Participant"), (c) => {
+app.get("/api/v1/rbac/participant", requireRoles("Participant"), (c) => {
   return c.json({ message: "Participant truy cập thành công" });
 });
 
 // API cho phép Admin và Organizer quản lý cuộc thi
 app.get(
-  "/rbac/manage-contest",
+  "/api/v1/rbac/manage-contest",
   requireRoles("Admin", "Organizer"),
   (c) => {
     return c.json({
@@ -107,10 +106,6 @@ app.get(
     });
   },
 );
-// Ví dụ một API cho phép nhiều vai trò.
-app.get("/rbac/manage-contest", requireRoles("Admin", "Organizer"), (c) => {
-  return c.json({ message: "Bạn được phép quản lý cuộc thi" });
-});
 
 export default {
   port: 8080,
