@@ -1,6 +1,5 @@
 "use client";
 
-import axios from "axios";
 import { Aperture } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -9,13 +8,11 @@ import { type FormEvent, useState } from "react";
 import { AuthField } from "@/components/auth/auth-field";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { http } from "@/lib/http";
-import type { Role } from "@/lib/route-access";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 type LoginResponse = {
-  accessToken: string;
-  user?: { role?: Role };
+  accessToken?: string;
+  error?: string;
 };
 
 const fieldLabelClassName = "text-sm font-medium text-slate-700";
@@ -42,25 +39,28 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      const { data: response } = await http.post<{ data: LoginResponse }>(
-        "/api/v1/auth/login",
-        { email: email.trim(), password },
-      );
-      const data = response.data;
-
-      useAuthStore.getState().setTokens({
-        accessToken: data.accessToken,
-        role: data.user?.role ?? "Organizer",
+      // BFF set cookie HttpOnly (refresh token) và trả access token cho memory.
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
       });
+      const data = (await response.json().catch(() => ({}))) as LoginResponse;
+
+      if (!response.ok || !data.accessToken) {
+        throw new Error(
+          data.error ?? "Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu!",
+        );
+      }
+
+      useAuthStore.getState().setTokens({ accessToken: data.accessToken });
 
       router.push("/portal");
     } catch (err) {
-      const message = axios.isAxiosError<{ message?: string }>(err)
-        ? err.response?.data?.message
-        : undefined;
-
       setError(
-        message ?? "Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu!",
+        err instanceof Error
+          ? err.message
+          : "Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu!",
       );
     } finally {
       setIsLoading(false);

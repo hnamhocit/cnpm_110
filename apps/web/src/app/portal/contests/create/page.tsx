@@ -1,14 +1,12 @@
 ﻿"use client";
 
-import { type FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import axios from "axios";
 import { ArrowLeft, Save } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
 
-import { http } from "@/lib/http";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -17,6 +15,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { http } from "@/lib/http";
 
 export default function CreateContestPage() {
   const router = useRouter();
@@ -25,13 +26,11 @@ export default function CreateContestPage() {
 
   // State lưu trữ dữ liệu form
   const [formData, setFormData] = useState({
-    title: "",
+    name: "",
     theme: "",
     description: "",
-    submissionStart: "",
-    submissionEnd: "",
-    judgingStart: "",
-    judgingEnd: "",
+    startAt: "",
+    endAt: "",
   });
 
   // Hàm cập nhật state khi gõ
@@ -46,30 +45,44 @@ export default function CreateContestPage() {
     setError("");
 
     // Validate cơ bản
-    if (!formData.title || !formData.theme || !formData.submissionStart || !formData.submissionEnd) {
-      setError("Vui lòng điền đủ Tên, Chủ đề và Thời gian nộp bài.");
+    if (!formData.name || !formData.startAt || !formData.endAt) {
+      setError("Vui lòng điền đủ Tên và Thời gian cuộc thi.");
       return;
     }
 
-    if (new Date(formData.submissionStart) >= new Date(formData.submissionEnd)) {
-      setError("Ngày kết thúc nộp bài phải sau ngày bắt đầu.");
+    if (new Date(formData.startAt) >= new Date(formData.endAt)) {
+      setError("Thời gian kết thúc phải sau thời gian bắt đầu.");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Gửi API lên Backend (Nhớ check lại endpoint với bạn làm BE)
-      await http.post("/api/v1/contests", formData);
-      
+      // shortcut: DTO chưa có field theme, gộp tạm vào description; tách khi backend bổ sung.
+      const description = [
+        formData.theme && `Chủ đề: ${formData.theme}`,
+        formData.description,
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+
+      await http.post("/contests", {
+        name: formData.name.trim(),
+        description: description || null,
+        startAt: new Date(formData.startAt).toISOString(),
+        endAt: new Date(formData.endAt).toISOString(),
+      });
+
       alert("Tạo cuộc thi thành công!");
       router.push("/portal/contests"); // Quay về trang danh sách
       router.refresh(); // Load lại dữ liệu
-    } catch (err: any) {
-      console.error(err);
+    } catch (err) {
+      const message = axios.isAxiosError<{ message?: string }>(err)
+        ? err.response?.data?.message
+        : undefined;
+
       setError(
-        err.response?.data?.message || 
-        "Tạo cuộc thi thất bại. Vui lòng kiểm tra lại kết nối Backend!"
+        message ?? "Tạo cuộc thi thất bại. Vui lòng kiểm tra lại kết nối Backend!",
       );
     } finally {
       setIsLoading(false);
@@ -88,7 +101,7 @@ export default function CreateContestPage() {
           <CardHeader>
             <CardTitle className="text-2xl">Tạo cuộc thi mới</CardTitle>
             <CardDescription>
-              Thiết lập thông tin cơ bản, thời gian nộp bài và chấm thi cho cuộc thi nhiếp ảnh phim.
+              Thiết lập thông tin cơ bản và thời gian cho cuộc thi nhiếp ảnh phim.
             </CardDescription>
           </CardHeader>
 
@@ -98,8 +111,8 @@ export default function CreateContestPage() {
               <h3 className="text-lg font-semibold border-b pb-2">1. Thông tin cơ bản</h3>
               
               <div className="space-y-2">
-                <Label htmlFor="title">Tên cuộc thi <span className="text-red-500">*</span></Label>
-                <Input id="title" name="title" placeholder="VD: Cuộc thi Nhiếp ảnh Phim Mùa Thu 2026" value={formData.title} onChange={handleChange} required />
+                <Label htmlFor="name">Tên cuộc thi <span className="text-red-500">*</span></Label>
+                <Input id="name" name="name" placeholder="VD: Cuộc thi Nhiếp ảnh Phim Mùa Thu 2026" value={formData.name} onChange={handleChange} required />
               </div>
 
               <div className="space-y-2">
@@ -120,32 +133,17 @@ export default function CreateContestPage() {
               </div>
             </div>
 
-            {/* THỜI GIAN NỘP BÀI */}
+            {/* THỜI GIAN CUỘC THI */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">2. Thời gian nộp bài <span className="text-red-500">*</span></h3>
+              <h3 className="text-lg font-semibold border-b pb-2">2. Thời gian cuộc thi <span className="text-red-500">*</span></h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="submissionStart">Bắt đầu nhận bài</Label>
-                  <Input type="datetime-local" id="submissionStart" name="submissionStart" value={formData.submissionStart} onChange={handleChange} required />
+                  <Label htmlFor="startAt">Bắt đầu</Label>
+                  <Input type="datetime-local" id="startAt" name="startAt" value={formData.startAt} onChange={handleChange} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="submissionEnd">Kết thúc nhận bài</Label>
-                  <Input type="datetime-local" id="submissionEnd" name="submissionEnd" value={formData.submissionEnd} onChange={handleChange} required />
-                </div>
-              </div>
-            </div>
-
-            {/* THỜI GIAN CHẤM THI */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">3. Thời gian chấm thi</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="judgingStart">Bắt đầu chấm</Label>
-                  <Input type="datetime-local" id="judgingStart" name="judgingStart" value={formData.judgingStart} onChange={handleChange} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="judgingEnd">Kết thúc chấm & Công bố</Label>
-                  <Input type="datetime-local" id="judgingEnd" name="judgingEnd" value={formData.judgingEnd} onChange={handleChange} />
+                  <Label htmlFor="endAt">Kết thúc</Label>
+                  <Input type="datetime-local" id="endAt" name="endAt" value={formData.endAt} onChange={handleChange} required />
                 </div>
               </div>
             </div>

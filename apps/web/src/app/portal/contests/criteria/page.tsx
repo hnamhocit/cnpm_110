@@ -1,11 +1,10 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Trash2, Save } from "lucide-react";
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -14,6 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 // Kiểu dữ liệu cho một tiêu chí
 type Criterion = {
@@ -22,9 +23,15 @@ type Criterion = {
   weight: number; // Trọng số (%)
 };
 
+// TODO: thay bằng API thật khi Backend có endpoint lưu tiêu chí (UC-14).
+function saveCriteria(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 300));
+}
+
 export default function CriteriaConfigPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   // State lưu danh sách tiêu chí. Khởi tạo sẵn 3 tiêu chí mẫu
   const [criteria, setCriteria] = useState<Criterion[]>([
@@ -65,6 +72,7 @@ export default function CriteriaConfigPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setNotice("");
 
     if (criteria.some((c) => !c.name.trim())) {
       setError("Vui lòng nhập tên cho tất cả các tiêu chí.");
@@ -78,12 +86,9 @@ export default function CriteriaConfigPage() {
 
     setIsLoading(true);
     try {
-      // TODO: Gửi API lên Backend (bạn có thể cập nhật endpoint sau)
-      // await http.post("/api/v1/contests/1/criteria", { criteria });
-      
-      alert("Lưu cấu hình tiêu chí thành công!");
-      // router.push("/portal/contests");
-    } catch (err: any) {
+      await saveCriteria();
+      setNotice("Đã lưu cấu hình tiêu chí thành công.");
+    } catch {
       setError("Có lỗi xảy ra khi lưu.");
     } finally {
       setIsLoading(false);
@@ -157,6 +162,12 @@ export default function CriteriaConfigPage() {
               <div className="p-4 bg-red-50 text-red-600 rounded-md border border-red-200 text-sm font-medium">
                 {error}
               </div>
+            )}
+
+            {notice && (
+              <output className="block p-4 bg-green-50 text-green-700 rounded-md border border-green-200 text-sm font-medium">
+                {notice}
+              </output>
             )}
           </CardContent>
 

@@ -1,5 +1,7 @@
 import type { RouteDecision } from "./route-access";
 
+import { API_INTERNAL_URL } from "./server-api";
+
 export async function checkPortalAccess(
   accessToken: string | null,
 ): Promise<RouteDecision> {
@@ -8,9 +10,7 @@ export async function checkPortalAccess(
     return "login";
   }
 
-  const apiUrl = process.env.API_INTERNAL_URL ?? "http://localhost:8080";
-
-  const response = await fetch(`${apiUrl}/rbac/manage-contest`, {
+  const response = await fetch(`${API_INTERNAL_URL}/rbac/manage-contest`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
