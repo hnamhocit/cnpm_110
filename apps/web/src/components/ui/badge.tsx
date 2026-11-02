@@ -1,7 +1,11 @@
 import { cn } from "cn";
 import type * as React from "react";
 
-function Badge({ className, ...props }: React.ComponentProps<"span">) {
+type BadgeProps = React.ComponentProps<"span"> & {
+  variant?: "default" | "ai-warning" | "valid" | "approved" | "disqualified";
+};
+
+function Badge({ className, variant, ...props }: BadgeProps) {
   return (
     <span
       data-slot="badge"
