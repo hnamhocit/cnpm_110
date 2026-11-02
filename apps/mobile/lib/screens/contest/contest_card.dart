@@ -1,5 +1,5 @@
+
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/utils/date_format.dart';
 import '../../models/contest.dart';
@@ -17,10 +17,53 @@ class ContestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
 
-    // Xử lý an toàn khi ngày tháng có thể bị null
-    final startDateStr = contest.startAt != null ? formatDate(contest.startAt!) : 'Chưa cập nhật';
-    final endDateStr = contest.endAt != null ? formatDate(contest.endAt!) : 'Chưa cập nhật';
+    final description = contest.description?.trim();
+
+    final startDateStr = contest.startAt != null
+        ? formatDate(contest.startAt!)
+        : 'Chưa cập nhật';
+
+    final endDateStr = contest.endAt != null
+        ? formatDate(contest.endAt!)
+        : 'Chưa cập nhật';
+
+    final String dateRange;
+
+    if (contest.startAt == null && contest.endAt == null) {
+      dateRange = 'Chưa cập nhật';
+    } else if (contest.startAt == null) {
+      dateRange = 'Đến $endDateStr';
+    } else if (contest.endAt == null) {
+      dateRange = 'Từ $startDateStr';
+    } else {
+      dateRange = '$startDateStr - $endDateStr';
+    }
+
+    final background = switch (contest.status) {
+      ContestStatus.open => Colors.green.shade100,
+      ContestStatus.ongoing => Colors.blue.shade100,
+      ContestStatus.underReview => Colors.orange.shade100,
+      ContestStatus.judging => Colors.purple.shade100,
+      ContestStatus.published => Colors.teal.shade100,
+      ContestStatus.completed => Colors.teal.shade100,
+      ContestStatus.archived => Colors.grey.shade200,
+      ContestStatus.cancelled => Colors.red.shade100,
+      ContestStatus.draft => Colors.grey.shade200,
+    };
+
+    final foreground = switch (contest.status) {
+      ContestStatus.open => Colors.green.shade900,
+      ContestStatus.ongoing => Colors.blue.shade900,
+      ContestStatus.underReview => Colors.orange.shade900,
+      ContestStatus.judging => Colors.purple.shade900,
+      ContestStatus.published => Colors.teal.shade900,
+      ContestStatus.completed => Colors.teal.shade900,
+      ContestStatus.archived => Colors.grey.shade800,
+      ContestStatus.cancelled => Colors.red.shade900,
+      ContestStatus.draft => Colors.grey.shade800,
+    };
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -62,6 +105,7 @@ class ContestCard extends StatelessWidget {
                   ),
                 ],
               ),
+
               if (description != null && description.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
@@ -73,7 +117,9 @@ class ContestCard extends StatelessWidget {
                   ),
                 ),
               ],
+
               const SizedBox(height: 12),
+
               Row(
                 children: [
                   Icon(
@@ -82,7 +128,10 @@ class ContestCard extends StatelessWidget {
                     color: scheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 6),
-                  Text(_dateRange, style: theme.textTheme.bodySmall),
+                  Text(
+                    dateRange,
+                    style: theme.textTheme.bodySmall,
+                  ),
                 ],
               ),
             ],
