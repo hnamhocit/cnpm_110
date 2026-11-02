@@ -20,6 +20,8 @@ interface ContestDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+export const instant = false;
+
 async function fetchContestDetail(id: string): Promise<Contest | null> {
   const apiUrl =
     process.env.API_INTERNAL_URL ??
