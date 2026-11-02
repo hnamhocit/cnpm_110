@@ -1,8 +1,9 @@
 "use client";
 
-import { AlertTriangle, Check, Search, X } from "lucide-react";
+import { AlertTriangle, Check, Eye, Search, X } from "lucide-react";
 import { useState } from "react";
 
+import ImageComparisonModal from "@/components/submission/image-comparison-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,10 @@ import type { SubmissionStatus } from "@/types/submission";
 export default function SubmissionTable() {
   const [submissions, setSubmissions] = useState(mockSubmissions);
   const [query, setQuery] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState<string | null>(
+    null,
+  );
 
   const visibleSubmissions = filterSubmissions(submissions, query);
 
@@ -30,6 +35,13 @@ export default function SubmissionTable() {
       prev.map((s) => (s.id === id ? { ...s, status } : s)),
     );
   };
+
+  const openComparison = (id: string) => {
+    setSelectedSubmission(id);
+    setIsModalOpen(true);
+  };
+
+  const currentSubmission = submissions.find((s) => s.id === selectedSubmission);
 
   return (
     <div className="space-y-4">
@@ -81,10 +93,20 @@ export default function SubmissionTable() {
                   </TableCell>
                   <TableCell>
                     {submission.isAiFlagged ? (
-                      <Badge className="bg-red-500 text-white">
-                        <AlertTriangle className="size-3.5" />
-                        Cảnh báo AI
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-red-500 text-white">
+                          <AlertTriangle className="size-3.5" />
+                          Cảnh báo AI
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openComparison(submission.id)}
+                        >
+                          <Eye className="size-4" />
+                          So sánh
+                        </Button>
+                      </div>
                     ) : (
                       <Badge className="bg-green-600 text-white">
                         <Check className="size-3.5" />
@@ -131,6 +153,23 @@ export default function SubmissionTable() {
           </TableBody>
         </Table>
       </div>
+
+      {currentSubmission && (
+        <ImageComparisonModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          originalSubmission={{
+            id: currentSubmission.id,
+            title: currentSubmission.title,
+            authorName: currentSubmission.authorName,
+          }}
+          suspectedSubmission={{
+            id: "SUB-999",
+            title: "Bài dự thi tương tự",
+            authorName: "Người dùng khác",
+          }}
+        />
+      )}
     </div>
   );
 }
