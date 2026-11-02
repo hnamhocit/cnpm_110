@@ -1,25 +1,22 @@
 "use client";
 
-import { useId, useState, useEffect } from "react";
-import Link from "next/link";
 import {
+  AlertTriangle,
   ArrowLeft,
-  Mail,
-  UserCheck,
+  Award,
+  CheckCircle2,
   Clock,
-  XCircle,
+  Mail,
   Plus,
   RefreshCw,
   Search,
-  CheckCircle2,
-  AlertTriangle,
-  Award,
-  Layers,
+  UserCheck,
+  XCircle,
 } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useId, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -27,6 +24,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { http } from "@/lib/http";
 
 export type InvitationStatus = "PENDING" | "ACCEPTED" | "DECLINED";
@@ -168,7 +167,9 @@ export default function ContestJudgesManagementPage() {
       return;
     }
 
-    if (judges.some((j) => j.email.toLowerCase() === inviteEmail.toLowerCase())) {
+    if (
+      judges.some((j) => j.email.toLowerCase() === inviteEmail.toLowerCase())
+    ) {
       setFormError("Giám khảo với email này đã có trong danh sách mời.");
       return;
     }
@@ -200,7 +201,9 @@ export default function ContestJudgesManagementPage() {
       };
 
       setJudges((prev) => [newJudge, ...prev]);
-      setToastMessage(`Đã gửi thư mời tham gia ban giám khảo đến ${inviteEmail}`);
+      setToastMessage(
+        `Đã gửi thư mời tham gia ban giám khảo đến ${inviteEmail}`,
+      );
       setShowInviteModal(false);
 
       // Reset form
@@ -216,7 +219,9 @@ export default function ContestJudgesManagementPage() {
   };
 
   const handleResendInvitation = (judge: InvitedJudge) => {
-    setToastMessage(`Đã gửi lại email thư mời đến ${judge.fullName} (${judge.email})`);
+    setToastMessage(
+      `Đã gửi lại email thư mời đến ${judge.fullName} (${judge.email})`,
+    );
   };
 
   const handleRevokeInvitation = (id: string, name: string) => {
@@ -254,14 +259,13 @@ export default function ContestJudgesManagementPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Toast thông báo */}
       {toastMessage && (
-        <div
-          role="status"
+        <output
           aria-live="polite"
           className="fixed top-6 right-6 z-50 flex items-center gap-2 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-lg animate-in fade-in slide-in-from-top-4"
         >
           <CheckCircle2 className="w-5 h-5" />
           <span className="text-sm font-medium">{toastMessage}</span>
-        </div>
+        </output>
       )}
 
       {/* Điều hướng quay lại */}
@@ -319,7 +323,9 @@ export default function ContestJudgesManagementPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500 font-medium">Đã chấp nhận</p>
-              <p className="text-2xl font-bold text-emerald-700">{acceptedCount}</p>
+              <p className="text-2xl font-bold text-emerald-700">
+                {acceptedCount}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -330,8 +336,12 @@ export default function ContestJudgesManagementPage() {
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs text-gray-500 font-medium">Đang chờ phản hồi</p>
-              <p className="text-2xl font-bold text-amber-700">{pendingCount}</p>
+              <p className="text-xs text-gray-500 font-medium">
+                Đang chờ phản hồi
+              </p>
+              <p className="text-2xl font-bold text-amber-700">
+                {pendingCount}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -343,7 +353,9 @@ export default function ContestJudgesManagementPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500 font-medium">Đã từ chối</p>
-              <p className="text-2xl font-bold text-rose-700">{declinedCount}</p>
+              <p className="text-2xl font-bold text-rose-700">
+                {declinedCount}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -415,9 +427,12 @@ export default function ContestJudgesManagementPage() {
         <CardHeader className="pb-3 border-b">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg">Danh sách Giám khảo được mời</CardTitle>
+              <CardTitle className="text-lg">
+                Danh sách Giám khảo được mời
+              </CardTitle>
               <CardDescription className="text-xs">
-                Hiển thị {filteredJudges.length} trên tổng số {totalInvited} lời mời
+                Hiển thị {filteredJudges.length} trên tổng số {totalInvited} lời
+                mời
               </CardDescription>
             </div>
           </div>
@@ -426,7 +441,9 @@ export default function ContestJudgesManagementPage() {
           {filteredJudges.length === 0 ? (
             <div className="p-12 text-center text-gray-500 space-y-3">
               <Mail className="w-10 h-10 mx-auto text-gray-300" />
-              <p className="text-sm font-medium">Không tìm thấy giám khảo nào phù hợp.</p>
+              <p className="text-sm font-medium">
+                Không tìm thấy giám khảo nào phù hợp.
+              </p>
               <Button
                 variant="outline"
                 onClick={() => {
@@ -471,7 +488,9 @@ export default function ContestJudgesManagementPage() {
                             <p className="font-semibold text-gray-900">
                               {judge.fullName}
                             </p>
-                            <p className="text-xs text-gray-500">{judge.email}</p>
+                            <p className="text-xs text-gray-500">
+                              {judge.email}
+                            </p>
                             {judge.bio && (
                               <p className="text-xs text-gray-400 max-w-xs truncate mt-0.5">
                                 {judge.bio}
@@ -582,7 +601,8 @@ export default function ContestJudgesManagementPage() {
                   Mời Giám khảo Mới
                 </h2>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Gửi thư mời chính thức qua email kèm liên kết gia nhập ban chấm thi.
+                  Gửi thư mời chính thức qua email kèm liên kết gia nhập ban
+                  chấm thi.
                 </p>
               </div>
               <button
@@ -648,10 +668,18 @@ export default function ContestJudgesManagementPage() {
                   onChange={(e) => setInviteRole(e.target.value)}
                   className="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-black"
                 >
-                  <option value="Trưởng ban giám khảo">Trưởng ban giám khảo</option>
-                  <option value="Giám khảo chuyên môn">Giám khảo chuyên môn</option>
-                  <option value="Giám khảo khách mời">Giám khảo khách mời</option>
-                  <option value="Cố vấn kỹ thuật phim">Cố vấn kỹ thuật phim</option>
+                  <option value="Trưởng ban giám khảo">
+                    Trưởng ban giám khảo
+                  </option>
+                  <option value="Giám khảo chuyên môn">
+                    Giám khảo chuyên môn
+                  </option>
+                  <option value="Giám khảo khách mời">
+                    Giám khảo khách mời
+                  </option>
+                  <option value="Cố vấn kỹ thuật phim">
+                    Cố vấn kỹ thuật phim
+                  </option>
                 </select>
               </div>
 
@@ -723,4 +751,3 @@ export default function ContestJudgesManagementPage() {
     </div>
   );
 }
-
