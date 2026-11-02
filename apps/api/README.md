@@ -2,6 +2,8 @@
 
 Dịch vụ Backend RESTful API cho dự án Film Contest, được xây dựng bằng **[Hono](https://hono.dev/)** chạy native trên **[Bun](https://bun.sh/)** runtime, sử dụng **[Drizzle ORM](https://orm.drizzle.team/)** và **PostgreSQL**.
 
+Mọi nghiệp vụ, DTO, phân quyền và ràng buộc dữ liệu tuân thủ nghiêm ngặt **[Master SRS](../../docs/srs.md)** và hợp đồng API tại **[`docs/09-api-contracts.md`](../../docs/09-api-contracts.md)**.
+
 ---
 
 ## 📌 Công nghệ sử dụng

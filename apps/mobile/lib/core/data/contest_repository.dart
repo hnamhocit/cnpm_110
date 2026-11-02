@@ -26,7 +26,7 @@ class ApiContestRepository implements ContestRepository {
   }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/contests',
+        '/api/v1/contests',
         queryParameters: {
           'page': page,
           'limit': limit,
@@ -35,7 +35,12 @@ class ApiContestRepository implements ContestRepository {
       );
 
       final body = response.data ?? const <String, dynamic>{};
-      final rows = body['data'] as List<dynamic>? ?? const [];
+      final dynamic rawData = body['data'];
+      final List<dynamic> rows = rawData is List<dynamic>
+          ? rawData
+          : (rawData is Map<String, dynamic>
+              ? (rawData['items'] as List<dynamic>? ?? const [])
+              : const []);
       final pagination =
           body['pagination'] as Map<String, dynamic>? ?? const {};
 
@@ -55,7 +60,7 @@ class ApiContestRepository implements ContestRepository {
   Future<Contest> fetchContest(String id) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/contests/$id',
+        '/api/v1/contests/$id',
       );
 
       final body = response.data ?? const <String, dynamic>{};
