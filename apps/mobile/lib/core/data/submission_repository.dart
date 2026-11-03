@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/film_dev_scan_params.dart';
+import '../../models/film_shooting_params.dart';
 import '../../models/submission_data.dart';
 import '../network/api_exception.dart';
 import '../providers/api_client_provider.dart';
@@ -12,7 +14,17 @@ abstract interface class SubmissionRepository {
   });
 }
 
-class ApiSubmissionRepository implements SubmissionRepository {
+abstract interface class SubmissionMetadataRepository {
+  /// Chỉnh sửa siêu dữ liệu kỹ thuật phim (FPC-65 / UC-39 / BR-24)
+  Future<Map<String, dynamic>> updateSubmissionMetadata({
+    required String submissionId,
+    required FilmShootingParams shootingParams,
+    FilmDevScanParams? devScanParams,
+  });
+}
+
+class ApiSubmissionRepository
+    implements SubmissionRepository, SubmissionMetadataRepository {
   const ApiSubmissionRepository(this._dio);
 
   final Dio _dio;
@@ -106,9 +118,84 @@ class ApiSubmissionRepository implements SubmissionRepository {
       throw ApiException.fromDio(error);
     }
   }
+
+  @override
+  Future<Map<String, dynamic>> updateSubmissionMetadata({
+    required String submissionId,
+    required FilmShootingParams shootingParams,
+    FilmDevScanParams? devScanParams,
+  }) async {
+    try {
+      final map = <String, dynamic>{
+        'cameraBody': shootingParams.cameraBody,
+        'filmBrand': shootingParams.filmBrand,
+        'filmStock': shootingParams.filmStock,
+        'filmFormat': shootingParams.filmFormat,
+        'isoRated': shootingParams.isoRated,
+        'isoShot': shootingParams.isoShot,
+      };
+
+      if (shootingParams.lens != null && shootingParams.lens!.isNotEmpty) {
+        map['lens'] = shootingParams.lens;
+      }
+      if (shootingParams.frameNumber != null &&
+          shootingParams.frameNumber!.isNotEmpty) {
+        map['frameNumber'] = shootingParams.frameNumber;
+      }
+      if (shootingParams.rollId != null && shootingParams.rollId!.isNotEmpty) {
+        map['rollId'] = shootingParams.rollId;
+      }
+      if (shootingParams.location != null &&
+          shootingParams.location!.isNotEmpty) {
+        map['location'] = shootingParams.location;
+      }
+      if (shootingParams.notes != null && shootingParams.notes!.isNotEmpty) {
+        map['notes'] = shootingParams.notes;
+      }
+
+      // Dev & Scan metadata
+      if (devScanParams?.labName != null && devScanParams!.labName.isNotEmpty) {
+        map['devLabName'] = devScanParams.labName;
+      }
+      if (devScanParams?.scannerModel != null &&
+          devScanParams!.scannerModel.isNotEmpty) {
+        map['scannerModel'] = devScanParams.scannerModel;
+      }
+      if (devScanParams?.scanResolution != null &&
+          devScanParams!.scanResolution.isNotEmpty) {
+        map['scanResolution'] = devScanParams.scanResolution;
+      }
+      if (devScanParams?.devChemistry != null &&
+          devScanParams!.devChemistry!.isNotEmpty) {
+        map['devChemistry'] = devScanParams.devChemistry;
+      }
+      if (devScanParams?.scanFormat != null &&
+          devScanParams!.scanFormat!.isNotEmpty) {
+        map['scanFormat'] = devScanParams.scanFormat;
+      }
+      if (devScanParams?.notes != null && devScanParams!.notes!.isNotEmpty) {
+        map['devNotes'] = devScanParams.notes;
+      }
+
+      final response = await _dio.put<Map<String, dynamic>>(
+        '/api/v1/submissions/$submissionId/metadata',
+        data: map,
+      );
+
+      return response.data ?? const <String, dynamic>{};
+    } on DioException catch (error) {
+      throw ApiException.fromDio(error);
+    }
+  }
 }
 
 final submissionRepositoryProvider = Provider<SubmissionRepository>((ref) {
+  final client = ref.watch(apiClientProvider);
+  return ApiSubmissionRepository(client.dio);
+});
+
+final submissionMetadataRepositoryProvider =
+    Provider<SubmissionMetadataRepository>((ref) {
   final client = ref.watch(apiClientProvider);
   return ApiSubmissionRepository(client.dio);
 });
