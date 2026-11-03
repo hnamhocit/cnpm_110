@@ -101,7 +101,9 @@ export default function CriteriaConfigPage() {
       // router.push("/portal/contests");
     } catch (error) {
       console.error("Failed to save criteria:", error);
-      setError("Không thể lưu tiêu chí chấm điểm. API chưa sẵn sàng hoặc có lỗi kết nối.");
+      setError(
+        "Không thể lưu tiêu chí chấm điểm. API chưa sẵn sàng hoặc có lỗi kết nối.",
+      );
     } finally {
       setIsLoading(false);
     }

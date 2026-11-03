@@ -178,12 +178,14 @@ export default function CategoryAssignmentPage() {
       try {
         await http.post(
           `/api/v1/contests/${selectedContest}/judges/assignments`,
-          { assignments: assignments }
+          { assignments: assignments },
         );
       } catch (error) {
         console.error("Failed to save assignments:", error);
         setToastType("error");
-        setToastMessage("Không thể lưu phân công. API chưa sẵn sàng hoặc có lỗi kết nối.");
+        setToastMessage(
+          "Không thể lưu phân công. API chưa sẵn sàng hoặc có lỗi kết nối.",
+        );
         setSaving(false);
         return;
       }

@@ -28,9 +28,6 @@ export async function GET() {
     const user = await response.json();
     return Response.json({ user });
   } catch (error) {
-    return Response.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

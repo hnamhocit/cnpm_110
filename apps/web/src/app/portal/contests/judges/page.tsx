@@ -15,17 +15,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useState } from "react";
-
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +25,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { http } from "@/lib/http";
 
 export type InvitationStatus = "PENDING" | "ACCEPTED" | "DECLINED";
@@ -204,7 +203,9 @@ export default function ContestJudgesManagementPage() {
         });
       } catch (error) {
         console.error("Failed to invite judge:", error);
-        setFormError("Không thể gửi lời mời. API chưa sẵn sàng hoặc có lỗi kết nối.");
+        setFormError(
+          "Không thể gửi lời mời. API chưa sẵn sàng hoặc có lỗi kết nối.",
+        );
         setIsSubmitting(false);
         return;
       }

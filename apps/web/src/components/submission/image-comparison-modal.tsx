@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Loader2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,24 +17,27 @@ interface ImageComparisonModalProps {
   submissionId: string | null;
 }
 
+interface ComparisonSubmission {
+  id: string;
+  title: string;
+  participantId: string;
+  authorName?: string | null;
+  imageOriginalPath: string | null;
+  imagePreviewPath: string | null;
+}
+
 interface ComparisonData {
-  flaggedSubmission: {
-    id: string;
-    title: string;
-    authorName: string;
-    imageUrl?: string;
-  };
-  originalSubmission: {
-    id: string;
-    title: string;
-    authorName: string;
-    imageUrl?: string;
-  } | null;
+  flaggedSubmission: ComparisonSubmission;
+  originalSubmission: ComparisonSubmission | null;
   duplicateCheck: {
     hammingDistance: number;
   } | null;
   aiGeneratedProbability: number | null;
 }
+
+// Backend mới trả storage key, chưa có presigned URL → key không load được trong <img>.
+const imageSrc = (path: string | null, fallback: string) =>
+  path && /^(https?:\/\/|\/)/.test(path) ? path : fallback;
 
 export default function ImageComparisonModal({
   isOpen,
@@ -58,7 +61,7 @@ export default function ImageComparisonModal({
 
       try {
         const response = await fetch(
-          `/api/v1/submissions/${submissionId}/comparison`
+          `/api/v1/submissions/${submissionId}/comparison`,
         );
 
         if (!response.ok) {
@@ -104,6 +107,12 @@ export default function ImageComparisonModal({
           </div>
         )}
 
+        {!loading && !error && !data && (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Không có dữ liệu so sánh.
+          </p>
+        )}
+
         {!loading && !error && data && (
           <>
             {data.originalSubmission ? (
@@ -118,14 +127,19 @@ export default function ImageComparisonModal({
                       {data.originalSubmission.title}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {data.originalSubmission.authorName}
+                      {data.originalSubmission.authorName ?? "Thí sinh ẩn danh"}
                     </p>
                   </div>
                   <img
-                    src={
-                      data.originalSubmission.imageUrl ||
-                      "https://placehold.co/600x400?text=Anh+Goc"
-                    }
+                    src={imageSrc(
+                      data.originalSubmission.imagePreviewPath,
+                      "https://placehold.co/600x400?text=Anh+Goc",
+                    )}
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src =
+                        "https://placehold.co/600x400?text=Anh+Goc";
+                    }}
                     alt={data.originalSubmission.title}
                     className="h-[400px] w-full rounded-md border object-contain"
                   />
@@ -143,7 +157,7 @@ export default function ImageComparisonModal({
                       {data.flaggedSubmission.title}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {data.flaggedSubmission.authorName}
+                      {data.flaggedSubmission.authorName ?? "Thí sinh ẩn danh"}
                     </p>
                     {data.duplicateCheck && (
                       <p className="text-xs font-medium text-red-600">
@@ -157,10 +171,15 @@ export default function ImageComparisonModal({
                     )}
                   </div>
                   <img
-                    src={
-                      data.flaggedSubmission.imageUrl ||
-                      "https://placehold.co/600x400?text=Anh+Nghi+Ngo"
-                    }
+                    src={imageSrc(
+                      data.flaggedSubmission.imagePreviewPath,
+                      "https://placehold.co/600x400?text=Anh+Nghi+Ngo",
+                    )}
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src =
+                        "https://placehold.co/600x400?text=Anh+Nghi+Ngo";
+                    }}
                     alt={data.flaggedSubmission.title}
                     className="h-[400px] w-full rounded-md border object-contain"
                   />
@@ -180,7 +199,7 @@ export default function ImageComparisonModal({
                       {data.flaggedSubmission.title}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {data.flaggedSubmission.authorName}
+                      {data.flaggedSubmission.authorName ?? "Thí sinh ẩn danh"}
                     </p>
                     {data.aiGeneratedProbability !== null && (
                       <p className="text-xs font-medium text-orange-600">
@@ -189,10 +208,15 @@ export default function ImageComparisonModal({
                     )}
                   </div>
                   <img
-                    src={
-                      data.flaggedSubmission.imageUrl ||
-                      "https://placehold.co/600x400?text=Anh+Nghi+Ngo"
-                    }
+                    src={imageSrc(
+                      data.flaggedSubmission.imagePreviewPath,
+                      "https://placehold.co/600x400?text=Anh+Nghi+Ngo",
+                    )}
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src =
+                        "https://placehold.co/600x400?text=Anh+Nghi+Ngo";
+                    }}
                     alt={data.flaggedSubmission.title}
                     className="mx-auto h-[400px] max-w-2xl rounded-md border object-contain"
                   />

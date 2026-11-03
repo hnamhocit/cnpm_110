@@ -23,7 +23,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   refreshToken: null,
   userRole: null,
   setTokens: ({ accessToken, refreshToken, role }) => {
-    if (!role || !ALLOWED_ROLES.includes(role as (typeof ALLOWED_ROLES)[number])) {
+    if (
+      !role ||
+      !ALLOWED_ROLES.includes(role as (typeof ALLOWED_ROLES)[number])
+    ) {
       throw new Error("Invalid role");
     }
     set((state) => ({
