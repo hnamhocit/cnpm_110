@@ -14,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { http } from "@/lib/http";
+import type { Role } from "@/lib/route-access";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 export function LoginForm() {
@@ -36,28 +36,35 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      const res = await http.post("/api/v1/auth/login", {
-        email: email.trim(),
-        password: password,
+      // BFF set cookie HttpOnly cho refreshToken, chỉ trả accessToken về memory.
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
       });
+      const data = (await response.json().catch(() => ({}))) as {
+        accessToken?: string;
+        error?: string;
+        user?: { role?: Role };
+      };
 
-      // Lấy dữ liệu trả về từ API (tùy thuộc vào BE của bạn)
-      const data = res.data.data;
+      if (!response.ok || !data.accessToken) {
+        throw new Error(
+          data.error ??
+            "Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu!",
+        );
+      }
 
-      // Lưu token VÀ role vào Zustand
-      useAuthStore.getState().setTokens({
-        accessToken: data.accessToken,
-        // Nếu Backend trả về role thì lấy, không thì mặc định là Organizer
-        role: data.user?.role || "Organizer",
-      });
+      useAuthStore
+        .getState()
+        .setTokens({ accessToken: data.accessToken, role: data.user?.role });
 
-      // Chuyển hướng sang Dashboard
       router.push("/portal");
-    } catch (err: any) {
-      console.error(err);
+    } catch (err) {
       setError(
-        err.response?.data?.message ||
-          "Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu!",
+        err instanceof Error
+          ? err.message
+          : "Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu!",
       );
     } finally {
       setIsLoading(false);

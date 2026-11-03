@@ -6,7 +6,6 @@ import { type FormEvent, useState } from "react";
 import { AuthField } from "@/components/auth/auth-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { http } from "@/lib/http";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 export function JudgeLoginForm() {
@@ -60,30 +59,34 @@ export function JudgeLoginForm() {
 
     setIsLoading(true);
     try {
-      const res = await http.post("/api/v1/auth/login", {
-        email: input,
-        password: password,
+      // Dùng chung BFF: refreshToken vào cookie HttpOnly, accessToken về memory.
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: input, password }),
       });
+      const data = (await response.json().catch(() => ({}))) as {
+        accessToken?: string;
+        error?: string;
+      };
 
-      const data = res.data?.data ?? res.data;
+      if (!response.ok || !data.accessToken) {
+        throw new Error(
+          data.error ?? "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!",
+        );
+      }
 
-      // Lưu tokens và role vào store
-      useAuthStore.getState().setTokens({
-        accessToken: data.accessToken,
-        role: "Judge",
-      });
+      useAuthStore
+        .getState()
+        .setTokens({ accessToken: data.accessToken, role: "Judge" });
 
-      // Tạo cookie session để Server Components đọc được
-      document.cookie = `access_token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
-
-      // Chuyển hướng vào không gian chấm thi của Judge
       router.push("/portal");
       router.refresh();
-    } catch (err: unknown) {
-      const apiErr = err as { response?: { data?: { message?: string } } };
+    } catch (err) {
       setError(
-        apiErr.response?.data?.message ??
-          "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!",
+        err instanceof Error
+          ? err.message
+          : "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!",
       );
     } finally {
       setIsLoading(false);
