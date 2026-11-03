@@ -1,6 +1,5 @@
 "use client";
 
-import axios from "axios";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -36,13 +35,12 @@ export default function OrganizerContestsPage() {
     const fetchContests = async () => {
       try {
         setLoading(true);
-        const res = await http.get<{ data: Contest[] }>("/contests");
-        setContests(res.data.data ?? []);
-      } catch (err) {
-        const message = axios.isAxiosError<{ message?: string }>(err)
-          ? err.response?.data?.message
-          : undefined;
-        setError(message ?? "Không thể tải danh sách cuộc thi");
+        const res = await http.get("/api/v1/contests");
+        setContests(res.data.data || res.data);
+      } catch (err: any) {
+        setError(
+          err.response?.data?.message || "Không thể tải danh sách cuộc thi",
+        );
       } finally {
         setLoading(false);
       }
@@ -51,7 +49,10 @@ export default function OrganizerContestsPage() {
     fetchContests();
   }, []);
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Đang tải dữ liệu...</div>;
+  if (loading)
+    return (
+      <div className="p-8 text-center text-gray-500">Đang tải dữ liệu...</div>
+    );
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
 
   return (
@@ -59,8 +60,12 @@ export default function OrganizerContestsPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Quản lý Cuộc thi</h1>
-          <p className="text-sm text-gray-500">Danh sách các cuộc thi nhiếp ảnh phim bạn đang tổ chức.</p>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Quản lý Cuộc thi
+          </h1>
+          <p className="text-sm text-gray-500">
+            Danh sách các cuộc thi nhiếp ảnh phim bạn đang tổ chức.
+          </p>
         </div>
         {/* Nút tạo cuộc thi mới (Dẫn đến trang tạo) */}
         <Link href="/portal/contests/create">

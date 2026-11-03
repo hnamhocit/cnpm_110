@@ -22,7 +22,7 @@ async function AuthGuard({ children }: { children: ReactNode }) {
     redirect("/forbidden");
   }
 
-  return children;
+  return <>{children}</>;
 }
 
 export default function PortalTemplate({ children }: PortalTemplateProps) {
