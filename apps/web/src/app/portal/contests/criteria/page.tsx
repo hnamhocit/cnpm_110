@@ -3,7 +3,6 @@
 import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { http } from "@/lib/http";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { http } from "@/lib/http";
 
 // Kiểu dữ liệu cho một tiêu chí
 type Criterion = {

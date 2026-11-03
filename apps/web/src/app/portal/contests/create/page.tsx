@@ -76,27 +76,37 @@ export default function CreateContestPage() {
     const judgeEnd = new Date(formData.judgingEnd);
 
     if (regStart >= regEnd) {
-      setError("Thời gian kết thúc đăng ký phải sau thời gian bắt đầu đăng ký.");
+      setError(
+        "Thời gian kết thúc đăng ký phải sau thời gian bắt đầu đăng ký.",
+      );
       return;
     }
 
     if (regEnd >= subStart) {
-      setError("Thời gian bắt đầu nộp bài phải sau thời gian kết thúc đăng ký.");
+      setError(
+        "Thời gian bắt đầu nộp bài phải sau thời gian kết thúc đăng ký.",
+      );
       return;
     }
 
     if (subStart >= subEnd) {
-      setError("Thời gian kết thúc nộp bài phải sau thời gian bắt đầu nộp bài.");
+      setError(
+        "Thời gian kết thúc nộp bài phải sau thời gian bắt đầu nộp bài.",
+      );
       return;
     }
 
     if (subEnd >= judgeStart) {
-      setError("Thời gian bắt đầu chấm thi phải sau thời gian kết thúc nộp bài.");
+      setError(
+        "Thời gian bắt đầu chấm thi phải sau thời gian kết thúc nộp bài.",
+      );
       return;
     }
 
     if (judgeStart >= judgeEnd) {
-      setError("Thời gian kết thúc chấm thi phải sau thời gian bắt đầu chấm thi.");
+      setError(
+        "Thời gian kết thúc chấm thi phải sau thời gian bắt đầu chấm thi.",
+      );
       return;
     }
 
@@ -128,8 +138,9 @@ export default function CreateContestPage() {
 
       router.push("/portal/contests");
       router.refresh();
-    } catch (err: any) {
-      const message = err?.response?.data?.message;
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { message?: string } } };
+      const message = apiErr.response?.data?.message;
       setError(
         message ??
           "Tạo cuộc thi thất bại. Vui lòng kiểm tra lại kết nối Backend!",

@@ -18,9 +18,7 @@ export function filterContests(
   });
 }
 
-export function formatContestDate(
-  dateStr: string | null | undefined,
-): string {
+export function formatContestDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "N/A";
 
   try {

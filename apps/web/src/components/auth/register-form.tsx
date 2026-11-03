@@ -20,13 +20,13 @@ const MIN_PASSWORD_LENGTH = 8;
 
 export function RegisterForm() {
   const router = useRouter();
-  
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   // Đã xóa state organization
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  
+
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false); // Trạng thái đang gửi API
 
@@ -58,17 +58,19 @@ export function RegisterForm() {
 
     try {
       // Backend chỉ nhận fullName, email, password; role do server gán.
-      await http.post('/api/v1/auth/register', {
+      await http.post("/api/v1/auth/register", {
         fullName: fullName.trim(),
         email: email.trim(),
         password: password,
       });
 
       router.push("/login"); // Chuyển hướng sang trang đăng nhập
-      
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      const data = (err as any)?.response?.data as { error?: string; message?: string } | undefined;
+      const apiErr = err as {
+        response?: { data?: { error?: string; message?: string } };
+      };
+      const data = apiErr.response?.data;
       setError(
         data?.error ??
           data?.message ??
@@ -106,7 +108,7 @@ export function RegisterForm() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
-          
+
           {/* ĐÃ XÓA HOÀN TOÀN Ô "TÊN TỔ CHỨC" Ở ĐÂY */}
 
           <AuthField

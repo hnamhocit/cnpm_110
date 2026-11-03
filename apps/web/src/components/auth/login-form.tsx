@@ -49,7 +49,8 @@ export function LoginForm() {
 
       if (!response.ok || !data.accessToken) {
         throw new Error(
-          data.error ?? "Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu!",
+          data.error ??
+            "Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu!",
         );
       }
 

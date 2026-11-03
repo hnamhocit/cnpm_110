@@ -37,9 +37,10 @@ export default function OrganizerContestsPage() {
         setLoading(true);
         const res = await http.get("/api/v1/contests");
         setContests(res.data.data || res.data);
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const apiErr = err as { response?: { data?: { message?: string } } };
         setError(
-          err.response?.data?.message || "Không thể tải danh sách cuộc thi",
+          apiErr.response?.data?.message || "Không thể tải danh sách cuộc thi",
         );
       } finally {
         setLoading(false);
@@ -88,26 +89,47 @@ export default function OrganizerContestsPage() {
             const status = (contest.status ?? "").toLowerCase() || "n/a";
 
             return (
-              <Card key={contest.id} className="hover:shadow-md transition-shadow">
+              <Card
+                key={contest.id}
+                className="hover:shadow-md transition-shadow"
+              >
                 <CardHeader>
                   <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{contest.name || "N/A"}</CardTitle>
+                    <CardTitle className="text-lg">
+                      {contest.name || "N/A"}
+                    </CardTitle>
                     {/* Badge trạng thái */}
-                    <span className={`px-2 py-1 text-xs rounded-full font-medium ${STATUS_STYLES[status] ?? "bg-blue-100 text-blue-700"}`}>
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full font-medium ${STATUS_STYLES[status] ?? "bg-blue-100 text-blue-700"}`}
+                    >
                       {status.toUpperCase()}
                     </span>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm text-gray-600">
-                    <p>📅 Thời gian: {formatContestDate(contest.startAt ?? contest.start_at)} - {formatContestDate(contest.endAt ?? contest.end_at)}</p>
+                    <p>
+                      📅 Thời gian:{" "}
+                      {formatContestDate(contest.startAt ?? contest.start_at)} -{" "}
+                      {formatContestDate(contest.endAt ?? contest.end_at)}
+                    </p>
                   </div>
                   <div className="mt-4 flex gap-2">
-                    <Link href={`/portal/contests/${contest.id}`} className="flex-1">
-                      <Button variant="outline" className="w-full text-xs">Xem chi tiết</Button>
+                    <Link
+                      href={`/portal/contests/${contest.id}`}
+                      className="flex-1"
+                    >
+                      <Button variant="outline" className="w-full text-xs">
+                        Xem chi tiết
+                      </Button>
                     </Link>
-                    <Link href={`/portal/contests/${contest.id}/edit`} className="flex-1">
-                      <Button variant="outline" className="w-full text-xs">Chỉnh sửa</Button>
+                    <Link
+                      href={`/portal/contests/${contest.id}/edit`}
+                      className="flex-1"
+                    >
+                      <Button variant="outline" className="w-full text-xs">
+                        Chỉnh sửa
+                      </Button>
                     </Link>
                   </div>
                 </CardContent>
