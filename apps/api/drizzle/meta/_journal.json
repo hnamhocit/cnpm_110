@@ -29,6 +29,13 @@
       "when": 1792284440479,
       "tag": "0003_faulty_rage",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793366278925,
+      "tag": "0004_perfect_lady_deathstrike",
+      "breakpoints": true
     }
   ]
 }

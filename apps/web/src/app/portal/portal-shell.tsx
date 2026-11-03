@@ -10,7 +10,8 @@ import Header from "../components/portal/Header";
 const menuItems = [
   { label: "Dashboard", href: "/portal", number: "01" },
   { label: "Contests", href: "/portal/contests", number: "02" },
-  { label: "Reports", href: "/portal/reports", number: "03" },
+  { label: "Judges", href: "/portal/contests/judges", number: "03" },
+  { label: "Reports", href: "/portal/reports", number: "04" },
 ];
 
 // Kiểu dữ liệu cho Sidebar
@@ -53,7 +54,11 @@ function Sidebar({ onClose }: SidebarProps) {
           const isActive =
             item.href === "/portal"
               ? pathname === "/portal"
-              : pathname.startsWith(item.href);
+              : item.href === "/portal/contests"
+                ? pathname === "/portal/contests" ||
+                  (pathname.startsWith("/portal/contests/") &&
+                    !pathname.startsWith("/portal/contests/judges"))
+                : pathname.startsWith(item.href);
 
           return (
             <Link
@@ -99,58 +104,54 @@ export default function PortalShell({ children }: PortalShellProps) {
   useEffect(() => {
     if (!mobileOpen) return;
 
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMobileOpen(false);
-      }
-    };
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setMobileOpen(false);
+    }
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleEscape);
-    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [mobileOpen]);
 
   return (
-    <div className="flex min-h-dvh bg-[var(--portal-background)] text-[var(--portal-text)]">
-      {/* DESKTOP SIDEBAR */}
-      <div className="hidden w-64 shrink-0 md:block">
-        <div className="sticky top-0 h-dvh">
+    <div className="flex min-h-screen bg-[var(--portal-bg)]">
+      {/* SIDEBAR PC */}
+      <div className="hidden lg:block lg:w-64 lg:shrink-0 lg:border-r lg:border-[var(--portal-border)]">
+        <div className="sticky top-0 h-screen">
           <Sidebar />
         </div>
       </div>
 
-      {/* MOBILE SIDEBAR */}
+      {/* SIDEBAR MOBILE OVERLAY */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          {/* Overlay: bấm bên ngoài để đóng */}
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu điều hướng"
+          className="fixed inset-0 z-50 flex lg:hidden"
+        >
+          {/* Backdrop tối */}
           <button
             type="button"
-            aria-label="Đóng menu"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
-            className="absolute inset-0 h-full w-full bg-black/70"
+            aria-label="Đóng menu"
           />
 
-          {/* Sidebar trượt từ phía trái */}
-          <div className="relative z-10 h-full w-72 max-w-[85vw] shadow-2xl">
+          {/* Sidebar Drawer */}
+          <div className="relative z-10 w-72 max-w-[80vw] shadow-2xl">
             <Sidebar onClose={() => setMobileOpen(false)} />
           </div>
         </div>
       )}
 
-      {/* MAIN SECTION */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/* MAIN CONTENT AREA */}
+      <div className="flex flex-1 flex-col overflow-hidden">
         {/* HEADER */}
         <Header onMenuClick={() => setMobileOpen(true)} />
 
-        {/* PAGE CONTENT */}
-        <main className="mx-auto w-full max-w-7xl min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          {children}
+        {/* NỘI DUNG CHÍNH CỦA TRANG */}
+        <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>
     </div>
