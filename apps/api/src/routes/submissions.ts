@@ -7,6 +7,7 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { db } from "../db/index";
 import {
+  aiAnalysisJobs,
   categories,
   filmMetadata,
   submissionAiAnalyses,
@@ -275,37 +276,37 @@ route.get(
           aiFlagged: isAiFlagged,
           filmMetadata: meta
             ? {
-                filmBrand: meta.filmBrand,
-                filmStock: meta.filmStock,
-                filmFormat: meta.filmFormat,
-                isoRated: meta.isoRated,
-                isoShot: meta.isoShot,
-                cameraBody: meta.cameraBody,
-                lens: meta.lens,
-                rollId: meta.rollId,
-                frameNumber: meta.frameNumber,
-                devLabName: meta.devLabName,
-                devChemistry: meta.devChemistry,
-                scannerModel: meta.scannerModel,
-              }
+              filmBrand: meta.filmBrand,
+              filmStock: meta.filmStock,
+              filmFormat: meta.filmFormat,
+              isoRated: meta.isoRated,
+              isoShot: meta.isoShot,
+              cameraBody: meta.cameraBody,
+              lens: meta.lens,
+              rollId: meta.rollId,
+              frameNumber: meta.frameNumber,
+              devLabName: meta.devLabName,
+              devChemistry: meta.devChemistry,
+              scannerModel: meta.scannerModel,
+            }
             : null,
           aiAnalysis: ai
             ? {
-                aiGeneratedProbability: Number(ai.aiGeneratedProbability),
-                isAiFlagged: ai.isAiFlagged,
-                phashHex: ai.phashHex,
-                duplicateSuspectId: ai.duplicateSuspectId,
-                duplicateSimilarityScore:
-                  ai.duplicateSimilarityScore != null
-                    ? Number(ai.duplicateSimilarityScore)
-                    : null,
-                filmGrainScore:
-                  ai.filmGrainScore != null
-                    ? Number(ai.filmGrainScore)
-                    : null,
-                predictedTags: ai.predictedTags,
-                flagReasons: ai.flagReasons,
-              }
+              aiGeneratedProbability: Number(ai.aiGeneratedProbability),
+              isAiFlagged: ai.isAiFlagged,
+              phashHex: ai.phashHex,
+              duplicateSuspectId: ai.duplicateSuspectId,
+              duplicateSimilarityScore:
+                ai.duplicateSimilarityScore != null
+                  ? Number(ai.duplicateSimilarityScore)
+                  : null,
+              filmGrainScore:
+                ai.filmGrainScore != null
+                  ? Number(ai.filmGrainScore)
+                  : null,
+              predictedTags: ai.predictedTags,
+              flagReasons: ai.flagReasons,
+            }
             : null,
           createdAt: sub.createdAt,
           updatedAt: sub.updatedAt,
@@ -498,6 +499,12 @@ route.post(
         await tx.insert(filmMetadata).values({
           submissionId: id,
           ...metadata,
+        });
+        await tx.insert(aiAnalysisJobs).values({
+          submissionId: id,
+          status: "PENDING",
+          attempts: 0,
+          maxAttempts: 3,
         });
       });
 
@@ -991,19 +998,19 @@ const handleComparison = async (c: any) => {
         updatedAt: origRow.submission.updatedAt,
         filmMetadata: origRow.metadata
           ? {
-              filmBrand: origRow.metadata.filmBrand,
-              filmStock: origRow.metadata.filmStock,
-              filmFormat: origRow.metadata.filmFormat,
-              isoRated: origRow.metadata.isoRated,
-              isoShot: origRow.metadata.isoShot,
-              cameraBody: origRow.metadata.cameraBody,
-              lens: origRow.metadata.lens,
-              rollId: origRow.metadata.rollId,
-              frameNumber: origRow.metadata.frameNumber,
-              devLabName: origRow.metadata.devLabName,
-              devChemistry: origRow.metadata.devChemistry,
-              scannerModel: origRow.metadata.scannerModel,
-            }
+            filmBrand: origRow.metadata.filmBrand,
+            filmStock: origRow.metadata.filmStock,
+            filmFormat: origRow.metadata.filmFormat,
+            isoRated: origRow.metadata.isoRated,
+            isoShot: origRow.metadata.isoShot,
+            cameraBody: origRow.metadata.cameraBody,
+            lens: origRow.metadata.lens,
+            rollId: origRow.metadata.rollId,
+            frameNumber: origRow.metadata.frameNumber,
+            devLabName: origRow.metadata.devLabName,
+            devChemistry: origRow.metadata.devChemistry,
+            scannerModel: origRow.metadata.scannerModel,
+          }
           : null,
       };
     }
@@ -1036,9 +1043,9 @@ const handleComparison = async (c: any) => {
     Array.isArray(ai?.predictedTags) && (ai.predictedTags as unknown[]).length > 0
       ? ai.predictedTags
       : [
-          { tag: "Streetlife", confidence: 0.94 },
-          { tag: "Monochrome", confidence: 0.89 },
-        ];
+        { tag: "Streetlife", confidence: 0.94 },
+        { tag: "Monochrome", confidence: 0.89 },
+      ];
 
   const data = {
     submissionId: sub.id,
@@ -1077,19 +1084,19 @@ const handleComparison = async (c: any) => {
       status: sub.status,
       filmMetadata: meta
         ? {
-            filmBrand: meta.filmBrand,
-            filmStock: meta.filmStock,
-            filmFormat: meta.filmFormat,
-            isoRated: meta.isoRated,
-            isoShot: meta.isoShot,
-            cameraBody: meta.cameraBody,
-            lens: meta.lens,
-            rollId: meta.rollId,
-            frameNumber: meta.frameNumber,
-            devLabName: meta.devLabName,
-            devChemistry: meta.devChemistry,
-            scannerModel: meta.scannerModel,
-          }
+          filmBrand: meta.filmBrand,
+          filmStock: meta.filmStock,
+          filmFormat: meta.filmFormat,
+          isoRated: meta.isoRated,
+          isoShot: meta.isoShot,
+          cameraBody: meta.cameraBody,
+          lens: meta.lens,
+          rollId: meta.rollId,
+          frameNumber: meta.frameNumber,
+          devLabName: meta.devLabName,
+          devChemistry: meta.devChemistry,
+          scannerModel: meta.scannerModel,
+        }
         : null,
       createdAt: sub.createdAt,
       updatedAt: sub.updatedAt,

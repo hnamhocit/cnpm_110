@@ -8,6 +8,7 @@ import {
 } from "../db/schema";
 import { eq, ne, and, isNotNull } from "drizzle-orm";
 import { findClosestDuplicate } from "../services/duplicate-detection";
+import { classifyAiDetection } from "../services/ai-detection";
 
 const route = new Hono();
 
@@ -135,6 +136,9 @@ route.post(
       const phashHex = data.phashHex as string;
       const aiGeneratedProbability =
         data.aiGeneratedProbability as number;
+      const aiDetection = classifyAiDetection(
+        aiGeneratedProbability,
+      );
       const predictedTags = data.predictedTags as {
         tag: string;
         confidence: number;
@@ -184,34 +188,57 @@ route.post(
         phashHex.toLowerCase(),
         candidates,
       );
-      // Insert AI analysis or update the existing result
-      await db
-        .insert(submissionAiAnalyses)
-        .values({
-          submissionId,
-          phashHex: phashHex.toLowerCase(),
-          aiGeneratedProbability:
-            aiGeneratedProbability.toFixed(4),
-          predictedTags,
-          isAiFlagged: false,
-          duplicateSuspectId: duplicate?.submissionId ?? null,
-          duplicateSimilarityScore: duplicate
-            ? duplicate.similarityScore.toFixed(4)
-            : null,
-        })
-        .onConflictDoUpdate({
-          target: submissionAiAnalyses.submissionId,
-          set: {
+
+      // FPC-54: Save AI analysis and update submission atomically.
+      await db.transaction(async (tx) => {
+        // Insert AI analysis or update the existing result
+        await tx
+          .insert(submissionAiAnalyses)
+          .values({
+            submissionId,
             phashHex: phashHex.toLowerCase(),
             aiGeneratedProbability:
               aiGeneratedProbability.toFixed(4),
             predictedTags,
+            isAiFlagged: aiDetection.isAiFlagged,
+            flagReasons: aiDetection.flagReasons,
             duplicateSuspectId: duplicate?.submissionId ?? null,
             duplicateSimilarityScore: duplicate
               ? duplicate.similarityScore.toFixed(4)
               : null,
-          },
-        });
+          })
+          .onConflictDoUpdate({
+            target: submissionAiAnalyses.submissionId,
+            set: {
+              phashHex: phashHex.toLowerCase(),
+              aiGeneratedProbability:
+                aiGeneratedProbability.toFixed(4),
+              predictedTags,
+              duplicateSuspectId: duplicate?.submissionId ?? null,
+              duplicateSimilarityScore: duplicate
+                ? duplicate.similarityScore.toFixed(4)
+                : null,
+              isAiFlagged: aiDetection.isAiFlagged,
+              flagReasons: aiDetection.flagReasons,
+            },
+          });
+
+        // Automatically flag pending submissions when AI score is high
+        if (aiDetection.isAiFlagged) {
+          await tx
+            .update(submissions)
+            .set({
+              status: "FLAGGED",
+              updatedAt: new Date(),
+            })
+            .where(
+              and(
+                eq(submissions.id, submissionId),
+                eq(submissions.status, "PENDING_AI"),
+              ),
+            );
+        }
+      });
 
       return c.json({
         success: true,
@@ -221,6 +248,9 @@ route.post(
           phashHex,
           aiGeneratedProbability,
           predictedTags,
+          isAiFlagged: aiDetection.isAiFlagged,
+          riskLevel: aiDetection.riskLevel,
+          flagReasons: aiDetection.flagReasons,
         },
       });
     } catch (error) {
@@ -234,7 +264,6 @@ route.post(
         500,
       );
     }
-
   },
 );
 

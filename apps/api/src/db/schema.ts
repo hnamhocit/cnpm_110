@@ -402,6 +402,49 @@ export const submissionAiAnalyses = pgTable(
   ],
 );
 
+export const aiAnalysisJobs = pgTable(
+  "ai_analysis_jobs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    submissionId: uuid("submission_id")
+      .notNull()
+      .unique()
+      .references(() => submissions.id, {
+        onDelete: "cascade",
+      }),
+
+    status: varchar("status", { length: 20 })
+      .notNull()
+      .default("PENDING"),
+
+    attempts: integer("attempts")
+      .notNull()
+      .default(0),
+
+    maxAttempts: integer("max_attempts")
+      .notNull()
+      .default(3),
+
+    lastError: text("last_error"),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_ai_analysis_jobs_status").on(table.status),
+  ],
+);
+
 export const refreshTokens = pgTable(
   "refresh_tokens",
   {
