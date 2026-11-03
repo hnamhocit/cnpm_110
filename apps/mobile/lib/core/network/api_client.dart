@@ -10,7 +10,7 @@ class ApiClient {
     required AuthTokenStorage tokenStorage,
     required Future<void> Function() onUnauthenticated,
     AuthService? authService,
-    String refreshPath = '/auth/refresh',
+    String refreshPath = '/api/v1/auth/refresh',
     Duration connectTimeout = const Duration(seconds: 15),
     Duration receiveTimeout = const Duration(seconds: 15),
   }) : dio = Dio(
