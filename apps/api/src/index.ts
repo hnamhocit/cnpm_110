@@ -5,6 +5,7 @@ import auth from "./routes/auth";
 import contests from "./routes/contests";
 import healthRoute from "./routes/health.route";
 import submissionRoute from "./routes/submissions";
+import aiWebhookRoute from "./routes/ai-webhook";
 import { logger } from "hono/logger";
 import { cors } from "hono/cors";
 import { compress } from "hono/compress";
@@ -25,6 +26,7 @@ app.route("/health", healthRoute);
 app.route("/api/v1/auth", auth);
 app.route("/api/v1/contests", contests);
 app.route("/api/v1/submissions", submissionRoute);
+app.route("/api/v1/ai", aiWebhookRoute);
 app.route("/api/v1/organizer/submissions", submissionRoute);
 
 app.get("/", (c) => c.text("Hello Hono!"));
