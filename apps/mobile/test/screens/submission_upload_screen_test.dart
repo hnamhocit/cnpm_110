@@ -10,15 +10,32 @@ import 'package:flutter_application_2/screens/submission/components/image_previe
 import 'package:flutter_application_2/screens/submission/submission_upload_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 
-// Minimal valid 1x1 PNG bytes for flutter image decoding
+// Minimal valid 1x1 PNG bytes for flutter image decoding (useful for proof tests)
 final Uint8List validPngBytes = Uint8List.fromList([
   137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1,
   0, 0, 0, 1, 8, 6, 0, 0, 0, 31, 21, 196, 137, 0, 0, 0, 10, 73, 68, 65, 84,
   120, 156, 99, 0, 1, 0, 0, 5, 0, 1, 13, 10, 45, 180, 0, 0, 0, 0, 73, 69, 78,
   68, 174, 66, 96, 130
 ]);
+
+// Valid 2000x2000 scan JPEG satisfying BR-07
+final Uint8List validScanJpgBytes = Uint8List.fromList(
+  img.encodeJpg(
+    img.fill(img.Image(width: 2000, height: 2000), color: img.ColorRgb8(100, 150, 200)),
+    quality: 70,
+  ),
+);
+
+// Substandard 1800x1200 scan JPEG (< 2000px short edge)
+final Uint8List substandardScanJpgBytes = Uint8List.fromList(
+  img.encodeJpg(
+    img.fill(img.Image(width: 1800, height: 1200), color: img.ColorRgb8(100, 150, 200)),
+    quality: 70,
+  ),
+);
 
 class FakeImagePickerService implements ImagePickerService {
   FakeImagePickerService({this.nextAttachment});
@@ -114,13 +131,13 @@ void main() {
       expect(find.text('Tiêu đề tác phẩm *'), findsOneWidget);
       expect(find.text('2. Tải lên ảnh scan bài dự thi'), findsOneWidget);
       expect(find.text('Ảnh scan bài thi'), findsOneWidget);
-      expect(find.text('Bắt buộc'), findsOneWidget);
+      expect(find.text('Bắt buộc • Tối đa 25MB (BR-07)'), findsOneWidget);
       expect(
         find.text('3. Đính kèm ảnh âm bản (Negative / Contact Sheet)'),
         findsOneWidget,
       );
       expect(find.text('Ảnh âm bản / Contact Sheet'), findsOneWidget);
-      expect(find.text('Tùy chọn'), findsOneWidget);
+      expect(find.text('Tùy chọn • Tối đa 20MB'), findsOneWidget);
       expect(
         find.text('4. Thông số kỹ thuật chụp & tráng scan'),
         findsOneWidget,
@@ -153,17 +170,57 @@ void main() {
       expect(fakeRepo.lastSubmittedData, isNull);
     });
 
-    testWidgets('picks scan image, displays preview, and opens full preview dialog',
+    testWidgets('blocks scan image with short edge 1800px and displays BR-07 error',
         (tester) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
       fakePicker.nextAttachment = ImageAttachment(
-        file: XFile.fromData(validPngBytes, name: 'scan_sample.png'),
-        name: 'scan_sample.png',
-        sizeInBytes: 2450,
-        bytes: validPngBytes,
+        file: XFile.fromData(substandardScanJpgBytes, name: 'substandard_1800.jpg'),
+        name: 'substandard_1800.jpg',
+        sizeInBytes: substandardScanJpgBytes.length,
+        bytes: substandardScanJpgBytes,
+        mimeType: 'image/jpeg',
+      );
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Tap gallery button on scan image card
+      final galleryButtons = find.widgetWithText(FilledButton, 'Thư viện ảnh');
+      await tester.tap(galleryButtons.first);
+      await tester.pumpAndSettle();
+
+      // BR-07 error displayed
+      expect(
+        find.textContaining('cạnh ngắn phải từ 2000px trở lên'),
+        findsOneWidget,
+      );
+
+      // Submit should still fail
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Tiêu đề tác phẩm *'),
+        'Tác phẩm bị từ chối',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Nộp bài thi'));
+      await tester.pumpAndSettle();
+
+      expect(fakeRepo.lastSubmittedData, isNull);
+    });
+
+    testWidgets('picks valid scan image, displays preview, and opens full preview dialog',
+        (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      fakePicker.nextAttachment = ImageAttachment(
+        file: XFile.fromData(validScanJpgBytes, name: 'scan_sample.jpg'),
+        name: 'scan_sample.jpg',
+        sizeInBytes: validScanJpgBytes.length,
+        bytes: validScanJpgBytes,
+        mimeType: 'image/jpeg',
       );
 
       await tester.pumpWidget(buildTestWidget());
@@ -175,8 +232,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Preview details shown
-      expect(find.text('scan_sample.png'), findsOneWidget);
-      expect(find.text('2.4 KB'), findsOneWidget);
+      expect(find.text('scan_sample.jpg'), findsOneWidget);
       expect(find.text('Xem lớn'), findsOneWidget);
 
       // Tap 'Xem lớn' to open ImagePreviewDialog
@@ -216,23 +272,25 @@ void main() {
         'Phố cổ Hội An',
       );
 
-      // Pick Scan Image
+      // Pick Valid Scan Image
       fakePicker.nextAttachment = ImageAttachment(
-        file: XFile.fromData(validPngBytes, name: 'scan_main.png'),
-        name: 'scan_main.png',
-        sizeInBytes: 3000,
-        bytes: validPngBytes,
+        file: XFile.fromData(validScanJpgBytes, name: 'scan_main.jpg'),
+        name: 'scan_main.jpg',
+        sizeInBytes: validScanJpgBytes.length,
+        bytes: validScanJpgBytes,
+        mimeType: 'image/jpeg',
       );
       final scanGalleryButton = find.widgetWithText(FilledButton, 'Thư viện ảnh').first;
       await tester.tap(scanGalleryButton);
       await tester.pumpAndSettle();
 
-      // Pick Negative Proof
+      // Pick Negative Proof (Proof does not enforce 2000px)
       fakePicker.nextAttachment = ImageAttachment(
         file: XFile.fromData(validPngBytes, name: 'negative_strip.png'),
         name: 'negative_strip.png',
-        sizeInBytes: 1500,
+        sizeInBytes: validPngBytes.length,
         bytes: validPngBytes,
+        mimeType: 'image/png',
       );
       final proofCard = find.widgetWithText(ImagePickerCard, 'Ảnh âm bản / Contact Sheet');
       final proofGalleryButton = find.descendant(
@@ -242,7 +300,8 @@ void main() {
       await tester.tap(proofGalleryButton);
       await tester.pumpAndSettle();
 
-      expect(find.text('negative_strip.png'), findsOneWidget);
+      // Proof is converted to JPEG
+      expect(find.text('negative_strip.jpg'), findsOneWidget);
 
       // Submit Form
       await tester.tap(find.widgetWithText(FilledButton, 'Nộp bài thi'));
@@ -250,8 +309,8 @@ void main() {
 
       expect(fakeRepo.lastSubmittedData, isNotNull);
       expect(fakeRepo.lastSubmittedData!.title, 'Phố cổ Hội An');
-      expect(fakeRepo.lastSubmittedData!.scanImage.name, 'scan_main.png');
-      expect(fakeRepo.lastSubmittedData!.negativeProof?.name, 'negative_strip.png');
+      expect(fakeRepo.lastSubmittedData!.scanImage.name, 'scan_main.jpg');
+      expect(fakeRepo.lastSubmittedData!.negativeProof?.name, 'negative_strip.jpg');
       expect(successResult?.id, 'sub-123');
 
       // Success dialog shown
@@ -273,22 +332,76 @@ void main() {
       );
 
       fakePicker.nextAttachment = ImageAttachment(
-        file: XFile.fromData(validPngBytes, name: 'to_be_reset.png'),
-        name: 'to_be_reset.png',
-        sizeInBytes: 1000,
-        bytes: validPngBytes,
+        file: XFile.fromData(validScanJpgBytes, name: 'to_be_reset.jpg'),
+        name: 'to_be_reset.jpg',
+        sizeInBytes: validScanJpgBytes.length,
+        bytes: validScanJpgBytes,
+        mimeType: 'image/jpeg',
       );
       await tester.tap(find.widgetWithText(FilledButton, 'Thư viện ảnh').first);
       await tester.pumpAndSettle();
 
-      expect(find.text('to_be_reset.png'), findsOneWidget);
+      expect(find.text('to_be_reset.jpg'), findsOneWidget);
 
       // Tap reset button
       await tester.tap(find.widgetWithText(OutlinedButton, 'Đặt lại form'));
       await tester.pumpAndSettle();
 
-      expect(find.text('to_be_reset.png'), findsNothing);
+      expect(find.text('to_be_reset.jpg'), findsNothing);
       expect(find.text('Test Reset Title'), findsNothing);
+    });
+
+    testWidgets('clears old scan image immediately when user begins picking a new image', (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      fakePicker.nextAttachment = ImageAttachment(
+        file: XFile.fromData(validScanJpgBytes, name: 'first_scan.jpg'),
+        name: 'first_scan.jpg',
+        sizeInBytes: validScanJpgBytes.length,
+        bytes: validScanJpgBytes,
+        mimeType: 'image/jpeg',
+      );
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      final galleryButtons = find.widgetWithText(FilledButton, 'Thư viện ảnh');
+      await tester.tap(galleryButtons.first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('first_scan.jpg'), findsOneWidget);
+
+      // Now prepare a second attachment that is substandard (1800px)
+      fakePicker.nextAttachment = ImageAttachment(
+        file: XFile.fromData(substandardScanJpgBytes, name: 'second_scan_bad.jpg'),
+        name: 'second_scan_bad.jpg',
+        sizeInBytes: substandardScanJpgBytes.length,
+        bytes: substandardScanJpgBytes,
+        mimeType: 'image/jpeg',
+      );
+
+      // Tap 'Đổi ảnh' on scan card and choose 'Thư viện ảnh' from bottom sheet
+      await tester.tap(find.text('Đổi ảnh'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(ListTile, 'Thư viện ảnh'));
+      await tester.pumpAndSettle();
+
+      // Old image 'first_scan.jpg' MUST NOT remain attached!
+      expect(find.text('first_scan.jpg'), findsNothing);
+      expect(find.textContaining('cạnh ngắn phải từ 2000px trở lên'), findsOneWidget);
+
+      // If user tries to submit, it must fail because scan image is cleared
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Tiêu đề tác phẩm *'),
+        'Test Submit After Failed Pick',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Nộp bài thi'));
+      await tester.pumpAndSettle();
+
+      expect(fakeRepo.lastSubmittedData, isNull);
     });
   });
 }
