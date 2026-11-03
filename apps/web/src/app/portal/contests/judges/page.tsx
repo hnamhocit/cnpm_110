@@ -26,6 +26,16 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { http } from "@/lib/http";
 
 export type InvitationStatus = "PENDING" | "ACCEPTED" | "DECLINED";
@@ -42,6 +52,9 @@ export type InvitedJudge = {
   role: string;
 };
 
+// TODO(Backend): Chờ API GET /api/v1/contests/:id/judges để fetch danh sách giám khảo thật.
+// TODO(Backend): Chờ API POST /api/v1/contests/:id/judges/invite để gửi lời mời thật.
+// Mock data tạm thời cho UI testing. Cần xóa khi backend sẵn sàng.
 const INITIAL_MOCK_JUDGES: InvitedJudge[] = [
   {
     id: "judge-1",
@@ -124,6 +137,10 @@ export default function ContestJudgesManagementPage() {
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [revokeJudge, setRevokeJudge] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const searchInputId = useId();
   const filterSelectId = useId();
@@ -185,8 +202,11 @@ export default function ContestJudgesManagementPage() {
           bio: inviteBio.trim(),
           categories: selectedCategories,
         });
-      } catch {
-        // Fallback local state if API endpoint is not yet connected
+      } catch (error) {
+        console.error("Failed to invite judge:", error);
+        setFormError("Không thể gửi lời mời. API chưa sẵn sàng hoặc có lỗi kết nối.");
+        setIsSubmitting(false);
+        return;
       }
 
       const newJudge: InvitedJudge = {
@@ -225,10 +245,9 @@ export default function ContestJudgesManagementPage() {
   };
 
   const handleRevokeInvitation = (id: string, name: string) => {
-    if (confirm(`Bạn có chắc chắn muốn thu hồi lời mời đối với ${name}?`)) {
-      setJudges((prev) => prev.filter((j) => j.id !== id));
-      setToastMessage(`Đã thu hồi lời mời của ${name}`);
-    }
+    setJudges((prev) => prev.filter((j) => j.id !== id));
+    setToastMessage(`Đã thu hồi lời mời của ${name}`);
+    setRevokeJudge(null);
   };
 
   // Lọc danh sách giám khảo
@@ -574,7 +593,10 @@ export default function ContestJudgesManagementPage() {
                             variant="outline"
                             size="sm"
                             onClick={() =>
-                              handleRevokeInvitation(judge.id, judge.fullName)
+                              setRevokeJudge({
+                                id: judge.id,
+                                name: judge.fullName,
+                              })
                             }
                             className="text-xs h-8 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                           >
@@ -748,6 +770,38 @@ export default function ContestJudgesManagementPage() {
           </div>
         </div>
       )}
+
+      {/* AlertDialog for Revoke Confirmation */}
+      <AlertDialog
+        open={revokeJudge !== null}
+        onOpenChange={(open) => !open && setRevokeJudge(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận thu hồi lời mời</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn thu hồi lời mời đối với{" "}
+              <span className="font-semibold text-gray-900">
+                {revokeJudge?.name}
+              </span>
+              ? Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy bỏ</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (revokeJudge) {
+                  handleRevokeInvitation(revokeJudge.id, revokeJudge.name);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Thu hồi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

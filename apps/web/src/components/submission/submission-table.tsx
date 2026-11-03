@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, Check, Eye, Search, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import ImageComparisonModal from "@/components/submission/image-comparison-modal";
 import { Badge } from "@/components/ui/badge";
@@ -16,17 +16,37 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatContestDate } from "@/lib/contest-utils";
-import { mockSubmissions } from "@/lib/mock-submissions";
+import { http } from "@/lib/http/client";
 import { filterSubmissions } from "@/lib/submission-utils";
-import type { SubmissionStatus } from "@/types/submission";
+import type { Submission, SubmissionStatus } from "@/types/submission";
 
 export default function SubmissionTable() {
-  const [submissions, setSubmissions] = useState(mockSubmissions);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<string | null>(
     null,
   );
+
+  useEffect(() => {
+    async function fetchSubmissions() {
+      try {
+        setIsLoading(true);
+        const res = await http.get("/api/v1/submissions", {
+          params: { limit: 100 },
+        });
+        if (res.data?.data) {
+          setSubmissions(res.data.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch submissions:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchSubmissions();
+  }, []);
 
   const visibleSubmissions = filterSubmissions(submissions, query);
 
@@ -40,8 +60,6 @@ export default function SubmissionTable() {
     setSelectedSubmission(id);
     setIsModalOpen(true);
   };
-
-  const currentSubmission = submissions.find((s) => s.id === selectedSubmission);
 
   return (
     <div className="space-y-4">
@@ -69,7 +87,16 @@ export default function SubmissionTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {visibleSubmissions.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  Đang tải...
+                </TableCell>
+              </TableRow>
+            ) : visibleSubmissions.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={6}
@@ -154,22 +181,11 @@ export default function SubmissionTable() {
         </Table>
       </div>
 
-      {currentSubmission && (
-        <ImageComparisonModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          originalSubmission={{
-            id: currentSubmission.id,
-            title: currentSubmission.title,
-            authorName: currentSubmission.authorName,
-          }}
-          suspectedSubmission={{
-            id: "SUB-999",
-            title: "Bài dự thi tương tự",
-            authorName: "Người dùng khác",
-          }}
-        />
-      )}
+      <ImageComparisonModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        submissionId={selectedSubmission}
+      />
     </div>
   );
 }

@@ -39,6 +39,10 @@ export type CategoryAssignment = {
   assignedJudgeIds: string[];
 };
 
+// TODO(Backend): Chờ API GET /api/v1/contests/:id/judges để fetch danh sách giám khảo.
+// TODO(Backend): Chờ API GET /api/v1/contests/:id/judges/assignments để fetch phân công.
+// TODO(Backend): Chờ API POST /api/v1/contests/:id/judges/assignments để lưu phân công.
+// Mock data tạm thời cho UI testing. Cần xóa khi backend sẵn sàng.
 const INITIAL_AVAILABLE_JUDGES: JudgeMember[] = [
   {
     id: "judge-1",
@@ -174,12 +178,14 @@ export default function CategoryAssignmentPage() {
       try {
         await http.post(
           `/api/v1/contests/${selectedContest}/judges/assignments`,
-          {
-            assignments,
-          },
+          { assignments: assignments }
         );
-      } catch {
-        // Fallback local state if API endpoint not connected yet
+      } catch (error) {
+        console.error("Failed to save assignments:", error);
+        setToastType("error");
+        setToastMessage("Không thể lưu phân công. API chưa sẵn sàng hoặc có lỗi kết nối.");
+        setSaving(false);
+        return;
       }
 
       setToastType("success");

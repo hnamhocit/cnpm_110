@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
+import { toast } from "sonner";
 
 import { AuthField } from "@/components/auth/auth-field";
 import { Button } from "@/components/ui/button";
@@ -65,7 +66,7 @@ export function RegisterForm() {
         role: "ORGANIZER", // Bắt buộc phải có theo tài liệu
       });
 
-      alert("Đăng ký thành công! Vui lòng đăng nhập.");
+      toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
       router.push("/login"); // Chuyển hướng sang trang đăng nhập
     } catch (err: any) {
       console.error(err);

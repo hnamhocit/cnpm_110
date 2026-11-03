@@ -4,6 +4,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -70,7 +71,7 @@ export default function CreateContestPage() {
       // Gửi API lên Backend (Nhớ check lại endpoint với bạn làm BE)
       await http.post("/api/v1/contests", formData);
 
-      alert("Tạo cuộc thi thành công!");
+      toast.success("Tạo cuộc thi thành công!");
       router.push("/portal/contests"); // Quay về trang danh sách
       router.refresh(); // Load lại dữ liệu
     } catch (err: any) {

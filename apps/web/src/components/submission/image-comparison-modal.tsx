@@ -1,6 +1,7 @@
 "use client";
 
-import { X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,24 +14,69 @@ import {
 interface ImageComparisonModalProps {
   isOpen: boolean;
   onClose: () => void;
+  submissionId: string | null;
+}
+
+interface ComparisonData {
+  flaggedSubmission: {
+    id: string;
+    title: string;
+    authorName: string;
+    imageUrl?: string;
+  };
   originalSubmission: {
     id: string;
     title: string;
     authorName: string;
-  };
-  suspectedSubmission: {
-    id: string;
-    title: string;
-    authorName: string;
-  };
+    imageUrl?: string;
+  } | null;
+  duplicateCheck: {
+    hammingDistance: number;
+  } | null;
+  aiGeneratedProbability: number | null;
 }
 
 export default function ImageComparisonModal({
   isOpen,
   onClose,
-  originalSubmission,
-  suspectedSubmission,
+  submissionId,
 }: ImageComparisonModalProps) {
+  const [data, setData] = useState<ComparisonData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || !submissionId) {
+      setData(null);
+      setError(null);
+      return;
+    }
+
+    const fetchComparisonData = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(
+          `/api/v1/submissions/${submissionId}/comparison`
+        );
+
+        if (!response.ok) {
+          throw new Error("Không thể tải dữ liệu so sánh");
+        }
+
+        const result = await response.json();
+        setData(result.data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Đã xảy ra lỗi");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchComparisonData();
+  }, [isOpen, submissionId]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl">
@@ -46,47 +92,122 @@ export default function ImageComparisonModal({
           </Button>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm">Bài dự thi gốc</h3>
-            <div className="space-y-2 rounded-md border p-3">
-              <p className="text-xs text-muted-foreground">
-                Mã: {originalSubmission.id}
-              </p>
-              <p className="text-sm font-medium">{originalSubmission.title}</p>
-              <p className="text-xs text-muted-foreground">
-                {originalSubmission.authorName}
-              </p>
-            </div>
-            <img
-              src="https://placehold.co/600x400?text=Anh+Goc"
-              alt={originalSubmission.title}
-              className="h-[400px] w-full rounded-md border object-contain"
-            />
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="size-8 animate-spin text-muted-foreground" />
           </div>
+        )}
 
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm">Bài dự thi bị nghi ngờ</h3>
-            <div className="space-y-2 rounded-md border bg-red-50 p-3">
-              <p className="text-xs text-muted-foreground">
-                Mã: {suspectedSubmission.id}
-              </p>
-              <p className="text-sm font-medium">{suspectedSubmission.title}</p>
-              <p className="text-xs text-muted-foreground">
-                {suspectedSubmission.authorName}
-              </p>
-            </div>
-            <img
-              src="https://placehold.co/600x400?text=Anh+Nghi+Ngo"
-              alt={suspectedSubmission.title}
-              className="h-[400px] w-full rounded-md border object-contain"
-            />
+        {error && (
+          <div className="rounded-md border border-red-200 bg-red-50 p-4 text-center text-sm text-red-600">
+            {error}
           </div>
-        </div>
+        )}
 
-        <div className="flex justify-end">
-          <Button onClick={onClose}>Đóng</Button>
-        </div>
+        {!loading && !error && data && (
+          <>
+            {data.originalSubmission ? (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm">Bài dự thi gốc</h3>
+                  <div className="space-y-2 rounded-md border p-3">
+                    <p className="text-xs text-muted-foreground">
+                      Mã: {data.originalSubmission.id}
+                    </p>
+                    <p className="text-sm font-medium">
+                      {data.originalSubmission.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {data.originalSubmission.authorName}
+                    </p>
+                  </div>
+                  <img
+                    src={
+                      data.originalSubmission.imageUrl ||
+                      "https://placehold.co/600x400?text=Anh+Goc"
+                    }
+                    alt={data.originalSubmission.title}
+                    className="h-[400px] w-full rounded-md border object-contain"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm">
+                    Bài dự thi bị nghi ngờ
+                  </h3>
+                  <div className="space-y-2 rounded-md border bg-red-50 p-3">
+                    <p className="text-xs text-muted-foreground">
+                      Mã: {data.flaggedSubmission.id}
+                    </p>
+                    <p className="text-sm font-medium">
+                      {data.flaggedSubmission.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {data.flaggedSubmission.authorName}
+                    </p>
+                    {data.duplicateCheck && (
+                      <p className="text-xs font-medium text-red-600">
+                        Độ tương đồng: {data.duplicateCheck.hammingDistance}
+                      </p>
+                    )}
+                    {data.aiGeneratedProbability !== null && (
+                      <p className="text-xs font-medium text-orange-600">
+                        AI: {(data.aiGeneratedProbability * 100).toFixed(1)}%
+                      </p>
+                    )}
+                  </div>
+                  <img
+                    src={
+                      data.flaggedSubmission.imageUrl ||
+                      "https://placehold.co/600x400?text=Anh+Nghi+Ngo"
+                    }
+                    alt={data.flaggedSubmission.title}
+                    className="h-[400px] w-full rounded-md border object-contain"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm">
+                    Bài dự thi bị nghi ngờ
+                  </h3>
+                  <div className="space-y-2 rounded-md border bg-yellow-50 p-3">
+                    <p className="text-xs text-muted-foreground">
+                      Mã: {data.flaggedSubmission.id}
+                    </p>
+                    <p className="text-sm font-medium">
+                      {data.flaggedSubmission.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {data.flaggedSubmission.authorName}
+                    </p>
+                    {data.aiGeneratedProbability !== null && (
+                      <p className="text-xs font-medium text-orange-600">
+                        AI: {(data.aiGeneratedProbability * 100).toFixed(1)}%
+                      </p>
+                    )}
+                  </div>
+                  <img
+                    src={
+                      data.flaggedSubmission.imageUrl ||
+                      "https://placehold.co/600x400?text=Anh+Nghi+Ngo"
+                    }
+                    alt={data.flaggedSubmission.title}
+                    className="mx-auto h-[400px] max-w-2xl rounded-md border object-contain"
+                  />
+                </div>
+                <p className="text-center text-sm text-muted-foreground">
+                  Không tìm thấy bài dự thi trùng lặp
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button onClick={onClose}>Đóng</Button>
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -11,7 +11,7 @@ export async function GET() {
   }
 
   try {
-    const response = await fetch(`${API_INTERNAL_URL}/auth/me`, {
+    const response = await fetch(`${API_INTERNAL_URL}/api/v1/auth/me`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },

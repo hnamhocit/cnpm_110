@@ -3,6 +3,7 @@
 import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { http } from "@/lib/http";
 
 // Kiểu dữ liệu cho một tiêu chí
 type Criterion = {
@@ -26,6 +28,9 @@ export default function CriteriaConfigPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // TODO(Backend): Chờ API GET /api/v1/contests/:id/criteria để fetch tiêu chí thật.
+  // TODO(Backend): Chờ API POST /api/v1/contests/:id/criteria để lưu tiêu chí.
+  // Mock data tạm thời cho UI testing. Cần xóa khi backend sẵn sàng.
   // State lưu danh sách tiêu chí. Khởi tạo sẵn 3 tiêu chí mẫu
   const [criteria, setCriteria] = useState<Criterion[]>([
     { id: "1", name: "Sáng tạo & Ý tưởng", weight: 40 },
@@ -90,13 +95,13 @@ export default function CriteriaConfigPage() {
 
     setIsLoading(true);
     try {
-      // TODO: Gửi API lên Backend (bạn có thể cập nhật endpoint sau)
-      // await http.post("/api/v1/contests/1/criteria", { criteria });
+      await http.post("/api/v1/contests/1/criteria", { criteria });
 
-      alert("Lưu cấu hình tiêu chí thành công!");
+      toast.success("Lưu cấu hình tiêu chí thành công!");
       // router.push("/portal/contests");
-    } catch (err: any) {
-      setError("Có lỗi xảy ra khi lưu.");
+    } catch (error) {
+      console.error("Failed to save criteria:", error);
+      setError("Không thể lưu tiêu chí chấm điểm. API chưa sẵn sàng hoặc có lỗi kết nối.");
     } finally {
       setIsLoading(false);
     }
