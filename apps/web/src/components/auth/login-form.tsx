@@ -36,29 +36,28 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      const res = await http.post('/api/v1/auth/login', { 
-        email: email.trim(), 
-        password: password 
+      const res = await http.post("/api/v1/auth/login", {
+        email: email.trim(),
+        password: password,
       });
 
       // Lấy dữ liệu trả về từ API (tùy thuộc vào BE của bạn)
       const data = res.data.data;
 
       // Lưu token VÀ role vào Zustand
-      useAuthStore.getState().setTokens({ 
-        accessToken: data.accessToken, 
+      useAuthStore.getState().setTokens({
+        accessToken: data.accessToken,
         // Nếu Backend trả về role thì lấy, không thì mặc định là Organizer
-        role: data.user?.role || "Organizer" 
+        role: data.user?.role || "Organizer",
       });
 
       // Chuyển hướng sang Dashboard
-      router.push('/portal');
-      
+      router.push("/portal");
     } catch (err: any) {
       console.error(err);
       setError(
-        err.response?.data?.message || 
-        "Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu!"
+        err.response?.data?.message ||
+          "Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu!",
       );
     } finally {
       setIsLoading(false);
@@ -107,7 +106,10 @@ export function LoginForm() {
 
         <CardFooter className="justify-center text-sm text-muted-foreground">
           Chưa có tài khoản?&nbsp;
-          <Link href="/register" className="font-medium text-foreground underline">
+          <Link
+            href="/register"
+            className="font-medium text-foreground underline"
+          >
             Tạo tài khoản
           </Link>
         </CardFooter>
