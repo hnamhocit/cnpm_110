@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/components/cached_image_widget.dart';
 import '../../../models/image_attachment.dart';
 
 class ImagePreviewDialog extends StatelessWidget {
@@ -29,6 +30,21 @@ class ImagePreviewDialog extends StatelessWidget {
   }
 
   Widget _buildImage() {
+    final path = attachment.file.path;
+    final isRemote = path.startsWith('http://') || path.startsWith('https://');
+
+    if (isRemote) {
+      return CachedImageWidget(
+        imageUrl: path,
+        fit: BoxFit.contain,
+        memCacheWidth: 1600,
+        memCacheHeight: 1600,
+        errorWidget: (context, url, error) => const Center(
+          child: Icon(Icons.broken_image_outlined, size: 48, color: Colors.grey),
+        ),
+      );
+    }
+
     if (attachment.bytes != null) {
       return Image.memory(
         attachment.bytes!,
@@ -39,9 +55,9 @@ class ImagePreviewDialog extends StatelessWidget {
       );
     }
 
-    if (!kIsWeb && attachment.file.path.isNotEmpty) {
+    if (!kIsWeb && path.isNotEmpty) {
       return Image.file(
-        File(attachment.file.path),
+        File(path),
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) => const Center(
           child: Icon(Icons.broken_image_outlined, size: 48, color: Colors.grey),
@@ -49,10 +65,12 @@ class ImagePreviewDialog extends StatelessWidget {
       );
     }
 
-    return Image.network(
-      attachment.file.path,
+    return CachedImageWidget(
+      imageUrl: path,
       fit: BoxFit.contain,
-      errorBuilder: (context, error, stackTrace) => const Center(
+      memCacheWidth: 1600,
+      memCacheHeight: 1600,
+      errorWidget: (context, url, error) => const Center(
         child: Icon(Icons.broken_image_outlined, size: 48, color: Colors.grey),
       ),
     );
