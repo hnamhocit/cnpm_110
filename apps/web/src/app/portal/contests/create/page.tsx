@@ -126,7 +126,6 @@ export default function CreateContestPage() {
           : null,
       });
 
-      alert("Tạo cuộc thi thành công!");
       router.push("/portal/contests");
       router.refresh();
     } catch (err: any) {

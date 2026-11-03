@@ -1,6 +1,5 @@
 "use client";
 
-import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
@@ -59,20 +58,17 @@ export function RegisterForm() {
 
     try {
       // Backend chỉ nhận fullName, email, password; role do server gán.
-      await http.post('/auth/register', {
+      await http.post('/api/v1/auth/register', {
         fullName: fullName.trim(),
         email: email.trim(),
         password: password,
       });
 
-      alert("Đăng ký thành công! Vui lòng đăng nhập.");
       router.push("/login"); // Chuyển hướng sang trang đăng nhập
       
     } catch (err) {
       console.error(err);
-      const data = axios.isAxiosError<{ error?: string; message?: string }>(err)
-        ? err.response?.data
-        : undefined;
+      const data = (err as any)?.response?.data as { error?: string; message?: string } | undefined;
       setError(
         data?.error ??
           data?.message ??
