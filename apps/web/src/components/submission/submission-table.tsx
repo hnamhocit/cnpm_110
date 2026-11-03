@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, Check, Search, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,21 +15,98 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatContestDate } from "@/lib/contest-utils";
-import { mockSubmissions } from "@/lib/mock-submissions";
+import { http } from "@/lib/http";
 import { filterSubmissions } from "@/lib/submission-utils";
-import type { SubmissionStatus } from "@/types/submission";
+import type { Submission, SubmissionApiResponse, SubmissionStatus } from "@/types/submission";
 
 export default function SubmissionTable() {
-  const [submissions, setSubmissions] = useState(mockSubmissions);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSubmissions = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await http.get<{
+          success: boolean;
+          code: number;
+          message: string;
+          data: SubmissionApiResponse[];
+        }>("api/v1/submissions?limit=100");
+
+        const mappedSubmissions: Submission[] = response.data.data.map((apiSub) => ({
+          id: apiSub.id,
+          participantId: apiSub.participantId,
+          authorName: `Participant ${apiSub.participantId.slice(0, 8)}`,
+          title: apiSub.title,
+          submittedAt: apiSub.createdAt,
+          isAiFlagged: apiSub.aiFlagged,
+          status: apiSub.status,
+        }));
+
+        setSubmissions(mappedSubmissions);
+      } catch (err) {
+        setError("Không thể tải danh sách bài dự thi");
+        console.error("Failed to fetch submissions:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSubmissions();
+  }, []);
 
   const visibleSubmissions = filterSubmissions(submissions, query);
 
-  const updateStatus = (id: string, status: SubmissionStatus) => {
-    setSubmissions((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, status } : s)),
-    );
+  const updateStatus = async (id: string, status: SubmissionStatus) => {
+    try {
+      const endpoint = status === "APPROVED" 
+        ? `/api/v1/submissions/${id}/approve`
+        : `/api/v1/submissions/${id}/reject`;
+      
+      let body = {};
+      if (status === "DISQUALIFIED") {
+        const reason = prompt("Nhập lý do từ chối (tối thiểu 10 ký tự):");
+        if (!reason) {
+          alert("Bạn phải nhập lý do để từ chối bài dự thi");
+          return;
+        }
+        if (reason.length < 10) {
+          alert("Lý do phải có ít nhất 10 ký tự");
+          return;
+        }
+        body = { reason };
+      }
+      
+      await http.post(endpoint, body);
+      
+      setSubmissions((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, status } : s)),
+      );
+    } catch (err) {
+      console.error(`Failed to update submission ${id}:`, err);
+      alert("Không thể cập nhật trạng thái bài dự thi");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center text-muted-foreground">
+        Đang tải...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-64 items-center justify-center text-red-500">
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

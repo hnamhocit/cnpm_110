@@ -99,7 +99,7 @@ export function OngoingContests() {
         setLoading(true);
         const apiUrl =
           process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
-        const res = await fetch(`${apiUrl}/contests`, {
+        const res = await fetch(`${apiUrl}/api/v1/contests`, {
           cache: "no-store",
           headers: { Accept: "application/json" },
         });

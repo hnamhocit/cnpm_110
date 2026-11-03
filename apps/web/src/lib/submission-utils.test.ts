@@ -5,6 +5,7 @@ import type { Submission } from "@/types/submission";
 const mockSubmissions: Submission[] = [
   {
     id: "SUB-001",
+    participantId: "PART-001",
     authorName: "Nguyễn Văn An",
     title: "Ánh sáng cuối ngày",
     submittedAt: "2026-10-20T08:30:00Z",
@@ -13,6 +14,7 @@ const mockSubmissions: Submission[] = [
   },
   {
     id: "SUB-002",
+    participantId: "PART-002",
     authorName: "Trần Thị Bình",
     title: "Phố cổ Hà Nội",
     submittedAt: "2026-10-21T14:15:00Z",
@@ -21,6 +23,7 @@ const mockSubmissions: Submission[] = [
   },
   {
     id: "SUB-003",
+    participantId: "PART-003",
     authorName: "Nhóm Film 35mm",
     title: "Đường về nhà",
     submittedAt: "2026-10-22T18:00:00Z",

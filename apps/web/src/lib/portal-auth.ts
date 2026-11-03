@@ -10,7 +10,7 @@ export async function checkPortalAccess(
 
   const apiUrl = process.env.API_INTERNAL_URL ?? "http://localhost:8080";
 
-  const response = await fetch(`${apiUrl}/rbac/manage-contest`, {
+  const response = await fetch(`${apiUrl}/api/v1/rbac/manage-contest`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
