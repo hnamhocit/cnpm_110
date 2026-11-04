@@ -9,6 +9,7 @@ import { db } from "../db/index";
 import {
   aiAnalysisJobs,
   categories,
+  contests,
   filmMetadata,
   submissionAiAnalyses,
   submissionModerationLogs,
@@ -397,21 +398,23 @@ route.post(
       const image = fileField(form, "image", true)!;
       const proof = fileField(form, "negativeProof", false);
 
-      if (image.size > 100 * MiB || (proof && proof.size > 20 * MiB)) {
+
+      if (image.size > 25 * MiB || (proof && proof.size > 20 * MiB)) {
         return c.json(
           {
             success: false,
-            message: "Image limit: 100 MiB; negative proof limit: 20 MiB",
+            message: "Image limit: 25 MiB; negative proof limit: 20 MiB",
           },
           413,
         );
       }
 
-      // Proposed limits for testing; confirm with the team before merging.
+
+      // Validate submitted image size and minimum dimensions
       const validatedImage = await validateImage(image, {
-        maxBytes: 100 * MiB,
-        minWidth: 1000,
-        minHeight: 1000,
+        maxBytes: 25 * MiB,
+        minWidth: 2000,
+        minHeight: 2000,
         maxPixels: 100_000_000,
       });
 
@@ -454,6 +457,80 @@ route.post(
         return c.json(
           { success: false, message: "Category does not belong to this contest" },
           400,
+        );
+      }
+
+      // Check contest deadline before accepting submission
+      const [contest] = await db
+        .select({
+          id: contests.id,
+          startAt: contests.startAt,
+          endAt: contests.endAt,
+          status: contests.status,
+          isDeleted: contests.isDeleted,
+        })
+        .from(contests)
+        .where(eq(contests.id, contestId))
+        .limit(1);
+
+      if (!contest || contest.isDeleted) {
+        return c.json(
+          { success: false, message: "Contest not found or unavailable" },
+          404,
+        );
+      }
+
+      const now = new Date();
+
+      if (contest.startAt && now < contest.startAt) {
+        return c.json(
+          { success: false, message: "Contest has not started yet" },
+          400,
+        );
+      }
+
+      if (contest.endAt && now >= contest.endAt) {
+        return c.json(
+          { success: false, message: "Submission deadline has passed" },
+          400,
+        );
+      }
+
+      // BR-05: Prevent duplicate roll + frame in the same contest
+      if (!metadata.rollId?.trim() || !metadata.frameNumber?.trim()) {
+        return c.json(
+          {
+            success: false,
+            message: "Film roll ID and frame number are required",
+          },
+          400,
+        );
+      }
+
+      const [duplicateFrame] = await db
+        .select({ id: submissions.id })
+        .from(submissions)
+        .innerJoin(
+          filmMetadata,
+          eq(filmMetadata.submissionId, submissions.id),
+        )
+        .where(
+          and(
+            eq(submissions.contestId, contestId),
+            eq(submissions.participantId, participantId),
+            eq(filmMetadata.rollId, metadata.rollId.trim()),
+            eq(filmMetadata.frameNumber, metadata.frameNumber.trim()),
+          ),
+        )
+        .limit(1);
+
+      if (duplicateFrame) {
+        return c.json(
+          {
+            success: false,
+            message: "This film roll and frame have already been submitted to this contest",
+          },
+          409,
         );
       }
 
