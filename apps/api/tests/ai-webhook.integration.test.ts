@@ -6,7 +6,7 @@ import {
   expect,
   test,
 } from "bun:test";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { Hono } from "hono";
 import { pool } from "../src/db";
 import aiWebhook from "../src/routes/ai-webhook";
@@ -91,6 +91,8 @@ describe("FPC-52: AI webhook integration", () => {
     const categoryId = randomUUID();
     const submissionId = randomUUID();
 
+    const testPhash = randomBytes(8).toString("hex");
+
     let userCreated = false;
 
     try {
@@ -133,7 +135,7 @@ describe("FPC-52: AI webhook integration", () => {
           },
           body: JSON.stringify({
             submissionId,
-            phashHex: "a1b2c3d4e5f67890",
+            phashHex: testPhash,
             aiGeneratedProbability: score,
             predictedTags: [
               { tag, confidence: 0.95 },
@@ -144,7 +146,9 @@ describe("FPC-52: AI webhook integration", () => {
       // 2. INSERT
       const firstResponse = await send(0.15, "portrait");
       expect(firstResponse.status).toBe(200);
+      const firstBody = await firstResponse.json();
 
+      expect(firstBody.data.verificationStatus).toBe("VERIFIED");
       const firstRows = await db
         .select()
         .from(submissionAiAnalyses)
@@ -152,14 +156,26 @@ describe("FPC-52: AI webhook integration", () => {
 
       expect(firstRows).toHaveLength(1);
       expect(firstRows[0]?.aiGeneratedProbability).toBe("0.1500");
+      // FPC-54: Low AI probability must not be flagged
+      expect(firstRows[0]?.isAiFlagged).toBe(false);
+      expect(firstRows[0]?.flagReasons).toEqual([]);
       expect(firstRows[0]?.predictedTags).toEqual([
         { tag: "portrait", confidence: 0.95 },
       ]);
 
+      const [firstSubmission] = await db
+        .select({ status: submissions.status })
+        .from(submissions)
+        .where(eq(submissions.id, submissionId));
+
+      expect(firstSubmission?.status).toBe("VERIFIED");
+
       // 3. UPSERT
       const secondResponse = await send(0.85, "landscape");
       expect(secondResponse.status).toBe(200);
+      const secondBody = await secondResponse.json();
 
+      expect(secondBody.data.verificationStatus).toBe("FLAGGED");
       const secondRows = await db
         .select()
         .from(submissionAiAnalyses)
@@ -168,9 +184,43 @@ describe("FPC-52: AI webhook integration", () => {
       expect(secondRows).toHaveLength(1);
       expect(secondRows[0]?.id).toBe(firstRows[0]?.id);
       expect(secondRows[0]?.aiGeneratedProbability).toBe("0.8500");
+      // FPC-54: High AI probability must be flagged
+      expect(secondRows[0]?.isAiFlagged).toBe(true);
+      expect(secondRows[0]?.flagReasons).toContain(
+        "AI_FLAGGED_HIGH_RISK",
+      );
+
       expect(secondRows[0]?.predictedTags).toEqual([
         { tag: "landscape", confidence: 0.95 },
       ]);
+      const [secondSubmission] = await db
+        .select({ status: submissions.status })
+        .from(submissions)
+        .where(eq(submissions.id, submissionId));
+
+      expect(secondSubmission?.status).toBe("FLAGGED");
+
+      // FPC-54: AI must not override an approved submission
+      await db
+        .update(submissions)
+        .set({
+          status: "APPROVED",
+          updatedAt: new Date(),
+        })
+        .where(eq(submissions.id, submissionId));
+
+      // Send another high AI score after approval
+      const thirdResponse = await send(0.95, "portrait");
+      expect(thirdResponse.status).toBe(200);
+
+      // Verify that the approved status is preserved
+      const [thirdSubmission] = await db
+        .select({ status: submissions.status })
+        .from(submissions)
+        .where(eq(submissions.id, submissionId));
+
+      expect(thirdSubmission?.status).toBe("APPROVED");
+
     } finally {
       // Chỉ dọn dữ liệu do test này tạo.
       // Xóa theo thứ tự khóa ngoại.
