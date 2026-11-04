@@ -6,7 +6,7 @@ import {
   expect,
   test,
 } from "bun:test";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { Hono } from "hono";
 import { pool } from "../src/db";
 import aiWebhook from "../src/routes/ai-webhook";
@@ -91,6 +91,8 @@ describe("FPC-52: AI webhook integration", () => {
     const categoryId = randomUUID();
     const submissionId = randomUUID();
 
+    const testPhash = randomBytes(8).toString("hex");
+
     let userCreated = false;
 
     try {
@@ -133,7 +135,7 @@ describe("FPC-52: AI webhook integration", () => {
           },
           body: JSON.stringify({
             submissionId,
-            phashHex: "a1b2c3d4e5f67890",
+            phashHex: testPhash,
             aiGeneratedProbability: score,
             predictedTags: [
               { tag, confidence: 0.95 },
@@ -144,7 +146,9 @@ describe("FPC-52: AI webhook integration", () => {
       // 2. INSERT
       const firstResponse = await send(0.15, "portrait");
       expect(firstResponse.status).toBe(200);
+      const firstBody = await firstResponse.json();
 
+      expect(firstBody.data.verificationStatus).toBe("VERIFIED");
       const firstRows = await db
         .select()
         .from(submissionAiAnalyses)
@@ -164,12 +168,14 @@ describe("FPC-52: AI webhook integration", () => {
         .from(submissions)
         .where(eq(submissions.id, submissionId));
 
-      expect(firstSubmission?.status).toBe("PENDING_AI");
+      expect(firstSubmission?.status).toBe("VERIFIED");
 
       // 3. UPSERT
       const secondResponse = await send(0.85, "landscape");
       expect(secondResponse.status).toBe(200);
+      const secondBody = await secondResponse.json();
 
+      expect(secondBody.data.verificationStatus).toBe("FLAGGED");
       const secondRows = await db
         .select()
         .from(submissionAiAnalyses)

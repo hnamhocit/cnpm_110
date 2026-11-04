@@ -259,13 +259,18 @@ export const submissions = pgTable(
     index("idx_submissions_category_id").on(table.categoryId),
     index("idx_submissions_participant_id").on(table.participantId),
     index("idx_submissions_status").on(table.status),
-
     check(
       "submissions_status_valid",
       sql`${table.status} IN (
-        'PENDING_AI', 'FLAGGED', 'APPROVED', 'DISQUALIFIED'
-      )`,
+    'PENDING_AI',
+    'VERIFIED',
+    'SUSPICIOUS',
+    'FLAGGED',
+    'APPROVED',
+    'DISQUALIFIED'
+  )`,
     ),
+
 
     check(
       "submissions_title_not_empty",
