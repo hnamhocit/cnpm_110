@@ -13,6 +13,7 @@ import '../../models/user_submission.dart';
 import 'components/image_preview_dialog.dart';
 import 'components/live_countdown_widget.dart';
 import 'components/moderation_timeline_widget.dart';
+import 'components/rejection_details_sheet.dart';
 
 class MySubmissionsScreen extends ConsumerStatefulWidget {
   const MySubmissionsScreen({super.key});
@@ -121,7 +122,12 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
           ),
           backgroundColor: theme.colorScheme.error,
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Xem lý do',
+            textColor: Colors.white,
+            onPressed: () => RejectionDetailsSheet.show(context, submission: sub),
+          ),
+          duration: const Duration(seconds: 6),
         ),
       );
     } else {
@@ -342,41 +348,67 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Rejection Reason Alert if disqualified
-                if (submission.rejectionReason != null &&
-                    submission.rejectionReason!.isNotEmpty) ...[
+                // Rejection Reason Alert & Detailed Guidance (FPC-64)
+                if (submission.status == SubmissionStatus.disqualified ||
+                    submission.status == SubmissionStatus.disqualifiedNoProof) ...[
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: colorScheme.errorContainer.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: colorScheme.error.withValues(alpha: 0.4)),
                     ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Icon(Icons.info_outline, color: colorScheme.error, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Lý do bị loại:',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.error,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.info_outline, color: colorScheme.error, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Lý do bị từ chối (BR-18):',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.error,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    (submission.rejectionReason != null &&
+                                            submission.rejectionReason!.isNotEmpty)
+                                        ? submission.rejectionReason!
+                                        : (submission.status ==
+                                                SubmissionStatus.disqualifiedNoProof
+                                            ? 'Quá thời hạn 48 giờ nộp dải phim âm bản đối chứng (BR-19).'
+                                            : 'Không đáp ứng điều lệ cuộc thi.'),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onErrorContainer,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                submission.rejectionReason!,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onErrorContainer,
-                                ),
-                              ),
-                            ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        FilledButton.tonalIcon(
+                          key: const Key('details_view_rejection_guidance_button'),
+                          onPressed: () => RejectionDetailsSheet.show(
+                            context,
+                            submission: submission,
                           ),
+                          style: FilledButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            backgroundColor: colorScheme.errorContainer,
+                            foregroundColor: colorScheme.error,
+                          ),
+                          icon: const Icon(Icons.help_outline_rounded, size: 16),
+                          label: const Text('Xem chi tiết lý do & Hướng dẫn bổ sung'),
                         ),
                       ],
                     ),
@@ -1193,31 +1225,65 @@ class _SubmissionCard extends StatelessWidget {
                 ),
               ],
 
-              // Disqualification Rejection Reason Bar
-              if ((submission.status == SubmissionStatus.disqualified ||
-                      submission.status == SubmissionStatus.disqualifiedNoProof) &&
-                  submission.rejectionReason != null &&
-                  submission.rejectionReason!.isNotEmpty) ...[
+              // Disqualification Rejection Reason Bar with Detailed Guidance button (FPC-64)
+              if (submission.status == SubmissionStatus.disqualified ||
+                  submission.status == SubmissionStatus.disqualifiedNoProof) ...[
                 const SizedBox(height: 10),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
                     color: colorScheme.errorContainer.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: colorScheme.error.withValues(alpha: 0.3)),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.info_outline, size: 16, color: colorScheme.error),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          'Lý do: ${submission.rejectionReason}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.error,
-                            fontSize: 12,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline, size: 16, color: colorScheme.error),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              (submission.rejectionReason != null &&
+                                      submission.rejectionReason!.isNotEmpty)
+                                  ? 'Lý do: ${submission.rejectionReason}'
+                                  : (submission.status ==
+                                          SubmissionStatus.disqualifiedNoProof
+                                      ? 'Lý do: Quá hạn 48 giờ nộp dải âm bản (BR-19)'
+                                      : 'Lý do: Không đáp ứng thể lệ cuộc thi'),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.error,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: OutlinedButton.icon(
+                          key: Key('card_rejection_guidance_${submission.id}'),
+                          onPressed: () => RejectionDetailsSheet.show(
+                            context,
+                            submission: submission,
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            foregroundColor: colorScheme.error,
+                            side: BorderSide(color: colorScheme.error.withValues(alpha: 0.5)),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          ),
+                          icon: const Icon(Icons.help_outline_rounded, size: 14),
+                          label: const Text(
+                            'Xem lý do & Hướng dẫn',
+                            style: TextStyle(fontSize: 12),
+                          ),
                         ),
                       ),
                     ],
