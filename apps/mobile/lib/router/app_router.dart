@@ -8,6 +8,7 @@ import '../screens/contest/contest_detail_screen.dart';
 import '../screens/film_params/film_params_screen.dart';
 import '../screens/main_screen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/submission/my_submissions_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
@@ -43,15 +44,12 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
     GoRoute(
-      path: '/film-params',
-      builder: (context, state) => const FilmParamsScreen(),
+      path: '/my-submissions',
+      builder: (context, state) => const MySubmissionsScreen(),
     ),
     GoRoute(
-      path: '/contests/:id',
-      builder: (context, state) {
-        final id = state.pathParameters['id']!;
-        return ContestDetailScreen(contestId: id);
-      },
+      path: '/film-params',
+      builder: (context, state) => const FilmParamsScreen(),
     ),
   ],
 );
