@@ -185,5 +185,30 @@ void main() {
 
       expect(find.text('Dung lượng file quá lớn'), findsOneWidget);
     });
+
+    testWidgets('renders remote HTTP/HTTPS URL attachment gracefully', (tester) async {
+      final remoteAttachment = ImageAttachment(
+        file: XFile('https://example.com/photos/film.jpg'),
+        name: 'remote_film.jpg',
+        sizeInBytes: 1024 * 1024,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ImagePickerCard(
+              title: 'Ảnh scan từ server',
+              subtitle: 'Đã lưu',
+              attachment: remoteAttachment,
+              onPickRequested: (_) async {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('remote_film.jpg'), findsOneWidget);
+      expect(find.text('1.00 MB'), findsOneWidget);
+    });
   });
 }

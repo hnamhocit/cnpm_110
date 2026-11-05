@@ -97,9 +97,12 @@ class ImagePickerCard extends StatelessWidget {
       );
     }
 
-    if (!kIsWeb && attachment!.file.path.isNotEmpty) {
+    final path = attachment!.file.path;
+    final isRemote = path.startsWith('http://') || path.startsWith('https://');
+
+    if (!isRemote && !kIsWeb && path.isNotEmpty) {
       return Image.file(
-        File(attachment!.file.path),
+        File(path),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) => const Center(
           child: Icon(Icons.broken_image_outlined, size: 36, color: Colors.grey),
@@ -108,7 +111,7 @@ class ImagePickerCard extends StatelessWidget {
     }
 
     return Image.network(
-      attachment!.file.path,
+      path,
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) => const Center(
         child: Icon(Icons.broken_image_outlined, size: 36, color: Colors.grey),

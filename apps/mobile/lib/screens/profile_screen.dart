@@ -43,14 +43,14 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
 
-        if (shouldLogout == true) {
+    if (shouldLogout == true) {
       await ref.read(authProvider.notifier).logout();
       if (context.mounted) context.go('/login');
     }
   }
 
   @override
- Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return ListView(
@@ -85,7 +85,30 @@ class ProfileScreen extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 20),
+        Card(
+          elevation: 0,
+          color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colorScheme.primary.withValues(alpha: 0.3)),
+          ),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              child: const Icon(Icons.collections_bookmark_outlined),
+            ),
+            title: const Text(
+              'Bài thi của tôi',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: const Text('Theo dõi trạng thái duyệt & âm bản'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/my-submissions'),
+          ),
+        ),
+        const SizedBox(height: 16),
         Card(
           clipBehavior: Clip.antiAlias,
           child: Column(

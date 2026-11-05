@@ -415,6 +415,13 @@ class _SubmissionUploadScreenState
             ),
           ),
           actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                context.push('/my-submissions');
+              },
+              child: const Text('Xem bài thi của tôi'),
+            ),
             FilledButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
@@ -424,7 +431,7 @@ class _SubmissionUploadScreenState
                   context.go('/');
                 }
               },
-              child: const Text('Hoàn tất & Về trang chủ'),
+              child: const Text('Về trang chủ'),
             ),
           ],
         );
