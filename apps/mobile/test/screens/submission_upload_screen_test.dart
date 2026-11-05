@@ -324,7 +324,8 @@ void main() {
 
       // Success dialog shown
       expect(find.text('Nộp bài thi thành công!'), findsOneWidget);
-      expect(find.text('Hoàn tất & Về trang chủ'), findsOneWidget);
+      expect(find.text('Về trang chủ'), findsOneWidget);
+      expect(find.text('Xem bài thi của tôi'), findsOneWidget);
     });
 
     testWidgets('resets form when reset button is pressed', (tester) async {

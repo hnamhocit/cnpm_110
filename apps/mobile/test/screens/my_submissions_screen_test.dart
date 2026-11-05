@@ -100,6 +100,9 @@ Widget createTestWidget(MockSubmissionRepo repo) {
 
 void main() {
   testWidgets('displays submissions list with titles and status badges', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     final repo = MockSubmissionRepo(submissions: sampleSubmissions);
 
     await tester.pumpWidget(createTestWidget(repo));
@@ -107,13 +110,14 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100)); // Finish async
 
     expect(find.text('Bài thi của tôi'), findsOneWidget);
+    expect(find.text('Trực tiếp'), findsOneWidget);
     expect(find.text('Phố Cổ Mùa Thu'), findsOneWidget);
     expect(find.text('Góc Phố Tràng Tiền'), findsOneWidget);
     expect(find.text('Bến Thuyền Hoàng Hôn'), findsOneWidget);
 
-    expect(find.text('Đã phê duyệt'), findsOneWidget);
+    expect(find.text('Hợp lệ'), findsNWidgets(2)); // ChoiceChip and Card status badge
     expect(find.text('Cần nộp âm bản'), findsOneWidget);
-    expect(find.text('Bị loại'), findsOneWidget);
+    expect(find.text('Bị từ chối'), findsNWidgets(2)); // ChoiceChip and Card status badge
   });
 
   testWidgets('displays urgent banner when proof is requested (BR-19)', (tester) async {
@@ -128,28 +132,36 @@ void main() {
     expect(find.text('Nộp âm bản'), findsWidgets);
   });
 
-  testWidgets('filters list by choice chips', (tester) async {
+  testWidgets('filters list by choice chips (Đang chờ duyệt, Hợp lệ, Bị từ chối)', (tester) async {
     final repo = MockSubmissionRepo(submissions: sampleSubmissions);
 
     await tester.pumpWidget(createTestWidget(repo));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    // Tap on 'Đã duyệt' filter chip
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Đã duyệt'));
+    // Tap on 'Hợp lệ' filter chip
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Hợp lệ'));
     await tester.pumpAndSettle();
 
     expect(find.text('Phố Cổ Mùa Thu'), findsOneWidget);
     expect(find.text('Góc Phố Tràng Tiền'), findsNothing);
     expect(find.text('Bến Thuyền Hoàng Hôn'), findsNothing);
 
-    // Tap on 'Bị loại' filter chip
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Bị loại'));
+    // Tap on 'Bị từ chối' filter chip
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Bị từ chối'));
     await tester.pumpAndSettle();
 
     expect(find.text('Bến Thuyền Hoàng Hôn'), findsOneWidget);
     expect(find.text('Phố Cổ Mùa Thu'), findsNothing);
     expect(find.text('Lý do: Ảnh không đạt chuẩn độ phân giải tối thiểu 2000px'), findsOneWidget);
+
+    // Tap on 'Đang chờ duyệt' filter chip (includes Góc Phố Tràng Tiền which needs proof)
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Đang chờ duyệt'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Góc Phố Tràng Tiền'), findsOneWidget);
+    expect(find.text('Phố Cổ Mùa Thu'), findsNothing);
+    expect(find.text('Bến Thuyền Hoàng Hôn'), findsNothing);
   });
 
   testWidgets('filters list by search text field', (tester) async {
@@ -201,6 +213,9 @@ void main() {
   });
 
   testWidgets('tapping card opens submission details bottom sheet', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     final repo = MockSubmissionRepo(submissions: sampleSubmissions);
 
     await tester.pumpWidget(createTestWidget(repo));
@@ -211,14 +226,27 @@ void main() {
     await tester.tap(find.text('Phố Cổ Mùa Thu'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Tiến trình kiểm duyệt thời gian thực'), findsOneWidget);
+    expect(find.text('Nộp bài dự thi'), findsOneWidget);
+    expect(find.text('Thẩm định AI & Trùng lặp'), findsOneWidget);
+    expect(find.text('Hợp lệ (Đã phê duyệt)'), findsOneWidget);
+
+    // Scroll down bottom sheet to reveal lower sections
+    await tester.drag(find.text('Tiến trình kiểm duyệt thời gian thực'), const Offset(0, -400));
+    await tester.pumpAndSettle();
+
     expect(find.text('Thông số tệp ảnh (BR-07)'), findsOneWidget);
     expect(find.text('Siêu dữ liệu Analog (BR-22)'), findsOneWidget);
+
+    await tester.drag(find.text('Siêu dữ liệu Analog (BR-22)'), const Offset(0, -300));
+    await tester.pumpAndSettle();
+
     expect(find.text('Đóng'), findsOneWidget);
 
     // Tap close
     await tester.tap(find.text('Đóng'));
     await tester.pumpAndSettle();
-    expect(find.text('Thông số tệp ảnh (BR-07)'), findsNothing);
+    expect(find.text('Tiến trình kiểm duyệt thời gian thực'), findsNothing);
   });
 
   testWidgets('tapping thumbnail opens image preview dialog', (tester) async {
