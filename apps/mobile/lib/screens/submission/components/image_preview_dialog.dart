@@ -39,9 +39,22 @@ class ImagePreviewDialog extends StatelessWidget {
       );
     }
 
-    if (!kIsWeb && attachment.file.path.isNotEmpty) {
+    final path = attachment.file.path;
+    final isRemote = path.startsWith('http://') || path.startsWith('https://');
+
+    if (isRemote) {
+      return Image.network(
+        path,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => const Center(
+          child: Icon(Icons.broken_image_outlined, size: 48, color: Colors.grey),
+        ),
+      );
+    }
+
+    if (!kIsWeb && path.isNotEmpty) {
       return Image.file(
-        File(attachment.file.path),
+        File(path),
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) => const Center(
           child: Icon(Icons.broken_image_outlined, size: 48, color: Colors.grey),
@@ -50,7 +63,7 @@ class ImagePreviewDialog extends StatelessWidget {
     }
 
     return Image.network(
-      attachment.file.path,
+      path,
       fit: BoxFit.contain,
       errorBuilder: (context, error, stackTrace) => const Center(
         child: Icon(Icons.broken_image_outlined, size: 48, color: Colors.grey),
