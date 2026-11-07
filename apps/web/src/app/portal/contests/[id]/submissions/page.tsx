@@ -32,7 +32,7 @@ export default async function ContestSubmissionsPage({
         </Button>
       </div>
 
-      <SubmissionTable />
+      <SubmissionTable contestId={id} />
     </div>
   );
 }

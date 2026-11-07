@@ -7,5 +7,7 @@ export function filterSubmissions(
   const query = searchQuery.trim().toLowerCase();
   if (!query) return submissions;
 
-  return submissions.filter((s) => s.authorName.toLowerCase().includes(query));
+  return submissions.filter((s) =>
+    (s.authorName ?? "").toLowerCase().includes(query),
+  );
 }

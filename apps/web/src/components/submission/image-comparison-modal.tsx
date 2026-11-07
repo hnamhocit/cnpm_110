@@ -1,5 +1,6 @@
 "use client";
 
+import axios from "axios";
 import { Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -10,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { http } from "@/lib/http/client";
 
 interface ImageComparisonModalProps {
   isOpen: boolean;
@@ -30,10 +32,16 @@ interface ComparisonData {
   flaggedSubmission: ComparisonSubmission;
   originalSubmission: ComparisonSubmission | null;
   duplicateCheck: {
-    hammingDistance: number;
+    hammingDistance: number | null;
   } | null;
   aiGeneratedProbability: number | null;
 }
+
+type ComparisonResponse = {
+  data: ComparisonData | null;
+};
+
+type ApiErrorBody = { message?: string };
 
 // Backend mới trả storage key, chưa có presigned URL → key không load được trong <img>.
 const imageSrc = (path: string | null, fallback: string) =>
@@ -60,18 +68,19 @@ export default function ImageComparisonModal({
       setError(null);
 
       try {
-        const response = await fetch(
+        // Axios interceptor tự gắn Authorization Bearer (access token trong memory).
+        const response = await http.get<ComparisonResponse>(
           `/api/v1/submissions/${submissionId}/comparison`,
         );
-
-        if (!response.ok) {
-          throw new Error("Không thể tải dữ liệu so sánh");
-        }
-
-        const result = await response.json();
-        setData(result.data);
+        setData(response.data.data ?? null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Đã xảy ra lỗi");
+        setError(
+          axios.isAxiosError<ApiErrorBody>(err)
+            ? (err.response?.data?.message ?? "Không thể tải dữ liệu so sánh")
+            : err instanceof Error
+              ? err.message
+              : "Đã xảy ra lỗi",
+        );
       } finally {
         setLoading(false);
       }

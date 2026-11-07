@@ -38,6 +38,32 @@ type ModerateAction = "APPROVE_FOR_JUDGING" | "DISQUALIFY";
 
 type ModerationErrorBody = { message?: string };
 
+// DTO thực tế của GET /api/v1/submissions (apps/api/src/routes/submissions.ts).
+type ApiSubmission = {
+  id: string;
+  participantId: string;
+  title: string;
+  status: SubmissionStatus;
+  aiFlagged: boolean;
+  createdAt: string;
+};
+
+type SubmissionListResponse = {
+  data: ApiSubmission[];
+};
+
+function mapApiToSubmission(api: ApiSubmission): Submission {
+  return {
+    id: api.id,
+    // BE chưa trả tên thí sinh trong danh sách — tạm dùng participantId.
+    authorName: api.participantId || "Thí sinh ẩn danh",
+    title: api.title,
+    submittedAt: api.createdAt,
+    isAiFlagged: api.aiFlagged,
+    status: api.status,
+  };
+}
+
 // Hợp đồng Module 05 §4.5 — mỗi bài thi được kiểm duyệt qua endpoint /moderate.
 async function moderateSubmission(
   id: string,
@@ -63,7 +89,11 @@ function getModerationErrorMessage(error: unknown): string {
     : "Không thể kiểm duyệt bài thi. Vui lòng thử lại.";
 }
 
-export default function SubmissionTable() {
+type SubmissionTableProps = {
+  contestId: string;
+};
+
+export default function SubmissionTable({ contestId }: SubmissionTableProps) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -72,38 +102,34 @@ export default function SubmissionTable() {
     null,
   );
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [pendingIds, setPendingIds] = useState<string[]>([]);
   const [pendingStatus, setPendingStatus] = useState<SubmissionStatus | null>(
     null,
   );
   const [isBulkLoading, setIsBulkLoading] = useState(false);
+  const [rowLoadingId, setRowLoadingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
   useEffect(() => {
     async function fetchSubmissions() {
       try {
         setIsLoading(true);
-        const res = await http.get("/api/v1/submissions", {
-          params: { limit: 100 },
-        });
-        if (res.data?.data) {
-          setSubmissions(res.data.data);
-        }
+        const res = await http.get<SubmissionListResponse>(
+          "/api/v1/submissions",
+          { params: { contestId, limit: 100 } },
+        );
+        setSubmissions((res.data.data ?? []).map(mapApiToSubmission));
       } catch (err) {
         console.error("Failed to fetch submissions:", err);
+        toast.error("Không thể tải danh sách bài dự thi.");
       } finally {
         setIsLoading(false);
       }
     }
     fetchSubmissions();
-  }, []);
+  }, [contestId]);
 
   const visibleSubmissions = filterSubmissions(submissions, query);
-
-  const updateStatus = (id: string, status: SubmissionStatus) => {
-    setSubmissions((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, status } : s)),
-    );
-  };
 
   const openComparison = (id: string) => {
     setSelectedSubmission(id);
@@ -126,8 +152,13 @@ export default function SubmissionTable() {
     );
   };
 
-  const applyBulk = async (status: SubmissionStatus) => {
-    if (selectedRows.length === 0) {
+  const openModerationDialog = (ids: string[], status: SubmissionStatus) => {
+    setPendingIds(ids);
+    setPendingStatus(status);
+  };
+
+  const applyModeration = async (ids: string[], status: SubmissionStatus) => {
+    if (ids.length === 0) {
       return;
     }
 
@@ -139,10 +170,10 @@ export default function SubmissionTable() {
     setIsBulkLoading(true);
     try {
       const results = await Promise.allSettled(
-        selectedRows.map((id) => moderateSubmission(id, action, reason)),
+        ids.map((id) => moderateSubmission(id, action, reason)),
       );
 
-      const succeededIds = selectedRows.filter(
+      const succeededIds = ids.filter(
         (_, index) => results[index].status === "fulfilled",
       );
       const failedResult = results.find(
@@ -161,7 +192,7 @@ export default function SubmissionTable() {
 
       if (failedResult) {
         toast.error(
-          `Đã ${verb} ${succeededIds.length}/${selectedRows.length} bài thi. ${getModerationErrorMessage(
+          `Đã ${verb} ${succeededIds.length}/${ids.length} bài thi. ${getModerationErrorMessage(
             failedResult.reason,
           )}`,
         );
@@ -173,7 +204,23 @@ export default function SubmissionTable() {
     } finally {
       setIsBulkLoading(false);
       setPendingStatus(null);
+      setPendingIds([]);
       setRejectReason("");
+    }
+  };
+
+  const approveSingle = async (id: string) => {
+    setRowLoadingId(id);
+    try {
+      await moderateSubmission(id, "APPROVE_FOR_JUDGING");
+      setSubmissions((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, status: "APPROVED" } : s)),
+      );
+      toast.success("Đã duyệt bài thi.");
+    } catch (err: unknown) {
+      toast.error(getModerationErrorMessage(err));
+    } finally {
+      setRowLoadingId(null);
     }
   };
 
@@ -206,7 +253,7 @@ export default function SubmissionTable() {
             <Button
               size="sm"
               disabled={isBulkLoading}
-              onClick={() => setPendingStatus("APPROVED")}
+              onClick={() => openModerationDialog(selectedRows, "APPROVED")}
             >
               <Check />
               Duyệt hàng loạt
@@ -215,7 +262,7 @@ export default function SubmissionTable() {
               size="sm"
               variant="destructive"
               disabled={isBulkLoading}
-              onClick={() => setPendingStatus("DISQUALIFIED")}
+              onClick={() => openModerationDialog(selectedRows, "DISQUALIFIED")}
             >
               <X />
               Từ chối hàng loạt
@@ -324,9 +371,8 @@ export default function SubmissionTable() {
                       <div className="flex justify-end gap-2">
                         <Button
                           size="sm"
-                          onClick={() =>
-                            updateStatus(submission.id, "APPROVED")
-                          }
+                          disabled={rowLoadingId === submission.id}
+                          onClick={() => approveSingle(submission.id)}
                         >
                           <Check />
                           Duyệt
@@ -334,8 +380,12 @@ export default function SubmissionTable() {
                         <Button
                           size="sm"
                           variant="destructive"
+                          disabled={rowLoadingId === submission.id}
                           onClick={() =>
-                            updateStatus(submission.id, "DISQUALIFIED")
+                            openModerationDialog(
+                              [submission.id],
+                              "DISQUALIFIED",
+                            )
                           }
                         >
                           <X />
@@ -362,6 +412,7 @@ export default function SubmissionTable() {
         onOpenChange={(open) => {
           if (!open) {
             setPendingStatus(null);
+            setPendingIds([]);
             setRejectReason("");
           }
         }}
@@ -369,12 +420,13 @@ export default function SubmissionTable() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {pendingStatus === "APPROVED" ? "Duyệt" : "Từ chối"} hàng loạt
+              {pendingStatus === "APPROVED" ? "Duyệt" : "Từ chối"}
+              {pendingIds.length > 1 ? " hàng loạt" : " bài thi"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               Bạn có chắc chắn muốn{" "}
               {pendingStatus === "APPROVED" ? "duyệt" : "từ chối"}{" "}
-              {selectedRows.length} bài thi đã chọn?
+              {pendingIds.length} bài thi đã chọn?
             </AlertDialogDescription>
           </AlertDialogHeader>
           {pendingStatus === "DISQUALIFIED" ? (
@@ -403,7 +455,7 @@ export default function SubmissionTable() {
             <AlertDialogAction
               disabled={isBulkLoading || isRejectReasonInvalid}
               onClick={() => {
-                if (pendingStatus) applyBulk(pendingStatus);
+                if (pendingStatus) applyModeration(pendingIds, pendingStatus);
               }}
             >
               Xác nhận
