@@ -28,6 +28,9 @@ export default function CriteriaConfigPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
+  // TODO(Backend): Chờ API GET /api/v1/contests/:id/criteria để fetch tiêu chí thật.
+  // TODO(Backend): Chờ API POST /api/v1/contests/:id/criteria để lưu tiêu chí.
+  // Mock data tạm thời cho UI testing. Cần xóa khi backend sẵn sàng.
   // State lưu danh sách tiêu chí. Khởi tạo sẵn 3 tiêu chí mẫu
   const [criteria, setCriteria] = useState<Criterion[]>([
     { id: "1", name: "Sáng tạo & Ý tưởng", weight: 40 },

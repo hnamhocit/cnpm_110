@@ -12,6 +12,9 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 
 type LoginResponse = {
   accessToken?: string;
+  user?: {
+    role: "Admin" | "Organizer" | "Judge" | "Participant";
+  };
   error?: string;
 };
 
@@ -54,7 +57,10 @@ export function LoginForm() {
         );
       }
 
-      useAuthStore.getState().setTokens({ accessToken: data.accessToken });
+      useAuthStore.getState().setTokens({
+        accessToken: data.accessToken,
+        role: data.user?.role || "Organizer",
+      });
 
       router.push("/portal");
     } catch (err) {
