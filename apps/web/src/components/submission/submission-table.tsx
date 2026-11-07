@@ -152,9 +152,7 @@ export default function SubmissionTable() {
 
       if (succeededIds.length > 0) {
         setSubmissions((prev) =>
-          prev.map((s) =>
-            succeededIds.includes(s.id) ? { ...s, status } : s,
-          ),
+          prev.map((s) => (succeededIds.includes(s.id) ? { ...s, status } : s)),
         );
         setSelectedRows((prev) =>
           prev.filter((id) => !succeededIds.includes(id)),
@@ -395,8 +393,8 @@ export default function SubmissionTable() {
                 onChange={(event) => setRejectReason(event.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Bắt buộc theo BR-18 — hiện tại{" "}
-                {rejectReason.trim().length}/10 ký tự tối thiểu.
+                Bắt buộc theo BR-18 — hiện tại {rejectReason.trim().length}/10
+                ký tự tối thiểu.
               </p>
             </div>
           ) : null}

@@ -10,12 +10,15 @@ export async function checkPortalAccess(
     return "login";
   }
 
-  const response = await fetch(`${API_INTERNAL_URL}/api/v1/rbac/manage-contest`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
+  const response = await fetch(
+    `${API_INTERNAL_URL}/api/v1/rbac/manage-contest`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      cache: "no-store",
     },
-    cache: "no-store",
-  });
+  );
 
   if (response.status === 401) {
     return "login";
