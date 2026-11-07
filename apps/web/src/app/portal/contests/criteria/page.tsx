@@ -3,7 +3,6 @@
 import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,6 +26,7 @@ type Criterion = {
 export default function CriteriaConfigPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   // TODO(Backend): Chờ API GET /api/v1/contests/:id/criteria để fetch tiêu chí thật.
   // TODO(Backend): Chờ API POST /api/v1/contests/:id/criteria để lưu tiêu chí.
@@ -80,6 +80,7 @@ export default function CriteriaConfigPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setNotice("");
 
     if (criteria.some((c) => !c.name.trim())) {
       setError("Vui lòng nhập tên cho tất cả các tiêu chí.");
@@ -96,14 +97,10 @@ export default function CriteriaConfigPage() {
     setIsLoading(true);
     try {
       await http.post("/api/v1/contests/1/criteria", { criteria });
-
-      toast.success("Lưu cấu hình tiêu chí thành công!");
-      // router.push("/portal/contests");
-    } catch (error) {
-      console.error("Failed to save criteria:", error);
-      setError(
-        "Không thể lưu tiêu chí chấm điểm. API chưa sẵn sàng hoặc có lỗi kết nối.",
-      );
+      setNotice("Đã lưu cấu hình tiêu chí thành công.");
+    } catch (err) {
+      console.error("Failed to save criteria:", err);
+      setError("Có lỗi xảy ra khi lưu.");
     } finally {
       setIsLoading(false);
     }
@@ -198,6 +195,12 @@ export default function CriteriaConfigPage() {
               <div className="p-4 bg-red-50 text-red-600 rounded-md border border-red-200 text-sm font-medium">
                 {error}
               </div>
+            )}
+
+            {notice && (
+              <output className="block p-4 bg-green-50 text-green-700 rounded-md border border-green-200 text-sm font-medium">
+                {notice}
+              </output>
             )}
           </CardContent>
 

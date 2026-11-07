@@ -80,6 +80,11 @@ export function JudgeLoginForm() {
         .getState()
         .setTokens({ accessToken: data.accessToken, role: "Judge" });
 
+      // Tạo cookie session để Server Components đọc được
+      // biome-ignore lint/suspicious/noDocumentCookie: Required for SSR auth in Next.js App Router
+      document.cookie = `access_token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
+
+      // Chuyển hướng vào không gian chấm thi của Judge
       router.push("/portal");
       router.refresh();
     } catch (err) {

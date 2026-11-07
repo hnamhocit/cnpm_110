@@ -2,16 +2,14 @@ import { create } from "zustand";
 
 import type { Role } from "@/lib/route-access";
 
-const ALLOWED_ROLES = ["Admin", "Organizer", "Judge", "Participant"] as const;
-
 export type TokenPair = {
   accessToken: string;
-  role?: (typeof ALLOWED_ROLES)[number];
+  role?: Role;
 };
 
 type AuthState = {
   accessToken: string | null;
-  userRole: (typeof ALLOWED_ROLES)[number] | null;
+  userRole: Role | null;
   setTokens: (tokens: TokenPair) => void;
   clear: () => void;
 };

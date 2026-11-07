@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
-import { toast } from "sonner";
 
 import { AuthField } from "@/components/auth/auth-field";
 import { Button } from "@/components/ui/button";
@@ -58,20 +57,23 @@ export function RegisterForm() {
     setIsLoading(true);
 
     try {
-      // Gọi API đăng ký theo đúng tài liệu của PM
+      // Backend chỉ nhận fullName, email, password; role do server gán.
       await http.post("/api/v1/auth/register", {
         fullName: fullName.trim(),
         email: email.trim(),
         password: password,
-        role: "ORGANIZER", // Bắt buộc phải có theo tài liệu
       });
 
-      toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
       router.push("/login"); // Chuyển hướng sang trang đăng nhập
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
+      const apiErr = err as {
+        response?: { data?: { error?: string; message?: string } };
+      };
+      const data = apiErr.response?.data;
       setError(
-        err.response?.data?.message ||
+        data?.error ??
+          data?.message ??
           "Đăng ký thất bại. Email có thể đã tồn tại hoặc lỗi kết nối!",
       );
     } finally {
