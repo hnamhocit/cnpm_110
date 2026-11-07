@@ -1,5 +1,6 @@
 "use client";
 
+import axios from "axios";
 import { AlertTriangle, Check, Eye, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -19,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -32,11 +34,34 @@ import { http } from "@/lib/http/client";
 import { filterSubmissions } from "@/lib/submission-utils";
 import type { Submission, SubmissionStatus } from "@/types/submission";
 
-// TODO: Đổi sang POST /api/v1/submissions/bulk khi BE hoàn thiện.
-async function bulkUpdateStatus(
-  _ids: string[],
-  _status: SubmissionStatus,
-): Promise<void> {}
+type ModerateAction = "APPROVE_FOR_JUDGING" | "DISQUALIFY";
+
+type ModerationErrorBody = { message?: string };
+
+// Hợp đồng Module 05 §4.5 — mỗi bài thi được kiểm duyệt qua endpoint /moderate.
+async function moderateSubmission(
+  id: string,
+  action: ModerateAction,
+  reason?: string,
+): Promise<void> {
+  await http.post(`/api/v1/submissions/${id}/moderate`, {
+    action,
+    ...(reason ? { reason } : {}),
+  });
+}
+
+function getModerationErrorMessage(error: unknown): string {
+  if (axios.isAxiosError<ModerationErrorBody>(error)) {
+    return (
+      error.response?.data?.message ??
+      "Không thể kiểm duyệt bài thi. Vui lòng thử lại."
+    );
+  }
+
+  return error instanceof Error
+    ? error.message
+    : "Không thể kiểm duyệt bài thi. Vui lòng thử lại.";
+}
 
 export default function SubmissionTable() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -51,6 +76,7 @@ export default function SubmissionTable() {
     null,
   );
   const [isBulkLoading, setIsBulkLoading] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
 
   useEffect(() => {
     async function fetchSubmissions() {
@@ -101,23 +127,60 @@ export default function SubmissionTable() {
   };
 
   const applyBulk = async (status: SubmissionStatus) => {
+    if (selectedRows.length === 0) {
+      return;
+    }
+
+    const action: ModerateAction =
+      status === "APPROVED" ? "APPROVE_FOR_JUDGING" : "DISQUALIFY";
+    const reason = status === "DISQUALIFIED" ? rejectReason.trim() : undefined;
+    const verb = status === "APPROVED" ? "duyệt" : "từ chối";
+
     setIsBulkLoading(true);
     try {
-      await bulkUpdateStatus(selectedRows, status);
-      setSubmissions((prev) =>
-        prev.map((s) => (selectedRows.includes(s.id) ? { ...s, status } : s)),
+      const results = await Promise.allSettled(
+        selectedRows.map((id) => moderateSubmission(id, action, reason)),
       );
-      toast.success(
-        `Đã ${status === "APPROVED" ? "duyệt" : "từ chối"} ${selectedRows.length} bài thi.`,
+
+      const succeededIds = selectedRows.filter(
+        (_, index) => results[index].status === "fulfilled",
       );
-      setSelectedRows([]);
-    } catch {
-      toast.error("Thao tác hàng loạt thất bại. Vui lòng thử lại.");
+      const failedResult = results.find(
+        (result): result is PromiseRejectedResult =>
+          result.status === "rejected",
+      );
+
+      if (succeededIds.length > 0) {
+        setSubmissions((prev) =>
+          prev.map((s) =>
+            succeededIds.includes(s.id) ? { ...s, status } : s,
+          ),
+        );
+        setSelectedRows((prev) =>
+          prev.filter((id) => !succeededIds.includes(id)),
+        );
+      }
+
+      if (failedResult) {
+        toast.error(
+          `Đã ${verb} ${succeededIds.length}/${selectedRows.length} bài thi. ${getModerationErrorMessage(
+            failedResult.reason,
+          )}`,
+        );
+      } else {
+        toast.success(`Đã ${verb} ${succeededIds.length} bài thi.`);
+      }
+    } catch (err: unknown) {
+      toast.error(getModerationErrorMessage(err));
     } finally {
       setIsBulkLoading(false);
       setPendingStatus(null);
+      setRejectReason("");
     }
   };
+
+  const isRejectReasonInvalid =
+    pendingStatus === "DISQUALIFIED" && rejectReason.trim().length < 10;
 
   return (
     <div className="space-y-4">
@@ -299,7 +362,10 @@ export default function SubmissionTable() {
       <AlertDialog
         open={pendingStatus !== null}
         onOpenChange={(open) => {
-          if (!open) setPendingStatus(null);
+          if (!open) {
+            setPendingStatus(null);
+            setRejectReason("");
+          }
         }}
       >
         <AlertDialogContent>
@@ -313,10 +379,31 @@ export default function SubmissionTable() {
               {selectedRows.length} bài thi đã chọn?
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {pendingStatus === "DISQUALIFIED" ? (
+            <div className="space-y-2">
+              <Label htmlFor="bulk-reject-reason">
+                Lý do từ chối <span className="text-red-500">*</span>
+              </Label>
+              <textarea
+                id="bulk-reject-reason"
+                rows={3}
+                minLength={10}
+                maxLength={1000}
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Nêu rõ lý do loại bài thi (tối thiểu 10 ký tự, tối đa 1000 ký tự)..."
+                value={rejectReason}
+                onChange={(event) => setRejectReason(event.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Bắt buộc theo BR-18 — hiện tại{" "}
+                {rejectReason.trim().length}/10 ký tự tối thiểu.
+              </p>
+            </div>
+          ) : null}
           <AlertDialogFooter>
             <AlertDialogCancel>Hủy</AlertDialogCancel>
             <AlertDialogAction
-              disabled={isBulkLoading}
+              disabled={isBulkLoading || isRejectReasonInvalid}
               onClick={() => {
                 if (pendingStatus) applyBulk(pendingStatus);
               }}
