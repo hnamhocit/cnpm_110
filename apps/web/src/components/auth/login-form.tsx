@@ -1,21 +1,24 @@
 "use client";
 
+import { Aperture } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { AuthField } from "@/components/auth/auth-field";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { http } from "@/lib/http";
+import { Card } from "@/components/ui/card";
 import { useAuthStore } from "@/lib/stores/auth-store";
+
+type LoginResponse = {
+  accessToken?: string;
+  error?: string;
+};
+
+const fieldLabelClassName = "text-sm font-medium text-slate-700";
+
+const fieldInputClassName =
+  "h-12 rounded-[10px] border-slate-300 bg-white px-4 text-[15px] leading-[22px] text-slate-900 placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 md:text-[15px]";
 
 export function LoginForm() {
   const router = useRouter();
@@ -36,28 +39,29 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      const res = await http.post("/api/v1/auth/login", {
-        email: email.trim(),
-        password: password,
+      // BFF set cookie HttpOnly (refresh token) và trả access token cho memory.
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
       });
+      const data = (await response.json().catch(() => ({}))) as LoginResponse;
 
-      // Lấy dữ liệu trả về từ API (tùy thuộc vào BE của bạn)
-      const data = res.data.data;
+      if (!response.ok || !data.accessToken) {
+        throw new Error(
+          data.error ??
+            "Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu!",
+        );
+      }
 
-      // Lưu token VÀ role vào Zustand
-      useAuthStore.getState().setTokens({
-        accessToken: data.accessToken,
-        // Nếu Backend trả về role thì lấy, không thì mặc định là Organizer
-        role: data.user?.role || "Organizer",
-      });
+      useAuthStore.getState().setTokens({ accessToken: data.accessToken });
 
-      // Chuyển hướng sang Dashboard
       router.push("/portal");
-    } catch (err: any) {
-      console.error(err);
+    } catch (err) {
       setError(
-        err.response?.data?.message ||
-          "Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu!",
+        err instanceof Error
+          ? err.message
+          : "Đăng nhập thất bại. Vui lòng kiểm tra lại email/mật khẩu!",
       );
     } finally {
       setIsLoading(false);
@@ -65,19 +69,31 @@ export function LoginForm() {
   }
 
   return (
-    <Card>
-      <form onSubmit={handleSubmit} noValidate>
-        <CardHeader>
-          <CardTitle className="text-xl">Đăng nhập</CardTitle>
-          <CardDescription>
-            Dành cho Admin và Organizer của cuộc thi nhiếp ảnh phim.
-          </CardDescription>
-        </CardHeader>
+    <Card className="w-full gap-0 rounded-[20px] border border-slate-200 bg-white py-0 shadow-[0_2px_8px_0_rgba(15,23,42,0.06),0_24px_64px_-24px_rgba(30,58,138,0.10)] ring-0">
+      <form
+        className="flex flex-col items-center gap-7 p-10"
+        onSubmit={handleSubmit}
+        noValidate
+      >
+        <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_8px_20px_-6px_rgba(37,99,235,0.30)]">
+          <Aperture aria-hidden="true" className="size-7" strokeWidth={2} />
+        </div>
 
-        <CardContent className="flex flex-col gap-4 py-6">
+        <header className="flex w-full flex-col items-center gap-2 text-center">
+          <h1 className="text-[32px] leading-10 font-semibold tracking-[-0.01em] text-slate-900">
+            Đăng nhập
+          </h1>
+          <p className="text-[15px] leading-[22px] text-slate-500">
+            Chào mừng bạn trở lại với Film Contest
+          </p>
+        </header>
+
+        <div className="flex w-full flex-col gap-5">
           <AuthField
             id="email"
             label="Email"
+            labelClassName={fieldLabelClassName}
+            className={fieldInputClassName}
             type="email"
             autoComplete="email"
             placeholder="ban@example.com"
@@ -87,32 +103,41 @@ export function LoginForm() {
           <AuthField
             id="password"
             label="Mật khẩu"
+            labelClassName={fieldLabelClassName}
+            className={fieldInputClassName}
             type="password"
             autoComplete="current-password"
+            placeholder="••••••••"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
 
           {error ? (
-            <p role="alert" className="text-sm text-destructive font-medium">
+            <p role="alert" className="text-sm font-medium text-red-600">
               {error}
             </p>
           ) : null}
+        </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+        <div className="flex w-full flex-col items-center gap-6">
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="h-12 w-full rounded-[10px] bg-blue-600 text-base font-semibold text-white shadow-[0_8px_20px_-6px_rgba(37,99,235,0.30)] hover:bg-blue-700 focus-visible:border-blue-500 focus-visible:ring-blue-500/30 disabled:opacity-60"
+          >
             {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
           </Button>
-        </CardContent>
 
-        <CardFooter className="justify-center text-sm text-muted-foreground">
-          Chưa có tài khoản?&nbsp;
-          <Link
-            href="/register"
-            className="font-medium text-foreground underline"
-          >
-            Tạo tài khoản
-          </Link>
-        </CardFooter>
+          <p className="text-sm leading-5 text-slate-500">
+            Chưa có tài khoản?{" "}
+            <Link
+              href="/register"
+              className="font-semibold text-blue-600 transition-colors hover:text-blue-700"
+            >
+              Tạo tài khoản
+            </Link>
+          </p>
+        </div>
       </form>
     </Card>
   );

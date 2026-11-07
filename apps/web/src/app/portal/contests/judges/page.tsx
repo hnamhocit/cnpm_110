@@ -225,10 +225,8 @@ export default function ContestJudgesManagementPage() {
   };
 
   const handleRevokeInvitation = (id: string, name: string) => {
-    if (confirm(`Bạn có chắc chắn muốn thu hồi lời mời đối với ${name}?`)) {
-      setJudges((prev) => prev.filter((j) => j.id !== id));
-      setToastMessage(`Đã thu hồi lời mời của ${name}`);
-    }
+    setJudges((prev) => prev.filter((j) => j.id !== id));
+    setToastMessage(`Đã thu hồi lời mời của ${name}`);
   };
 
   // Lọc danh sách giám khảo
