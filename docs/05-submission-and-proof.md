@@ -4,7 +4,7 @@
 > **Status**: READY FOR CODE GENERATION  
 > **Version**: 1.0.0  
 > **Target Audience**: AI Coding Assistants (Cursor, Copilot), Backend Engineers, Frontend & Mobile Engineers  
-> **Standard**: AI-First Spec (Explicit schemas, deterministic business logic, exhaustive error codes, Zero visual ambiguity, 100% structured Markdown & Mermaid)
+> **Standard**: AI-First Spec (Explicit schemas, deterministic business logic, exhaustive error codes, Zero visual ambiguity, 100% structured Markdown)
 
 ---
 
@@ -13,88 +13,6 @@
 Hệ thống sử dụng cơ sở dữ liệu **PostgreSQL 16+**. Khóa chính (PK) định dạng `UUID` sinh bằng `gen_random_uuid()`. Chuẩn đặt tên bảng và cột theo `snake_case`. Thời gian lưu theo `TIMESTAMPTZ` (UTC).
 
 ### 1.1 Sơ đồ Thực thể Quan hệ (Entity Relationship Diagram)
-
-```mermaid
-erDiagram
-    users ||--o{ submissions : "submits"
-    contests ||--o{ submissions : "receives"
-    contest_categories ||--o{ submissions : "classified_in"
-    film_rolls ||--o{ submissions : "originated_from"
-    submissions ||--|| submission_film_metadata : "describes"
-    submissions ||--o{ submission_proofs : "proves_with"
-    submissions ||--o{ submission_moderation_logs : "audited_by"
-    users ||--o{ submission_moderation_logs : "moderated_by"
-
-    submissions {
-        uuid id PK
-        varchar submission_code UK "SUB-YYYY-XXXX"
-        uuid contest_id FK
-        uuid category_id FK
-        uuid participant_id FK
-        uuid roll_id FK "Nullable"
-        int frame_number "Nullable"
-        varchar title
-        text artist_statement
-        uuid original_image_asset_id FK "Private S3/R2"
-        uuid watermarked_preview_asset_id FK "Public CDN"
-        uuid thumbnail_asset_id FK "Public CDN"
-        bigint file_size_bytes "Max 25MB"
-        int width_px
-        int height_px "Min Short Edge 2000px"
-        varchar mime_type "image/jpeg|image/tiff"
-        varchar status "DRAFT|SUBMITTED|VERIFYING_AI|AI_FLAGGED|PROOF_REQUESTED|PROOF_SUBMITTED|APPROVED_FOR_JUDGING|DISQUALIFIED|DISQUALIFIED_NO_PROOF|WITHDRAWN"
-        timestamptz proof_requested_at "48h Start"
-        timestamptz proof_deadline_at "48h Deadline"
-        timestamptz submitted_at
-        int version "Optimistic Locking"
-        boolean is_deleted
-        timestamptz created_at
-        timestamptz updated_at
-    }
-
-    submission_film_metadata {
-        uuid id PK
-        uuid submission_id FK UK
-        varchar film_brand
-        varchar film_stock
-        varchar film_format "135|120|4x5"
-        int iso_rated
-        int iso_shot
-        varchar camera_body
-        varchar lens
-        int focal_length_mm
-        varchar aperture
-        varchar shutter_speed
-        varchar dev_lab_name
-        varchar dev_chemistry
-        varchar scanner_model
-        timestamptz created_at
-    }
-
-    submission_proofs {
-        uuid id PK
-        uuid submission_id FK
-        jsonb proof_asset_ids "1-3 Negative Strip Images"
-        varchar proof_type "NEGATIVE_STRIP|CONTACT_SHEET"
-        text participant_note
-        timestamptz uploaded_at
-        uuid reviewed_by FK "Nullable"
-        varchar review_status "PENDING|VALID|INVALID"
-        text review_note
-        timestamptz reviewed_at
-    }
-
-    submission_moderation_logs {
-        uuid id PK
-        uuid submission_id FK
-        uuid moderator_id FK
-        varchar action "REQUEST_PROOF|APPROVE_FOR_JUDGING|DISQUALIFY|OVERRIDE_AI_FLAG"
-        text reason "Mandatory Reason BR-18"
-        varchar previous_status
-        varchar new_status
-        timestamptz created_at
-    }
-```
 
 ---
 
@@ -220,30 +138,6 @@ Lưu vết toàn bộ các quyết định hành chính nhạy cảm của Ban t
 ---
 
 ## 3. State Machine & Lifecycle (Vòng đời Bài dự thi)
-
-```mermaid
-stateDiagram-v2
-    [*] --> DRAFT : Thí sinh khởi tạo bài thi
-    DRAFT --> SUBMITTED : Tải ảnh scan & Khai báo thông số (BR-07, BR-22)
-    SUBMITTED --> VERIFYING_AI : Đẩy tác vụ vào Redis AI Worker Queue
-    VERIFYING_AI --> APPROVED_FOR_JUDGING : Quét AI sạch (P_AI < 0.75 & Không trùng pHash) & require_negative_proof_upfront = FALSE
-    VERIFYING_AI --> AI_FLAGGED : P_AI >= 0.75 (BR-09) hoặc Trùng pHash <= 5 (BR-10)
-    VERIFYING_AI --> PROOF_SUBMITTED : Hạng mục yêu cầu âm bản upfront & đã upload đủ 1-3 ảnh (BR-06)
-    AI_FLAGGED --> PROOF_REQUESTED : Organizer xem báo cáo AI & Yêu cầu thí sinh nộp âm bản
-    AI_FLAGGED --> DISQUALIFIED : Organizer phát hiện vi phạm rõ ràng (BR-18)
-    PROOF_REQUESTED --> PROOF_SUBMITTED : Thí sinh tải 1-3 ảnh âm bản trong vòng 48h (BR-19)
-    PROOF_REQUESTED --> DISQUALIFIED_NO_PROOF : Quá hạn 48h không nộp âm bản (Cron Worker BR-19)
-    PROOF_SUBMITTED --> APPROVED_FOR_JUDGING : Organizer duyệt dải âm bản hợp lệ
-    PROOF_SUBMITTED --> DISQUALIFIED : Âm bản giả mạo / Không khớp khung hình (BR-18)
-    DRAFT --> WITHDRAWN : Thí sinh hủy bài trước khi nộp (BR-08, BR-24)
-    SUBMITTED --> WITHDRAWN : Thí sinh chủ động rút bài trước Deadline (BR-08, BR-24)
-    AI_FLAGGED --> WITHDRAWN : Thí sinh rút bài trước Deadline (BR-08, BR-24)
-    PROOF_REQUESTED --> WITHDRAWN : Thí sinh rút bài trước Deadline (BR-08, BR-24)
-    APPROVED_FOR_JUDGING --> [*]
-    DISQUALIFIED --> [*]
-    DISQUALIFIED_NO_PROOF --> [*]
-    WITHDRAWN --> [*]
-```
 
 ### Bảng Chuyển đổi Trạng thái
 
@@ -452,22 +346,6 @@ stateDiagram-v2
 ## 5. UI/UX Functional Requirements (Đặc tả Giao diện Dạng Chữ)
 
 ### 5.1 Quy trình Nộp Bài thi 3 Bước (Submission 3-Step Wizard)
-
-```mermaid
-flowchart TD
-    Step1["Bước 1: Chọn Hạng mục & Tải Ảnh Scan"] --> CheckFile{Kiểm tra Client-side: JPG/TIFF, <25MB, Cạnh ngắn >=2000px?}
-    CheckFile -- Lỗi --> ErrMsg11["Báo đỏ file picker MSG011"]
-    CheckFile -- Đạt --> Step2["Bước 2: Siêu dữ liệu Nhiếp ảnh Phim"]
-    Step2 --> ChooseSource{Chọn từ Logbook hay Nhập tay?}
-    ChooseSource -- Từ Logbook --> AutoFill["Tự động điền 5 thông số kỹ thuật"]
-    ChooseSource -- Nhập tay --> ManualFill["Thí sinh nhập Film/Format/Camera/Frame/Lab"]
-    Step2 --> Step3["Bước 3: Tuyên ngôn & Đính kèm Bằng chứng"]
-    Step3 --> CheckUpfront{require_negative_proof_upfront = TRUE?}
-    CheckUpfront -- Có --> RequireProof["Bắt buộc kéo thả 1-3 ảnh dải âm bản (BR-06)"]
-    CheckUpfront -- Không --> OptionalProof["Đính kèm tùy chọn; chỉ bắt buộc khi vào Chung kết/xét Giải"]
-    Step3 --> ConfirmSubmit["Xác nhận Nộp Tác phẩm"]
-    ConfirmSubmit --> ModalSuccess["Modal chúc mừng + Mã SUB-2026-XXXX MSG015"]
-```
 
 ### 5.2 Đặc tả Màn hình Chi tiết (Screen Specifications)
 

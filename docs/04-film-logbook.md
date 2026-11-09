@@ -4,7 +4,7 @@
 > **Status**: READY FOR CODE GENERATION  
 > **Version**: 1.0.0  
 > **Target Audience**: AI Coding Assistants (Cursor, Copilot), Backend Engineers, Mobile (Flutter) & Web (Next.js) Engineers  
-> **Standard**: AI-First Spec (Explicit schemas, deterministic business logic, exhaustive error codes, Zero visual ambiguity, 100% structured Markdown & Mermaid)
+> **Standard**: AI-First Spec (Explicit schemas, deterministic business logic, exhaustive error codes, Zero visual ambiguity, 100% structured Markdown)
 
 ---
 
@@ -13,63 +13,6 @@
 Hệ thống lưu trữ trên **PostgreSQL 16+**. Khóa chính (PK) định dạng `UUID` sinh bằng `gen_random_uuid()`. Toàn bộ tên bảng và cột theo chuẩn `snake_case`. Mọi trường mốc thời gian lưu trữ theo `TIMESTAMPTZ` (UTC).
 
 ### 1.1 Sơ đồ Thực thể Quan hệ (Entity Relationship Diagram)
-
-```mermaid
-erDiagram
-    users ||--o{ film_rolls : "owns"
-    film_stocks |o--o{ film_rolls : "categorizes"
-    cameras |o--o{ film_rolls : "mounted_on"
-    film_labs |o--o{ film_rolls : "developed_at"
-    film_rolls ||--o{ frame_logs : "contains"
-    lenses |o--o{ frame_logs : "shot_with"
-    film_rolls ||--o{ submissions : "referenced_by"
-
-    film_rolls {
-        uuid id PK
-        varchar roll_code UK "ROLL-YYYY-XXXX"
-        uuid user_id FK
-        uuid film_stock_id FK "Nullable"
-        varchar custom_film_name "Nullable"
-        varchar format "135|120_645|120_66|120_67|4x5"
-        int iso_rated "Nominal ISO"
-        int iso_shot "Exposure ISO"
-        uuid camera_id FK "Nullable"
-        varchar custom_camera_name "Nullable"
-        uuid lab_id FK "Nullable"
-        varchar custom_lab_name "Nullable"
-        varchar dev_process "C-41|B&W|E-6|ECN-2|STAND_DEV"
-        date load_date
-        date dev_date
-        varchar status "SHOOTING|DEVELOPED|SCANNED|ARCHIVED"
-        uuid negative_proof_asset_id FK "Nullable"
-        text notes
-        boolean is_deleted
-        timestamptz created_at
-        timestamptz updated_at
-    }
-
-    frame_logs {
-        uuid id PK
-        uuid roll_id FK
-        int frame_number "1..MaxPhysical"
-        uuid lens_id FK "Nullable"
-        varchar custom_lens_name "Nullable"
-        int focal_length_mm
-        varchar aperture "f/1.4..f/22"
-        varchar shutter_speed "1/1000s..30s"
-        varchar exposure_compensation "+1 EV..-1 EV"
-        varchar filter_used
-        varchar location_name
-        numeric latitude
-        numeric longitude
-        timestamptz shot_at
-        uuid scanned_image_asset_id FK "Nullable"
-        text notes
-        boolean is_deleted
-        timestamptz created_at
-        timestamptz updated_at
-    }
-```
 
 ---
 
@@ -176,15 +119,6 @@ Ghi chép siêu dữ liệu vật lý và phơi sáng thủ công cho từng khu
 ## 3. State Machine & Lifecycle (Vòng đời Cuộn phim)
 
 Cuộn phim cá nhân được quản lý qua 4 trạng thái tuyến tính:
-
-```mermaid
-stateDiagram-v2
-    [*] --> SHOOTING : Lắp phim vào máy ảnh (load_date)
-    SHOOTING --> DEVELOPED : Chụp xong, gửi Lab tráng (dev_date)
-    DEVELOPED --> SCANNED : Nhận file ảnh scan kỹ thuật số
-    SCANNED --> ARCHIVED : Hoàn tất lưu trữ / Tác phẩm đã thi xong
-    ARCHIVED --> [*]
-```
 
 ### Bảng Chuyển đổi Trạng thái
 
@@ -449,18 +383,6 @@ stateDiagram-v2
 ## 5. UI/UX Functional Requirements (Đặc tả Giao diện Dạng Chữ)
 
 ### 5.1 Kiến trúc Giao diện Sổ tay Cuộn phim (Film Logbook Navigation)
-
-```mermaid
-flowchart TD
-    Dashboard["Participant Dashboard"] --> MyRolls["Màn hình My Film Rolls"]
-    MyRolls --> CreateRoll["Biểu mẫu Khởi tạo Cuộn phim Mới"]
-    MyRolls --> RollDetail["Màn hình Roll Frame Details"]
-    RollDetail --> LogFrame["Drawer: Ghi nhận Khung hình (Frame Log)"]
-    LogFrame --> CheckLimit{Kiểm tra Frame Limit BR-23?}
-    CheckLimit -- Vượt giới hạn --> ErrMsg10["Viền đỏ ô Frame No + Lỗi MSG010"]
-    CheckLimit -- Hợp lệ --> SaveFrame["Cập nhật Tiến độ 15/39"]
-    RollDetail --> UploadProof["Drawer: Tải Bằng chứng Dải Âm bản"]
-```
 
 ### 5.2 Đặc tả Màn hình Chi tiết (Screen Specifications)
 
