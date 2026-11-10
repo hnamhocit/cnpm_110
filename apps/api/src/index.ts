@@ -16,6 +16,18 @@ import { timing } from "hono/timing";
 const app = new Hono();
 
 app.use("*", requestId());
+app.use('*', async (c, next) => {
+  await next();
+  if (c.res.headers.get('Content-Type')?.includes('application/json')) {
+    const body = await c.res.json();
+    c.res = new Response(JSON.stringify({
+      code: c.res.status,
+      message: body.message || 'Success',
+      data: body.data || body,
+      error: body.error || null
+    }), c.res);
+  }
+});
 app.use("*", logger());
 app.use("*", timing());
 app.use("*", secureHeaders());

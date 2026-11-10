@@ -259,13 +259,18 @@ export const submissions = pgTable(
     index("idx_submissions_category_id").on(table.categoryId),
     index("idx_submissions_participant_id").on(table.participantId),
     index("idx_submissions_status").on(table.status),
-
     check(
       "submissions_status_valid",
       sql`${table.status} IN (
-        'PENDING_AI', 'FLAGGED', 'APPROVED', 'DISQUALIFIED'
-      )`,
+    'PENDING_AI',
+    'VERIFIED',
+    'SUSPICIOUS',
+    'FLAGGED',
+    'APPROVED',
+    'DISQUALIFIED'
+  )`,
     ),
+
 
     check(
       "submissions_title_not_empty",
@@ -399,6 +404,49 @@ export const submissionAiAnalyses = pgTable(
   (table) => [
     index("idx_ai_analyses_submission_id").on(table.submissionId),
     index("idx_ai_analyses_is_flagged").on(table.isAiFlagged),
+  ],
+);
+
+export const aiAnalysisJobs = pgTable(
+  "ai_analysis_jobs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    submissionId: uuid("submission_id")
+      .notNull()
+      .unique()
+      .references(() => submissions.id, {
+        onDelete: "cascade",
+      }),
+
+    status: varchar("status", { length: 20 })
+      .notNull()
+      .default("PENDING"),
+
+    attempts: integer("attempts")
+      .notNull()
+      .default(0),
+
+    maxAttempts: integer("max_attempts")
+      .notNull()
+      .default(3),
+
+    lastError: text("last_error"),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_ai_analysis_jobs_status").on(table.status),
   ],
 );
 

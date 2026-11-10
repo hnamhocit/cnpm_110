@@ -4,7 +4,7 @@
 > **Status**: READY FOR CODE GENERATION  
 > **Version**: 1.0.0  
 > **Target Audience**: AI Coding Assistants (Cursor, Copilot), Backend Engineers, Frontend & Mobile Engineers  
-> **Standard**: AI-First Spec (Explicit schemas, deterministic business logic, exhaustive error codes, Zero visual ambiguity, 100% structured Markdown & Mermaid)
+> **Standard**: AI-First Spec (Explicit schemas, deterministic business logic, exhaustive error codes, Zero visual ambiguity, 100% structured Markdown)
 
 ---
 
@@ -13,88 +13,6 @@
 Hệ thống sử dụng cơ sở dữ liệu **PostgreSQL 16+**. Khóa chính (PK) định dạng `UUID` sinh bằng `gen_random_uuid()`. Chuẩn đặt tên bảng và cột theo `snake_case`. Thời gian lưu theo `TIMESTAMPTZ` (UTC).
 
 ### 1.1 Sơ đồ Thực thể Quan hệ (Entity Relationship Diagram)
-
-```mermaid
-erDiagram
-    users ||--o{ submissions : "submits"
-    contests ||--o{ submissions : "receives"
-    contest_categories ||--o{ submissions : "classified_in"
-    film_rolls ||--o{ submissions : "originated_from"
-    submissions ||--|| submission_film_metadata : "describes"
-    submissions ||--o{ submission_proofs : "proves_with"
-    submissions ||--o{ submission_moderation_logs : "audited_by"
-    users ||--o{ submission_moderation_logs : "moderated_by"
-
-    submissions {
-        uuid id PK
-        varchar submission_code UK "SUB-YYYY-XXXX"
-        uuid contest_id FK
-        uuid category_id FK
-        uuid participant_id FK
-        uuid roll_id FK "Nullable"
-        int frame_number "Nullable"
-        varchar title
-        text artist_statement
-        uuid original_image_asset_id FK "Private S3/R2"
-        uuid watermarked_preview_asset_id FK "Public CDN"
-        uuid thumbnail_asset_id FK "Public CDN"
-        bigint file_size_bytes "Max 25MB"
-        int width_px
-        int height_px "Min Short Edge 2000px"
-        varchar mime_type "image/jpeg|image/tiff"
-        varchar status "SUBMITTED|VERIFYING_AI|AI_FLAGGED|PROOF_REQUESTED|PROOF_SUBMITTED|APPROVED_FOR_JUDGING|DISQUALIFIED|DISQUALIFIED_NO_PROOF|WITHDRAWN"
-        timestamptz proof_requested_at "48h Start"
-        timestamptz proof_deadline_at "48h Deadline"
-        timestamptz submitted_at
-        int version "Optimistic Locking"
-        boolean is_deleted
-        timestamptz created_at
-        timestamptz updated_at
-    }
-
-    submission_film_metadata {
-        uuid id PK
-        uuid submission_id FK UK
-        varchar film_brand
-        varchar film_stock
-        varchar film_format "135|120|4x5"
-        int iso_rated
-        int iso_shot
-        varchar camera_body
-        varchar lens
-        int focal_length_mm
-        varchar aperture
-        varchar shutter_speed
-        varchar dev_lab_name
-        varchar dev_chemistry
-        varchar scanner_model
-        timestamptz created_at
-    }
-
-    submission_proofs {
-        uuid id PK
-        uuid submission_id FK
-        jsonb proof_asset_ids "1-3 Negative Strip Images"
-        varchar proof_type "NEGATIVE_STRIP|CONTACT_SHEET"
-        text participant_note
-        timestamptz uploaded_at
-        uuid reviewed_by FK "Nullable"
-        varchar review_status "PENDING|VALID|INVALID"
-        text review_note
-        timestamptz reviewed_at
-    }
-
-    submission_moderation_logs {
-        uuid id PK
-        uuid submission_id FK
-        uuid moderator_id FK
-        varchar action "REQUEST_PROOF|APPROVE_FOR_JUDGING|DISQUALIFY|OVERRIDE_AI_FLAG"
-        text reason "Mandatory Reason BR-18"
-        varchar previous_status
-        varchar new_status
-        timestamptz created_at
-    }
-```
 
 ---
 
@@ -208,39 +126,35 @@ Lưu vết toàn bộ các quyết định hành chính nhạy cảm của Ban t
 | :--- | :--- | :--- | :--- |
 | **BR-03** | Xóa mềm Bản ghi | Cập nhật `is_deleted = TRUE` khi người dùng xóa bài thi. Tuyệt đối không xóa cứng khỏi cơ sở dữ liệu. | Soft Delete Filter |
 | **BR-05** | Chống Nộp Trùng Khung hình | Kiểm tra bộ ba `(contest_id, roll_id, frame_number)`. Nếu cặp cuộn phim và số khung hình này đã tồn tại trong cuộc thi ở trạng thái hợp lệ, từ chối nộp bài mới. | HTTP 400 Bad Request (`MSG012`) |
-| **BR-06** | Bắt buộc Âm bản Xét Giải | Tác phẩm lọt vào vòng Chung kết hoặc xét Giải bắt buộc phải có bản ghi `submission_proofs` với `review_status = 'VALID'`. Nếu BTC bấm công bố giải mà bài chưa có âm bản hợp lệ, hệ thống chặn lại. | Chặn Công bố (`MSG026`) |
+| **BR-06** | Bắt buộc Âm bản (Upfront hoặc Xét Giải) | Cấu hình tại `contest_categories.require_negative_proof_upfront`: nếu `TRUE`, thí sinh phải upload 1-3 ảnh âm bản ngay khi nộp bài; nếu `FALSE`, chỉ bắt buộc khi tác phẩm lọt vòng Chung kết/xét Giải. Trong mọi trường hợp, bài xét giải phải có `submission_proofs` với `review_status = 'VALID'`; nếu BTC công bố giải mà thiếu âm bản hợp lệ, hệ thống chặn lại. | Chặn Công bố (`MSG026`) |
 | **BR-07** | Tiêu chuẩn Kỹ thuật File Ảnh | Tệp ảnh scan tải lên bắt buộc phải là định dạng JPEG hoặc TIFF; dung lượng tối đa 25MB (26,214,400 bytes); cạnh ngắn nhất tối thiểu 2000px; không chứa chữ ký cá nhân (Watermark). | HTTP 400 Bad Request (`MSG011`) |
 | **BR-08** | Khóa Cổng Theo Thời hạn | Thí sinh chỉ được nộp bài hoặc chỉnh sửa bài thi khi $CurrentTime < submission\_deadline\_at$. Khi quá hạn, toàn bộ thao tác nộp mới hoặc sửa bài bị từ chối. | HTTP 400 Bad Request (`MSG014`) |
 | **BR-18** | Bắt buộc Nhập Lý do Kiểm duyệt | Mọi thao tác: Yêu cầu âm bản (`REQUEST_PROOF`), Loại bài (`DISQUALIFY`), Gỡ cờ AI (`OVERRIDE_AI_FLAG`) bắt buộc phải truyền trường `reason` tối thiểu 10 ký tự và ghi tự động vào `submission_moderation_logs`. | HTTP 422 Unprocessable (`MSG021`) |
 | **BR-19** | Đồng hồ Đếm ngược 48 Giờ | Khi bài thi chuyển sang `PROOF_REQUESTED`, hệ thống lưu `proof_requested_at = NOW()` và tính `proof_deadline_at = NOW() + INTERVAL '48 hours'`. Một cron worker chạy ngầm định kỳ: Nếu $NOW() > proof\_deadline\_at$ và thí sinh chưa nộp âm bản, tự động chuyển trạng thái bài thi sang `DISQUALIFIED_NO_PROOF`. | Tự động Loại bài Quá hạn |
 | **BR-21** | Chặn Xung đột Lợi ích | Người dùng đã được gán vai trò Judge hoặc Organizer trong một cuộc thi thì bị hệ thống chặn không cho phép nộp bài thi vào chính cuộc thi đó. | HTTP 403 Forbidden (`MSG022`) |
 | **BR-22** | 5 Tham số Kỹ thuật Bắt buộc | Mọi bài thi hợp lệ bắt buộc khai báo tối thiểu: (1) Film Stock, (2) Khổ phim Format, (3) Thân máy Camera, (4) Số Frame, (5) Phòng Lab/Quy trình tráng. | HTTP 422 Unprocessable |
-| **BR-24** | Quy định Sửa & Rút bài | Thí sinh chỉ được phép chỉnh sửa metadata hoặc rút bài (`WITHDRAWN`) khi $CurrentTime < submission\_deadline\_at$ và bài thi chưa chuyển sang vòng chấm điểm (`JUDGING`). | HTTP 403 Forbidden |
+| **BR-24** | Quy định Sửa & Rút bài | Thí sinh chỉ được phép chỉnh sửa metadata hoặc rút bài (`WITHDRAWN`) khi $CurrentTime < submission\_deadline\_at$ và bài thi chưa chuyển sang vòng chấm điểm (`JUDGING`). Điều kiện chặn theo mốc thời gian của cuộc thi được quy định tại **BR-08**; BR-24 chỉ giới hạn quyền sửa/rút của thí sinh. | HTTP 403 Forbidden |
 
 ---
 
 ## 3. State Machine & Lifecycle (Vòng đời Bài dự thi)
 
-```mermaid
-stateDiagram-v2
-    [*] --> DRAFT : Thí sinh khởi tạo bài thi
-    DRAFT --> SUBMITTED : Tải ảnh scan & Khai báo thông số (BR-07, BR-22)
-    SUBMITTED --> VERIFYING_AI : Đẩy tác vụ vào Redis AI Worker Queue
-    VERIFYING_AI --> APPROVED_FOR_JUDGING : Quét AI sạch (P_AI < 0.75 & Không trùng pHash) & Không yêu cầu âm bản upfront
-    VERIFYING_AI --> AI_FLAGGED : P_AI >= 0.75 (BR-09) hoặc Trùng pHash <= 5 (BR-10)
-    VERIFYING_AI --> PROOF_REQUESTED : Hạng mục bắt buộc âm bản upfront (BR-06)
-    AI_FLAGGED --> PROOF_REQUESTED : Organizer xem báo cáo AI & Yêu cầu thí sinh nộp âm bản
-    AI_FLAGGED --> DISQUALIFIED : Organizer phát hiện vi phạm rõ ràng (BR-18)
-    PROOF_REQUESTED --> PROOF_SUBMITTED : Thí sinh tải 1-3 ảnh âm bản trong vòng 48h (BR-19)
-    PROOF_REQUESTED --> DISQUALIFIED_NO_PROOF : Quá hạn 48h không nộp âm bản (Cron Worker BR-19)
-    PROOF_SUBMITTED --> APPROVED_FOR_JUDGING : Organizer duyệt dải âm bản hợp lệ
-    PROOF_SUBMITTED --> DISQUALIFIED : Âm bản giả mạo / Không khớp khung hình
-    SUBMITTED --> WITHDRAWN : Thí sinh chủ động rút bài trước Deadline (BR-24)
-    APPROVED_FOR_JUDGING --> [*]
-    DISQUALIFIED --> [*]
-    DISQUALIFIED_NO_PROOF --> [*]
-    WITHDRAWN --> [*]
-```
+### Bảng Chuyển đổi Trạng thái
+
+| Trạng thái nguồn | Trạng thái đích | Tác nhân | Điều kiện Tiên quyết | Tác động Hệ thống |
+| :--- | :--- | :--- | :--- | :--- |
+| `DRAFT` | `SUBMITTED` | Participant | Có ảnh scan hợp lệ và đủ 5 tham số kỹ thuật (BR-07, BR-22). | Tạo bản ghi `submitted_at`; đẩy tác vụ AI. |
+| `SUBMITTED` | `VERIFYING_AI` | System | Tác vụ AI Worker được xếp hàng thành công. | Bắt đầu quét AI (BR-09, BR-10). |
+| `VERIFYING_AI` | `APPROVED_FOR_JUDGING` | System | AI sạch và hạng mục không yêu cầu âm bản upfront (`require_negative_proof_upfront = FALSE`). | Đưa bài vào hàng đợi chấm. |
+| `VERIFYING_AI` | `AI_FLAGGED` | System | $P_{AI} \ge 0.75$ (BR-09) hoặc pHash Hamming $\le 5$ (BR-10). | Gắn cờ, chờ Organizer xác minh. |
+| `VERIFYING_AI` | `PROOF_SUBMITTED` | System | Hạng mục yêu cầu âm bản upfront và payload nộp bài đã có 1-3 ảnh âm bản (BR-06). | Ghi nhận `submission_proofs` ở trạng thái `PENDING`. |
+| `AI_FLAGGED` | `PROOF_REQUESTED` | Organizer | Organizer xem báo cáo AI và yêu cầu bổ sung âm bản (BR-18). | Lưu `proof_requested_at`, tính `proof_deadline_at = +48h` (BR-19). |
+| `AI_FLAGGED` | `DISQUALIFIED` | Organizer | Phát hiện vi phạm rõ ràng, có lý do (BR-18). | Ghi audit log và gửi thông báo. |
+| `PROOF_REQUESTED` | `PROOF_SUBMITTED` | Participant | Upload 1-3 ảnh âm bản trước `proof_deadline_at` (BR-19). | Ghi nhận `submission_proofs`, chờ Organizer duyệt. |
+| `PROOF_REQUESTED` | `DISQUALIFIED_NO_PROOF` | Cron Worker | $NOW() > proof\_deadline\_at$ và chưa có âm bản (BR-19). | Tự động loại bài, ghi audit log. |
+| `PROOF_SUBMITTED` | `APPROVED_FOR_JUDGING` | Organizer | `submission_proofs.review_status = 'VALID'`. | Đưa bài vào hàng đợi chấm. |
+| `PROOF_SUBMITTED` | `DISQUALIFIED` | Organizer | Âm bản giả mạo/không khớp khung hình, có lý do (BR-18). | Ghi audit log và gửi thông báo. |
+| `DRAFT`, `SUBMITTED`, `AI_FLAGGED`, `PROOF_REQUESTED` | `WITHDRAWN` | Participant | $CurrentTime < submission\_deadline\_at$ và bài chưa vào `JUDGING` (BR-08, BR-24). | Đánh dấu rút bài; giải phóng cặp `(roll_id, frame_number)` (BR-05). |
 
 ---
 
@@ -305,9 +219,18 @@ stateDiagram-v2
         "devLabName": "LLab Hanoi",
         "devChemistry": "D-76",
         "scannerModel": "Noritsu HS-1800"
+      },
+      "proof": {
+        "proofAssetIds": [
+          "11112222-3333-4444-5555-666677778888",
+          "22223333-4444-5555-6666-777788889999"
+        ],
+        "proofType": "NEGATIVE_STRIP",
+        "participantNote": "Ảnh chụp dải âm bản 6 frame trên bàn sáng, nhìn rõ mã Kodak 400TX và số frame 14."
       }
     }
     ```
+*   **Điều kiện Âm bản Upfront (BR-06):** Nếu hạng mục có `require_negative_proof_upfront = TRUE`, trường `proof.proofAssetIds` bắt buộc chứa 1-3 UUID; nếu thiếu, trả `422 Unprocessable`. Nếu `FALSE`, được phép bỏ trống và âm bản chỉ bắt buộc khi tác phẩm vào Chung kết/xét Giải.
 *   **Response Payload Vi phạm Trùng Frame (400 Bad Request - BR-05):**
     ```json
     {
@@ -424,22 +347,6 @@ stateDiagram-v2
 
 ### 5.1 Quy trình Nộp Bài thi 3 Bước (Submission 3-Step Wizard)
 
-```mermaid
-flowchart TD
-    Step1["Bước 1: Chọn Hạng mục & Tải Ảnh Scan"] --> CheckFile{Kiểm tra Client-side: JPG/TIFF, <25MB, Cạnh ngắn >=2000px?}
-    CheckFile -- Lỗi --> ErrMsg11["Báo đỏ file picker MSG011"]
-    CheckFile -- Đạt --> Step2["Bước 2: Siêu dữ liệu Nhiếp ảnh Phim"]
-    Step2 --> ChooseSource{Chọn từ Logbook hay Nhập tay?}
-    ChooseSource -- Từ Logbook --> AutoFill["Tự động điền 5 thông số kỹ thuật"]
-    ChooseSource -- Nhập tay --> ManualFill["Thí sinh nhập Film/Format/Camera/Frame/Lab"]
-    Step2 --> Step3["Bước 3: Tuyên ngôn & Đính kèm Bằng chứng"]
-    Step3 --> CheckUpfront{Hạng mục bắt buộc âm bản upfront?}
-    CheckUpfront -- Có --> RequireProof["Kéo thả 1-3 ảnh dải âm bản"]
-    CheckUpfront -- Không --> OptionalProof["Đính kèm tùy chọn"]
-    Step3 --> ConfirmSubmit["Xác nhận Nộp Tác phẩm"]
-    ConfirmSubmit --> ModalSuccess["Modal chúc mừng + Mã SUB-2026-XXXX MSG015"]
-```
-
 ### 5.2 Đặc tả Màn hình Chi tiết (Screen Specifications)
 
 #### 1. Màn hình "Submit Photograph Wizard" (Web & Mobile)
@@ -455,7 +362,7 @@ flowchart TD
 *   **Bước 3: Tuyên ngôn Tác phẩm & Đính kèm Bằng chứng:**
     *   Ô nhập Tên tác phẩm (`title`) bắt buộc.
     *   Ô nhập Bối cảnh sáng tác (`artistStatement`) tùy chọn.
-    *   Khu vực Upload Ảnh Dải Phim Âm Bản: Bắt buộc nếu Hạng mục yêu cầu upfront (BR-06).
+    *   Khu vực Upload Ảnh Dải Phim Âm Bản: Bắt buộc nếu hạng mục có `require_negative_proof_upfront = TRUE` (BR-06). Nếu `FALSE`, cho phép bỏ trống và chỉ bắt buộc khi tác phẩm vào Chung kết/xét Giải.
 
 #### 2. Màn hình "Upload Negative Proof" (Tải Bằng chứng kèm Đồng hồ 48 Giờ)
 *   **Banner Cảnh báo Khẩn cấp (Countdown Banner):**

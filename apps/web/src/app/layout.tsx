@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 import type { ReactNode } from "react";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const beVietnamPro = Be_Vietnam_Pro({
@@ -22,7 +23,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       lang="vi"
       className={`${beVietnamPro.variable} ${beVietnamPro.className} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

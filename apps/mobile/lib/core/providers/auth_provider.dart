@@ -1,5 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../network/api_exception.dart';
 import '../network/auth_token_storage.dart';
 import 'api_client_provider.dart';
 import 'token_storage_provider.dart';
@@ -51,29 +53,43 @@ class AuthNotifier extends Notifier<AuthState> {
     required String email,
     required String password,
   }) async {
-    final dio = ref.read(apiClientProvider).dio;
-    final response = await dio.post('/auth/login', data: {
-      'email': email,
-      'password': password,
-    });
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final response = await dio.post('/api/v1/auth/login', data: {
+        'email': email,
+        'password': password,
+      });
 
-    final data = response.data as Map<String, dynamic>;
-    final accessToken = data['accessToken'] as String;
-    final refreshToken = data['refreshToken'] as String?;
-    final user = data['user'] as Map<String, dynamic>? ?? data;
+      final body = response.data as Map<String, dynamic>;
+      final data = (body['data'] is Map<String, dynamic>)
+          ? body['data'] as Map<String, dynamic>
+          : body;
 
-    await _storage.saveTokens(
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-    );
+      final tokens = (data['tokens'] is Map<String, dynamic>)
+          ? data['tokens'] as Map<String, dynamic>
+          : data;
 
-    state = AuthState(
-      isLoggedIn: true,
-      userId: user['id'] as String?,
-      fullName: user['fullName'] as String?,
-      email: user['email'] as String?,
-      role: user['role'] as String?,
-    );
+      final accessToken =
+          (tokens['accessToken'] ?? data['accessToken']) as String;
+      final refreshToken =
+          (tokens['refreshToken'] ?? data['refreshToken']) as String?;
+      final user = data['user'] as Map<String, dynamic>? ?? data;
+
+      await _storage.saveTokens(
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+      );
+
+      state = AuthState(
+        isLoggedIn: true,
+        userId: user['id'] as String? ?? user['userId'] as String?,
+        fullName: user['fullName'] as String? ?? user['full_name'] as String?,
+        email: user['email'] as String? ?? email,
+        role: user['role'] as String?,
+      );
+    } on DioException catch (error) {
+      throw ApiException.fromDio(error);
+    }
   }
 
   Future<void> register({
@@ -81,34 +97,66 @@ class AuthNotifier extends Notifier<AuthState> {
     required String email,
     required String password,
   }) async {
-    final dio = ref.read(apiClientProvider).dio;
-    final response = await dio.post('/auth/register', data: {
-      'fullName': fullName,
-      'email': email,
-      'password': password,
-    });
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final response = await dio.post('/api/v1/auth/register', data: {
+        'fullName': fullName,
+        'email': email,
+        'password': password,
+      });
 
-    final data = response.data as Map<String, dynamic>;
-    final accessToken = data['accessToken'] as String;
-    final refreshToken = data['refreshToken'] as String?;
+      final body = response.data as Map<String, dynamic>;
+      final data = (body['data'] is Map<String, dynamic>)
+          ? body['data'] as Map<String, dynamic>
+          : body;
 
-    await _storage.saveTokens(
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-    );
+      final tokens = (data['tokens'] is Map<String, dynamic>)
+          ? data['tokens'] as Map<String, dynamic>
+          : data;
 
-    state = AuthState(
-      isLoggedIn: true,
-      userId: data['userId'] as String? ?? data['id'] as String?,
-      fullName: data['fullName'] as String?,
-      email: data['email'] as String? ?? email,
-      role: data['role'] as String?,
-    );
+      final accessToken =
+          (tokens['accessToken'] ?? data['accessToken']) as String;
+      final refreshToken =
+          (tokens['refreshToken'] ?? data['refreshToken']) as String?;
+      final user = data['user'] as Map<String, dynamic>? ?? data;
+
+      await _storage.saveTokens(
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+      );
+
+      state = AuthState(
+        isLoggedIn: true,
+        userId: user['id'] as String? ??
+            user['userId'] as String? ??
+            data['userId'] as String?,
+        fullName: user['fullName'] as String? ??
+            user['full_name'] as String? ??
+            fullName,
+        email: user['email'] as String? ?? email,
+        role: user['role'] as String? ?? 'Participant',
+      );
+    } on DioException catch (error) {
+      throw ApiException.fromDio(error);
+    }
   }
 
   Future<void> logout() async {
-    await _storage.clearTokens();
-    state = const AuthState();
+    try {
+      final refreshToken = await _storage.readRefreshToken();
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        final dio = ref.read(apiClientProvider).dio;
+        await dio.post(
+          '/api/v1/auth/logout',
+          data: {'refreshToken': refreshToken},
+        );
+      }
+    } catch (_) {
+      // Ignore network errors on logout so local state always resets
+    } finally {
+      await _storage.clearTokens();
+      state = const AuthState();
+    }
   }
 }
 
