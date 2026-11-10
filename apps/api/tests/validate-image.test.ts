@@ -144,33 +144,84 @@ describe("FPC-33 image validation", () => {
     expect(result.contentType).toBe("image/jpeg");
   });
 });
-  test("respects EXIF orientation when checking dimensions", async () => {
-    const buffer = await sharp({
-      create: {
-        width: 120,
-        height: 100,
-        channels: 3,
-        background: "white",
-      },
-    })
-      .withMetadata({ orientation: 6 })
-      .jpeg()
-      .toBuffer();
+test("respects EXIF orientation when checking dimensions", async () => {
+  const buffer = await sharp({
+    create: {
+      width: 120,
+      height: 100,
+      channels: 3,
+      background: "white",
+    },
+  })
+    .withMetadata({ orientation: 6 })
+    .jpeg()
+    .toBuffer();
 
-    const file = new File([new Uint8Array(buffer)], "rotated.jpg", {
-      type: "image/jpeg",
-    });
-
-    const result = await validateImage(file, options);
-
-    expect(result.width).toBe(100);
-    expect(result.height).toBe(120);
+  const file = new File([new Uint8Array(buffer)], "rotated.jpg", {
+    type: "image/jpeg",
   });
 
-  test("rejects invalid validation configuration", async () => {
-    const file = await makeImage("jpeg");
+  const result = await validateImage(file, options);
+
+  expect(result.width).toBe(100);
+  expect(result.height).toBe(120);
+});
+
+test("rejects invalid validation configuration", async () => {
+  const file = await makeImage("jpeg");
+
+  await expect(
+    validateImage(file, { ...options, minWidth: 0 }),
+  ).rejects.toThrow("Invalid image validation option: minWidth");
+});
+describe("Bug #27 strict image validation", () => {
+  const strictOptions: ImageValidationOptions = {
+    maxBytes: 25 * 1024 * 1024,
+    minWidth: 2000,
+    minHeight: 2000,
+    maxPixels: 100_000_000,
+  };
+
+  test("accepts image at minimum 2000x2000", async () => {
+    const file = await makeImage("jpeg", 2000, 2000);
+    const result = await validateImage(file, strictOptions);
+
+    expect(result.width).toBe(2000);
+    expect(result.height).toBe(2000);
+  });
+
+  test("rejects image smaller than 2000px width", async () => {
+    const file = await makeImage("jpeg", 1999, 2000);
 
     await expect(
-      validateImage(file, { ...options, minWidth: 0 }),
-    ).rejects.toThrow("Invalid image validation option: minWidth");
+      validateImage(file, strictOptions),
+    ).rejects.toMatchObject({ status: 400 });
   });
+
+  test("rejects image smaller than 2000px height", async () => {
+    const file = await makeImage("jpeg", 2000, 1999);
+
+    await expect(
+      validateImage(file, strictOptions),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  test("rejects unsupported PNG format", async () => {
+    const file = await makeImage("png", 2000, 2000);
+
+    await expect(
+      validateImage(file, strictOptions),
+    ).rejects.toMatchObject({ status: 415 });
+  });
+  test("rejects image larger than 25 MiB", async () => {
+    const oversizedFile = new File(
+      [new Uint8Array(25 * 1024 * 1024 + 1)],
+      "oversized.jpg",
+      { type: "image/jpeg" },
+    );
+
+    await expect(
+      validateImage(oversizedFile, strictOptions),
+    ).rejects.toMatchObject({ status: 413 });
+  });
+});
