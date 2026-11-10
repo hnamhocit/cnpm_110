@@ -133,12 +133,14 @@ contests.get("/", async (c) => {
     return c.json({
       code: 200,
       message: "Contests retrieved successfully",
-      data: result.rows,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+      data: {
+        items: result.rows,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
       },
     });
   } catch (error) {
@@ -269,7 +271,22 @@ contests.post("/", authenticate, requireRoles("Admin", "Organizer"), async (c) =
   const endAt = typeof body.endAt === "string" ? new Date(body.endAt) : null;
 
   // BR-08: Ràng buộc lịch trình tuần tự (startAt < endAt)
-  if (startAt && endAt && startAt >= endAt) {
+  if (startAt && endAt) {
+    if (startAt >= endAt) {
+      return c.json({
+        code: 400,
+        message: "Timeline violation: startAt must be before endAt",
+        data: null
+      });
+    }
+    if (status === 'PUBLISHED' && endAt > new Date()) {
+      return c.json({
+        code: 400,
+        message: "Cannot publish contest before end date",
+        data: null
+      });
+    }
+  }
     return c.json(
       {
         code: 400,
@@ -427,6 +444,13 @@ contests.put(
       }
 
       const current = existing.rows[0];
+      if (['PUBLISHED', 'ARCHIVED'].includes(current.status)) {
+        return c.json({
+          code: 403,
+          message: "Contest is read-only after publication",
+          data: null
+        });
+      }
 
       // BR-16: Tính bất biến của kết quả - Khi cuộc thi ở trạng thái PUBLISHED hoặc ARCHIVED, cấm chỉnh sửa dữ liệu
       const immutableStatuses = ["published", "archived", "completed"];
@@ -530,6 +554,8 @@ contests.delete(
       const result = await pool.query(
         `UPDATE contests
          SET is_deleted = TRUE,
+             deleted_at = NOW(),
+             status = 'ARCHIVED',
              updated_at = NOW()
          WHERE id = $1 AND is_deleted = FALSE
          RETURNING id`,

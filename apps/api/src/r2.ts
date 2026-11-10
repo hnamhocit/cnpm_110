@@ -1,5 +1,10 @@
 
-import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  DeleteObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Upload } from "@aws-sdk/lib-storage";
 import { Readable } from "node:stream";
 
@@ -78,6 +83,38 @@ export async function deleteFromR2(key: string) {
         Key: key,
       }),
     );
+  } finally {
+    client.destroy();
+  }
+}
+
+export async function getR2SignedReadUrl(
+  key: string,
+  expiresInSeconds = 300,
+): Promise<string> {
+  if (!key || !key.startsWith("submissions/")) {
+    throw new Error("Invalid submission image key");
+  }
+
+  if (
+    !Number.isInteger(expiresInSeconds) ||
+    expiresInSeconds < 1 ||
+    expiresInSeconds > 3600
+  ) {
+    throw new Error("Invalid URL expiration");
+  }
+
+  const { client, bucketName } = getR2Config();
+
+  try {
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    });
+
+    return await getSignedUrl(client, command, {
+      expiresIn: expiresInSeconds,
+    });
   } finally {
     client.destroy();
   }

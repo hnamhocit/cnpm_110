@@ -7,10 +7,6 @@ export const tokenStorage = {
     return useAuthStore.getState().accessToken;
   },
 
-  getRefreshToken(): string | null {
-    return useAuthStore.getState().refreshToken;
-  },
-
   setTokens(tokens: TokenPair): void {
     useAuthStore.getState().setTokens(tokens);
   },
