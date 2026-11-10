@@ -243,9 +243,9 @@ class _SubmissionUploadScreenState
       _negativeProof = null;
       _scanImageError = null;
       _negativeProofError = null;
-      _scanCompressionInfo = null;\
-      _proofCompressionInfo = null;\
-      _shootingParams = widget.initialShootingParams;\
+      _scanCompressionInfo = null;
+      _proofCompressionInfo = null;
+      _shootingParams = widget.initialShootingParams;
       _devScanParams = widget.initialDevScanParams;
     });
   }
@@ -422,7 +422,7 @@ class _SubmissionUploadScreenState
             ),
           ),
           actions: [
-            FilledButton(
+            OutlinedButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 if (context.canPop()) {
@@ -431,7 +431,14 @@ class _SubmissionUploadScreenState
                   context.go('/');
                 }
               },
-              child: const Text('Hoàn tất & Về trang chủ'),
+              child: const Text('Về trang chủ'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                context.push('/my-submissions');
+              },
+              child: const Text('Xem bài thi của tôi'),
             ),
           ],
         );
