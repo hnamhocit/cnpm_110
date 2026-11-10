@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/providers/contest_detail_provider.dart';
 import '../../core/utils/date_format.dart';
@@ -39,6 +40,11 @@ class _ContestDetailBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final canRegister = contest.status == ContestStatus.published ||
         contest.status == ContestStatus.ongoing;
+    final isDeadlinePassed =
+        contest.endAt != null && DateTime.now().isAfter(contest.endAt!);
+    final canSubmit = (contest.status == ContestStatus.open ||
+            contest.status == ContestStatus.ongoing) &&
+        !isDeadlinePassed;
 
     return Column(
       children: [
@@ -88,22 +94,48 @@ class _ContestDetailBody extends StatelessWidget {
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: canRegister
-                    ? () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Chức năng đăng ký sẽ được hoàn thiện ở FPC-42',
-                            ),
-                          ),
-                        );
-                      }
-                    : null,
-                child: const Text('Đăng ký tham gia'),
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (contest.status == ContestStatus.open ||
+                    contest.status == ContestStatus.ongoing) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonalIcon(
+                      onPressed: canSubmit
+                          ? () {
+                              context.push(
+                                '/contests/${contest.id}/submit',
+                                extra: <String, dynamic>{
+                                  'contestTitle': contest.name,
+                                },
+                              );
+                            }
+                          : null,
+                      icon: const Icon(Icons.cloud_upload_outlined),
+                      label: const Text('Nộp bài dự thi'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: canRegister
+                        ? () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Chức năng đăng ký sẽ được hoàn thiện ở FPC-42',
+                                ),
+                              ),
+                            );
+                          }
+                        : null,
+                    child: const Text('Đăng ký tham gia'),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

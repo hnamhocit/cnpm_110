@@ -4,7 +4,7 @@
 > **Status**: READY FOR CODE GENERATION  
 > **Version**: 1.0.0  
 > **Target Audience**: AI Coding Assistants (Cursor, Copilot), Backend Engineers, Mobile (Flutter) & Web (Next.js) Engineers  
-> **Standard**: AI-First Spec (Explicit schemas, deterministic business logic, exhaustive error codes, Zero visual ambiguity, 100% structured Markdown & Mermaid)
+> **Standard**: AI-First Spec (Explicit schemas, deterministic business logic, exhaustive error codes, Zero visual ambiguity, 100% structured Markdown)
 
 ---
 
@@ -13,63 +13,6 @@
 Hệ thống lưu trữ trên **PostgreSQL 16+**. Khóa chính (PK) định dạng `UUID` sinh bằng `gen_random_uuid()`. Toàn bộ tên bảng và cột theo chuẩn `snake_case`. Mọi trường mốc thời gian lưu trữ theo `TIMESTAMPTZ` (UTC).
 
 ### 1.1 Sơ đồ Thực thể Quan hệ (Entity Relationship Diagram)
-
-```mermaid
-erDiagram
-    users ||--o{ film_rolls : "owns"
-    film_stocks ||--o{ film_rolls : "categorizes"
-    cameras ||--o{ film_rolls : "mounted_on"
-    film_labs ||--o{ film_rolls : "developed_at"
-    film_rolls ||--|{ frame_logs : "contains"
-    lenses ||--o{ frame_logs : "shot_with"
-    film_rolls ||--o{ submissions : "referenced_by"
-
-    film_rolls {
-        uuid id PK
-        varchar roll_code UK "ROLL-YYYY-XXXX"
-        uuid user_id FK
-        uuid film_stock_id FK "Nullable"
-        varchar custom_film_name "Nullable"
-        varchar format "135|120_645|120_66|120_67|4x5"
-        int iso_rated "Nominal ISO"
-        int iso_shot "Exposure ISO"
-        uuid camera_id FK "Nullable"
-        varchar custom_camera_name "Nullable"
-        uuid lab_id FK "Nullable"
-        varchar custom_lab_name "Nullable"
-        varchar dev_process "C-41|B&W|E-6|ECN-2|STAND_DEV"
-        date load_date
-        date dev_date
-        varchar status "SHOOTING|DEVELOPED|SCANNED|ARCHIVED"
-        uuid negative_proof_asset_id FK "Nullable"
-        text notes
-        boolean is_deleted
-        timestamptz created_at
-        timestamptz updated_at
-    }
-
-    frame_logs {
-        uuid id PK
-        uuid roll_id FK
-        int frame_number "1..MaxPhysical"
-        uuid lens_id FK "Nullable"
-        varchar custom_lens_name "Nullable"
-        int focal_length_mm
-        varchar aperture "f/1.4..f/22"
-        varchar shutter_speed "1/1000s..30s"
-        varchar exposure_compensation "+1 EV..-1 EV"
-        varchar filter_used
-        varchar location_name
-        numeric latitude
-        numeric longitude
-        timestamptz shot_at
-        uuid scanned_image_asset_id FK "Nullable"
-        text notes
-        boolean is_deleted
-        timestamptz created_at
-        timestamptz updated_at
-    }
-```
 
 ---
 
@@ -81,21 +24,21 @@ Lưu trữ thông tin tổng quát của từng cuộn phim vật lý do nhiếp
 | :--- | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | `PK`, Not Null | `gen_random_uuid()` | Khóa chính định danh cuộn phim |
 | `roll_code` | `VARCHAR(50)` | `UQ`, Not Null | *None* | Mã cuộn phim tự sinh: `ROLL-YYYY-XXXX` (CR-05) |
-| `user_id` | `UUID` | `FK`, Not Null | *None* | Tham chiếu `users(id)` (Chủ sở hữu cuộn phim) |
+| `user_id` | `UUID` | `FK`, Not Null | *None* | Tham chiếu `users(id)` ON DELETE RESTRICT (Chủ sở hữu cuộn phim) |
 | `film_stock_id` | `UUID` | `FK`, Nullable | `NULL` | Tham chiếu `film_stocks(id)` từ Master Data |
 | `custom_film_name` | `VARCHAR(150)` | Nullable | `NULL` | Tên phim nhập tay nếu dùng phim ngoại bảng |
 | `format` | `VARCHAR(30)` | Not Null | `'135'` | ENUM: `135`, `120_645`, `120_66`, `120_67`, `4x5` |
 | `iso_rated` | `INT` | Not Null, Check | *None* | ISO danh định của cuộn phim (Check $> 0$) |
 | `iso_shot` | `INT` | Not Null, Check | *None* | ISO thực tế khi chụp (Hỗ trợ tính Push/Pull) |
 | `camera_id` | `UUID` | `FK`, Nullable | `NULL` | Tham chiếu `cameras(id)` từ Master Data |
-| `custom_camera_name`| `VARCHAR(150)` | Nullable | `NULL` | Tên thân máy nhập tay |
+| `custom_camera_name` | `VARCHAR(150)` | Nullable | `NULL` | Tên thân máy nhập tay |
 | `lab_id` | `UUID` | `FK`, Nullable | `NULL` | Tham chiếu `film_labs(id)` (Phòng Lab tráng) |
 | `custom_lab_name` | `VARCHAR(150)` | Nullable | `NULL` | Tên Lab tự nhập hoặc "Tự tráng tại nhà" |
 | `dev_process` | `VARCHAR(30)` | Not Null | `'C-41'` | ENUM: `C-41`, `B&W`, `E-6`, `ECN-2`, `STAND_DEV` |
 | `load_date` | `DATE` | Not Null | *None* | Ngày lắp cuộn phim vào máy ảnh |
 | `dev_date` | `DATE` | Nullable | `NULL` | Ngày mang tráng tại Lab |
 | `status` | `VARCHAR(30)` | Not Null | `'SHOOTING'` | ENUM: `SHOOTING`, `DEVELOPED`, `SCANNED`, `ARCHIVED` |
-| `negative_proof_asset_id` | `UUID` | Nullable | `NULL` | Khóa ngoại tham chiếu file ảnh chụp dải âm bản |
+| `negative_proof_asset_id` | `UUID` | `FK`, Nullable | `NULL` | FK tham chiếu `digital_assets(id)` - file ảnh chụp dải âm bản của cuộn phim |
 | `notes` | `TEXT` | Nullable | `NULL` | Ghi chú cá nhân về cuộn phim |
 | `is_deleted` | `BOOLEAN` | Not Null | `FALSE` | Cờ xóa mềm theo BR-03 |
 | `created_at` | `TIMESTAMPTZ` | Not Null | `NOW()` | Thời điểm tạo bản ghi |
@@ -115,7 +58,7 @@ Ghi chép siêu dữ liệu vật lý và phơi sáng thủ công cho từng khu
 | Tên trường (Column) | Kiểu dữ liệu | Ràng buộc | Mặc định | Mô tả & Ý nghĩa nghiệp vụ |
 | :--- | :--- | :--- | :--- | :--- |
 | `id` | `UUID` | `PK`, Not Null | `gen_random_uuid()` | Khóa chính khung hình |
-| `roll_id` | `UUID` | `FK`, Not Null | *None* | Tham chiếu `film_rolls(id)` ON DELETE CASCADE |
+| `roll_id` | `UUID` | `FK`, Not Null | *None* | Tham chiếu `film_rolls(id)` ON DELETE RESTRICT |
 | `frame_number` | `INT` | Not Null, Check | *None* | Số thứ tự khung hình (Check $> 0$) |
 | `lens_id` | `UUID` | `FK`, Nullable | `NULL` | Tham chiếu `lenses(id)` từ Master Data |
 | `custom_lens_name` | `VARCHAR(150)` | Nullable | `NULL` | Tên ống kính nhập tay (VD: "Zuiko 50mm f/1.4") |
@@ -137,6 +80,15 @@ Ghi chép siêu dữ liệu vật lý và phơi sáng thủ công cho từng khu
 > **Chỉ mục & Ràng buộc Duy nhất:**
 > - `CREATE UNIQUE INDEX uq_roll_frame_number ON frame_logs(roll_id, frame_number) WHERE is_deleted = FALSE;`
 > - `CREATE INDEX idx_frame_logs_roll_id ON frame_logs(roll_id);`
+>
+> **Ràng buộc Khóa ngoại & Truy vấn Đếm:**
+> - `frame_logs.roll_id` → `film_rolls(id)` **ON DELETE RESTRICT** (không cho xóa cứng cuộn phim còn nhật ký khung hình).
+> - `film_rolls.user_id` → `users(id)` **ON DELETE RESTRICT** (không cho xóa cứng người dùng còn sở hữu cuộn phim).
+> - Mọi truy vấn đếm (`loggedFramesCount`, tiến độ cuộn phim) **bắt buộc** lọc bản ghi đã xóa mềm:
+>   ```sql
+>   SELECT COUNT(*) FROM frame_logs
+>   WHERE roll_id = $1 AND is_deleted = FALSE;
+>   ```
 
 ---
 
@@ -146,18 +98,17 @@ Ghi chép siêu dữ liệu vật lý và phơi sáng thủ công cho từng khu
 
 | Mã BR | Tên Quy tắc | Diễn giải Ràng buộc Kỹ thuật | Xử lý Vi phạm |
 | :--- | :--- | :--- | :--- |
-| **BR-01** | Quyền Sở hữu Bản ghi | Chỉ tài khoản sở hữu cuộn phim (`user_id = current_user_id`) mới có quyền Xem, Sửa, Thêm Frame, Xóa hoặc trích xuất cuộn phim nộp bài. | HTTP 403 Forbidden (`MSG005`) |
+| **BR-02** | Quyền Sở hữu Bản ghi | Chỉ tài khoản sở hữu cuộn phim (`user_id = current_user_id`) mới có quyền Xem, Sửa, Thêm Frame, Xóa hoặc trích xuất cuộn phim nộp bài. | HTTP 403 Forbidden (`MSG005`) |
 | **BR-03** | Xóa mềm Dữ liệu | Khi người dùng xóa cuộn phim hoặc frame, cập nhật `is_deleted = TRUE`. Nếu cuộn phim hoặc frame đã được liên kết với một bài thi trong cuộc thi (`submissions`), hệ thống từ chối xóa để đảm bảo toàn vẹn dữ liệu cuộc thi. | HTTP 400 Bad Request |
-| **BR-04** | Giới hạn Vật lý của Khung hình | Số thứ tự khung hình `frame_number` không được vượt quá số lượng khung tối đa của khổ phim vật lý: Khổ `135` (tối đa 39), `120_645` (tối đa 16), `120_66` (tối đa 12), `120_67` (tối đa 10), `4x5` (tối đa 1). | HTTP 422 Unprocessable (`MSG010`) |
+| **BR-23** | Giới hạn Vật lý của Khung hình | Số thứ tự khung hình `frame_number` không được vượt quá số lượng khung tối đa của khổ phim vật lý: Khổ `135` (tối đa 39), `120_645` (tối đa 16), `120_66` (tối đa 12), `120_67` (tối đa 10), `4x5` (tối đa 1). | HTTP 422 Unprocessable (`MSG010`) |
 | **BR-05** | Chống Nộp Trùng Frame | Một cặp (`roll_id`, `frame_number`) chỉ được phép nộp tối đa 1 lần trong cùng 1 cuộc thi. Logbook cung cấp cờ kiểm tra nhanh để đánh dấu frame nào đã dự thi. | HTTP 400 Bad Request (`MSG012`) |
-| **BR-22** | Khai báo Tối thiểu 5 Thông số | Khi cuộn phim hoặc frame được trích xuất nộp bài thi, bắt buộc phải có đầy đủ: Film Stock, Khổ phim (Format), Máy ảnh (Camera), Số Frame, và Phòng Lab/Quy trình tráng. | Validate tại Form Nộp bài |
-| **BR-23** | Tính toán Push/Pull ISO | Hệ thống tự động so khớp `iso_shot` và `iso_rated` để ghi nhận giá trị bù trừ tráng: $\Delta EV = \log_2\left(\frac{iso\_shot}{iso\_rated}\right)$. Nếu $\Delta EV \ne 0$, tự động gắn nhãn Push hoặc Pull. | Tự động sinh nhãn hiển thị |
+| **BR-22** | Khai báo Tối thiểu 5 Thông số & Quy đổi Push/Pull ISO | Khi cuộn phim hoặc frame được trích xuất nộp bài thi, bắt buộc phải có đầy đủ: Film Stock, Khổ phim (Format), Máy ảnh (Camera), Số Frame, và Phòng Lab/Quy trình tráng. Hệ thống tự động so khớp `iso_shot` và `iso_rated` để ghi nhận giá trị bù trừ tráng: $\Delta EV = \log_2\left(\frac{iso\_shot}{iso\_rated}\right)$; nếu $\Delta EV \ne 0$, tự động gắn nhãn Push hoặc Pull. | Validate tại Form Nộp bài + Tự động sinh nhãn hiển thị |
 
 ### 2.2 Bảng Tra cứu Giới hạn Khung hình Vật lý (Physical Frame Limit Matrix)
 
 | Mã Khổ phim (`format`) | Quy cách Vật lý | Số Frame Tiêu chuẩn | Giới hạn Frame Tối đa Cho phép | Mã Lỗi Vi phạm |
 | :--- | :--- | :---: | :---: | :--- |
-| `135` | 35mm Standard Film | 36 frames | **39** frames | `MSG010`: Vượt quá giới hạn 39 frames cho phim 135. |
+| `135` | 35mm Standard Film | 36–39 frames | **39** frames | `MSG010`: Vượt quá giới hạn 39 frames cho phim 135. |
 | `120_645` | Medium Format 6x4.5 cm | 15 / 16 frames | **16** frames | `MSG010`: Vượt quá giới hạn 16 frames cho khổ 6x4.5. |
 | `120_66` | Medium Format 6x6 cm | 12 frames | **12** frames | `MSG010`: Vượt quá giới hạn 12 frames cho khổ 6x6. |
 | `120_67` | Medium Format 6x7 cm | 10 frames | **10** frames | `MSG010`: Vượt quá giới hạn 10 frames cho khổ 6x7. |
@@ -168,15 +119,6 @@ Ghi chép siêu dữ liệu vật lý và phơi sáng thủ công cho từng khu
 ## 3. State Machine & Lifecycle (Vòng đời Cuộn phim)
 
 Cuộn phim cá nhân được quản lý qua 4 trạng thái tuyến tính:
-
-```mermaid
-stateDiagram-v2
-    [*] --> SHOOTING : Lắp phim vào máy ảnh (load_date)
-    SHOOTING --> DEVELOPED : Chụp xong, gửi Lab tráng (dev_date)
-    DEVELOPED --> SCANNED : Nhận file ảnh scan kỹ thuật số
-    SCANNED --> ARCHIVED : Hoàn tất lưu trữ / Tác phẩm đã thi xong
-    ARCHIVED --> [*]
-```
 
 ### Bảng Chuyển đổi Trạng thái
 
@@ -202,8 +144,8 @@ stateDiagram-v2
 *   **Response Payload (200 OK):**
     ```json
     {
-      "success": true,
-      "code": "SUCCESS",
+      "code": 200,
+      "message": "Lấy danh sách cuộn phim thành công.",
       "data": {
         "items": [
           {
@@ -224,17 +166,14 @@ stateDiagram-v2
             },
             "status": "SHOOTING",
             "loggedFramesCount": 14,
-            "maxFrames": 36,
+            "maxFrames": 39,
             "loadDate": "2026-10-25",
             "createdAt": "2026-10-25T08:30:00Z"
           }
         ],
-        "meta": {
-          "totalItems": 1,
-          "currentPage": 1,
-          "totalPages": 1,
-          "pageSize": 10
-        }
+        "totalItems": 1,
+        "currentPage": 1,
+        "pageSize": 10
       }
     }
     ```
@@ -278,8 +217,7 @@ stateDiagram-v2
 *   **Response Payload (201 Created):**
     ```json
     {
-      "success": true,
-      "code": "MSG009",
+      "code": 201,
       "message": "Đã lưu thông tin cuộn phim \"ROLL-2026-0043\" vào sổ tay cá nhân.",
       "data": {
         "id": "e5555555-6666-7777-8888-999999999999",
@@ -311,19 +249,19 @@ stateDiagram-v2
       "notes": "Ánh sáng ngược ban mai rọi qua hàng thông."
     }
     ```
-*   **Response Payload Vi phạm Giới hạn Khung hình (422 Unprocessable Entity - BR-04):**
+*   **Response Payload Vi phạm Giới hạn Khung hình (422 Unprocessable Entity - BR-23):**
     ```json
     {
-      "success": false,
-      "code": "MSG010",
-      "message": "Số thứ tự khung hình (40) vượt quá giới hạn vật lý của khổ phim 135 (Tối đa 39 frames)."
+      "code": 422,
+      "message": "Số thứ tự khung hình (40) vượt quá giới hạn vật lý của khổ phim 135 (Tối đa 39 frames).",
+      "data": null
     }
     ```
 *   **Response Payload Thành công (201 Created):**
     ```json
     {
-      "success": true,
-      "code": "SUCCESS",
+      "code": 201,
+      "message": "Ghi nhật ký khung hình thành công.",
       "data": {
         "id": "a8888888-9999-0000-1111-222222222222",
         "frameNumber": 15,
@@ -335,21 +273,116 @@ stateDiagram-v2
 
 ---
 
+### 4.4 Xem Chi tiết Cuộn phim (`GET /api/v1/film-rolls/{id}`)
+*   **Method**: `GET`
+*   **Path**: `/api/v1/film-rolls/{id}`
+*   **Auth**: Bearer JWT (Role `PARTICIPANT`)
+*   **Path Parameters**:
+    *   `id`: UUID của cuộn phim.
+*   **Response Payload (200 OK):**
+    ```json
+    {
+      "code": 200,
+      "message": "Lấy chi tiết cuộn phim thành công.",
+      "data": {
+        "id": "b182f7c0-1234-4567-89ab-cdef01234567",
+        "rollCode": "ROLL-2026-0042",
+        "filmStock": {
+          "id": "a1111111-2222-3333-4444-555555555555",
+          "name": "Kodak Portra 400",
+          "brand": "Kodak"
+        },
+        "format": "135",
+        "isoRated": 400,
+        "isoShot": 800,
+        "pushPullEv": "+1 EV (Push 1 stop)",
+        "camera": {
+          "id": "c2222222-3333-4444-5555-666666666666",
+          "name": "Leica M6"
+        },
+        "lab": {
+          "id": "d3333333-4444-5555-6666-777777777777",
+          "name": "LLab Hanoi"
+        },
+        "devProcess": "C-41",
+        "loadDate": "2026-10-25",
+        "devDate": "2026-11-01",
+        "status": "SHOOTING",
+        "negativeProofAssetId": null,
+        "notes": "Cuộn phim chụp chuyến đi Đà Lạt mùa thu.",
+        "loggedFramesCount": 14,
+        "maxFrames": 39,
+        "createdAt": "2026-10-25T08:30:00Z",
+        "updatedAt": "2026-10-30T10:15:30Z"
+      }
+    }
+    ```
+*   **Lỗi Thường gặp:**
+    *   `403 Forbidden` (`MSG005`): Không phải chủ sở hữu cuộn phim (BR-02).
+    *   `404 Not Found`: Không tồn tại hoặc đã bị xóa mềm (`is_deleted = TRUE`).
+*   **Ghi chú:** `loggedFramesCount` chỉ đếm các frame có `is_deleted = FALSE`.
+
+---
+
+### 4.5 Cập nhật Cuộn phim (`PATCH /api/v1/film-rolls/{id}`)
+*   **Method**: `PATCH`
+*   **Path**: `/api/v1/film-rolls/{id}`
+*   **Auth**: Bearer JWT (Role `PARTICIPANT`)
+*   **Request Payload (Partial Update):**
+    ```json
+    {
+      "isoShot": 800,
+      "devDate": "2026-11-01",
+      "status": "DEVELOPED",
+      "notes": "Đã tráng tại LLab Hanoi, màu lên chuẩn."
+    }
+    ```
+*   **Validation Rules:**
+    *   Chỉ chủ sở hữu (`user_id = current_user_id`) mới được cập nhật (BR-02).
+    *   `status` chỉ được chuyển theo đúng State Machine ở mục 3.
+    *   Không cho phép sửa cuộn phim đã liên kết với bài thi đã công bố (BR-16).
+*   **Response Payload (200 OK):**
+    ```json
+    {
+      "code": 200,
+      "message": "Cập nhật cuộn phim thành công.",
+      "data": {
+        "id": "b182f7c0-1234-4567-89ab-cdef01234567",
+        "rollCode": "ROLL-2026-0042",
+        "status": "DEVELOPED",
+        "updatedAt": "2026-11-01T09:00:00Z"
+      }
+    }
+    ```
+*   **Lỗi Thường gặp:** `403 Forbidden` (`MSG005`), `404 Not Found`, `422 Unprocessable` khi chuyển trạng thái không hợp lệ.
+
+---
+
+### 4.6 Xóa mềm Cuộn phim (`DELETE /api/v1/film-rolls/{id}`)
+*   **Method**: `DELETE`
+*   **Path**: `/api/v1/film-rolls/{id}`
+*   **Auth**: Bearer JWT (Role `PARTICIPANT`)
+*   **Nghiệp vụ:** Thực hiện xóa mềm theo **BR-03**: cập nhật `is_deleted = TRUE`, `updated_at = NOW()`. Tuyệt đối không chạy lệnh `DELETE` vật lý.
+*   **Điều kiện Từ chối:** Nếu cuộn phim (hoặc frame thuộc cuộn) đã được liên kết với bài thi trong cuộc thi (`submissions`), trả `400 Bad Request` để bảo toàn dữ liệu cuộc thi.
+*   **Response Payload (200 OK):**
+    ```json
+    {
+      "code": 200,
+      "message": "Đã xóa cuộn phim khỏi sổ tay cá nhân.",
+      "data": {
+        "id": "b182f7c0-1234-4567-89ab-cdef01234567",
+        "isDeleted": true,
+        "deletedAt": "2026-11-02T07:20:00Z"
+      }
+    }
+    ```
+*   **Lỗi Thường gặp:** `400 Bad Request` khi cuộn phim đã gắn với bài thi; `403 Forbidden` (`MSG005`); `404 Not Found`.
+
+---
+
 ## 5. UI/UX Functional Requirements (Đặc tả Giao diện Dạng Chữ)
 
 ### 5.1 Kiến trúc Giao diện Sổ tay Cuộn phim (Film Logbook Navigation)
-
-```mermaid
-flowchart TD
-    Dashboard["Participant Dashboard"] --> MyRolls["Màn hình My Film Rolls"]
-    MyRolls --> CreateRoll["Biểu mẫu Khởi tạo Cuộn phim Mới"]
-    MyRolls --> RollDetail["Màn hình Roll Frame Details"]
-    RollDetail --> LogFrame["Drawer: Ghi nhận Khung hình (Frame Log)"]
-    LogFrame --> CheckLimit{Kiểm tra Frame Limit BR-04?}
-    CheckLimit -- Vượt giới hạn --> ErrMsg10["Viền đỏ ô Frame No + Lỗi MSG010"]
-    CheckLimit -- Hợp lệ --> SaveFrame["Cập nhật Tiến độ 15/36"]
-    RollDetail --> UploadProof["Drawer: Tải Bằng chứng Dải Âm bản"]
-```
 
 ### 5.2 Đặc tả Màn hình Chi tiết (Screen Specifications)
 
@@ -359,7 +392,7 @@ flowchart TD
     *   Huy hiệu Mã cuộn: `ROLL-2026-0042` (Chữ nổi bật).
     *   Tên phim & ISO: "Kodak Portra 400" kèm nhãn Push/Pull nếu có: `Shot @ 800 (+1 EV)`.
     *   Khổ phim: Tag màu sắc (VD: `35mm`, `120`, `4x5`).
-    *   Thanh Tiến độ Khung hình (Progress Bar): Hiển thị tỷ lệ `14/36 frames`, thanh tiến trình chạy theo tỷ lệ phần trăm đã chụp.
+    *   Thanh Tiến độ Khung hình (Progress Bar): Hiển thị tỷ lệ `14/39 frames`, thanh tiến trình chạy theo tỷ lệ phần trăm đã chụp.
     *   Huy hiệu Trạng thái Vòng đời: `SHOOTING` (Xanh lục), `DEVELOPED` (Cam), `SCANNED` (Lam).
     *   Nút CTA góc dưới: `+ Ghi Frame` và `Xem chi tiết`.
 
@@ -368,14 +401,14 @@ flowchart TD
     *   Tóm tắt thiết bị: Máy ảnh Leica M6, Ống kính mặc định, Ngày lắp phim: 25/10/2026.
     *   Nút bấm: `+ Thêm Khung hình mới` và `Đính kèm Contact Sheet / Dải âm bản`.
 *   **Dải Cuộn phim Mô phỏng Văn bản (Visual Film Strip in Text):**
-    *   Liệt kê các Frame theo thứ tự tăng dần từ Frame 01 đến 36.
+    *   Liệt kê các Frame theo thứ tự tăng dần từ Frame 01 đến 39.
     *   Mỗi ô đại diện cho 1 Frame: Hiển thị số thứ tự `#12`, Thông số phơi sáng (`50mm • f/2.8 • 1/250s`), Ảnh thumbnail scan thu nhỏ (nếu đã tải lên).
     *   Khung hình đã nộp vào cuộc thi có thêm huy hiệu: `Đã nộp: CON-2026-01` (ngăn nộp trùng theo BR-05).
 
 #### 3. Biểu mẫu Ghi nhận Khung hình (Log Frame Drawer / Modal)
 *   **Ô nhập Số thứ tự Khung hình (Frame Number):**
     *   Tự động gợi ý số tiếp theo (VD: Nếu cuộn đang có 14 frame, tự động điền `15`).
-    *   **Kiểm tra Ràng buộc Vật lý Tức thời (Real-time Validation BR-04):** Khi người dùng nhập số `40` cho cuộn 135, viền ô nhập ngay lập tức chuyển màu đỏ rực, hiển thị thông báo lỗi `MSG010`: "Số thứ tự khung hình (40) vượt quá giới hạn vật lý của khổ phim 135 (Tối đa 39)." Nút "Lưu Khung hình" bị khóa hoàn toàn (disabled).
+    *   **Kiểm tra Ràng buộc Vật lý Tức thời (Real-time Validation BR-23):** Khi người dùng nhập số `40` cho cuộn 135, viền ô nhập ngay lập tức chuyển màu đỏ rực, hiển thị thông báo lỗi `MSG010`: "Số thứ tự khung hình (40) vượt quá giới hạn vật lý của khổ phim 135 (Tối đa 39)." Nút "Lưu Khung hình" bị khóa hoàn toàn (disabled).
 *   **Bộ chọn Thông số Phơi sáng (Exposure Wheel Pickers):**
     *   Khẩu độ: Bánh xe cuộn chọn nhanh các khẩu tiêu chuẩn: `f/1.2`, `f/1.4`, `f/2`, `f/2.8`, `f/4`, `f/5.6`, `f/8`, `f/11`, `f/16`, `f/22`.
     *   Tốc độ màn trập: Bánh xe cuộn: `B`, `1s`, `1/2s`, `1/4s`, `1/8s`, `1/15s`, `1/30s`, `1/60s`, `1/125s`, `1/250s`, `1/500s`, `1/1000s`.

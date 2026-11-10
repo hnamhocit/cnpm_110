@@ -45,7 +45,7 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
 
   // Selections
   String _selectedBrand = 'Kodak';
-  String _selectedFormat = '35mm';
+  String _selectedFormat = '135 (35mm)';
   bool _matchRatedIso = true;
   bool _isAdvancedExpanded = false;
 
@@ -61,7 +61,12 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
     'Khác',
   ];
 
+  /// BR-23: Danh sách khổ phim hỗ trợ quy chuẩn frame
   static const List<String> _filmFormats = [
+    '135 (35mm)',
+    '120 (6x4.5)',
+    '120 (6x6)',
+    '120 (6x7)',
     '35mm',
     '120',
     '4x5',
@@ -105,9 +110,15 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
       _filmBrandCustomController = TextEditingController(text: initialBrand);
     }
 
-    _selectedFormat = init?.filmFormat ?? '35mm';
-    if (!_filmFormats.contains(_selectedFormat)) {
-      _selectedFormat = '35mm';
+    final rawFormat = init?.filmFormat ?? '135 (35mm)';
+    if (rawFormat == '35mm' || rawFormat == '135') {
+      _selectedFormat = '135 (35mm)';
+    } else if (rawFormat == '120') {
+      _selectedFormat = '120 (6x6)';
+    } else if (_filmFormats.contains(rawFormat)) {
+      _selectedFormat = rawFormat;
+    } else {
+      _selectedFormat = '135 (35mm)';
     }
 
     final rated = init?.isoRated ?? 400;
@@ -134,6 +145,55 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
     super.dispose();
   }
 
+  /// BR-23: Trả về giới hạn số frame tối đa theo từng khổ phim
+  int? _getMaxFrameLimit(String format) {
+    final lower = format.toLowerCase();
+    if (lower.contains('135') || lower.contains('35mm')) {
+      return 39;
+    } else if (lower.contains('6x4.5')) {
+      return 16;
+    } else if (lower.contains('6x6')) {
+      return 12;
+    } else if (lower.contains('6x7')) {
+      return 10;
+    } else if (lower == '120') {
+      return 16;
+    }
+    return null;
+  }
+
+  /// BR-22 & BR-23: Validator dynamic cho Frame Number
+  String? _validateFrameNumber(String? value) {
+    final emptyError = Validators.notEmpty(value, field: 'Số frame');
+    if (emptyError != null) {
+      return emptyError;
+    }
+
+    final trimmed = value!.trim();
+    final parsed = int.tryParse(trimmed);
+    final maxLimit = _getMaxFrameLimit(_selectedFormat);
+
+    if (parsed == null || parsed <= 0) {
+      return 'Số frame phải là số nguyên dương';
+    }
+
+    if (maxLimit != null && parsed > maxLimit) {
+      return 'Khổ $_selectedFormat chỉ cho phép tối đa $maxLimit frame (1 - $maxLimit)';
+    }
+
+    return null;
+  }
+
+  /// BR-22: Validator cho Developing Lab / Process
+  String? _validateDevelopingLabOrProcess(String? value) {
+    final lab = _devLabNameController.text.trim();
+    final chemistry = _devChemistryController.text.trim();
+    if (lab.isEmpty && chemistry.isEmpty) {
+      return 'Developing Lab / Process không được để trống (BR-22)';
+    }
+    return Validators.maxLength(value, 150, field: 'Lab tráng');
+  }
+
   void _onRatedIsoChanged(String value) {
     if (_matchRatedIso) {
       _isoShotController.text = value;
@@ -150,6 +210,13 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
   }
 
   void _handleSubmit() {
+    // Nếu Section 4 chưa mở và Developing Lab / Process đang trống, mở rộng Section 4 để người dùng thấy lỗi
+    final lab = _devLabNameController.text.trim();
+    final chemistry = _devChemistryController.text.trim();
+    if (lab.isEmpty && chemistry.isEmpty && !_isAdvancedExpanded) {
+      setState(() => _isAdvancedExpanded = true);
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     final finalBrand = _selectedBrand == 'Khác'
@@ -209,7 +276,7 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
 
     setState(() {
       _selectedBrand = 'Kodak';
-      _selectedFormat = '35mm';
+      _selectedFormat = '135 (35mm)';
       _matchRatedIso = true;
       _isoRatedController.text = '400';
       _isoShotController.text = '400';
@@ -228,7 +295,7 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Section 1: Thiết bị chụp (Camera & Lens)
+          // Section 1: Thiết bị chụp (Camera & Lens) - BR-22: Camera Body bắt buộc
           _buildSectionHeader(
             icon: Icons.camera_alt_outlined,
             title: 'Thiết bị chụp (Camera & Lens)',
@@ -255,7 +322,7 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
 
           const SizedBox(height: 24),
 
-          // Section 2: Thông tin cuộn phim (Film stock, Brand, Format)
+          // Section 2: Thông tin cuộn phim (Film stock, Brand, Format) - BR-22: Film Stock & Film Format bắt buộc
           _buildSectionHeader(
             icon: Icons.movie_creation_outlined,
             title: 'Cuộn phim (Film Stock & Khổ phim)',
@@ -298,6 +365,10 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
                   onChanged: (val) {
                     if (val != null) {
                       setState(() => _selectedFormat = val);
+                      // Dynamic validate lại Frame Number khi đổi khổ phim theo BR-23
+                      if (_frameNumberController.text.trim().isNotEmpty) {
+                        _formKey.currentState?.validate();
+                      }
                     }
                   },
                 ),
@@ -331,7 +402,7 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
 
           const SizedBox(height: 24),
 
-          // Section 3: ISO & Frame
+          // Section 3: ISO & Frame - BR-22 & BR-23: Frame Number bắt buộc và theo hạn mức khổ phim
           _buildSectionHeader(
             icon: Icons.iso_outlined,
             title: 'Độ nhạy sáng (ISO) & Frame',
@@ -374,10 +445,10 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
                 child: CustomInputField(
                   controller: _frameNumberController,
                   labelText: 'Số Frame (Frame #)',
-                  hintText: 'Ví dụ: 12, 36A',
+                  hintText: 'Ví dụ: 12, 24, 36',
+                  keyboardType: TextInputType.number,
                   prefixIcon: const Icon(Icons.filter_frames_outlined),
-                  validator: (v) =>
-                      Validators.maxLength(v, 20, field: 'Số frame'),
+                  validator: _validateFrameNumber,
                 ),
               ),
             ],
@@ -425,7 +496,7 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
 
           const SizedBox(height: 16),
 
-          // Section 4: Thông tin mở rộng (Tráng scan, Lab, Roll ID)
+          // Section 4: Thông tin mở rộng (Tráng scan, Lab, Roll ID) - BR-22: Developing Lab / Process bắt buộc
           Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
@@ -446,7 +517,7 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               ),
               subtitle: Text(
-                'Lab tráng, quy trình tráng, máy scan, mã cuộn...',
+                'Lab tráng, quy trình tráng (Bắt buộc theo BR-22), máy scan, mã cuộn...',
                 style: TextStyle(
                   fontSize: 12,
                   color: colorScheme.onSurfaceVariant,
@@ -465,16 +536,15 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
                 const SizedBox(height: 12),
                 CustomInputField(
                   controller: _devLabNameController,
-                  labelText: 'Lab tráng phim',
+                  labelText: 'Lab tráng phim (Developing Lab) *',
                   hintText: 'Ví dụ: Llab, Croplab, Nadar...',
                   prefixIcon: const Icon(Icons.storefront_outlined),
-                  validator: (v) =>
-                      Validators.maxLength(v, 150, field: 'Lab tráng'),
+                  validator: _validateDevelopingLabOrProcess,
                 ),
                 const SizedBox(height: 12),
                 CustomInputField(
                   controller: _devChemistryController,
-                  labelText: 'Hóa chất / Quy trình tráng',
+                  labelText: 'Hóa chất / Quy trình tráng (Process)',
                   hintText: 'Ví dụ: C-41, D-76, ECN-2, Rodinal',
                   prefixIcon: const Icon(Icons.biotech_outlined),
                   validator: (v) => Validators.maxLength(
