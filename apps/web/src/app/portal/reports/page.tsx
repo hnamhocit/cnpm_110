@@ -7,6 +7,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+// TODO(Backend): Chờ API GET /api/v1/analytics/contest/:id để fetch thống kê thật.
+// Tất cả số liệu hiện tại (38%, 26%, 72%, 92.5%) là hardcoded HTML.
+// Cần implement useEffect để fetch data và render động khi backend sẵn sàng.
 export default function ReportsPage() {
   return (
     <div className="space-y-8">
