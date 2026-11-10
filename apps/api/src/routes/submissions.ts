@@ -7,6 +7,7 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { db } from "../db/index";
 import {
+  aiAnalysisJobs,
   categories,
   contests,
   filmMetadata,
@@ -575,6 +576,12 @@ route.post(
         await tx.insert(filmMetadata).values({
           submissionId: id,
           ...metadata,
+        });
+        await tx.insert(aiAnalysisJobs).values({
+          submissionId: id,
+          status: "PENDING",
+          attempts: 0,
+          maxAttempts: 3,
         });
       });
 

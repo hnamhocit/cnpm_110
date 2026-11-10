@@ -14,7 +14,6 @@ import '../../models/film_dev_scan_params.dart';
 import '../../models/film_shooting_params.dart';
 import '../../models/image_attachment.dart';
 import '../../models/submission_data.dart';
-import '../film_dev_scan/film_dev_scan_screen.dart';
 import '../film_params/film_params_screen.dart';
 import 'components/image_picker_card.dart';
 import 'components/image_preview_dialog.dart';
@@ -22,17 +21,21 @@ import 'components/image_preview_dialog.dart';
 class SubmissionUploadScreen extends ConsumerStatefulWidget {
   const SubmissionUploadScreen({
     super.key,
-    this.contestId,
+    required this.contestId,
+    required this.categoryId,
     this.contestTitle,
-    this.categoryId,
     this.initialShootingParams,
     this.initialDevScanParams,
     this.onSubmissionSuccess,
   });
 
-  final String? contestId;
+  /// Bắt buộc nhận từ arguments / route parameters (Bug 14)
+  final String contestId;
+
+  /// Bắt buộc nhận từ arguments / route parameters (Bug 14)
+  final String categoryId;
+
   final String? contestTitle;
-  final String? categoryId;
   final FilmShootingParams? initialShootingParams;
   final FilmDevScanParams? initialDevScanParams;
   final ValueChanged<SubmissionResult>? onSubmissionSuccess;
@@ -73,22 +76,9 @@ class _SubmissionUploadScreenState
     _titleController = TextEditingController();
     _descController = TextEditingController();
 
-    _shootingParams = widget.initialShootingParams ??
-        const FilmShootingParams(
-          cameraBody: 'Leica M6',
-          filmBrand: 'Kodak',
-          filmStock: 'Portra 400',
-          filmFormat: '35mm',
-          isoRated: 400,
-          isoShot: 400,
-        );
-
-    _devScanParams = widget.initialDevScanParams ??
-        const FilmDevScanParams(
-          labName: 'Llab',
-          scannerModel: 'Noritsu HS-1800',
-          scanResolution: 'Tiêu chuẩn (2000 x 3000 ~ 6MP)',
-        );
+    // Bug 14: Xóa toàn bộ giá trị fallback/mặc định cứng, đọc dữ liệu thực tế từ form nhập của user
+    _shootingParams = widget.initialShootingParams;
+    _devScanParams = widget.initialDevScanParams;
   }
 
   @override
@@ -253,8 +243,10 @@ class _SubmissionUploadScreenState
       _negativeProof = null;
       _scanImageError = null;
       _negativeProofError = null;
-      _scanCompressionInfo = null;
-      _proofCompressionInfo = null;
+      _scanCompressionInfo = null;\
+      _proofCompressionInfo = null;\
+      _shootingParams = widget.initialShootingParams;\
+      _devScanParams = widget.initialDevScanParams;
     });
   }
 
@@ -312,12 +304,27 @@ class _SubmissionUploadScreenState
 
     if (!formValid) return;
 
+    // Bug 14: Bắt buộc kiểm tra contestId và categoryId hợp lệ từ arguments truyền vào
+    final contestId = widget.contestId.trim();
+    final categoryId = widget.categoryId.trim();
+    if (contestId.isEmpty || categoryId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Lỗi: Thiếu thông tin cuộc thi (contestId) hoặc danh mục (categoryId).',
+          ),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
       final submissionData = SubmissionData(
-        contestId: widget.contestId ?? '00000000-0000-0000-0000-000000000001',
-        categoryId: widget.categoryId ?? '00000000-0000-0000-0000-000000000001',
+        contestId: contestId,
+        categoryId: categoryId,
         title: _titleController.text.trim(),
         description: _descController.text.trim().isNotEmpty
             ? _descController.text.trim()
@@ -604,7 +611,7 @@ class _SubmissionUploadScreenState
             ),
             const SizedBox(height: 24),
 
-            // Section 4: Shooting & Dev Scan Parameters
+            // Section 4: Shooting & Dev Scan Parameters (Bug 14: Đọc dữ liệu thực tế)
             Text(
               '4. Thông số kỹ thuật chụp & tráng scan',
               style: theme.textTheme.titleMedium?.copyWith(
@@ -662,16 +669,20 @@ class _SubmissionUploadScreenState
                       ),
                       trailing: const Icon(Icons.edit_outlined),
                       onTap: () async {
-                        await Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (context) => FilmDevScanScreen(
-                              initialParams: _devScanParams,
-                              onSaved: (params) {
+                        final result = await context.push<FilmDevScanParams>(
+                          '/film-dev-scan',
+                          extra: <String, dynamic>{
+                            'initialParams': _devScanParams,
+                            'onSaved': (FilmDevScanParams params) {
+                              if (mounted) {
                                 setState(() => _devScanParams = params);
-                              },
-                            ),
-                          ),
+                              }
+                            },
+                          },
                         );
+                        if (result != null && mounted) {
+                          setState(() => _devScanParams = result);
+                        }
                       },
                     ),
                   ],
