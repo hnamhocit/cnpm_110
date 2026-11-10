@@ -2,17 +2,28 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatContestDate } from "@/lib/contest-utils";
 import { http } from "@/lib/http";
 
+// API hiện trả snake_case; DTO hợp đồng dùng camelCase.
 type Contest = {
   id: string;
-  title: string;
-  status: "DRAFT" | "ACTIVE" | "JUDGING" | "COMPLETED";
-  startDate: string;
-  endDate: string;
-  participantsCount?: number;
+  name?: string | null;
+  status?: string | null;
+  startAt?: string | null;
+  endAt?: string | null;
+  start_at?: string | null;
+  end_at?: string | null;
+};
+
+const STATUS_STYLES: Record<string, string> = {
+  published: "bg-green-100 text-green-700",
+  ongoing: "bg-green-100 text-green-700",
+  completed: "bg-gray-100 text-gray-700",
+  cancelled: "bg-red-100 text-red-700",
 };
 
 export default function OrganizerContestsPage() {
@@ -25,10 +36,11 @@ export default function OrganizerContestsPage() {
       try {
         setLoading(true);
         const res = await http.get("/api/v1/contests");
-        setContests(res.data.data || res.data); // Tùy thuộc BE bọc data hay không
-      } catch (err: any) {
+        setContests(res.data.data || res.data);
+      } catch (err: unknown) {
+        const apiErr = err as { response?: { data?: { message?: string } } };
         setError(
-          err.response?.data?.message || "Không thể tải danh sách cuộc thi",
+          apiErr.response?.data?.message || "Không thể tải danh sách cuộc thi",
         );
       } finally {
         setLoading(false);
@@ -37,14 +49,6 @@ export default function OrganizerContestsPage() {
 
     fetchContests();
   }, []);
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
 
   if (loading)
     return (
@@ -81,59 +85,57 @@ export default function OrganizerContestsPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {contests.map((contest) => (
-            <Card
-              key={contest.id}
-              className="hover:shadow-md transition-shadow"
-            >
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">{contest.title}</CardTitle>
-                  {/* Badge trạng thái */}
-                  <span
-                    className={`px-2 py-1 text-xs rounded-full font-medium ${
-                      contest.status === "ACTIVE"
-                        ? "bg-green-100 text-green-700"
-                        : contest.status === "JUDGING"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : contest.status === "COMPLETED"
-                            ? "bg-gray-100 text-gray-700"
-                            : "bg-blue-100 text-blue-700"
-                    }`}
-                  >
-                    {contest.status}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <p>
-                    📅 Thời gian: {formatDate(contest.startDate)} -{" "}
-                    {formatDate(contest.endDate)}
-                  </p>
-                  <p>👥 Người tham gia: {contest.participantsCount || 0}</p>
-                </div>
-                <div className="mt-4 flex gap-2">
-                  <Link
-                    href={`/portal/contests/${contest.id}`}
-                    className="flex-1"
-                  >
-                    <Button variant="outline" className="w-full text-xs">
-                      Xem chi tiết
-                    </Button>
-                  </Link>
-                  <Link
-                    href={`/portal/contests/${contest.id}/edit`}
-                    className="flex-1"
-                  >
-                    <Button variant="outline" className="w-full text-xs">
-                      Chỉnh sửa
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {contests.map((contest) => {
+            const status = (contest.status ?? "").toLowerCase() || "n/a";
+
+            return (
+              <Card
+                key={contest.id}
+                className="hover:shadow-md transition-shadow"
+              >
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg">
+                      {contest.name || "N/A"}
+                    </CardTitle>
+                    {/* Badge trạng thái */}
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full font-medium ${STATUS_STYLES[status] ?? "bg-blue-100 text-blue-700"}`}
+                    >
+                      {status.toUpperCase()}
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <p>
+                      📅 Thời gian:{" "}
+                      {formatContestDate(contest.startAt ?? contest.start_at)} -{" "}
+                      {formatContestDate(contest.endAt ?? contest.end_at)}
+                    </p>
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <Link
+                      href={`/portal/contests/${contest.id}`}
+                      className="flex-1"
+                    >
+                      <Button variant="outline" className="w-full text-xs">
+                        Xem chi tiết
+                      </Button>
+                    </Link>
+                    <Link
+                      href={`/portal/contests/${contest.id}/edit`}
+                      className="flex-1"
+                    >
+                      <Button variant="outline" className="w-full text-xs">
+                        Chỉnh sửa
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

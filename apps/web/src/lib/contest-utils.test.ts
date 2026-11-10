@@ -67,4 +67,10 @@ describe("FPC-37 Contest Utils", () => {
     expect(formatted).toContain("2026");
     expect(formatted).toContain("10");
   });
+
+  test("formatContestDate returns N/A for empty or invalid date", () => {
+    expect(formatContestDate(null)).toBe("N/A");
+    expect(formatContestDate(undefined)).toBe("N/A");
+    expect(formatContestDate("not-a-date")).toBe("N/A");
+  });
 });

@@ -34,6 +34,8 @@ export type JudgeWorkload = {
   progressPercent: number; // % Tiến độ
 };
 
+// TODO(Backend): Chờ API GET /api/v1/contests/:id/judges/workloads để fetch workload thật.
+// Mock data tạm thời cho UI testing. Cần xóa khi backend sẵn sàng.
 const INITIAL_WORKLOADS: JudgeWorkload[] = [
   {
     judgeId: "judge-1",
