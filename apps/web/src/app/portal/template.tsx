@@ -21,6 +21,8 @@ async function AuthGuard({ children }: { children: ReactNode }) {
   if (decision === "forbidden") {
     redirect("/forbidden");
   }
+
+  return <>{children}</>;
 }
 
 export default function PortalTemplate({ children }: PortalTemplateProps) {

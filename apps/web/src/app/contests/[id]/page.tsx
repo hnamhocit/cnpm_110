@@ -3,11 +3,8 @@ import {
   Award,
   Calendar,
   Clock,
-  Coins,
   FileText,
   Film,
-  Scale,
-  Sparkles,
   Upload,
   UserCheck,
 } from "lucide-react";
@@ -17,34 +14,42 @@ import { RegistrationGuideSection } from "@/components/contest/registration-guid
 import { Footer } from "@/components/home/footer";
 import { Navbar } from "@/components/home/navbar";
 import { formatContestDate } from "@/lib/contest-utils";
-import { DETAILED_CONTESTS } from "@/lib/mock-contest-details";
 import type { Contest } from "@/types/contest";
-
-export function generateStaticParams() {
-  return Object.keys(DETAILED_CONTESTS).map((id) => ({ id }));
-}
 
 interface ContestDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-function getContestDetail(id: string): Contest | null {
-  if (DETAILED_CONTESTS[id]) {
-    return DETAILED_CONTESTS[id];
-  }
+export const instant = false;
 
-  return {
-    ...DETAILED_CONTESTS["contest-1"],
-    id,
-    name: `Cuộc thi Nhiếp ảnh Phim #${id}`,
-  };
+async function fetchContestDetail(id: string): Promise<Contest | null> {
+  const apiUrl =
+    process.env.API_INTERNAL_URL ??
+    process.env.NEXT_PUBLIC_API_URL ??
+    "http://localhost:8080";
+  try {
+    const res = await fetch(`${apiUrl}/api/v1/contests/${id}`, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+
+    if (res.status === 404) return null;
+    if (!res.ok) {
+      throw new Error(`API error: ${res.status}`);
+    }
+
+    const json = await res.json();
+    return (json?.data ?? json) as Contest;
+  } catch {
+    return null;
+  }
 }
 
 export default async function ContestDetailPage({
   params,
 }: ContestDetailPageProps) {
   const resolvedParams = await params;
-  const contest = await getContestDetail(resolvedParams.id);
+  const contest = await fetchContestDetail(resolvedParams.id);
 
   if (!contest) {
     notFound();
@@ -69,352 +74,229 @@ export default async function ContestDetailPage({
             </Link>
             <div className="flex items-center gap-2">
               <span>Mã cuộc thi:</span>
-              <span className="font-mono text-zinc-200 bg-zinc-800 px-2 py-0.5 rounded">
+              <code className="bg-zinc-800 px-2 py-0.5 rounded text-zinc-300 font-mono">
                 {contest.id}
-              </span>
+              </code>
             </div>
           </div>
         </div>
 
-        {/* Hero Banner Header of Contest */}
-        <section className="relative overflow-hidden border-b border-zinc-800 bg-gradient-to-b from-[#191d20] to-[#111416] py-12 lg:py-16">
-          <div className="absolute top-0 right-1/4 w-[500px] h-[300px] bg-amber-500/10 blur-[130px] pointer-events-none rounded-full" />
-
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-              <div className="max-w-3xl">
-                {/* Badges */}
-                <div className="flex flex-wrap items-center gap-2.5 mb-4">
-                  {isOngoing ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400 border border-emerald-500/30">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                      Đang nhận bài dự thi
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-400 border border-blue-500/30">
-                      <Clock className="h-3.5 w-3.5" />
-                      Sắp mở nhận bài
+        {/* Hero Section of Contest */}
+        <section className="relative overflow-hidden border-b border-zinc-800/80 bg-gradient-to-b from-[#181c1f] to-[#111416] py-12 sm:py-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col lg:flex-row gap-8 lg:items-center justify-between">
+              <div className="space-y-4 max-w-3xl">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${
+                      isOngoing
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                        : "bg-blue-500/20 text-blue-400 border border-blue-500/40"
+                    }`}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+                    {isOngoing ? "Đang diễn ra" : "Đã công bố"}
+                  </span>
+                  {contest.category && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-zinc-800 text-zinc-300 border border-zinc-700">
+                      <Film className="h-3 w-3 text-amber-400" />
+                      {contest.category}
                     </span>
                   )}
-
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-800/80 px-3 py-1 text-xs font-mono text-amber-300 border border-zinc-700">
-                    <Film className="h-3.5 w-3.5 text-amber-400" />
-                    {contest.category ?? "35mm & 120 Film"}
-                  </span>
-
-                  <span className="inline-flex items-center gap-1 text-xs font-mono text-zinc-400 bg-zinc-900 px-2.5 py-1 rounded-full border border-zinc-800">
-                    <Sparkles className="h-3 w-3 text-amber-400" /> AI
-                    Grain-Verified
-                  </span>
                 </div>
 
-                {/* Title */}
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
                   {contest.name}
                 </h1>
 
-                {/* Description */}
-                <p className="mt-4 text-base sm:text-lg text-zinc-300 leading-relaxed">
-                  {contest.description}
-                </p>
+                {contest.description && (
+                  <p className="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl">
+                    {contest.description}
+                  </p>
+                )}
 
-                {/* Timeline */}
-                <div className="mt-6 flex flex-wrap items-center gap-6 text-sm text-zinc-400">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-amber-400" />
-                    <span>Thời hạn:</span>
-                    <strong className="text-white">
-                      {formatContestDate(contest.start_at)} —{" "}
+                {/* Timeline metadata badges */}
+                <div className="pt-2 flex flex-wrap gap-4 text-xs sm:text-sm text-zinc-400">
+                  <div className="flex items-center gap-2 bg-zinc-900/80 px-3.5 py-2 rounded-xl border border-zinc-800">
+                    <Calendar className="h-4 w-4 text-amber-400 shrink-0" />
+                    <span>
+                      Thời hạn: {formatContestDate(contest.start_at)} —{" "}
                       {formatContestDate(contest.end_at)}
-                    </strong>
+                    </span>
                   </div>
                   {contest.prize && (
-                    <div className="flex items-center gap-2">
-                      <Coins className="h-4 w-4 text-amber-400" />
-                      <span>Tổng giải thưởng:</span>
-                      <strong className="text-amber-300">
-                        {contest.prize}
-                      </strong>
+                    <div className="flex items-center gap-2 bg-zinc-900/80 px-3.5 py-2 rounded-xl border border-zinc-800">
+                      <Award className="h-4 w-4 text-amber-400 shrink-0" />
+                      <span className="font-semibold text-white">
+                        Giải thưởng: {contest.prize}
+                      </span>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Action Box Card */}
-              <div className="w-full lg:w-80 shrink-0 rounded-2xl border border-zinc-700/80 bg-[#1e2327] p-6 shadow-2xl">
-                <div className="text-xs uppercase font-mono tracking-wider text-zinc-400 mb-1">
-                  Trạng thái nộp bài
-                </div>
-                <div className="text-xl font-bold text-white mb-4">
-                  {isOngoing ? "Mở cổng nhận ảnh" : "Đang chuẩn bị"}
-                </div>
-
-                <div className="space-y-3 mb-6 text-xs text-zinc-300">
-                  <div className="flex items-center justify-between pb-2 border-b border-zinc-700/60">
-                    <span>Định dạng phim:</span>
-                    <span className="font-semibold text-white">
-                      {contest.film_requirements?.formats.join(", ") ??
-                        "35mm / 120"}
+              {/* Action Box */}
+              <div className="lg:w-80 shrink-0 bg-[#191d20] border border-zinc-800 rounded-3xl p-6 shadow-2xl flex flex-col justify-between space-y-6">
+                <div>
+                  <div className="flex items-center justify-between text-xs text-zinc-400 mb-2">
+                    <span>Trạng thái nhận bài</span>
+                    <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                      <Clock className="h-3 w-3" />{" "}
+                      {isOngoing ? "Đang mở cổng" : "Chưa mở nộp"}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between pb-2 border-b border-zinc-700/60">
-                    <span>Số ảnh tối đa:</span>
-                    <span className="font-semibold text-white">
-                      {contest.film_requirements?.max_photos_per_submission ??
-                        5}{" "}
-                      ảnh
-                    </span>
+                  <div className="text-2xl font-black text-white">
+                    {contest.registration_info?.fee || "Miễn phí tham gia"}
                   </div>
-                  <div className="flex items-center justify-between pb-2 border-b border-zinc-700/60">
-                    <span>Kiểm định AI:</span>
-                    <span className="font-semibold text-emerald-400">
-                      Bắt buộc
-                    </span>
-                  </div>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    Tối đa 5 tác phẩm ảnh scan gốc / thí sinh
+                  </p>
                 </div>
 
-                <Link
-                  href="/login"
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-400 py-3.5 text-sm font-bold text-black hover:bg-amber-300 transition-colors shadow-lg shadow-amber-400/20 active:scale-95"
-                >
-                  <Upload className="h-4 w-4" />
-                  <span>Nộp bài dự thi ngay</span>
-                </Link>
-
-                <p className="mt-3 text-center text-[11px] text-zinc-400">
-                  Thí sinh cần đăng nhập tài khoản để gửi tác phẩm
-                </p>
+                <div className="space-y-2.5">
+                  <a
+                    href="#registration-guide"
+                    className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-bold text-sm shadow-lg shadow-amber-400/10 transition-colors"
+                  >
+                    <Upload className="h-4 w-4" />
+                    <span>Xem hướng dẫn nộp bài</span>
+                  </a>
+                  <Link
+                    href="/login"
+                    className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors"
+                  >
+                    <UserCheck className="h-3.5 w-3.5" />
+                    <span>Đăng nhập nộp tác phẩm</span>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* 4 MAIN CONTENT BLOCKS (THEO YÊU CẦU JIRA FPC-38) */}
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-12">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left 2 Cols: Thể lệ & Tiêu chí & Giám khảo */}
-            <div className="lg:col-span-2 space-y-12">
-              {/* KHỐI 1: THỂ LỆ THAM GIA */}
-              <section className="rounded-2xl border border-zinc-800 bg-[#191d20] p-6 sm:p-8">
-                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-zinc-800">
-                  <div className="h-10 w-10 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center">
-                    <FileText className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-white">
-                      Thể lệ &amp; Quy định Tham gia
-                    </h2>
-                    <p className="text-xs text-zinc-400">
-                      Vui lòng đọc kỹ các điều kiện bắt buộc trước khi nộp bài
-                    </p>
-                  </div>
+        {/* Content Details Grid */}
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-12 space-y-16">
+          {/* Section 1: Thể lệ & Yêu cầu Kỹ thuật Phim (Film Requirements) */}
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Rules card */}
+            <div className="rounded-3xl bg-[#161a1d] border border-zinc-800/80 p-6 sm:p-8 space-y-6">
+              <div className="flex items-center gap-3 border-b border-zinc-800 pb-4">
+                <div className="p-2.5 bg-amber-400/10 text-amber-400 rounded-xl">
+                  <FileText className="h-5 w-5" />
                 </div>
-
-                {/* Yêu cầu cuộn phim */}
-                <div className="mb-6 p-4 rounded-xl bg-zinc-900/80 border border-zinc-800">
-                  <h3 className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Film className="h-4 w-4" /> Yêu cầu Kỹ thuật Phim
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-zinc-300">
-                    <div>
-                      • <strong>Khổ phim chấp nhận:</strong>{" "}
-                      {contest.film_requirements?.formats.join(", ") ??
-                        "35mm, 120"}
-                    </div>
-                    <div>
-                      • <strong>Chủng loại phim:</strong>{" "}
-                      {contest.film_requirements?.types.join(", ") ??
-                        "Màu & Trắng đen"}
-                    </div>
-                    <div>
-                      • <strong>Chỉnh sửa kỹ thuật số:</strong>{" "}
-                      {contest.film_requirements?.allow_digital_editing
-                        ? "Được phép cơ bản"
-                        : "Nghiêm cấm can thiệp số (No AI / No Photoshop ghép)"}
-                    </div>
-                    <div>
-                      • <strong>Scan phim:</strong> File scan độ phân giải cao
-                      từ cuộn phim gốc
-                    </div>
-                  </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">
+                    Thể lệ Cuộc thi
+                  </h2>
+                  <p className="text-xs text-zinc-400">
+                    Quy chuẩn tham dự bắt buộc
+                  </p>
                 </div>
-
-                {/* Danh sách quy định */}
-                <div className="space-y-3.5">
-                  {(contest.rules ?? []).map((rule, index) => (
-                    <div
-                      key={`rule-${rule.slice(0, 20)}`}
-                      className="flex items-start gap-3"
-                    >
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400/20 text-[11px] font-bold text-amber-300 mt-0.5">
-                        {index + 1}
+              </div>
+              <ul className="space-y-3.5 text-sm text-zinc-300">
+                {contest.rules && contest.rules.length > 0 ? (
+                  contest.rules.map((rule) => (
+                    <li key={rule} className="flex items-start gap-3">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-2 shrink-0" />
+                      <span>{rule}</span>
+                    </li>
+                  ))
+                ) : (
+                  <>
+                    <li className="flex items-start gap-3">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-2 shrink-0" />
+                      <span>
+                        Tác phẩm phải được chụp hoàn toàn bằng máy ảnh cơ analog
+                        và film quang học truyền thống.
                       </span>
-                      <p className="text-sm text-zinc-300 leading-relaxed">
-                        {rule}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* KHỐI 2: BAN GIÁM KHẢO */}
-              <section className="rounded-2xl border border-zinc-800 bg-[#191d20] p-6 sm:p-8">
-                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-zinc-800">
-                  <div className="h-10 w-10 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center">
-                    <UserCheck className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-white">
-                      Hội đồng Ban Giám Khảo
-                    </h2>
-                    <p className="text-xs text-zinc-400">
-                      Các nhiếp ảnh gia và chuyên gia quang học uy tín
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {(contest.judges ?? []).map((judge) => (
-                    <div
-                      key={judge.id}
-                      className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-4 flex flex-col justify-between"
-                    >
-                      <div>
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="h-11 w-11 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 font-bold flex items-center justify-center text-sm">
-                            {judge.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .slice(-2)
-                              .join("")}
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-bold text-white">
-                              {judge.name}
-                            </h4>
-                            <span className="inline-block text-[11px] font-medium text-amber-400">
-                              {judge.role}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-zinc-400 leading-relaxed">
-                          {judge.bio}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* KHỐI 4 (BỔ TRỢ): TIÊU CHÍ CHẤM ĐIỂM */}
-              <section className="rounded-2xl border border-zinc-800 bg-[#191d20] p-6 sm:p-8">
-                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-zinc-800">
-                  <div className="h-10 w-10 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center">
-                    <Scale className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-white">
-                      Tiêu chí Chấm điểm Minh bạch
-                    </h2>
-                    <p className="text-xs text-zinc-400">
-                      Tỷ trọng đánh giá tác phẩm từ Hội đồng chuyên môn
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {(contest.criteria ?? []).map((crit) => (
-                    <div
-                      key={crit.id}
-                      className="p-3.5 rounded-xl bg-zinc-900/50 border border-zinc-800/80"
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-sm font-semibold text-white">
-                          {crit.name}
-                        </span>
-                        <span className="text-xs font-mono font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">
-                          {crit.weight}%
-                        </span>
-                      </div>
-                      <p className="text-xs text-zinc-400">
-                        {crit.description}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </section>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-2 shrink-0" />
+                      <span>
+                        Nghiêm cấm mọi hình thức can thiệp bằng trí tuệ nhân tạo
+                        (AI) hoặc chỉnh sửa làm thay đổi cấu trúc quang học hạt
+                        film.
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-2 shrink-0" />
+                      <span>
+                        Thí sinh có trách nhiệm lưu trữ dải phim âm bản gốc để
+                        đối chứng khi Ban Giám khảo yêu cầu.
+                      </span>
+                    </li>
+                  </>
+                )}
+              </ul>
             </div>
 
-            {/* Right 1 Col: KHỐI 3 — CƠ CẤU GIẢI THƯỞNG */}
-            <div className="space-y-8">
-              <section className="rounded-2xl border border-amber-500/30 bg-[#1e2327] p-6 sm:p-8 sticky top-24 shadow-xl shadow-black/40">
-                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-zinc-700/80">
-                  <div className="h-10 w-10 rounded-xl bg-amber-400 text-black flex items-center justify-center font-bold">
-                    <Award className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-white">
-                      Cơ cấu Giải thưởng
-                    </h2>
-                    <p className="text-xs text-zinc-400">
-                      Vinh danh các tác phẩm nghệ thuật xuất sắc
-                    </p>
+            {/* Film Technical Specs card */}
+            <div className="rounded-3xl bg-[#161a1d] border border-zinc-800/80 p-6 sm:p-8 space-y-6">
+              <div className="flex items-center gap-3 border-b border-zinc-800 pb-4">
+                <div className="p-2.5 bg-amber-400/10 text-amber-400 rounded-xl">
+                  <Film className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">
+                    Yêu cầu Kỹ thuật Phim
+                  </h2>
+                  <p className="text-xs text-zinc-400">
+                    Khổ phim và quy cách tráng quét
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4 text-sm">
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase font-semibold tracking-wider">
+                    Khổ phim chấp nhận
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {(
+                      contest.film_requirements?.formats || [
+                        "35mm (135 format)",
+                        "120 Medium Format",
+                      ]
+                    ).map((fmt) => (
+                      <span
+                        key={fmt}
+                        className="px-3 py-1 rounded-lg text-xs font-semibold bg-zinc-800 text-amber-300 border border-zinc-700"
+                      >
+                        {fmt}
+                      </span>
+                    ))}
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  {(contest.prizes ?? []).map((prize, idx) => (
-                    <div
-                      key={prize.id}
-                      className={`p-4 rounded-xl border transition-all ${
-                        idx === 0
-                          ? "bg-amber-400/10 border-amber-400/40"
-                          : "bg-zinc-900/70 border-zinc-800"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span
-                          className={`text-xs font-bold uppercase tracking-wider ${
-                            idx === 0 ? "text-amber-300" : "text-zinc-400"
-                          }`}
-                        >
-                          {prize.rank}
-                        </span>
-                        {idx === 0 && (
-                          <span className="text-[10px] bg-amber-400 text-black px-1.5 py-0.5 rounded font-extrabold uppercase">
-                            Cao nhất
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-base font-extrabold text-white mb-1.5">
-                        {prize.name}
-                      </div>
-                      <div className="text-xs font-semibold text-amber-400 mb-2">
-                        {prize.reward}
-                      </div>
-                      {prize.description && (
-                        <p className="text-[11px] text-zinc-400 leading-relaxed">
-                          {prize.description}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase font-semibold tracking-wider">
+                    Loại phim
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {(
+                      contest.film_requirements?.types || [
+                        "Color Negative (C-41)",
+                        "Black & White (B&W)",
+                        "Slide (E-6)",
+                      ]
+                    ).map((t) => (
+                      <span
+                        key={t}
+                        className="px-3 py-1 rounded-lg text-xs font-medium bg-zinc-900 text-zinc-300 border border-zinc-800"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-
-                <div className="mt-8 pt-6 border-t border-zinc-700/80">
-                  <Link
-                    href="/login"
-                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-400 py-3 text-xs font-bold text-black hover:bg-amber-300 transition-colors"
-                  >
-                    <span>Đăng nhập để gửi ảnh dự thi</span>
-                  </Link>
-                </div>
-              </section>
+              </div>
             </div>
+          </section>
+
+          {/* Registration Guide Section */}
+          <div id="registration-guide">
+            <RegistrationGuideSection contest={contest} />
           </div>
-
-          {/* KHỐI DÀNH CHO THÍ SINH ĐĂNG KÝ (FPC-39) */}
-          <RegistrationGuideSection contest={contest} />
         </div>
       </main>
 

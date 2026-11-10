@@ -29,6 +29,20 @@
       "when": 1792284440479,
       "tag": "0003_faulty_rage",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793366278925,
+      "tag": "0004_perfect_lady_deathstrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793612870985,
+      "tag": "0005_ai-analysis-jobs",
+      "breakpoints": true
     }
   ]
 }

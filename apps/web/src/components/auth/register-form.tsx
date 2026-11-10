@@ -20,13 +20,13 @@ const MIN_PASSWORD_LENGTH = 8;
 
 export function RegisterForm() {
   const router = useRouter();
-  
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   // Đã xóa state organization
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  
+
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false); // Trạng thái đang gửi API
 
@@ -57,22 +57,24 @@ export function RegisterForm() {
     setIsLoading(true);
 
     try {
-      // Gọi API đăng ký theo đúng tài liệu của PM
-      await http.post('/api/v1/auth/register', {
+      // Backend chỉ nhận fullName, email, password; role do server gán.
+      await http.post("/api/v1/auth/register", {
         fullName: fullName.trim(),
         email: email.trim(),
         password: password,
-        role: 'ORGANIZER' // Bắt buộc phải có theo tài liệu
       });
 
-      alert("Đăng ký thành công! Vui lòng đăng nhập.");
       router.push("/login"); // Chuyển hướng sang trang đăng nhập
-      
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
+      const apiErr = err as {
+        response?: { data?: { error?: string; message?: string } };
+      };
+      const data = apiErr.response?.data;
       setError(
-        err.response?.data?.message || 
-        "Đăng ký thất bại. Email có thể đã tồn tại hoặc lỗi kết nối!"
+        data?.error ??
+          data?.message ??
+          "Đăng ký thất bại. Email có thể đã tồn tại hoặc lỗi kết nối!",
       );
     } finally {
       setIsLoading(false);
@@ -106,7 +108,7 @@ export function RegisterForm() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
-          
+
           {/* ĐÃ XÓA HOÀN TOÀN Ô "TÊN TỔ CHỨC" Ở ĐÂY */}
 
           <AuthField

@@ -1,0 +1,30 @@
+---
+description: Mandatory AI-First SRS & Context Guidelines
+globs: **/*
+alwaysApply: true
+---
+
+# MANDATORY: READ SPECIFICATIONS BEFORE CODING
+
+You are an AI coding assistant working on **FilmContest-AI** (AI-powered Film Photography Contest Platform).
+
+## Zero-Ambiguity Context Guard
+Before generating code, making architecture decisions, or modifying files:
+1. **Always read `docs/srs.md`** first to get domain context, actors, use cases, and business rules.
+2. **Read the corresponding module specification**:
+   - `docs/01-auth-and-rbac.md` -> Authentication, RBAC, Sessions, User Profiles
+   - `docs/02-analog-master-data.md` -> Film Stocks, Cameras, Lenses, Film Labs
+   - `docs/03-contest-lifecycle.md` -> Contests, Categories, Scoring Criteria, Timeline Order (BR-08), 100% Weight (BR-15)
+   - `docs/04-film-logbook.md` -> Film Rolls, Frame Logs, Physical Frame Limits (BR-04, BR-23), Push/Pull ISO
+   - `docs/05-submission-and-proof.md` -> Submissions, Negative Proof (BR-06), 48h Countdown (BR-19), File Standard (BR-07)
+   - `docs/06-ai-verification.md` -> AI Screening ($P_{AI} \ge 0.75$), pHash Hamming Distance, pgvector
+   - `docs/07-blind-judging.md` -> Double-Blind Judging (BR-12), Score Variance Alert (BR-14), Average Scoring (BR-25)
+   - `docs/08-archive-and-exhibition.md` -> Result Immutability (BR-16), Dual Asset Storage (BR-17)
+   - `docs/09-api-contracts.md` -> Standard JSON Envelopes, DTOs, Shared Validations
+   - `docs/10-database-and-storage.md` -> PostgreSQL 16+, pgvector schema, digital_assets S3/R2 storage
+
+## Inviolable Rules
+- **No Hallucinated Logic**: Never guess domain constraints or database schemas. Follow the specifications strictly.
+- **Double-Blind Protection (BR-12)**: NEVER expose participant identity to judges in API responses.
+- **Physical Frame Limits (BR-04, BR-23)**: Check format max frame limits (135: 39 frames; 120_645: 16; 120_66: 12; 120_67: 10; 4x5: 1).
+- **Package Manager**: Use `bun` exclusively. Never run `npm` or `yarn`.

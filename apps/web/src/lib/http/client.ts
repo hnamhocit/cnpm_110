@@ -1,15 +1,11 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
-import { type TokenPair, tokenStorage } from "@/lib/http/token-storage";
+import { tokenStorage } from "@/lib/http/token-storage";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 const TIMEOUT_MS = 15_000;
 
-const LOGIN_PATH = "/auth/login";
-const REGISTER_PATH = "/auth/register";
-const REFRESH_PATH = "/auth/refresh";
-
-const AUTH_PATHS = [LOGIN_PATH, REGISTER_PATH, REFRESH_PATH];
+const AUTH_PATHS = ["/auth/login", "/auth/register"];
 
 type RetryableConfig = InternalAxiosRequestConfig & { _retry?: boolean };
 
@@ -23,51 +19,45 @@ function isAuthRequest(url?: string): boolean {
   return AUTH_PATHS.some((path) => url?.includes(path));
 }
 
-function parseTokens(payload: unknown, currentRefreshToken: string): TokenPair {
-  const body = payload as { data?: unknown } | null;
-  const source = (body?.data ?? body ?? {}) as Partial<TokenPair>;
+let sessionPromise: Promise<string | null> | null = null;
 
-  if (!source.accessToken) {
-    throw new Error("Refresh response thiếu accessToken");
+// Refresh token nằm trong cookie HttpOnly; BFF đổi nó lấy access token mới.
+function refreshSession(): Promise<string | null> {
+  if (!sessionPromise) {
+    sessionPromise = fetch("/api/auth/session", {
+      method: "POST",
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+
+        const data = (await response.json()) as { accessToken?: string };
+        if (!data.accessToken) return null;
+
+        tokenStorage.setTokens({ accessToken: data.accessToken });
+        return data.accessToken;
+      })
+      .catch(() => null)
+      .finally(() => {
+        sessionPromise = null;
+      });
   }
 
-  return {
-    accessToken: source.accessToken,
-    refreshToken: source.refreshToken ?? currentRefreshToken,
-  };
+  return sessionPromise;
 }
 
-async function requestNewTokens(): Promise<string> {
-  const refreshToken = tokenStorage.getRefreshToken();
-  if (!refreshToken) throw new Error("Không có refresh token");
+http.interceptors.request.use(async (config) => {
+  let accessToken = tokenStorage.getAccessToken();
 
-  const { data } = await axios.post(
-    `${API_URL}${REFRESH_PATH}`,
-    { refreshToken },
-    { timeout: TIMEOUT_MS },
-  );
-
-  const tokens = parseTokens(data, refreshToken);
-  tokenStorage.setTokens(tokens);
-  return tokens.accessToken;
-}
-
-let refreshPromise: Promise<string> | null = null;
-
-function refreshAccessToken(): Promise<string> {
-  if (!refreshPromise) {
-    refreshPromise = requestNewTokens().finally(() => {
-      refreshPromise = null;
-    });
+  // Sau khi F5, memory mất token nhưng cookie HttpOnly vẫn còn.
+  if (!accessToken && !isAuthRequest(config.url)) {
+    accessToken = await refreshSession();
   }
-  return refreshPromise;
-}
 
-http.interceptors.request.use((config) => {
-  const accessToken = tokenStorage.getAccessToken();
   if (accessToken) {
     config.headers.set("Authorization", `Bearer ${accessToken}`);
   }
+
   return config;
 });
 
@@ -88,14 +78,13 @@ http.interceptors.response.use(
 
     original._retry = true;
 
-    try {
-      const accessToken = await refreshAccessToken();
-      original.headers.set("Authorization", `Bearer ${accessToken}`);
-      return http(original);
-    } catch (refreshError) {
-      // Chỉ clear token, KHÔNG redirect (guard component xử lý)
+    const accessToken = await refreshSession();
+    if (!accessToken) {
       tokenStorage.clear();
-      return Promise.reject(refreshError);
+      return Promise.reject(error);
     }
+
+    original.headers.set("Authorization", `Bearer ${accessToken}`);
+    return http(original);
   },
 );

@@ -11,7 +11,7 @@ class DioAuthService implements AuthService {
   factory DioAuthService({
     required String baseUrl,
     required AuthTokenStorage tokenStorage,
-    String refreshPath = '/auth/refresh',
+    String refreshPath = '/api/v1/auth/refresh',
     Duration connectTimeout = const Duration(seconds: 15),
     Duration receiveTimeout = const Duration(seconds: 15),
   }) {
@@ -50,13 +50,16 @@ class DioAuthService implements AuthService {
       _refreshPath,
       data: {'refreshToken': refreshToken},
     );
-    final data = response.data;
-    if (data is! Map) {
+    final body = response.data;
+    if (body is! Map) {
       throw const FormatException('Invalid token refresh response.');
     }
 
-    final accessToken = data['accessToken'];
-    final newRefreshToken = data['refreshToken'];
+    final data = (body['data'] is Map) ? body['data'] as Map : body;
+    final tokens = (data['tokens'] is Map) ? data['tokens'] as Map : data;
+
+    final accessToken = tokens['accessToken'] ?? data['accessToken'];
+    final newRefreshToken = tokens['refreshToken'] ?? data['refreshToken'];
     if (accessToken is! String || accessToken.isEmpty) {
       throw const FormatException(
         'Token refresh response has no valid accessToken.',

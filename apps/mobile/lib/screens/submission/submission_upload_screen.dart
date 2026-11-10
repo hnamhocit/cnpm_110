@@ -12,7 +12,6 @@ import '../../models/film_dev_scan_params.dart';
 import '../../models/film_shooting_params.dart';
 import '../../models/image_attachment.dart';
 import '../../models/submission_data.dart';
-import '../film_dev_scan/film_dev_scan_screen.dart';
 import '../film_params/film_params_screen.dart';
 import 'components/image_picker_card.dart';
 import 'components/image_preview_dialog.dart';
@@ -525,16 +524,20 @@ class _SubmissionUploadScreenState
                       ),
                       trailing: const Icon(Icons.edit_outlined),
                       onTap: () async {
-                        await Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (context) => FilmDevScanScreen(
-                              initialParams: _devScanParams,
-                              onSaved: (params) {
+                        final result = await context.push<FilmDevScanParams>(
+                          '/film-dev-scan',
+                          extra: <String, dynamic>{
+                            'initialParams': _devScanParams,
+                            'onSaved': (FilmDevScanParams params) {
+                              if (mounted) {
                                 setState(() => _devScanParams = params);
-                              },
-                            ),
-                          ),
+                              }
+                            },
+                          },
                         );
+                        if (result != null && mounted) {
+                          setState(() => _devScanParams = result);
+                        }
                       },
                     ),
                   ],
