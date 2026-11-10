@@ -14,6 +14,7 @@ type AuthState = {
   clear: () => void;
 };
 
+// refreshToken nằm trong cookie HttpOnly do BFF quản lý, memory chỉ giữ accessToken.
 export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   userRole: null,

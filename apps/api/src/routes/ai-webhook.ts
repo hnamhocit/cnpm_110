@@ -6,10 +6,10 @@ import {
   submissions,
   submissionAiAnalyses,
 } from "../db/schema";
-import { eq, ne, and, isNotNull } from "drizzle-orm";
+import { eq, ne, and, isNotNull, inArray } from "drizzle-orm";
 import { findClosestDuplicate } from "../services/duplicate-detection";
 import { classifyAiDetection } from "../services/ai-detection";
-
+import { classifyAiResult } from "../services/ai-result-classification";
 const route = new Hono();
 
 const uuidRegex =
@@ -188,7 +188,11 @@ route.post(
         phashHex.toLowerCase(),
         candidates,
       );
-
+      // FPC-55: Classify AI verification status
+      const classification = classifyAiResult({
+        aiGeneratedProbability,
+        duplicateSuspectId: duplicate?.submissionId ?? null,
+      });
       // FPC-54: Save AI analysis and update submission atomically.
       await db.transaction(async (tx) => {
         // Insert AI analysis or update the existing result
@@ -201,7 +205,7 @@ route.post(
               aiGeneratedProbability.toFixed(4),
             predictedTags,
             isAiFlagged: aiDetection.isAiFlagged,
-            flagReasons: aiDetection.flagReasons,
+            flagReasons: classification.reasons,
             duplicateSuspectId: duplicate?.submissionId ?? null,
             duplicateSimilarityScore: duplicate
               ? duplicate.similarityScore.toFixed(4)
@@ -223,21 +227,25 @@ route.post(
             },
           });
 
-        // Automatically flag pending submissions when AI score is high
-        if (aiDetection.isAiFlagged) {
-          await tx
-            .update(submissions)
-            .set({
-              status: "FLAGGED",
-              updatedAt: new Date(),
-            })
-            .where(
-              and(
-                eq(submissions.id, submissionId),
-                eq(submissions.status, "PENDING_AI"),
-              ),
-            );
-        }
+
+        // FPC-55: Automatically update verification status
+        await tx
+          .update(submissions)
+          .set({
+            status: classification.status,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(submissions.id, submissionId),
+              inArray(submissions.status, [
+                "PENDING_AI",
+                "VERIFIED",
+                "SUSPICIOUS",
+              ])
+            ),
+          );
+
       });
 
       return c.json({
@@ -250,7 +258,8 @@ route.post(
           predictedTags,
           isAiFlagged: aiDetection.isAiFlagged,
           riskLevel: aiDetection.riskLevel,
-          flagReasons: aiDetection.flagReasons,
+          verificationStatus: classification.status,
+          flagReasons: classification.reasons,
         },
       });
     } catch (error) {
