@@ -225,3 +225,54 @@ describe("Bug #27 strict image validation", () => {
     ).rejects.toMatchObject({ status: 413 });
   });
 });
+
+describe("Bug #27 allowedTypes validation", () => {
+  const options = {
+    maxBytes: 25 * 1024 * 1024,
+    minWidth: 2000,
+    minHeight: 2000,
+    maxPixels: 100_000_000,
+    allowedTypes: ["image/jpeg"] as Array<
+      "image/jpeg" | "image/tiff"
+    >,
+  };
+
+  test("accepts JPEG when JPEG is allowed", async () => {
+    const buffer = await sharp({
+      create: {
+        width: 2000,
+        height: 2000,
+        channels: 3,
+        background: "white",
+      },
+    }).jpeg().toBuffer();
+
+    const file = new File([buffer], "photo.jpg", {
+      type: "image/jpeg",
+    });
+
+    const result = await validateImage(file, options);
+    expect(result.contentType).toBe("image/jpeg");
+  });
+
+  test("rejects TIFF when only JPEG is allowed", async () => {
+    const buffer = await sharp({
+      create: {
+        width: 2000,
+        height: 2000,
+        channels: 3,
+        background: "white",
+      },
+    }).tiff().toBuffer();
+
+    const file = new File([buffer], "photo.tiff", {
+      type: "image/tiff",
+    });
+
+    await expect(
+      validateImage(file, options),
+    ).rejects.toMatchObject({
+      status: 415,
+    });
+  });
+});
