@@ -269,4 +269,31 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ImagePreviewDialog), findsNothing);
   });
+
+  testWidgets('tapping rejection guidance button on rejected card opens rejection details sheet (FPC-64)', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final repo = MockSubmissionRepo(submissions: sampleSubmissions);
+
+    await tester.pumpWidget(createTestWidget(repo));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Find rejection guidance button for sub-03
+    final guidanceBtn = find.byKey(const Key('card_rejection_guidance_sub-03'));
+    expect(guidanceBtn, findsOneWidget);
+
+    await tester.tap(guidanceBtn);
+    await tester.pumpAndSettle();
+
+    // Verify RejectionDetailsSheet opens
+    expect(find.text('Chi tiết lý do từ chối bài thi'), findsOneWidget);
+    expect(find.text('Bến Thuyền Hoàng Hôn'), findsWidgets);
+    expect(find.textContaining('SUB-2026-0003'), findsWidgets);
+    expect(find.text('Lý do chính thức từ Ban tổ chức (BR-18)'), findsOneWidget);
+    expect(find.textContaining('Ảnh không đạt chuẩn độ phân giải tối thiểu 2000px'), findsWidgets);
+    expect(find.textContaining('Quy định BR-07'), findsOneWidget);
+    expect(find.text('Hướng dẫn khắc phục & Bổ sung thông tin'), findsOneWidget);
+  });
 }
