@@ -276,26 +276,18 @@ contests.post("/", authenticate, requireRoles("Admin", "Organizer"), async (c) =
       return c.json({
         code: 400,
         message: "Timeline violation: startAt must be before endAt",
-        data: null
-      });
+        data: null,
+        error: "startAt must be strictly before endAt (BR-08: Sequential Schedule)",
+      }, 400);
     }
     if (status === 'PUBLISHED' && endAt > new Date()) {
       return c.json({
         code: 400,
         message: "Cannot publish contest before end date",
-        data: null
-      });
-    }
-  }
-    return c.json(
-      {
-        code: 400,
-        message: "startAt must be strictly before endAt (BR-08: Sequential Schedule)",
         data: null,
-        error: "startAt must be strictly before endAt (BR-08: Sequential Schedule)",
-      },
-      400,
-    );
+        error: "Cannot publish contest before end date",
+      }, 400);
+    }
   }
 
   const user = c.get("user");
