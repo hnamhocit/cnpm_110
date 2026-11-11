@@ -1,5 +1,14 @@
 import 'package:flutter/material.dart';
 
+enum ModerationStatusGroup {
+  pending('Đang chờ duyệt'),
+  approved('Hợp lệ'),
+  rejected('Bị từ chối');
+
+  const ModerationStatusGroup(this.label);
+  final String label;
+}
+
 enum SubmissionStatus {
   pendingAi,
   aiFlagged,
@@ -37,10 +46,28 @@ enum SubmissionStatus {
     }
   }
 
+  ModerationStatusGroup get moderationGroup {
+    switch (this) {
+      case SubmissionStatus.pendingAi:
+      case SubmissionStatus.aiFlagged:
+      case SubmissionStatus.proofRequested:
+      case SubmissionStatus.proofSubmitted:
+        return ModerationStatusGroup.pending;
+      case SubmissionStatus.approved:
+        return ModerationStatusGroup.approved;
+      case SubmissionStatus.disqualified:
+      case SubmissionStatus.disqualifiedNoProof:
+      case SubmissionStatus.withdrawn:
+        return ModerationStatusGroup.rejected;
+    }
+  }
+
+  String get moderationGroupLabel => moderationGroup.label;
+
   String get label {
     switch (this) {
       case SubmissionStatus.pendingAi:
-        return 'Chờ thẩm định';
+        return 'Đang chờ duyệt';
       case SubmissionStatus.aiFlagged:
         return 'Cảnh báo AI';
       case SubmissionStatus.proofRequested:
@@ -48,11 +75,11 @@ enum SubmissionStatus {
       case SubmissionStatus.proofSubmitted:
         return 'Đã nộp âm bản';
       case SubmissionStatus.approved:
-        return 'Đã phê duyệt';
+        return 'Hợp lệ';
       case SubmissionStatus.disqualified:
-        return 'Bị loại';
+        return 'Bị từ chối';
       case SubmissionStatus.disqualifiedNoProof:
-        return 'Bị loại (quá hạn âm bản)';
+        return 'Bị từ chối (quá hạn âm bản)';
       case SubmissionStatus.withdrawn:
         return 'Đã rút';
     }

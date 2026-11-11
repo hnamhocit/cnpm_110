@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,8 @@ import '../../core/providers/my_submissions_provider.dart';
 import '../../models/image_attachment.dart';
 import '../../models/user_submission.dart';
 import 'components/image_preview_dialog.dart';
+import 'components/live_countdown_widget.dart';
+import 'components/moderation_timeline_widget.dart';
 
 class MySubmissionsScreen extends ConsumerStatefulWidget {
   const MySubmissionsScreen({super.key});
@@ -20,9 +23,121 @@ class MySubmissionsScreen extends ConsumerStatefulWidget {
 
 class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
   final _searchController = TextEditingController();
+  Timer? _pollingTimer;
+  Map<String, SubmissionStatus> _previousStatuses = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _startRealtimePolling();
+  }
+
+  void _startRealtimePolling() {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) => _pollSubmissions());
+  }
+
+  Future<void> _pollSubmissions() async {
+    if (!mounted) return;
+
+    final current = ref.read(mySubmissionsProvider).value;
+    if (current != null && _previousStatuses.isEmpty) {
+      _previousStatuses = {for (final s in current) s.id: s.status};
+    }
+
+    final updated = await ref.read(mySubmissionsProvider.notifier).silentRefresh();
+    if (!mounted || updated == null) return;
+
+    if (_previousStatuses.isNotEmpty) {
+      for (final sub in updated) {
+        final oldStatus = _previousStatuses[sub.id];
+        if (oldStatus != null && oldStatus != sub.status) {
+          _notifyStatusChange(sub, oldStatus);
+        }
+      }
+    }
+
+    _previousStatuses = {for (final s in updated) s.id: s.status};
+  }
+
+  void _notifyStatusChange(UserSubmission sub, SubmissionStatus oldStatus) {
+    if (!mounted) return;
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
+
+    if (sub.status == SubmissionStatus.approved) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Bài thi "${sub.title}" đã được duyệt Hợp lệ!'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green.shade800,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } else if (sub.status == SubmissionStatus.proofRequested) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Bài thi "${sub.title}" yêu cầu nộp ảnh âm bản (BR-19)!'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.amber.shade900,
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Nộp ngay',
+            textColor: Colors.white,
+            onPressed: () => _showProofUploadModal(context, sub),
+          ),
+          duration: const Duration(seconds: 6),
+        ),
+      );
+    } else if (sub.status == SubmissionStatus.disqualified ||
+        sub.status == SubmissionStatus.disqualifiedNoProof) {
+      final reason = sub.rejectionReason != null && sub.rejectionReason!.isNotEmpty
+          ? ': ${sub.rejectionReason}'
+          : '';
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.cancel_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Bài thi "${sub.title}" bị từ chối$reason'),
+              ),
+            ],
+          ),
+          backgroundColor: theme.colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } else {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Bài thi "${sub.title}": chuyển sang trạng thái "${sub.status.label}"'),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
 
   @override
   void dispose() {
+    _pollingTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -85,8 +200,18 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      if (submission.remainingProofText != null)
+                      if (submission.proofDeadlineAt != null) ...[
+                        const SizedBox(height: 6),
+                        LiveCountdownWidget(
+                          deadlineAt: submission.proofDeadlineAt!,
+                          prefixText: 'Thời hạn còn lại: ',
+                          textStyle: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.error,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ] else if (submission.remainingProofText != null) ...[
+                        const SizedBox(height: 4),
                         Text(
                           submission.remainingProofText!,
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -94,6 +219,7 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                      ],
                       const SizedBox(height: 6),
                       Text(
                         'Theo quy tắc BR-19, thí sinh có 48 giờ để cung cấp ảnh chụp dải phim âm bản gốc có viền mã vạch và số khung hình. Quá thời hạn này bài thi sẽ tự động bị loại.',
@@ -199,7 +325,22 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
                     child: _buildImageWidget(submission.bestDisplayImagePath),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+
+                // Real-time Moderation Timeline (FPC-63)
+                Card(
+                  elevation: 0,
+                  color: colorScheme.surfaceContainerLow,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: colorScheme.outlineVariant),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: ModerationTimelineWidget(submission: submission),
+                  ),
+                ),
+                const SizedBox(height: 16),
 
                 // Rejection Reason Alert if disqualified
                 if (submission.rejectionReason != null &&
@@ -428,6 +569,48 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
     );
   }
 
+  Widget _buildErrorView(BuildContext context, Object error) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final message = error is ApiException
+        ? error.message
+        : 'Không thể tải danh sách bài thi: $error';
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: colorScheme.error),
+            const SizedBox(height: 12),
+            Text(
+              'Đã xảy ra lỗi',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () =>
+                  ref.read(mySubmissionsProvider.notifier).refresh(),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Thử lại'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -437,11 +620,52 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
     final selectedFilter = ref.watch(mySubmissionsFilterProvider);
     final urgentCount = ref.watch(proofRequestedCountProvider);
 
+    final urgentWithDeadline = (submissionsAsync.value ?? const [])
+        .where((s) => s.status == SubmissionStatus.proofRequested && s.proofDeadlineAt != null)
+        .toList()
+      ..sort((a, b) => a.proofDeadlineAt!.compareTo(b.proofDeadlineAt!));
+    final earliestDeadline = urgentWithDeadline.isNotEmpty
+        ? urgentWithDeadline.first.proofDeadlineAt
+        : null;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Bài thi của tôi'),
         centerTitle: false,
         actions: [
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.green.shade300),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade600,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Trực tiếp',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.green.shade800,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Làm mới',
@@ -484,6 +708,18 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
                             fontSize: 12,
                           ),
                         ),
+                        if (earliestDeadline != null) ...[
+                          const SizedBox(height: 4),
+                          LiveCountdownWidget(
+                            deadlineAt: earliestDeadline,
+                            prefixText: 'Hạn chót gần nhất: ',
+                            textStyle: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.error,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -573,57 +809,21 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
 
           // Submissions List Body
           Expanded(
-            child: submissionsAsync.when(
-              loading: () => const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Đang tải danh sách bài thi...'),
-                  ],
-                ),
-              ),
-              error: (error, stack) {
-                final message = error is ApiException
-                    ? error.message
-                    : 'Không thể tải danh sách bài thi: $error';
-
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.error_outline, size: 48, color: colorScheme.error),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Đã xảy ra lỗi',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          message,
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        FilledButton.icon(
-                          onPressed: () =>
-                              ref.read(mySubmissionsProvider.notifier).refresh(),
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Thử lại'),
-                        ),
-                      ],
+            child: (submissionsAsync.hasError && !submissionsAsync.hasValue)
+                ? _buildErrorView(context, submissionsAsync.error!)
+                : submissionsAsync.when(
+                    loading: () => const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('Đang tải danh sách bài thi...'),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
-              data: (_) {
+                    error: (error, stack) => _buildErrorView(context, error),
+                    data: (_) {
                 if (filteredSubmissions.isEmpty) {
                   final isFiltered = selectedFilter != SubmissionFilter.all ||
                       _searchController.text.isNotEmpty;
@@ -961,14 +1161,23 @@ class _SubmissionCard extends StatelessWidget {
                       Icon(Icons.timer_outlined, size: 16, color: colorScheme.error),
                       const SizedBox(width: 6),
                       Expanded(
-                        child: Text(
-                          submission.remainingProofText ?? 'Yêu cầu nộp dải âm bản trong 48h',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.error,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
+                        child: submission.proofDeadlineAt != null
+                            ? LiveCountdownWidget(
+                                deadlineAt: submission.proofDeadlineAt!,
+                                prefixText: 'Hạn nộp: ',
+                                textStyle: theme.textTheme.bodySmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              )
+                            : Text(
+                                submission.remainingProofText ?? 'Yêu cầu nộp dải âm bản trong 48h (BR-19)',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.error,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
                       ),
                       FilledButton.tonal(
                         onPressed: onUploadProof,

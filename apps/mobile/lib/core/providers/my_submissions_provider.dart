@@ -5,10 +5,10 @@ import '../data/submission_repository.dart';
 
 enum SubmissionFilter {
   all('Tất cả'),
-  proofRequested('Cần âm bản'),
-  pending('Đang chờ'),
-  approved('Đã duyệt'),
-  disqualified('Bị loại');
+  pending('Đang chờ duyệt'),
+  approved('Hợp lệ'),
+  rejected('Bị từ chối'),
+  proofRequested('Cần âm bản');
 
   const SubmissionFilter(this.label);
   final String label;
@@ -53,6 +53,21 @@ class MySubmissionsNotifier extends AsyncNotifier<List<UserSubmission>> {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() => _fetchSubmissions());
   }
+
+  /// Silent background refresh without setting loading state,
+  /// preserving UI scroll/interaction during real-time polling.
+  Future<List<UserSubmission>?> silentRefresh() async {
+    try {
+      final updated = await _fetchSubmissions();
+      state = AsyncValue.data(updated);
+      return updated;
+    } catch (e, st) {
+      if (!state.hasValue) {
+        state = AsyncValue.error(e, st);
+      }
+      return null;
+    }
+  }
 }
 
 final mySubmissionsProvider =
@@ -73,20 +88,17 @@ final filteredSubmissionsProvider = Provider<List<UserSubmission>>((ref) {
       case SubmissionFilter.all:
         matchesFilter = true;
         break;
-      case SubmissionFilter.proofRequested:
-        matchesFilter = sub.status == SubmissionStatus.proofRequested;
-        break;
       case SubmissionFilter.pending:
-        matchesFilter = sub.status == SubmissionStatus.pendingAi ||
-            sub.status == SubmissionStatus.aiFlagged ||
-            sub.status == SubmissionStatus.proofSubmitted;
+        matchesFilter = sub.status.moderationGroup == ModerationStatusGroup.pending;
         break;
       case SubmissionFilter.approved:
-        matchesFilter = sub.status == SubmissionStatus.approved;
+        matchesFilter = sub.status.moderationGroup == ModerationStatusGroup.approved;
         break;
-      case SubmissionFilter.disqualified:
-        matchesFilter = sub.status == SubmissionStatus.disqualified ||
-            sub.status == SubmissionStatus.disqualifiedNoProof;
+      case SubmissionFilter.rejected:
+        matchesFilter = sub.status.moderationGroup == ModerationStatusGroup.rejected;
+        break;
+      case SubmissionFilter.proofRequested:
+        matchesFilter = sub.status == SubmissionStatus.proofRequested;
         break;
     }
 
