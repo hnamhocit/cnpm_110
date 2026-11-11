@@ -267,3 +267,38 @@ Dùng cho màn hình Admin/Organizer Review bài nộp.
 - **Loading State:** Khi ảnh đang quét, hiển thị trạng thái đang xử lý (Skeleton loader). Không hiển thị thời gian hoàn tất cố định khi chưa có SLA được nhóm xác nhận.
 - **WebSocket / SSE:** Nhận thông báo thời gian thực ngay khi AI Worker hoàn thành để cập nhật giao diện mà không cần F5 trình duyệt.
 - **Fault Tolerance:** Trường hợp GPU worker bị lỗi (OOM hoặc mất kết nối mạng), hệ thống tự động đưa bài nộp vào trạng thái `PENDING_RETRY` và bắn notification tới Kỹ thuật viên hệ thống, tuyệt đối không làm đơ giao diện thí sinh.
+
+## 6. Error Handling & Validation
+
+- **400 Bad Request**: Invalid request payload or missing required fields.
+- **401 Unauthorized**: Missing or invalid JWT token.
+- **403 Forbidden**: Insufficient permissions for the requested operation.
+- **404 Not Found**: AI verification job or analysis not found or still pending.
+- **422 Unprocessable Entity**: AI job failed due to internal processing error.
+- **500 Internal Server Error**: Unexpected server error.
+
+All error responses follow the standard error schema defined in `docs/09-api-contracts.md`.
+
+## 7. Security & Access Control
+
+- **Authentication**: JWT Access Token (15 min) with Refresh Token rotation.
+- **Authorization (RBAC)**:
+  - **Organizer**: Can trigger scans, view analysis, and request manual review.
+  - **Administrator**: Can configure AI thresholds and view audit logs.
+  - **Judge**: Read‑only access to analysis results; cannot modify.
+  - **Participant**: No direct access to AI results.
+- **Data Protection**: All AI analysis data stored in encrypted PostgreSQL columns (`is_encrypted`). Access logs are recorded in `audit_logs`.
+
+## 8. Non‑Functional Requirements
+
+- **Performance**: AI verification completes within 120 seconds per submission; API response time < 200 ms for job status queries.
+- **Scalability**: Background workers consume jobs from Redis queue; multiple workers can be scaled horizontally.
+- **Reliability**: Jobs marked `FAILED` are automatically retried up to 3 times.
+- **Auditability**: All state transitions are logged with user ID, timestamp, and reason.
+
+## 9. Testing & Acceptance Criteria
+
+- **Unit Tests**: Coverage ≥ 80 % for service layer handling job creation and status updates.
+- **Integration Tests**: End‑to‑end flow covering job enqueue, worker processing, and API contract validation.
+- **Mock Data Removal**: Ensure no mock data is present in production; all test fixtures are removed.
+- **Acceptance**: All endpoints return correct status codes and payloads as defined in this document.

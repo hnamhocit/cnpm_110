@@ -412,10 +412,11 @@ route.post(
 
       // Validate submitted image size and minimum dimensions
       const validatedImage = await validateImage(image, {
-        maxBytes: 25 * MiB,
-        minWidth: 2000,
-        minHeight: 2000,
+        maxBytes: 25 * MiB, // Strict 25 MiB limit (BR-07)
+        minWidth: 2000, // Minimum width: 2000px
+        minHeight: 2000, // Minimum height: 2000px
         maxPixels: 100_000_000,
+        allowedTypes: ["image/jpeg", "image/tiff"],
       });
 
       const validatedProof = proof
