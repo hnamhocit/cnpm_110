@@ -1,4 +1,3 @@
-import { authenticate, requireRoles } from "./middlewares/auth";
 import { uploadToR2 } from "./r2";
 import { Hono } from "hono";
 import auth from "./routes/auth";
@@ -89,37 +88,6 @@ app.post("/api/v1/upload", async (c) => {
     return c.json({ error: "Upload failed" }, 500);
   }
 });
-
-
-// Các API mẫu kiểm tra phân quyền RBAC
-app.use("/api/v1/rbac/*", authenticate);
-
-app.get("/api/v1/rbac/admin", requireRoles("Admin"), (c) => {
-  return c.json({ message: "Admin truy cập thành công" });
-});
-
-app.get("/api/v1/rbac/organizer", requireRoles("Organizer"), (c) => {
-  return c.json({ message: "Organizer truy cập thành công" });
-});
-
-app.get("/api/v1/rbac/judge", requireRoles("Judge"), (c) => {
-  return c.json({ message: "Judge truy cập thành công" });
-});
-
-app.get("/api/v1/rbac/participant", requireRoles("Participant"), (c) => {
-  return c.json({ message: "Participant truy cập thành công" });
-});
-
-// API cho phép Admin và Organizer quản lý cuộc thi
-app.get(
-  "/api/v1/rbac/manage-contest",
-  requireRoles("Admin", "Organizer"),
-  (c) => {
-    return c.json({
-      message: "Bạn được phép quản lý cuộc thi",
-    });
-  },
-);
 
 export default {
   port: 8080,
