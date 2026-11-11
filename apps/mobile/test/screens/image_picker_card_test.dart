@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_application_2/core/components/cached_image_widget.dart';
 import 'package:flutter_application_2/models/image_attachment.dart';
 import 'package:flutter_application_2/models/submission_data.dart';
 import 'package:flutter_application_2/screens/submission/components/image_picker_card.dart';
@@ -186,20 +187,55 @@ void main() {
       expect(find.text('Dung lượng file quá lớn'), findsOneWidget);
     });
 
-    testWidgets('renders remote HTTP/HTTPS URL attachment gracefully', (tester) async {
-      final remoteAttachment = ImageAttachment(
-        file: XFile('https://example.com/photos/film.jpg'),
-        name: 'remote_film.jpg',
-        sizeInBytes: 1024 * 1024,
+    testWidgets(
+      'renders CachedImageWidget when attachment has remote URL with query tokens',
+      (tester) async {
+        const remoteUrl =
+            'https://s3.amazonaws.com/bucket/scan.jpg?token=abc123xyz&sig=456';
+        final attachment = ImageAttachment(
+          file: XFile(remoteUrl),
+          name: 'remote_scan.jpg',
+          sizeInBytes: 1024 * 500,
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ImagePickerCard(
+                title: 'Ảnh scan từ server',
+                subtitle: 'Bắt buộc',
+                attachment: attachment,
+                onPickRequested: (_) async {},
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(CachedImageWidget), findsOneWidget);
+        final cachedWidget =
+            tester.widget<CachedImageWidget>(find.byType(CachedImageWidget));
+        expect(cachedWidget.imageUrl, remoteUrl);
+      },
+    );
+
+    testWidgets('renders Image.file when attachment has local file path', (
+      tester,
+    ) async {
+      const localPath = '/data/user/0/com.app/cache/local_photo.jpg';
+      final attachment = ImageAttachment(
+        file: XFile(localPath),
+        name: 'local_photo.jpg',
+        sizeInBytes: 1024 * 200,
       );
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: ImagePickerCard(
-              title: 'Ảnh scan từ server',
-              subtitle: 'Đã lưu',
-              attachment: remoteAttachment,
+              title: 'Ảnh scan cục bộ',
+              subtitle: 'Bắt buộc',
+              attachment: attachment,
               onPickRequested: (_) async {},
             ),
           ),
@@ -207,8 +243,9 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('remote_film.jpg'), findsOneWidget);
-      expect(find.text('1.00 MB'), findsOneWidget);
+      expect(find.byType(CachedImageWidget), findsNothing);
+      final imageWidget = tester.widget<Image>(find.byType(Image));
+      expect(imageWidget.image, isA<FileImage>());
     });
   });
 }

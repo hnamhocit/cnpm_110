@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 import '../../core/utils/date_format.dart';
 import '../../models/contest.dart';
 
@@ -14,33 +13,55 @@ class ContestCard extends StatelessWidget {
   final Contest contest;
   final VoidCallback? onTap;
 
-  String get _dateRange {
-    final start = contest.startAt;
-    final end = contest.endAt;
-    if (start == null && end == null) return 'Chưa công bố thời gian';
-    if (start != null && end != null) {
-      return '${formatDate(start)} - ${formatDate(end)}';
-    }
-    if (start != null) return 'Từ ${formatDate(start)}';
-    return 'Đến ${formatDate(end!)}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final description = contest.description;
 
-    final (background, foreground) = switch (contest.status) {
-      ContestStatus.ongoing => (
-        scheme.primaryContainer,
-        scheme.onPrimaryContainer,
-      ),
-      ContestStatus.published => (
-        scheme.tertiaryContainer,
-        scheme.onTertiaryContainer,
-      ),
-      _ => (scheme.surfaceContainerHighest, scheme.onSurfaceVariant),
+    final description = contest.description?.trim();
+
+    final startDateStr = contest.startAt != null
+        ? formatDate(contest.startAt!)
+        : 'Chưa cập nhật';
+
+    final endDateStr = contest.endAt != null
+        ? formatDate(contest.endAt!)
+        : 'Chưa cập nhật';
+
+    final String dateRange;
+
+    if (contest.startAt == null && contest.endAt == null) {
+      dateRange = 'Chưa cập nhật';
+    } else if (contest.startAt == null) {
+      dateRange = 'Đến $endDateStr';
+    } else if (contest.endAt == null) {
+      dateRange = 'Từ $startDateStr';
+    } else {
+      dateRange = '$startDateStr - $endDateStr';
+    }
+
+    final background = switch (contest.status) {
+      ContestStatus.open => Colors.green.shade100,
+      ContestStatus.ongoing => Colors.blue.shade100,
+      ContestStatus.underReview => Colors.orange.shade100,
+      ContestStatus.judging => Colors.purple.shade100,
+      ContestStatus.published => Colors.teal.shade100,
+      ContestStatus.completed => Colors.teal.shade100,
+      ContestStatus.archived => Colors.grey.shade200,
+      ContestStatus.cancelled => Colors.red.shade100,
+      ContestStatus.draft => Colors.grey.shade200,
+    };
+
+    final foreground = switch (contest.status) {
+      ContestStatus.open => Colors.green.shade900,
+      ContestStatus.ongoing => Colors.blue.shade900,
+      ContestStatus.underReview => Colors.orange.shade900,
+      ContestStatus.judging => Colors.purple.shade900,
+      ContestStatus.published => Colors.teal.shade900,
+      ContestStatus.completed => Colors.teal.shade900,
+      ContestStatus.archived => Colors.grey.shade800,
+      ContestStatus.cancelled => Colors.red.shade900,
+      ContestStatus.draft => Colors.grey.shade800,
     };
 
     return Card(
@@ -103,7 +124,10 @@ class ContestCard extends StatelessWidget {
                     color: scheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 6),
-                  Text(_dateRange, style: theme.textTheme.bodySmall),
+                  Text(
+                    dateRange,
+                    style: theme.textTheme.bodySmall,
+                  ),
                 ],
               ),
             ],
