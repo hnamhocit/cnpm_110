@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/components/cached_image_widget.dart';
 import '../../../models/image_attachment.dart';
 
 class ImagePickerCard extends StatelessWidget {
@@ -87,6 +88,21 @@ class ImagePickerCard extends StatelessWidget {
   Widget _buildThumbnail(BuildContext context) {
     if (attachment == null) return const SizedBox.shrink();
 
+    final path = attachment!.file.path;
+    final isRemote = path.startsWith('http://') || path.startsWith('https://');
+
+    if (isRemote) {
+      return CachedImageWidget(
+        imageUrl: path,
+        fit: BoxFit.cover,
+        memCacheWidth: 400,
+        memCacheHeight: 400,
+        errorWidget: (context, url, error) => const Center(
+          child: Icon(Icons.broken_image_outlined, size: 36, color: Colors.grey),
+        ),
+      );
+    }
+
     if (attachment!.bytes != null) {
       return Image.memory(
         attachment!.bytes!,
@@ -97,9 +113,9 @@ class ImagePickerCard extends StatelessWidget {
       );
     }
 
-    if (!kIsWeb && attachment!.file.path.isNotEmpty) {
+    if (!kIsWeb && path.isNotEmpty) {
       return Image.file(
-        File(attachment!.file.path),
+        File(path),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) => const Center(
           child: Icon(Icons.broken_image_outlined, size: 36, color: Colors.grey),
@@ -107,10 +123,12 @@ class ImagePickerCard extends StatelessWidget {
       );
     }
 
-    return Image.network(
-      attachment!.file.path,
+    return CachedImageWidget(
+      imageUrl: path,
       fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => const Center(
+      memCacheWidth: 400,
+      memCacheHeight: 400,
+      errorWidget: (context, url, error) => const Center(
         child: Icon(Icons.broken_image_outlined, size: 36, color: Colors.grey),
       ),
     );

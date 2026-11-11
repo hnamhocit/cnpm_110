@@ -9,6 +9,7 @@ class FilmShootingParams {
     this.lens,
     this.frameNumber,
     this.rollId,
+    this.location,
     this.devLabName,
     this.devChemistry,
     this.scannerModel,
@@ -42,6 +43,9 @@ class FilmShootingParams {
   /// Mã nhận diện cuộn phim / Roll ID (tuỳ chọn, max 100 ký tự)
   final String? rollId;
 
+  /// Địa điểm chụp ảnh (tuỳ chọn, max 255 ký tự)
+  final String? location;
+
   /// Tên Lab tráng phim (tuỳ chọn, max 150 ký tự)
   final String? devLabName;
 
@@ -67,6 +71,7 @@ class FilmShootingParams {
     int? isoShot,
     String? frameNumber,
     String? rollId,
+    String? location,
     String? devLabName,
     String? devChemistry,
     String? scannerModel,
@@ -82,6 +87,7 @@ class FilmShootingParams {
       isoShot: isoShot ?? this.isoShot,
       frameNumber: frameNumber ?? this.frameNumber,
       rollId: rollId ?? this.rollId,
+      location: location ?? this.location,
       devLabName: devLabName ?? this.devLabName,
       devChemistry: devChemistry ?? this.devChemistry,
       scannerModel: scannerModel ?? this.scannerModel,
@@ -101,6 +107,7 @@ class FilmShootingParams {
       if (frameNumber != null && frameNumber!.isNotEmpty)
         'frameNumber': frameNumber,
       if (rollId != null && rollId!.isNotEmpty) 'rollId': rollId,
+      if (location != null && location!.isNotEmpty) 'location': location,
       if (devLabName != null && devLabName!.isNotEmpty)
         'devLabName': devLabName,
       if (devChemistry != null && devChemistry!.isNotEmpty)
@@ -122,6 +129,7 @@ class FilmShootingParams {
       isoShot: (map['isoShot'] as num?)?.toInt() ?? 400,
       frameNumber: map['frameNumber'] as String?,
       rollId: map['rollId'] as String?,
+      location: map['location'] as String?,
       devLabName: map['devLabName'] as String?,
       devChemistry: map['devChemistry'] as String?,
       scannerModel: map['scannerModel'] as String?,
@@ -148,6 +156,9 @@ class FilmShootingParams {
     }
     if (rollId != null && rollId!.trim().isNotEmpty) {
       fields['rollId'] = rollId!.trim();
+    }
+    if (location != null && location!.trim().isNotEmpty) {
+      fields['location'] = location!.trim();
     }
     if (devLabName != null && devLabName!.trim().isNotEmpty) {
       fields['devLabName'] = devLabName!.trim();
