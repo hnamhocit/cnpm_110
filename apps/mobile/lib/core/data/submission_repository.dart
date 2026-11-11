@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/film_dev_scan_params.dart';
 import '../../models/film_shooting_params.dart';
 import '../../models/submission_data.dart';
+import '../../models/user_submission.dart';
 import '../network/api_exception.dart';
 import '../providers/api_client_provider.dart';
 
@@ -11,6 +12,11 @@ abstract interface class SubmissionRepository {
   Future<SubmissionResult> uploadSubmission(
     SubmissionData data, {
     void Function(int sent, int total)? onSendProgress,
+  });
+
+  Future<List<UserSubmission>> getMySubmissions({
+    String? contestId,
+    String? status,
   });
 }
 
@@ -114,6 +120,50 @@ class ApiSubmissionRepository
       final resultData = body['data'] as Map<String, dynamic>? ?? body;
 
       return SubmissionResult.fromJson(resultData);
+    } on DioException catch (error) {
+      throw ApiException.fromDio(error);
+    }
+  }
+
+  @override
+  Future<List<UserSubmission>> getMySubmissions({
+    String? contestId,
+    String? status,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        if (contestId != null && contestId.isNotEmpty) 'contestId': contestId,
+        if (status != null && status.isNotEmpty) 'status': status,
+      };
+
+      Response<Map<String, dynamic>> response;
+      try {
+        response = await _dio.get<Map<String, dynamic>>(
+          '/api/v1/submissions/my',
+          queryParameters: queryParams,
+        );
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
+          response = await _dio.get<Map<String, dynamic>>(
+            '/api/v1/submissions',
+            queryParameters: queryParams,
+          );
+        } else {
+          rethrow;
+        }
+      }
+
+      final body = response.data ?? const <String, dynamic>{};
+      final rawData = body['data'];
+      final List<dynamic> list = rawData is List<dynamic>
+          ? rawData
+          : (rawData is Map<String, dynamic>
+              ? (rawData['items'] as List<dynamic>? ?? const [])
+              : const []);
+
+      return list
+          .map((item) => UserSubmission.fromJson(item as Map<String, dynamic>))
+          .toList();
     } on DioException catch (error) {
       throw ApiException.fromDio(error);
     }

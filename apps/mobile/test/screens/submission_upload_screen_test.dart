@@ -5,6 +5,7 @@ import 'package:flutter_application_2/core/data/submission_repository.dart';
 import 'package:flutter_application_2/core/services/image_picker_service.dart';
 import 'package:flutter_application_2/models/image_attachment.dart';
 import 'package:flutter_application_2/models/submission_data.dart';
+import 'package:flutter_application_2/models/user_submission.dart';
 import 'package:flutter_application_2/screens/submission/components/image_picker_card.dart';
 import 'package:flutter_application_2/screens/submission/components/image_preview_dialog.dart';
 import 'package:flutter_application_2/screens/submission/submission_upload_screen.dart';
@@ -85,6 +86,14 @@ class FakeSubmissionRepository implements SubmissionRepository {
       negativeProofPath: 'proofs/participant/sub-123.jpg',
       status: 'PENDING_AI',
     );
+  }
+
+  @override
+  Future<List<UserSubmission>> getMySubmissions({
+    String? contestId,
+    String? status,
+  }) async {
+    return const [];
   }
 }
 

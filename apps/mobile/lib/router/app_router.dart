@@ -9,10 +9,12 @@ import '../models/film_shooting_params.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/splash_screen.dart';
+import '../screens/contest/contest_detail_screen.dart';
 import '../screens/film_dev_scan/film_dev_scan_screen.dart';
 import '../screens/film_params/film_params_screen.dart';
 import '../screens/main_screen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/submission/my_submissions_screen.dart';
 import '../screens/submission/submission_upload_screen.dart';
 
 /// BR-04: Kiểm tra token JWT hợp lệ cho các màn hình yêu cầu xác thực
@@ -72,6 +74,73 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
     GoRoute(
+      path: '/my-submissions',
+      builder: (context, state) => const MySubmissionsScreen(),
+    ),
+    GoRoute(
+      path: '/contests/:id',
+      builder: (context, state) {
+        final contestId = state.pathParameters['id']!;
+        return ContestDetailScreen(contestId: contestId);
+      },
+    ),
+    GoRoute(
+      path: '/contests/:id/submit',
+      builder: (context, state) {
+        final contestId = state.pathParameters['id'] ?? '';
+        final extra = state.extra;
+        final map = extra is Map ? extra : null;
+        final contestTitle = state.uri.queryParameters['contestTitle'] ??
+            (map?['contestTitle'] is String ? map!['contestTitle'] as String : null);
+        final categoryId = state.uri.queryParameters['categoryId'] ??
+            (map?['categoryId'] is String ? map!['categoryId'] as String : null) ??
+            '';
+        final shootingParams = map?['initialShootingParams'] is FilmShootingParams
+            ? map!['initialShootingParams'] as FilmShootingParams
+            : null;
+        final devScanParams = map?['initialDevScanParams'] is FilmDevScanParams
+            ? map!['initialDevScanParams'] as FilmDevScanParams
+            : null;
+
+        return SubmissionUploadScreen(
+          contestId: contestId,
+          contestTitle: contestTitle,
+          categoryId: categoryId,
+          initialShootingParams: shootingParams,
+          initialDevScanParams: devScanParams,
+        );
+      },
+    ),
+    GoRoute(
+      path: '/submissions/upload',
+      builder: (context, state) {
+        final extra = state.extra;
+        final map = extra is Map ? extra : null;
+        final contestId = state.uri.queryParameters['contestId'] ??
+            (map?['contestId'] is String ? map!['contestId'] as String : null) ??
+            '';
+        final contestTitle = state.uri.queryParameters['contestTitle'] ??
+            (map?['contestTitle'] is String ? map!['contestTitle'] as String : null);
+        final categoryId = state.uri.queryParameters['categoryId'] ??
+            (map?['categoryId'] is String ? map!['categoryId'] as String : null) ??
+            '';
+        final shootingParams = map?['initialShootingParams'] is FilmShootingParams
+            ? map!['initialShootingParams'] as FilmShootingParams
+            : null;
+        final devScanParams = map?['initialDevScanParams'] is FilmDevScanParams
+            ? map!['initialDevScanParams'] as FilmDevScanParams
+            : null;
+
+        return SubmissionUploadScreen(
+          contestId: contestId,
+          contestTitle: contestTitle,
+          categoryId: categoryId,
+          initialShootingParams: shootingParams,
+          initialDevScanParams: devScanParams,
+        );
+      },
+    ),
+    GoRoute(
       path: '/film-params',
       builder: (context, state) {
         final extra = state.extra;
@@ -94,12 +163,29 @@ final GoRouter appRouter = GoRouter(
         );
       },
     ),
-    // Bug 16: Khai báo route màn hình thông số tráng scan
     GoRoute(
       path: '/film-dev-scan',
-      builder: (context, state) => const FilmDevScanScreen(),
+      builder: (context, state) {
+        final extra = state.extra;
+        final map = extra is Map ? extra : null;
+        final initialParams = extra is FilmDevScanParams
+            ? extra
+            : (map?['initialParams'] is FilmDevScanParams
+                ? map!['initialParams'] as FilmDevScanParams
+                : null);
+        final rawOnSaved = map?['onSaved'];
+        final onSaved = rawOnSaved is ValueChanged<FilmDevScanParams>
+            ? rawOnSaved
+            : (rawOnSaved is void Function(FilmDevScanParams)
+                ? rawOnSaved
+                : null);
+
+        return FilmDevScanScreen(
+          initialParams: initialParams,
+          onSaved: onSaved,
+        );
+      },
     ),
-    // Bug 16 & Bug 14: Route nộp bài thi (nhận tham số qua Query Parameters hoặc state.extra)
     GoRoute(
       path: '/submission',
       builder: (context, state) {
@@ -120,7 +206,6 @@ final GoRouter appRouter = GoRouter(
         );
       },
     ),
-    // Bug 16 & Bug 14: Route nộp bài thi (nhận tham số qua Path Parameters)
     GoRoute(
       path: '/submission/:contestId/:categoryId',
       builder: (context, state) {
