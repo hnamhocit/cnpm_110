@@ -3,40 +3,40 @@ import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer className="border-t border-zinc-800 bg-[#0d0f11] py-12 text-zinc-400">
+    <footer className="border-t border-slate-200 bg-white py-12 text-slate-600">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           {/* Brand info */}
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-400 text-black">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm shadow-blue-600/30">
                 <Camera className="h-4 w-4" />
               </div>
-              <span className="text-base font-bold text-white tracking-tight">
+              <span className="text-base font-bold text-slate-900 tracking-tight">
                 FILM CONTEST PLATFORM
               </span>
             </div>
-            <p className="text-sm text-zinc-400 max-w-sm leading-relaxed mb-4">
+            <p className="text-sm text-slate-600 max-w-sm leading-relaxed mb-4">
               Nền tảng tổ chức và quản lý cuộc thi nhiếp ảnh phim tích hợp trí
               tuệ nhân tạo. Gìn giữ nghệ thuật quang học và tôn vinh khoảnh khắc
               nguyên bản.
             </p>
-            <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
-              <Film className="h-3.5 w-3.5 text-amber-400" />
+            <div className="flex items-center gap-2 text-xs text-slate-500 font-mono">
+              <Film className="h-3.5 w-3.5 text-blue-600" />
               <span>Capstone Project 2026 — CNPM 110</span>
             </div>
           </div>
 
           {/* Quick links */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-200 mb-4">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-900 mb-4">
               Điều hướng
             </h4>
             <ul className="space-y-2 text-sm">
               <li>
                 <a
                   href="#ongoing-contests"
-                  className="hover:text-amber-400 transition-colors"
+                  className="hover:text-blue-600 transition-colors"
                 >
                   Cuộc thi đang diễn ra
                 </a>
@@ -44,7 +44,7 @@ export function Footer() {
               <li>
                 <a
                   href="#ai-features"
-                  className="hover:text-amber-400 transition-colors"
+                  className="hover:text-blue-600 transition-colors"
                 >
                   Tính năng AI
                 </a>
@@ -52,7 +52,7 @@ export function Footer() {
               <li>
                 <a
                   href="#how-it-works"
-                  className="hover:text-amber-400 transition-colors"
+                  className="hover:text-blue-600 transition-colors"
                 >
                   Thể lệ nộp bài
                 </a>
@@ -60,7 +60,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/judge/login"
-                  className="hover:text-amber-400 transition-colors"
+                  className="hover:text-blue-600 transition-colors"
                 >
                   Cổng Giám khảo
                 </Link>
@@ -70,14 +70,14 @@ export function Footer() {
 
           {/* System & Portal */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-200 mb-4">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-900 mb-4">
               Hệ thống
             </h4>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
                   href="/login"
-                  className="hover:text-amber-400 transition-colors"
+                  className="hover:text-blue-600 transition-colors"
                 >
                   Đăng nhập tài khoản
                 </Link>
@@ -85,7 +85,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/register"
-                  className="hover:text-amber-400 transition-colors"
+                  className="hover:text-blue-600 transition-colors"
                 >
                   Đăng ký thí sinh
                 </Link>
@@ -93,24 +93,16 @@ export function Footer() {
               <li>
                 <Link
                   href="/portal"
-                  className="hover:text-amber-400 transition-colors"
+                  className="hover:text-blue-600 transition-colors"
                 >
                   Cổng Quản trị (Portal)
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/forbidden"
-                  className="hover:text-amber-400 transition-colors"
-                >
-                  Trang phân quyền (403)
                 </Link>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="pt-8 border-t border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
+        <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div>
             &copy; 2026 Film Photography Contest Platform. All rights reserved.
           </div>
