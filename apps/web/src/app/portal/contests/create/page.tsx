@@ -121,10 +121,12 @@ export default function CreateContestPage() {
         .filter(Boolean)
         .join("\n\n");
 
-      // Gửi API theo hợp đồng Bug 06: field name (không phải title), endpoint /api/v1/contests
+      // Gửi API theo hợp đồng: gửi cả timeline chi tiết và startAt/endAt
       await http.post("/api/v1/contests", {
         name: formData.name.trim(),
         description: description || null,
+        startAt: regStart.toISOString(),
+        endAt: (formData.resultsAnnounced ? new Date(formData.resultsAnnounced) : judgeEnd).toISOString(),
         registrationStart: regStart.toISOString(),
         registrationEnd: regEnd.toISOString(),
         submissionStart: subStart.toISOString(),
