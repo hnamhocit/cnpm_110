@@ -6,8 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/components/loading_dialog.dart';
+import '../../core/data/submission_repository.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/providers/my_submissions_provider.dart';
+import '../../core/services/image_compression_service.dart';
+import '../../core/services/image_picker_service.dart';
 import '../../models/image_attachment.dart';
 import '../../models/user_submission.dart';
 import 'components/image_preview_dialog.dart';
@@ -237,17 +241,30 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                FilledButton.icon(
-                  onPressed: () {
-                    Navigator.of(sheetContext).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Tính năng tải âm bản đang mở camera/thư viện...'),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          _handleProofUpload(context, submission, ImageSource.camera);
+                        },
+                        icon: const Icon(Icons.camera_alt_rounded),
+                        label: const Text('Chụp ảnh'),
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.upload_file_rounded),
-                  label: const Text('Chọn ảnh dải âm bản (1-3 ảnh)'),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          _handleProofUpload(context, submission, ImageSource.gallery);
+                        },
+                        icon: const Icon(Icons.photo_library_rounded),
+                        label: const Text('Thư viện'),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 TextButton(
@@ -260,6 +277,63 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
         );
       },
     );
+  }
+
+  Future<void> _handleProofUpload(
+    BuildContext context,
+    UserSubmission submission,
+    ImageSource source,
+  ) async {
+    try {
+      final picker = ref.read(imagePickerServiceProvider);
+      final rawAttachment = await picker.pickAttachment(source: source);
+      if (rawAttachment == null || !mounted) return;
+
+      LoadingDialog.show(context, message: 'Đang xử lý và tải ảnh âm bản...');
+
+      final compressor = ref.read(imageCompressionServiceProvider);
+      final compResult = await compressor.compressAttachment(
+        rawAttachment,
+        config: const ImageCompressionConfig(
+          requireMinShortEdge: false,
+          targetMaxBytes: 20 * 1024 * 1024,
+        ),
+      );
+
+      final repo = ref.read(submissionRepositoryProvider);
+      await repo.uploadNegativeProof(
+        submissionId: submission.id,
+        proofImage: compResult.attachment,
+      );
+
+      if (!mounted) return;
+      LoadingDialog.hide(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Đã nộp ảnh dải âm bản thành công! Đang chờ Ban tổ chức đối chiếu.',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      await ref.read(mySubmissionsProvider.notifier).refresh();
+    } catch (e) {
+      if (!mounted) return;
+      try {
+        LoadingDialog.hide(context);
+      } catch (_) {}
+
+      final message =
+          e is ApiException ? e.message : 'Không thể tải ảnh âm bản: $e';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
   }
 
   void _showSubmissionDetailsSheet(BuildContext context, UserSubmission submission) {
