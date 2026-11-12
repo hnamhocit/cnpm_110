@@ -158,6 +158,8 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
       return 10;
     } else if (lower == '120') {
       return 16;
+    } else if (lower.contains('4x5')) {
+      return 1;
     }
     return null;
   }
