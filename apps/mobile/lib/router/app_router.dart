@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 
-import '../models/film_dev_scan_params.dart';
-import '../models/film_shooting_params.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/splash_screen.dart';
@@ -142,26 +140,7 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/film-params',
-      builder: (context, state) {
-        final extra = state.extra;
-        final map = extra is Map ? extra : null;
-        final initialParams = extra is FilmShootingParams
-            ? extra
-            : (map?['initialParams'] is FilmShootingParams
-                ? map!['initialParams'] as FilmShootingParams
-                : null);
-        final rawOnSaved = map?['onSaved'];
-        final onSaved = rawOnSaved is ValueChanged<FilmShootingParams>
-            ? rawOnSaved
-            : (rawOnSaved is void Function(FilmShootingParams)
-                ? rawOnSaved
-                : null);
-
-        return FilmParamsScreen(
-          initialParams: initialParams,
-          onSaved: onSaved,
-        );
-      },
+      builder: (context, state) => const FilmParamsScreen(),
     ),
     GoRoute(
       path: '/film-dev-scan',
