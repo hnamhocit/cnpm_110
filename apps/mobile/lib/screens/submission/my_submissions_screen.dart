@@ -247,7 +247,7 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
                       child: OutlinedButton.icon(
                         onPressed: () {
                           Navigator.of(sheetContext).pop();
-                          _handleProofUpload(context, submission, ImageSource.camera);
+                          _handleProofUpload(submission, ImageSource.camera);
                         },
                         icon: const Icon(Icons.camera_alt_rounded),
                         label: const Text('Chụp ảnh'),
@@ -258,7 +258,7 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
                       child: FilledButton.icon(
                         onPressed: () {
                           Navigator.of(sheetContext).pop();
-                          _handleProofUpload(context, submission, ImageSource.gallery);
+                          _handleProofUpload(submission, ImageSource.gallery);
                         },
                         icon: const Icon(Icons.photo_library_rounded),
                         label: const Text('Thư viện'),
@@ -280,7 +280,6 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
   }
 
   Future<void> _handleProofUpload(
-    BuildContext context,
     UserSubmission submission,
     ImageSource source,
   ) async {
