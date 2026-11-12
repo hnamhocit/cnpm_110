@@ -2,6 +2,7 @@
 
 import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +25,8 @@ type Criterion = {
 };
 
 export default function CriteriaConfigPage() {
+  const searchParams = useSearchParams();
+  const contestId = searchParams.get("contestId") || searchParams.get("id") || "1";
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -96,7 +99,7 @@ export default function CriteriaConfigPage() {
 
     setIsLoading(true);
     try {
-      await http.post("/api/v1/contests/1/criteria", { criteria });
+      await http.post(`/api/v1/contests/${contestId}/criteria`, { criteria });
       setNotice("Đã lưu cấu hình tiêu chí thành công.");
     } catch (err) {
       console.error("Failed to save criteria:", err);

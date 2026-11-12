@@ -12,6 +12,7 @@ export const PORTAL_ALLOWED_ROLES: readonly Role[] = [
   "Organizer",
   "Administrator",
   "Contest Organizer",
+  "Judge",
 ];
 
 // Kiểm tra một đường dẫn có thuộc Portal không.

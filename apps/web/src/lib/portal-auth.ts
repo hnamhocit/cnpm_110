@@ -23,7 +23,7 @@ export async function checkPortalAccess(
 
   // 1. Kiểm tra nhanh JWT payload
   const payload = decodeJwtPayload(accessToken);
-  if (!payload || (payload.exp && payload.exp <= Math.floor(Date.now() / 1000))) {
+  if (!payload) {
     return "login";
   }
 

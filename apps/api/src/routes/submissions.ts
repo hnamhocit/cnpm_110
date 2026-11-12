@@ -335,6 +335,7 @@ route.get(
           submission: submissions,
           metadata: filmMetadata,
           aiAnalysis: submissionAiAnalyses,
+          author: users,
         })
         .from(submissions)
         .leftJoin(filmMetadata, eq(filmMetadata.submissionId, submissions.id))
@@ -342,6 +343,7 @@ route.get(
           submissionAiAnalyses,
           eq(submissionAiAnalyses.submissionId, submissions.id),
         )
+        .leftJoin(users, eq(submissions.participantId, users.id))
         .where(whereClause)
         .orderBy(desc(submissions.createdAt))
         .limit(limit)
@@ -358,6 +360,7 @@ route.get(
           contestId: sub.contestId,
           categoryId: sub.categoryId,
           participantId: sub.participantId,
+          authorName: row.author?.fullName || row.author?.email || "Thí sinh ẩn danh",
           title: sub.title,
           description: sub.description,
           rejectionReason: sub.rejectionReason,
