@@ -117,6 +117,100 @@ const VALID_SUBMISSION_STATUSES = [
   "DISQUALIFIED_NO_PROOF",
 ] as const;
 
+// GET /api/v1/submissions/my
+// Thí sinh xem danh sách bài thi của chính mình
+route.get(
+  "/my",
+  authenticate,
+  async (c) => {
+    const user = c.get("user");
+    if (!user?.id) {
+      return c.json({ success: false, code: 401, message: "Unauthorized" }, 401);
+    }
+
+    const contestId = c.req.query("contestId");
+    const statusParam = c.req.query("status");
+
+    const conditions = [eq(submissions.participantId, user.id)];
+
+    if (contestId) {
+      conditions.push(eq(submissions.contestId, contestId));
+    }
+    if (statusParam) {
+      conditions.push(eq(submissions.status, statusParam));
+    }
+
+    try {
+      const rows = await db
+        .select({
+          sub: submissions,
+          cat: categories,
+          con: contests,
+          meta: filmMetadata,
+          ai: submissionAiAnalyses,
+        })
+        .from(submissions)
+        .leftJoin(categories, eq(submissions.categoryId, categories.id))
+        .leftJoin(contests, eq(submissions.contestId, contests.id))
+        .leftJoin(filmMetadata, eq(submissions.id, filmMetadata.submissionId))
+        .leftJoin(submissionAiAnalyses, eq(submissions.id, submissionAiAnalyses.submissionId))
+        .where(and(...conditions))
+        .orderBy(desc(submissions.createdAt));
+
+      const items = rows.map(({ sub, cat, con, meta, ai }) => ({
+        id: sub.id,
+        contestId: sub.contestId,
+        contestTitle: con?.name ?? null,
+        categoryId: sub.categoryId,
+        categoryName: cat?.name ?? null,
+        participantId: sub.participantId,
+        title: sub.title,
+        description: sub.description,
+        rejectionReason: sub.rejectionReason,
+        imageOriginalPath: sub.imageOriginalPath,
+        imagePreviewPath: sub.imagePreviewPath,
+        negativeProofPath: sub.negativeProofPath,
+        fileSizeBytes: sub.fileSizeBytes != null ? Number(sub.fileSizeBytes) : null,
+        width: sub.width,
+        height: sub.height,
+        status: sub.status,
+        aiFlagged: sub.status === "FLAGGED" || ai?.isAiFlagged === true,
+        filmMetadata: meta
+          ? {
+              filmBrand: meta.filmBrand,
+              filmStock: meta.filmStock,
+              filmFormat: meta.filmFormat,
+              isoRated: meta.isoRated,
+              isoShot: meta.isoShot,
+              cameraBody: meta.cameraBody,
+              lens: meta.lens,
+              rollId: meta.rollId,
+              frameNumber: meta.frameNumber,
+              devLabName: meta.devLabName,
+              devChemistry: meta.devChemistry,
+              scannerModel: meta.scannerModel,
+            }
+          : null,
+        createdAt: sub.createdAt,
+        updatedAt: sub.updatedAt,
+      }));
+
+      return c.json({
+        success: true,
+        code: 200,
+        message: "Lấy danh sách bài thi thành công",
+        data: items,
+      });
+    } catch (err: any) {
+      console.error("Failed to retrieve user submissions:", err);
+      return c.json(
+        { success: false, code: 500, message: "Lỗi lấy danh sách bài thi", error: err.message },
+        500,
+      );
+    }
+  },
+);
+
 // GET /api/v1/submissions
 // Organizer & Admin lấy danh sách bài nộp kèm bộ lọc trạng thái và cờ cảnh báo AI
 route.get(
