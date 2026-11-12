@@ -546,7 +546,6 @@ contests.delete(
       const result = await pool.query(
         `UPDATE contests
          SET is_deleted = TRUE,
-             deleted_at = NOW(),
              status = 'ARCHIVED',
              updated_at = NOW()
          WHERE id = $1 AND is_deleted = FALSE
