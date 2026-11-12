@@ -1,3 +1,4 @@
+import { serveStatic } from "hono/bun";
 import { authenticate, requireRoles } from "./middlewares/auth";
 import { uploadToR2 } from "./r2";
 import { Hono } from "hono";
@@ -16,6 +17,7 @@ import { timing } from "hono/timing";
 const app = new Hono();
 
 app.use("*", cors());
+app.use("/uploads/*", serveStatic({ root: "./" }));
 app.use("*", secureHeaders({ crossOriginResourcePolicy: false }));
 app.use("*", requestId());
 app.use('*', async (c, next) => {
