@@ -21,15 +21,10 @@ export async function checkPortalAccess(
     return "login";
   }
 
-  // 1. Kiểm tra nhanh JWT payload
-  const payload = decodeJwtPayload(accessToken);
-  if (!payload) {
-    return "login";
-  }
-
-  // 2. Thử gọi backend RBAC endpoint
+  // Thử gọi backend RBAC endpoint
+  let response: Response;
   try {
-    const response = await fetch(
+    response = await fetch(
       `${API_INTERNAL_URL}/api/v1/rbac/manage-contest`,
       {
         headers: {
@@ -38,26 +33,27 @@ export async function checkPortalAccess(
         cache: "no-store",
       },
     );
-
-    if (response.status === 401) {
-      return "login";
-    }
-
-    if (response.status === 403) {
-      return "forbidden";
-    }
-
-    if (response.ok) {
+  } catch {
+    // Nếu kết nối backend bị lỗi hoặc timeout, fallback kiểm tra qua role trong JWT
+    const payload = decodeJwtPayload(accessToken);
+    if (payload && canAccessPortal((payload.role as Role) ?? null)) {
       return "allow";
     }
-  } catch {
-    // Network error or endpoint issue, continue to fallback
+    return "login";
   }
 
-  // 3. Fallback: Kiểm tra quyền trực tiếp qua role trong token
-  if (canAccessPortal((payload.role as Role) ?? null)) {
+  if (response.status === 401) {
+    return "login";
+  }
+
+  if (response.status === 403) {
+    return "forbidden";
+  }
+
+  if (response.ok) {
     return "allow";
   }
 
-  return "forbidden";
+  // Ném lỗi với mã lỗi API khi backend trả về 500 hoặc mã lỗi khác
+  throw new Error(`Authentication API error: ${response.status}`);
 }
