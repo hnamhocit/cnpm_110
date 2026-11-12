@@ -1,4 +1,5 @@
 import { serveStatic } from "hono/bun";
+import { authenticate, requireRoles } from "./middlewares/auth";
 import { uploadToR2 } from "./r2";
 import { Hono } from "hono";
 import auth from "./routes/auth";
@@ -106,6 +107,19 @@ app.post("/api/v1/upload", async (c) => {
     return c.json({ error: "Upload failed" }, 500);
   }
 });
+
+// API kiểm tra phân quyền RBAC cho Portal
+app.use("/api/v1/rbac/*", authenticate);
+
+app.get(
+  "/api/v1/rbac/manage-contest",
+  requireRoles("Admin", "Organizer"),
+  (c) => {
+    return c.json({
+      message: "Bạn được phép quản lý cuộc thi",
+    });
+  },
+);
 
 export default {
   port: 8080,
