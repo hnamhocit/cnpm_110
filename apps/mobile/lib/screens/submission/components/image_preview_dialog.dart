@@ -39,6 +39,13 @@ class ImagePreviewDialog extends StatelessWidget {
         fit: BoxFit.contain,
         memCacheWidth: 1600,
         memCacheHeight: 1600,
+        placeholder: (context, url) => const Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2, value: 0.5),
+          ),
+        ),
         errorWidget: (context, url, error) => const Center(
           child: Icon(Icons.broken_image_outlined, size: 48, color: Colors.grey),
         ),
@@ -70,6 +77,13 @@ class ImagePreviewDialog extends StatelessWidget {
       fit: BoxFit.contain,
       memCacheWidth: 1600,
       memCacheHeight: 1600,
+      placeholder: (context, url) => const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2, value: 0.5),
+        ),
+      ),
       errorWidget: (context, url, error) => const Center(
         child: Icon(Icons.broken_image_outlined, size: 48, color: Colors.grey),
       ),
