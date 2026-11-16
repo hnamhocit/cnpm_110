@@ -1,11 +1,17 @@
 "use client";
 
+import {
+  BarChart3,
+  Camera,
+  LayoutDashboard,
+  Trophy,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import Header from "../components/portal/Header";
-import { Camera, LayoutDashboard, Trophy, Users, BarChart3 } from "lucide-react";
 
 // Các mục điều hướng của Portal
 const menuItems = [
@@ -76,7 +82,9 @@ function Sidebar({ onClose }: SidebarProps) {
                   : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
               }`}
             >
-              <Icon className={`h-4 w-4 ${isActive ? "text-white" : "text-slate-400"}`} />
+              <Icon
+                className={`h-4 w-4 ${isActive ? "text-white" : "text-slate-400"}`}
+              />
               <span>{item.label}</span>
             </Link>
           );
@@ -85,7 +93,9 @@ function Sidebar({ onClose }: SidebarProps) {
 
       {/* FOOTER INFO */}
       <div className="mt-auto border-t border-slate-800/80 pt-4 px-2">
-        <p className="text-xs text-slate-400 font-mono">Workspace v1.0 • CNPM</p>
+        <p className="text-xs text-slate-400 font-mono">
+          Workspace v1.0 • CNPM
+        </p>
       </div>
     </aside>
   );

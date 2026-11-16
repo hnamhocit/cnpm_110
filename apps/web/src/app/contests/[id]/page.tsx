@@ -160,7 +160,8 @@ export default async function ContestDetailPage({
                     Tham gia Cuộc thi
                   </h3>
                   <p className="text-xs text-slate-500 leading-relaxed">
-                    Đọc kỹ hướng dẫn thể lệ bên dưới trước khi đăng nhập và nộp tác phẩm dự thi của bạn.
+                    Đọc kỹ hướng dẫn thể lệ bên dưới trước khi đăng nhập và nộp
+                    tác phẩm dự thi của bạn.
                   </p>
                 </div>
 
@@ -217,19 +218,23 @@ export default async function ContestDetailPage({
                     <li className="flex items-start gap-3">
                       <span className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-2 shrink-0" />
                       <span>
-                        Tác phẩm phải được chụp hoàn toàn bằng máy ảnh cơ analog và film quang học truyền thống.
+                        Tác phẩm phải được chụp hoàn toàn bằng máy ảnh cơ analog
+                        và film quang học truyền thống.
                       </span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-2 shrink-0" />
                       <span>
-                        Nghiêm cấm mọi hình thức can thiệp bằng trí tuệ nhân tạo (AI) hoặc chỉnh sửa làm thay đổi cấu trúc quang học hạt film.
+                        Nghiêm cấm mọi hình thức can thiệp bằng trí tuệ nhân tạo
+                        (AI) hoặc chỉnh sửa làm thay đổi cấu trúc quang học hạt
+                        film.
                       </span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-2 shrink-0" />
                       <span>
-                        Thí sinh có trách nhiệm lưu trữ dải phim âm bản gốc để đối chứng khi Ban Giám khảo yêu cầu.
+                        Thí sinh có trách nhiệm lưu trữ dải phim âm bản gốc để
+                        đối chứng khi Ban Giám khảo yêu cầu.
                       </span>
                     </li>
                   </>

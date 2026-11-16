@@ -34,7 +34,10 @@ export default function PortalDashboardPage() {
             </Button>
           </Link>
           <Link href="/portal/contests/judges">
-            <Button variant="outline" className="text-xs border-slate-300 text-slate-700 hover:bg-slate-50">
+            <Button
+              variant="outline"
+              className="text-xs border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
               Quản lý Giám khảo
             </Button>
           </Link>
@@ -50,7 +53,9 @@ export default function PortalDashboardPage() {
                 Cuộc thi hoạt động
               </p>
               <p className="text-2xl font-black text-slate-900 mt-1">4</p>
-              <p className="text-xs text-emerald-600 font-medium mt-1">2 đang mở nộp bài</p>
+              <p className="text-xs text-emerald-600 font-medium mt-1">
+                2 đang mở nộp bài
+              </p>
             </div>
             <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
               <Trophy className="w-6 h-6" />
@@ -99,7 +104,9 @@ export default function PortalDashboardPage() {
                 Hội đồng Giám khảo
               </p>
               <p className="text-2xl font-black text-slate-900 mt-1">16</p>
-              <p className="text-xs text-emerald-600 font-medium mt-1">Đạt túc số BR-20</p>
+              <p className="text-xs text-emerald-600 font-medium mt-1">
+                Đạt túc số BR-20
+              </p>
             </div>
             <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
               <Users className="w-6 h-6" />
