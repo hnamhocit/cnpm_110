@@ -5,6 +5,10 @@ export async function POST() {
   const cookieStore = await cookies();
 
   cookieStore.delete(ACCESS_COOKIE);
+  cookieStore.delete({
+    name: REFRESH_COOKIE,
+    path: "/api/auth",
+  });
   cookieStore.delete(REFRESH_COOKIE);
   cookieStore.delete("access_token");
   cookieStore.delete("refresh_token");
