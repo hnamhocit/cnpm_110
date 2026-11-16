@@ -36,6 +36,7 @@ class CustomDropdownField<T> extends StatelessWidget {
     final theme = Theme.of(context);
 
     return DropdownButtonFormField<T>(
+      key: ValueKey(value),
       isExpanded: true,
       initialValue: value,
       items: items
