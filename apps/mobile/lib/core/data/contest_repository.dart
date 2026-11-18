@@ -41,15 +41,26 @@ class ApiContestRepository implements ContestRepository {
           : (rawData is Map<String, dynamic>
               ? (rawData['items'] as List<dynamic>? ?? const [])
               : const []);
-      final pagination =
-          body['pagination'] as Map<String, dynamic>? ?? const {};
+      final pagination = (rawData is Map<String, dynamic> &&
+                  rawData['pagination'] is Map<String, dynamic>
+              ? rawData['pagination']
+              : body['pagination']) as Map<String, dynamic>? ??
+          const {};
+
+      final totalPages = pagination['totalPages'] as int? ??
+          (pagination['total'] is int &&
+                  pagination['limit'] is int &&
+                  (pagination['limit'] as int) > 0
+              ? ((pagination['total'] as int) / (pagination['limit'] as int))
+                  .ceil()
+              : 1);
 
       return ContestPage(
         items: rows
             .map((row) => Contest.fromJson(row as Map<String, dynamic>))
             .toList(),
         page: pagination['page'] as int? ?? page,
-        totalPages: pagination['totalPages'] as int? ?? 1,
+        totalPages: totalPages > 0 ? totalPages : 1,
       );
     } on DioException catch (error) {
       throw ApiException.fromDio(error);
