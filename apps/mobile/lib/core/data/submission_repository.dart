@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/film_dev_scan_params.dart';
 import '../../models/film_shooting_params.dart';
+import '../../models/image_attachment.dart';
 import '../../models/submission_data.dart';
 import '../../models/user_submission.dart';
 import '../network/api_exception.dart';
@@ -17,6 +18,12 @@ abstract interface class SubmissionRepository {
   Future<List<UserSubmission>> getMySubmissions({
     String? contestId,
     String? status,
+  });
+
+  /// Upload ảnh dải phim âm bản đối chứng (BR-19 / UC-21)
+  Future<void> uploadNegativeProof({
+    required String submissionId,
+    required ImageAttachment proofImage,
   });
 }
 
@@ -164,6 +171,38 @@ class ApiSubmissionRepository
       return list
           .map((item) => UserSubmission.fromJson(item as Map<String, dynamic>))
           .toList();
+    } on DioException catch (error) {
+      throw ApiException.fromDio(error);
+    }
+  }
+
+  @override
+  Future<void> uploadNegativeProof({
+    required String submissionId,
+    required ImageAttachment proofImage,
+  }) async {
+    try {
+      final MultipartFile file;
+      if (proofImage.bytes != null) {
+        file = MultipartFile.fromBytes(
+          proofImage.bytes!,
+          filename: proofImage.name,
+        );
+      } else {
+        file = await MultipartFile.fromFile(
+          proofImage.file.path,
+          filename: proofImage.name,
+        );
+      }
+
+      final formData = FormData.fromMap({
+        'negativeProof': file,
+      });
+
+      await _dio.post<Map<String, dynamic>>(
+        '/api/v1/submissions/$submissionId/proof',
+        data: formData,
+      );
     } on DioException catch (error) {
       throw ApiException.fromDio(error);
     }

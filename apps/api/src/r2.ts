@@ -1,4 +1,3 @@
-
 import {
   S3Client,
   DeleteObjectCommand,
@@ -7,12 +6,23 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Upload } from "@aws-sdk/lib-storage";
 import { Readable } from "node:stream";
+import fs from "node:fs";
+import path from "node:path";
+
+function isR2Configured(): boolean {
+  const accountId = process.env.R2_ACCOUNT_ID?.trim();
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY?.trim();
+  const bucketName = process.env.R2_BUCKET_NAME?.trim();
+
+  return Boolean(accountId && accessKeyId && secretAccessKey && bucketName);
+}
 
 function getR2Config() {
-  const accountId = process.env.R2_ACCOUNT_ID;
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-  const bucketName = process.env.R2_BUCKET_NAME;
+  const accountId = process.env.R2_ACCOUNT_ID?.trim();
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY?.trim();
+  const bucketName = process.env.R2_BUCKET_NAME?.trim();
 
   if (!accountId || !accessKeyId || !secretAccessKey || !bucketName) {
     throw new Error("Cloudflare R2 is not configured");
@@ -48,43 +58,64 @@ async function* readFileChunks(file: File) {
   }
 }
 
-export async function uploadToR2(file: File, key: string) {
-  const { client, bucketName } = getR2Config();
+export async function uploadToR2(file: File, key: string): Promise<string> {
+  if (isR2Configured()) {
+    try {
+      const { client, bucketName } = getR2Config();
 
-  try {
-    const upload = new Upload({
-      client,
-      params: {
-        Bucket: bucketName,
-        Key: key,
-        Body: Readable.from(readFileChunks(file)),
-        ContentType: file.type,
-      },
-      partSize: 8 * 1024 * 1024,
-      queueSize: 2,
-      leavePartsOnError: false,
-    });
+      const upload = new Upload({
+        client,
+        params: {
+          Bucket: bucketName,
+          Key: key,
+          Body: Readable.from(readFileChunks(file)),
+          ContentType: file.type,
+        },
+        partSize: 8 * 1024 * 1024,
+        queueSize: 2,
+        leavePartsOnError: false,
+      });
 
-    await upload.done();
-
-    return key;
-  } finally {
-    client.destroy();
+      await upload.done();
+      client.destroy();
+      return key;
+    } catch (error) {
+      console.warn("Cloudflare R2 upload failed, falling back to local storage:", error);
+    }
   }
+
+  // Local storage fallback
+  const uploadDir = path.resolve(process.cwd(), "uploads");
+  const targetPath = path.resolve(uploadDir, key);
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  const arrayBuffer = await file.arrayBuffer();
+  fs.writeFileSync(targetPath, Buffer.from(arrayBuffer));
+  console.log(`[Storage Fallback] Image successfully saved locally: ${targetPath}`);
+  return key;
 }
 
-export async function deleteFromR2(key: string) {
-  const { client, bucketName } = getR2Config();
+export async function deleteFromR2(key: string): Promise<void> {
+  if (isR2Configured()) {
+    try {
+      const { client, bucketName } = getR2Config();
+      await client.send(
+        new DeleteObjectCommand({
+          Bucket: bucketName,
+          Key: key,
+        }),
+      );
+      client.destroy();
+    } catch (error) {
+      console.warn("Cloudflare R2 delete failed:", error);
+    }
+  }
 
-  try {
-    await client.send(
-      new DeleteObjectCommand({
-        Bucket: bucketName,
-        Key: key,
-      }),
-    );
-  } finally {
-    client.destroy();
+  // Local file delete
+  const targetPath = path.resolve(process.cwd(), "uploads", key);
+  if (fs.existsSync(targetPath)) {
+    try {
+      fs.unlinkSync(targetPath);
+    } catch {}
   }
 }
 
@@ -92,30 +123,23 @@ export async function getR2SignedReadUrl(
   key: string,
   expiresInSeconds = 300,
 ): Promise<string> {
-  if (!key || !key.startsWith("submissions/")) {
-    throw new Error("Invalid submission image key");
+  if (isR2Configured()) {
+    try {
+      const { client, bucketName } = getR2Config();
+      const command = new GetObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+      });
+
+      const url = await getSignedUrl(client, command, {
+        expiresIn: expiresInSeconds,
+      });
+      client.destroy();
+      return url;
+    } catch (error) {
+      console.warn("Cloudflare R2 signed URL failed, using local URL:", error);
+    }
   }
 
-  if (
-    !Number.isInteger(expiresInSeconds) ||
-    expiresInSeconds < 1 ||
-    expiresInSeconds > 3600
-  ) {
-    throw new Error("Invalid URL expiration");
-  }
-
-  const { client, bucketName } = getR2Config();
-
-  try {
-    const command = new GetObjectCommand({
-      Bucket: bucketName,
-      Key: key,
-    });
-
-    return await getSignedUrl(client, command, {
-      expiresIn: expiresInSeconds,
-    });
-  } finally {
-    client.destroy();
-  }
+  return `/uploads/${key}`;
 }

@@ -9,6 +9,17 @@ type HeaderProps = {
   onMenuClick: () => void;
 };
 
+function getInitials(name?: string, role?: string): string {
+  if (!name || !name.trim()) {
+    return (role || "US").slice(0, 2).toUpperCase();
+  }
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 export default function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -20,7 +31,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
       ? "Contests"
       : pathname === "/portal/reports"
         ? "Reports"
-        : "Dashboard";
+        : pathname.startsWith("/portal/contests/")
+          ? "Contest Detail"
+          : "Dashboard";
 
   async function handleLogout() {
     try {
@@ -64,7 +77,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
             Portal Workspace
           </h2>
         </div>
-      </div>
 
       {/* RIGHT SIDE - PROFILE MENU */}
       <details className="relative shrink-0">
@@ -87,6 +99,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <p className="font-semibold text-slate-900">Tài khoản Quản trị</p>
             <p className="mt-0.5 text-xs text-slate-500">Workspace Member</p>
           </div>
+        </details>
+      </header>
 
           <div className="mt-2 space-y-1">
             <button
@@ -107,8 +121,28 @@ export default function Header({ onMenuClick }: HeaderProps) {
               <span>{isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}</span>
             </button>
           </div>
-        </div>
-      </details>
-    </header>
+
+          <DialogFooter className="mt-6 flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsProfileOpen(false)}
+              className="border-white/20 bg-transparent text-gray-300 hover:bg-white/10 hover:text-white cursor-pointer"
+            >
+              Đóng
+            </Button>
+            <Button
+              type="button"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="bg-red-600 text-white hover:bg-red-700 font-medium cursor-pointer"
+            >
+              <LogOut className="mr-1.5 h-4 w-4" />
+              {isLoggingOut ? "Đang thoát..." : "Đăng xuất"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

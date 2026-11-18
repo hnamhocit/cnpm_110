@@ -36,7 +36,15 @@ export default function OrganizerContestsPage() {
       try {
         setLoading(true);
         const res = await http.get("/api/v1/contests");
-        setContests(res.data.data || res.data);
+        const raw = res.data?.data ?? res.data;
+        const items = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.items)
+            ? raw.items
+            : Array.isArray(res.data?.items)
+              ? res.data.items
+              : [];
+        setContests(items);
       } catch (err: unknown) {
         const apiErr = err as { response?: { data?: { message?: string } } };
         setError(
@@ -77,7 +85,7 @@ export default function OrganizerContestsPage() {
       </div>
 
       {/* Danh sách cuộc thi */}
-      {contests.length === 0 ? (
+      {(!Array.isArray(contests) || contests.length === 0) ? (
         <Card>
           <CardContent className="p-12 text-center text-gray-500">
             Bạn chưa có cuộc thi nào. Hãy tạo cuộc thi đầu tiên!
@@ -85,7 +93,7 @@ export default function OrganizerContestsPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {contests.map((contest) => {
+          {(Array.isArray(contests) ? contests : []).map((contest) => {
             const status = (contest.status ?? "").toLowerCase() || "n/a";
 
             return (
@@ -120,15 +128,15 @@ export default function OrganizerContestsPage() {
                       className="flex-1"
                     >
                       <Button variant="outline" className="w-full text-xs">
-                        Xem chi tiết
+                        Chi tiết cuộc thi
                       </Button>
                     </Link>
                     <Link
-                      href={`/portal/contests/${contest.id}/edit`}
+                      href={`/portal/contests/${contest.id}/submissions`}
                       className="flex-1"
                     >
-                      <Button variant="outline" className="w-full text-xs">
-                        Chỉnh sửa
+                      <Button className="w-full text-xs bg-blue-600 hover:bg-blue-700 text-white">
+                        Bài dự thi
                       </Button>
                     </Link>
                   </div>
