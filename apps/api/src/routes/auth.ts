@@ -2,9 +2,9 @@ import { Hono } from "hono";
 import { sign } from "hono/jwt";
 import { createHash, randomBytes } from "node:crypto";
 import { pool } from "../db";
-import type { Role } from "../middlewares/auth";
+import { authenticate, type AuthEnv, type Role } from "../middlewares/auth";
 
-const auth = new Hono();
+const auth = new Hono<AuthEnv>();
 
 const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
 const REFRESH_TOKEN_TTL_DAYS = 7;
@@ -386,6 +386,49 @@ auth.post("/logout", async (c) => {
   } catch (error) {
     console.error("Logout failed:", error);
     return c.json({ error: "Logout failed" }, 500);
+  }
+});
+
+// GET /auth/me
+auth.get("/me", authenticate, async (c) => {
+  const authUser = c.get("user");
+
+  try {
+    const result = await pool.query(
+      `SELECT u.id, u.full_name, u.email, r.name AS role, u.created_at
+       FROM users u
+       JOIN user_roles ur ON ur.user_id = u.id
+       JOIN roles r ON r.id = ur.role_id
+       WHERE u.id = $1
+       ORDER BY CASE r.name
+         WHEN 'Admin' THEN 1
+         WHEN 'Organizer' THEN 2
+         WHEN 'Judge' THEN 3
+         WHEN 'Participant' THEN 4
+         ELSE 5
+       END
+       LIMIT 1`,
+      [authUser.id],
+    );
+
+    if (!result.rowCount) {
+      return c.json({ error: "User not found" }, 404);
+    }
+
+    const user = result.rows[0];
+
+    return c.json({
+      user: {
+        id: user.id,
+        fullName: user.full_name,
+        email: user.email,
+        role: user.role,
+        createdAt: user.created_at,
+      },
+    });
+  } catch (error) {
+    console.error("Fetch current user failed:", error);
+    return c.json({ error: "Failed to fetch user" }, 500);
   }
 });
 

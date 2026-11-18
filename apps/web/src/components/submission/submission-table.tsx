@@ -42,6 +42,7 @@ type ModerationErrorBody = { message?: string };
 type ApiSubmission = {
   id: string;
   participantId: string;
+  authorName?: string;
   title: string;
   status: SubmissionStatus;
   aiFlagged: boolean;
@@ -55,8 +56,7 @@ type SubmissionListResponse = {
 function mapApiToSubmission(api: ApiSubmission): Submission {
   return {
     id: api.id,
-    // BE chưa trả tên thí sinh trong danh sách — tạm dùng participantId.
-    authorName: api.participantId || "Thí sinh ẩn danh",
+    authorName: api.authorName || api.participantId || "Thí sinh ẩn danh",
     title: api.title,
     submittedAt: api.createdAt,
     isAiFlagged: api.aiFlagged,
@@ -118,7 +118,13 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
           "/api/v1/submissions",
           { params: { contestId, limit: 100 } },
         );
-        setSubmissions((res.data.data ?? []).map(mapApiToSubmission));
+        const raw = (res.data as any)?.data ?? res.data;
+        const list = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.items)
+            ? raw.items
+            : [];
+        setSubmissions(list.map(mapApiToSubmission));
       } catch (err) {
         console.error("Failed to fetch submissions:", err);
         toast.error("Không thể tải danh sách bài dự thi.");

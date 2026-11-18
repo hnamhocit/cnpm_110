@@ -72,7 +72,7 @@ export default function ImageComparisonModal({
         const response = await http.get<ComparisonResponse>(
           `/api/v1/submissions/${submissionId}/comparison`,
         );
-        setData(response.data.data ?? null);
+        setData((response.data as any)?.data ?? response.data ?? null);
       } catch (err) {
         setError(
           axios.isAxiosError<ApiErrorBody>(err)
