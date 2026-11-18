@@ -128,6 +128,37 @@ class ContestCard extends StatelessWidget {
                     dateRange,
                     style: theme.textTheme.bodySmall,
                   ),
+                  if (contest.status == ContestStatus.published ||
+                      contest.status == ContestStatus.completed ||
+                      contest.status == ContestStatus.archived) ...[
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.amber.shade400),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('🏆', style: TextStyle(fontSize: 10)),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Bảng vàng',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.amber.shade900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],
