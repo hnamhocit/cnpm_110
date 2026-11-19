@@ -39,6 +39,9 @@ class ImagePreviewDialog extends StatelessWidget {
         fit: BoxFit.contain,
         memCacheWidth: 1600,
         memCacheHeight: 1600,
+        placeholder: (context, url) => const Center(
+          child: Icon(Icons.photo_outlined, size: 48, color: Colors.grey),
+        ),
         errorWidget: (context, url, error) => const Center(
           child: Icon(Icons.broken_image_outlined, size: 48, color: Colors.grey),
         ),
