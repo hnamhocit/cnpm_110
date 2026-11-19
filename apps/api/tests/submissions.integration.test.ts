@@ -20,7 +20,7 @@ mock.module("../src/r2", () => ({
     deleteFromR2: async (_key: string) => { },
 }));
 
-const { default: submissionRoute } = await import("../src/routes/submissions");
+const { default: submissionRoute } = await import("../src/routes/submissions.route");
 
 const app = createTestApp();
 app.route("/api/v1/submissions", submissionRoute);
