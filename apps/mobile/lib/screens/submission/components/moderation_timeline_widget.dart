@@ -150,7 +150,25 @@ class ModerationTimelineWidget extends StatelessWidget {
       status: step4Status,
     );
 
-    return [step1, step2, step3, step4];
+    // Step 5: Vòng chấm điểm chuyên môn (FPC-83 / BR-12)
+    final StepStatus step5Status;
+    final String step5Subtitle;
+    if (status == SubmissionStatus.approved) {
+      step5Status = StepStatus.inProgress;
+      step5Subtitle =
+          'Đang trong vòng chấm điểm: Hội đồng Giám khảo đang chấm điểm độc lập trên Lightbox Workspace (Double-Blind BR-12)';
+    } else {
+      step5Status = StepStatus.pending;
+      step5Subtitle =
+          'Chờ hoàn tất duyệt hồ sơ hợp lệ trước khi chuyển sang Ban Giám khảo';
+    }
+    final step5 = _TimelineStepData(
+      title: 'Vòng chấm điểm chuyên môn (BR-12)',
+      subtitle: step5Subtitle,
+      status: step5Status,
+    );
+
+    return [step1, step2, step3, step4, step5];
   }
 
   Widget _buildStepRow(
