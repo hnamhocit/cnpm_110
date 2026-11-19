@@ -118,6 +118,17 @@ export function LoginForm() {
               >
                 Điền nhanh: Ban tổ chức (Organizer)
               </button>
+              <button
+                type="button"
+                className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-xs transition-colors hover:bg-slate-100"
+                onClick={() => {
+                  setEmail("participant.test@example.com");
+                  setPassword("password123");
+                  setError("");
+                }}
+              >
+                Điền nhanh: Thí sinh (Participant)
+              </button>
             </div>
           </div>
 
