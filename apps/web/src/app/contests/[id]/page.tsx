@@ -21,8 +21,6 @@ interface ContestDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-export const instant = false;
-
 export async function generateMetadata({
   params,
 }: ContestDetailPageProps): Promise<Metadata> {
