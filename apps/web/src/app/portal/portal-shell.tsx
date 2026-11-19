@@ -3,6 +3,7 @@
 import {
   BarChart3,
   Camera,
+  ClipboardCheck,
   LayoutDashboard,
   Medal,
   Trophy,
@@ -19,7 +20,11 @@ const menuItems = [
   { label: "Dashboard", href: "/portal", icon: LayoutDashboard },
   { label: "Contests", href: "/portal/contests", icon: Trophy },
   { label: "Judges", href: "/portal/contests/judges", icon: Users },
-  { label: "Bảng điểm", href: "/portal/contests/scoreboard", icon: Medal },
+  {
+    label: "Tiến độ chấm thi",
+    href: "/portal/contests/judging-progress",
+    icon: ClipboardCheck,
+  },
   { label: "Reports", href: "/portal/reports", icon: BarChart3 },
 ];
 
@@ -71,7 +76,7 @@ function Sidebar({ onClose }: SidebarProps) {
                 ? pathname === "/portal/contests" ||
                   (pathname.startsWith("/portal/contests/") &&
                     !pathname.startsWith("/portal/contests/judges") &&
-                    !pathname.startsWith("/portal/contests/scoreboard"))
+                    !pathname.startsWith("/portal/contests/judging-progress"))
                 : pathname.startsWith(item.href);
 
           return (

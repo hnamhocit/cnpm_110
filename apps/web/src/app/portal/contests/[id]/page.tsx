@@ -1,13 +1,12 @@
 import {
   ArrowLeft,
   Calendar,
-  Clock,
+  ClipboardCheck,
   ExternalLink,
   Film,
   Layers,
   Medal,
   Settings,
-  Sparkles,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -114,9 +113,9 @@ export default async function PortalContestOverviewPage({
               <Film className="w-3.5 h-3.5 mr-1.5" /> Quản lý bài dự thi
             </Button>
           </Link>
-          <Link href="/portal/contests/scoreboard">
+          <Link href="/portal/contests/judging-progress">
             <Button variant="outline" size="sm" className="text-xs">
-              <Medal className="w-3.5 h-3.5 mr-1.5" /> Bảng điểm
+              <ClipboardCheck className="w-3.5 h-3.5" /> Tiến độ chấm thi
             </Button>
           </Link>
         </div>
