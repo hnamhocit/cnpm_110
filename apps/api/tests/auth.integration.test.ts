@@ -8,16 +8,17 @@ import {
   test,
 } from "bun:test";
 import { createHash, randomUUID } from "node:crypto";
-import { Hono } from "hono";
 import { verify } from "hono/jwt";
 import { pool } from "../src/db";
 import auth from "../src/routes/auth.route";
+import { createTestApp } from "./helpers/test-app";
 
-const app = new Hono();
-app.route("/auth", auth);
-
+const TEST_DB_NAME = process.env.TEST_DB_NAME || "fpc_test";
 const TEST_SECRET = "fpc13-integration-test-secret-at-least-32-characters";
 const PASSWORD = "Fpc13Test@123";
+
+const app = createTestApp();
+app.route("/auth", auth);
 
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -37,12 +38,18 @@ describe("Integration test xác thực và refresh token", () => {
   let originalSecret: string | undefined;
 
   beforeAll(async () => {
-    // Chặn việc chạy nhầm trên database khác.
     const result = await pool.query("SELECT current_database() AS db");
 
-    if (result.rows[0]?.db !== "fpc_test") {
-      throw new Error("Chỉ được chạy integration test trên fpc_test");
+    if (result.rows[0]?.db !== TEST_DB_NAME) {
+      throw new Error(`Chỉ được chạy integration test trên ${TEST_DB_NAME}`);
     }
+
+    // Đảm bảo role mặc định tồn tại kể cả trên DB test trống
+    await pool.query(
+      `INSERT INTO roles (name, description)
+       VALUES ('Participant', 'Competition participant')
+       ON CONFLICT (name) DO NOTHING`,
+    );
 
     databaseChecked = true;
     originalSecret = process.env.JWT_SECRET;
@@ -55,13 +62,11 @@ describe("Integration test xác thực và refresh token", () => {
 
   afterEach(async () => {
     if (databaseChecked) {
-      // Chỉ xóa tài khoản của test hiện tại.
-      // Các bản ghi liên quan được xóa theo ON DELETE CASCADE.
       await pool.query("DELETE FROM users WHERE email = $1", [email]);
     }
   });
 
-  afterAll(async () => {
+  afterAll(() => {
     if (databaseChecked) {
       if (originalSecret === undefined) {
         delete process.env.JWT_SECRET;
@@ -69,8 +74,6 @@ describe("Integration test xác thực và refresh token", () => {
         process.env.JWT_SECRET = originalSecret;
       }
     }
-
-    await pool.end();
   });
 
   async function registerUser() {
@@ -82,23 +85,25 @@ describe("Integration test xác thực và refresh token", () => {
 
     expect(response.status).toBe(201);
 
-    const body = await response.json();
-    expect(body.user.id).toBeString();
-    expect(body.accessToken).toBeString();
-    expect(body.refreshToken).toBeString();
+    const raw = await response.json();
+    const data = raw.data ?? raw;
 
-    return body;
+    expect(data.user.id).toBeString();
+    expect(data.accessToken).toBeString();
+    expect(data.refreshToken).toBeString();
+
+    return data;
   }
 
   test("Đăng ký lưu người dùng và hash refresh token", async () => {
-    const body = await registerUser();
+    const data = await registerUser();
 
-    expect(body.user.email).toBe(email);
-    expect(body.user.role).toBe("Participant");
+    expect(data.user.email).toBe(email);
+    expect(data.user.role).toBe("Participant");
 
     const userResult = await pool.query(
       "SELECT password_hash FROM users WHERE id = $1",
-      [body.user.id],
+      [data.user.id],
     );
 
     const passwordHash = userResult.rows[0].password_hash;
@@ -108,19 +113,19 @@ describe("Integration test xác thực và refresh token", () => {
     const tokenResult = await pool.query(
       `SELECT token_hash, revoked_at, expires_at
        FROM refresh_tokens WHERE user_id = $1`,
-      [body.user.id],
+      [data.user.id],
     );
 
     expect(tokenResult.rows).toHaveLength(1);
-    expect(tokenResult.rows[0].token_hash).toBe(hashToken(body.refreshToken));
-    expect(tokenResult.rows[0].token_hash).not.toBe(body.refreshToken);
+    expect(tokenResult.rows[0].token_hash).toBe(hashToken(data.refreshToken));
+    expect(tokenResult.rows[0].token_hash).not.toBe(data.refreshToken);
     expect(tokenResult.rows[0].revoked_at).toBeNull();
     expect(new Date(tokenResult.rows[0].expires_at).getTime()).toBeGreaterThan(
       Date.now(),
     );
 
-    const payload = await verify(body.accessToken, TEST_SECRET, "HS256");
-    expect(payload.id).toBe(body.user.id);
+    const payload = await verify(data.accessToken, TEST_SECRET, "HS256");
+    expect(payload.id).toBe(data.user.id);
     expect(payload.role).toBe("Participant");
   });
 
@@ -150,12 +155,13 @@ describe("Integration test xác thực và refresh token", () => {
     });
 
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const raw = await response.json();
+    const data = raw.data ?? raw;
 
-    expect(body.user.id).toBe(registered.user.id);
-    expect(body.refreshToken).toBeString();
+    expect(data.user.id).toBe(registered.user.id);
+    expect(data.refreshToken).toBeString();
 
-    const payload = await verify(body.accessToken, TEST_SECRET, "HS256");
+    const payload = await verify(data.accessToken, TEST_SECRET, "HS256");
     expect(payload.id).toBe(registered.user.id);
   });
 
@@ -178,12 +184,13 @@ describe("Integration test xác thực và refresh token", () => {
     });
 
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const raw = await response.json();
+    const data = raw.data ?? raw;
 
-    expect(body.refreshToken).toBeString();
-    expect(body.refreshToken).not.toBe(registered.refreshToken);
+    expect(data.refreshToken).toBeString();
+    expect(data.refreshToken).not.toBe(registered.refreshToken);
 
-    const payload = await verify(body.accessToken, TEST_SECRET, "HS256");
+    const payload = await verify(data.accessToken, TEST_SECRET, "HS256");
     expect(payload.id).toBe(registered.user.id);
 
     const oldToken = await pool.query(
@@ -197,9 +204,8 @@ describe("Integration test xác thực và refresh token", () => {
     });
     expect(reused.status).toBe(401);
 
-    // Token mới vẫn sử dụng được.
     const nextRefresh = await post("refresh", {
-      refreshToken: body.refreshToken,
+      refreshToken: data.refreshToken,
     });
     expect(nextRefresh.status).toBe(200);
   });
