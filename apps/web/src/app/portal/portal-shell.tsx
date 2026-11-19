@@ -5,6 +5,7 @@ import {
   Camera,
   ClipboardCheck,
   LayoutDashboard,
+  Medal,
   Trophy,
   Users,
 } from "lucide-react";

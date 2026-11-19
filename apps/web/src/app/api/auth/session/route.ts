@@ -24,13 +24,17 @@ export async function POST() {
     cache: "no-store",
   });
 
-  const data = (await response.json().catch(() => ({}))) as RefreshResponse;
+  // biome-ignore lint/suspicious/noExplicitAny: response unwrap
+  const rawData = (await response.json().catch(() => ({}))) as any;
+  const data = (rawData?.data && typeof rawData.data === "object" ? rawData.data : rawData) as RefreshResponse;
+  const accessToken = data?.accessToken ?? rawData?.accessToken;
+  const newRefreshToken = data?.refreshToken ?? rawData?.refreshToken ?? refreshToken;
 
-  if (!response.ok || !data.accessToken) {
+  if (!response.ok || !accessToken) {
     return Response.json({ accessToken: null }, { status: 401 });
   }
 
-  await setAuthCookies(data.accessToken, data.refreshToken ?? refreshToken);
+  await setAuthCookies(accessToken, newRefreshToken);
 
-  return Response.json({ accessToken: data.accessToken });
+  return Response.json({ accessToken });
 }

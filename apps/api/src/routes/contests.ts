@@ -36,6 +36,8 @@ function isValidDate(value: unknown): value is string {
 contests.get("/", async (c) => {
   const search = c.req.query("search")?.trim();
   const status = c.req.query("status")?.trim();
+  const createdBy =
+    c.req.query("createdBy")?.trim() || c.req.query("created_by")?.trim();
   const pageParam = c.req.query("page") ?? "1";
   const limitParam = c.req.query("limit") ?? "10";
 
@@ -95,6 +97,11 @@ contests.get("/", async (c) => {
     if (status) {
       params.push(status);
       conditions.push(`status ILIKE $${params.length}`);
+    }
+
+    if (createdBy) {
+      params.push(createdBy);
+      conditions.push(`created_by::text = $${params.length}`);
     }
 
     const whereClause = conditions.join(" AND ");
@@ -182,6 +189,33 @@ contests.get("/:id", async (c) => {
     console.error("Get contest failed:", error);
     return c.json(
       { code: 500, message: "Failed to get contest", data: null, error: "Failed to get contest" },
+      500,
+    );
+  }
+});
+
+// GET /contests/:id/categories - Danh sách hạng mục của cuộc thi
+contests.get("/:id/categories", async (c) => {
+  const { id } = c.req.param();
+
+  try {
+    const result = await pool.query(
+      `SELECT id, contest_id, name, description, created_at, updated_at
+       FROM categories
+       WHERE contest_id = $1
+       ORDER BY created_at ASC`,
+      [id],
+    );
+
+    return c.json({
+      code: 200,
+      message: "Categories retrieved successfully",
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error("Get contest categories failed:", error);
+    return c.json(
+      { code: 500, message: "Failed to get categories", data: null },
       500,
     );
   }
