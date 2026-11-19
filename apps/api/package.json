@@ -5,6 +5,7 @@
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
     "db:check": "drizzle-kit check --config=drizzle.config.ts",
+    "db:studio": "drizzle-kit studio --config=drizzle.config.ts",
     "db:seed": "bun run src/db/seed.ts",
     "check-types": "tsc --noEmit",
     "test": "bun test tests/auth.test.ts tests/validate-image.test.ts tests/contest-results.test.ts",
