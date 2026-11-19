@@ -25,7 +25,9 @@ export async function GET() {
       );
     }
 
-    const user = await response.json();
+    // biome-ignore lint/suspicious/noExplicitAny: response unwrap
+    const rawData = (await response.json().catch(() => ({}))) as any;
+    const user = rawData?.data?.user ?? rawData?.data ?? rawData?.user ?? rawData;
     return Response.json({ user });
   } catch {
     return Response.json({ error: "Internal server error" }, { status: 500 });
