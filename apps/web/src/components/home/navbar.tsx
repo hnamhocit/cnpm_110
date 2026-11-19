@@ -1,11 +1,57 @@
 "use client";
 
-import { Camera, Menu, X } from "lucide-react";
+import { Camera, LogOut, Menu, Shield, User, X } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuthStore } from "@/lib/stores/auth-store";
+
+type CurrentUser = {
+  id?: string;
+  fullName?: string;
+  email?: string;
+  role?: string;
+};
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const clearAuth = useAuthStore((state) => state.clear);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadUser() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data.user) {
+            setUser(data.user);
+          }
+        }
+      } catch {
+        // Not authenticated
+      }
+    }
+    loadUser();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // Ignore
+    }
+    clearAuth();
+    // biome-ignore lint/suspicious/noDocumentCookie: Clear cookie
+    document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    setUser(null);
+    window.location.reload();
+  }
+
+  const isManagementRole = user?.role === "Admin" || user?.role === "Organizer";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
@@ -55,18 +101,47 @@ export function Navbar() {
 
         {/* Desktop Auth Buttons */}
         <div className="hidden md:flex items-center gap-3">
-          <Link
-            href="/login"
-            className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors"
-          >
-            Đăng nhập
-          </Link>
-          <Link
-            href="/register"
-            className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-blue-600/25 hover:bg-blue-700 active:scale-95 transition-all"
-          >
-            Đăng ký
-          </Link>
+          {user ? (
+            <div className="flex items-center gap-3">
+              {isManagementRole && (
+                <Link
+                  href="/portal"
+                  className="flex items-center gap-1.5 rounded-xl bg-blue-50 border border-blue-200 px-3.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                >
+                  <Shield className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Vào Cổng Quản Trị</span>
+                </Link>
+              )}
+              <div className="flex items-center gap-2 text-xs text-slate-700 font-medium bg-slate-100 px-3 py-1.5 rounded-lg">
+                <User className="w-3.5 h-3.5 text-slate-500" />
+                <span className="max-w-[120px] truncate">{user.fullName || user.email}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-600 text-white font-bold">{user.role}</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 font-medium px-2 py-1.5 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Đăng xuất</span>
+              </button>
+            </div>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors"
+              >
+                Đăng nhập
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-blue-600/25 hover:bg-blue-700 active:scale-95 transition-all"
+              >
+                Đăng ký
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -109,27 +184,54 @@ export function Navbar() {
             Tính năng AI
           </Link>
           <Link
-            href="#how-it-works"
+            href="/#how-it-works"
             onClick={() => setMobileMenuOpen(false)}
             className="block rounded-md px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-50"
           >
             Thể lệ tham gia
           </Link>
           <div className="pt-3 border-t border-slate-200 flex flex-col gap-2">
-            <Link
-              href="/login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-center rounded-xl border border-slate-300 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Đăng nhập
-            </Link>
-            <Link
-              href="/register"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-center rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-600/25 hover:bg-blue-700"
-            >
-              Đăng ký
-            </Link>
+            {user ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-sm text-slate-700 font-medium">
+                  <User className="w-4 h-4 text-slate-500" />
+                  <span>{user.fullName || user.email} ({user.role})</span>
+                </div>
+                {isManagementRole && (
+                  <Link
+                    href="/portal"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full text-center rounded-xl bg-blue-50 border border-blue-200 py-2.5 text-sm font-semibold text-blue-700"
+                  >
+                    Vào Cổng Quản Trị (Portal)
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full text-center rounded-xl border border-red-200 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50"
+                >
+                  Đăng xuất
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full text-center rounded-xl border border-slate-300 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Đăng nhập
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full text-center rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-600/25 hover:bg-blue-700"
+                >
+                  Đăng ký
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}
