@@ -5,6 +5,7 @@ import {
   ExternalLink,
   Film,
   Layers,
+  Medal,
   Settings,
   Sparkles,
   Users,
@@ -106,6 +107,11 @@ export default async function PortalContestOverviewPage({
           <Link href={`/portal/contests/${contest.id}/submissions`}>
             <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs">
               <Film className="w-3.5 h-3.5 mr-1.5" /> Quản lý bài dự thi
+            </Button>
+          </Link>
+          <Link href="/portal/contests/scoreboard">
+            <Button variant="outline" size="sm" className="text-xs">
+              <Medal className="w-3.5 h-3.5 mr-1.5" /> Bảng điểm
             </Button>
           </Link>
         </div>

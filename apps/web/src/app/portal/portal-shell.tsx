@@ -4,6 +4,7 @@ import {
   BarChart3,
   Camera,
   LayoutDashboard,
+  Medal,
   Trophy,
   Users,
 } from "lucide-react";
@@ -18,6 +19,7 @@ const menuItems = [
   { label: "Dashboard", href: "/portal", icon: LayoutDashboard },
   { label: "Contests", href: "/portal/contests", icon: Trophy },
   { label: "Judges", href: "/portal/contests/judges", icon: Users },
+  { label: "Bảng điểm", href: "/portal/contests/scoreboard", icon: Medal },
   { label: "Reports", href: "/portal/reports", icon: BarChart3 },
 ];
 
@@ -68,7 +70,8 @@ function Sidebar({ onClose }: SidebarProps) {
               : item.href === "/portal/contests"
                 ? pathname === "/portal/contests" ||
                   (pathname.startsWith("/portal/contests/") &&
-                    !pathname.startsWith("/portal/contests/judges"))
+                    !pathname.startsWith("/portal/contests/judges") &&
+                    !pathname.startsWith("/portal/contests/scoreboard"))
                 : pathname.startsWith(item.href);
 
           return (
