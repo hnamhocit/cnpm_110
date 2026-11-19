@@ -171,7 +171,7 @@ Các quy tắc nghiệp vụ của module AI Verification bao gồm:
 ### 4.1 Endpoint 1: Kích hoạt quét AI thủ công (Re-scan / Trigger)
 Dành cho Ban tổ chức khi cần kiểm tra lại bài thi nghi vấn.
 
-- **URL:** `POST /api/v1/organizer/submissions/{submissionId}/ai-scan`
+- **URL:** `POST /api/v1/submissions/{submissionId}/ai-scan`
 - **Headers:** `Authorization: Bearer <JWT_ORGANIZER>`
 - **Request Payload:**
 ```json
@@ -199,7 +199,7 @@ Dành cho Ban tổ chức khi cần kiểm tra lại bài thi nghi vấn.
 ### 4.2 Endpoint 2: Lấy kết quả phân tích AI chi tiết (Get AI Audit Details)
 Dùng cho màn hình Admin/Organizer Review bài nộp.
 
-- **URL:** `GET /api/v1/organizer/submissions/{submissionId}/ai-analysis`
+- **URL:** `GET /api/v1/submissions/{submissionId}/ai-analysis`
 - **Headers:** `Authorization: Bearer <JWT_ORGANIZER>`
 - **Response Payload Thành công (200 OK):**
 ```json

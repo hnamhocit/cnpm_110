@@ -9,8 +9,9 @@ export async function POST() {
     name: REFRESH_COOKIE,
     path: "/api/auth",
   });
+  cookieStore.delete(REFRESH_COOKIE);
   cookieStore.delete("access_token");
   cookieStore.delete("refresh_token");
 
-  return Response.json({ success: true });
+  return Response.json({ success: true, message: "Logged out successfully" });
 }
