@@ -7,7 +7,7 @@ process.env.DATABASE_URL =
   "postgresql://postgres:@hn71LP10@localhost:5432/vntez_db";
 
 const { default: submissionRoute } = await import(
-  "../src/routes/submissions"
+  "../src/routes/submissions.route"
 );
 
 const TEST_SECRET = "fpc13-test-secret-at-least-32-characters";

@@ -11,7 +11,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { Hono } from "hono";
 import { verify } from "hono/jwt";
 import { pool } from "../src/db";
-import auth from "../src/routes/auth";
+import auth from "../src/routes/auth.route";
 
 const app = new Hono();
 app.route("/auth", auth);

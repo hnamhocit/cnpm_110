@@ -21,7 +21,7 @@ const defaultRoles = [
   },
 ];
 
-async function seed() {
+export async function seed() {
   try {
     await db.insert(roles).values(defaultRoles).onConflictDoNothing({
       target: roles.name,
@@ -294,8 +294,3 @@ async function seed() {
     await pool.end();
   }
 }
-
-seed().catch((error) => {
-  console.error("Failed to seed database:", error);
-  process.exitCode = 1;
-});

@@ -28,7 +28,7 @@ mock.module("../src/r2", () => ({
     deleteFromR2: async (_key: string) => { },
 }));
 const { default: submissionRoute } = await import(
-    "../src/routes/submissions"
+    "../src/routes/submissions.route"
 );
 
 const app = new Hono();
@@ -209,68 +209,68 @@ describe("Bug 28: Submission integration tests", () => {
         }
     });
     test("BR-05: Rejects duplicate film roll and frame", async () => {
-    const { participantId, contestId, categoryId } =
-        await createTestData();
+        const { participantId, contestId, categoryId } =
+            await createTestData();
 
-    try {
-        const firstResponse = await submitTestImage(
-            participantId,
-            contestId,
-            categoryId,
-            "ROLL-001",
-            "01",
-        );
+        try {
+            const firstResponse = await submitTestImage(
+                participantId,
+                contestId,
+                categoryId,
+                "ROLL-001",
+                "01",
+            );
 
-        console.log("BR-05 first status:", firstResponse.status);
-        console.log("BR-05 first response:", await firstResponse.clone().text());
+            console.log("BR-05 first status:", firstResponse.status);
+            console.log("BR-05 first response:", await firstResponse.clone().text());
 
-        expect(firstResponse.status).toBe(201);
+            expect(firstResponse.status).toBe(201);
 
-        const secondResponse = await submitTestImage(
-            participantId,
-            contestId,
-            categoryId,
-            "ROLL-001",
-            "01",
-        );
+            const secondResponse = await submitTestImage(
+                participantId,
+                contestId,
+                categoryId,
+                "ROLL-001",
+                "01",
+            );
 
-        console.log("BR-05 second status:", secondResponse.status);
-        console.log("BR-05 second response:", await secondResponse.clone().text());
+            console.log("BR-05 second status:", secondResponse.status);
+            console.log("BR-05 second response:", await secondResponse.clone().text());
 
-        expect(secondResponse.status).toBe(409);
+            expect(secondResponse.status).toBe(409);
 
-        const body = await secondResponse.json();
-        expect(body.success).toBe(false);
-    } finally {
-        await pool.query(
-            `DELETE FROM film_metadata
+            const body = await secondResponse.json();
+            expect(body.success).toBe(false);
+        } finally {
+            await pool.query(
+                `DELETE FROM film_metadata
              WHERE submission_id IN (
                SELECT id FROM submissions WHERE contest_id = $1
              )`,
-            [contestId],
-        );
+                [contestId],
+            );
 
-        await pool.query(
-            "DELETE FROM submissions WHERE contest_id = $1",
-            [contestId],
-        );
+            await pool.query(
+                "DELETE FROM submissions WHERE contest_id = $1",
+                [contestId],
+            );
 
-        await pool.query(
-            "DELETE FROM categories WHERE contest_id = $1",
-            [contestId],
-        );
+            await pool.query(
+                "DELETE FROM categories WHERE contest_id = $1",
+                [contestId],
+            );
 
-        await pool.query(
-            "DELETE FROM contests WHERE id = $1",
-            [contestId],
-        );
+            await pool.query(
+                "DELETE FROM contests WHERE id = $1",
+                [contestId],
+            );
 
-        await pool.query(
-            "DELETE FROM users WHERE id = $1",
-            [participantId],
-        );
-    }
-});
+            await pool.query(
+                "DELETE FROM users WHERE id = $1",
+                [participantId],
+            );
+        }
+    });
     afterAll(async () => {
         await pool.end();
         if (originalJwtSecret === undefined) {

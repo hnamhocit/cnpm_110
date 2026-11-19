@@ -1,7 +1,7 @@
 import { describe, expect, test, spyOn } from "bun:test";
 import { Hono } from "hono";
 import { pool } from "../src/db";
-import contests from "../src/routes/contests";
+import contests from "../src/routes/contests.route";
 
 function createTestApp() {
   const app = new Hono();
