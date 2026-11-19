@@ -10,8 +10,10 @@ import '../../core/components/loading_dialog.dart';
 import '../../core/data/submission_repository.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/providers/my_submissions_provider.dart';
+import '../../core/providers/notification_provider.dart';
 import '../../core/services/image_compression_service.dart';
 import '../../core/services/image_picker_service.dart';
+import '../../models/app_notification.dart';
 import '../../models/image_attachment.dart';
 import '../../models/user_submission.dart';
 import 'components/image_preview_dialog.dart';
@@ -70,22 +72,24 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
     final theme = Theme.of(context);
 
     if (sub.status == SubmissionStatus.approved) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text('Bài thi "${sub.title}" đã được duyệt Hợp lệ!'),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.green.shade800,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 4),
+      ref.read(notificationsProvider.notifier).addNotification(
+        AppNotification(
+          id: 'judging_status_${sub.id}_${DateTime.now().millisecondsSinceEpoch}',
+          title: 'Bài thi được đưa vào vòng chấm điểm 🎯',
+          message:
+              'Tác phẩm "${sub.title}" của bạn đã vượt qua khâu kiểm duyệt và chính thức bước vào vòng chấm điểm ẩn danh (Judging Round)!',
+          type: NotificationType.submissionApprovedForJudging,
+          createdAt: DateTime.now(),
+          isRead: false,
+          submissionId: sub.id,
+          submissionTitle: sub.title,
+          contestId: sub.contestId,
+          route: '/my-submissions',
         ),
+        context: context,
+        showInAppPush: true,
       );
+      return;
     } else if (sub.status == SubmissionStatus.proofRequested) {
       scaffoldMessenger.showSnackBar(
         SnackBar(
