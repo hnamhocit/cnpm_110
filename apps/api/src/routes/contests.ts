@@ -194,6 +194,33 @@ contests.get("/:id", async (c) => {
   }
 });
 
+// GET /contests/:id/categories - Danh sách hạng mục của cuộc thi
+contests.get("/:id/categories", async (c) => {
+  const { id } = c.req.param();
+
+  try {
+    const result = await pool.query(
+      `SELECT id, contest_id, name, description, created_at, updated_at
+       FROM categories
+       WHERE contest_id = $1
+       ORDER BY created_at ASC`,
+      [id],
+    );
+
+    return c.json({
+      code: 200,
+      message: "Categories retrieved successfully",
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error("Get contest categories failed:", error);
+    return c.json(
+      { code: 500, message: "Failed to get categories", data: null },
+      500,
+    );
+  }
+});
+
 // GET /contests/:id/results - Lấy kết quả công bố chính thức (Bảng vàng vinh danh - Winners Showcase)
 // Tuân thủ BR-16 (Result Immutability), BR-17 (Dual Asset/Watermark), BR-06 (Verified Negative Proof)
 contests.get("/:id/results", async (c) => {
