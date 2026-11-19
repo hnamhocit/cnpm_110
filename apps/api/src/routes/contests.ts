@@ -36,6 +36,8 @@ function isValidDate(value: unknown): value is string {
 contests.get("/", async (c) => {
   const search = c.req.query("search")?.trim();
   const status = c.req.query("status")?.trim();
+  const createdBy =
+    c.req.query("createdBy")?.trim() || c.req.query("created_by")?.trim();
   const pageParam = c.req.query("page") ?? "1";
   const limitParam = c.req.query("limit") ?? "10";
 
@@ -95,6 +97,11 @@ contests.get("/", async (c) => {
     if (status) {
       params.push(status);
       conditions.push(`status ILIKE $${params.length}`);
+    }
+
+    if (createdBy) {
+      params.push(createdBy);
+      conditions.push(`created_by::text = $${params.length}`);
     }
 
     const whereClause = conditions.join(" AND ");
