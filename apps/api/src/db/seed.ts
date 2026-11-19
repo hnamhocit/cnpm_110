@@ -29,6 +29,44 @@ async function seed() {
 
     console.log("Default roles seeded successfully.");
 
+    // 0. Seed test Admin account: admin.test@example.com / password123
+    const adminRole = await db.query.roles.findFirst({
+      where: eq(roles.name, "Admin"),
+    });
+
+    if (adminRole) {
+      const passwordHash = await Bun.password.hash("password123");
+      const [insertedAdmin] = await db
+        .insert(users)
+        .values({
+          fullName: "Quản Trị Viên Hệ Thống",
+          email: "admin.test@example.com",
+          passwordHash,
+          isActive: true,
+        })
+        .onConflictDoNothing({ target: users.email })
+        .returning();
+
+      const adminUserId =
+        insertedAdmin?.id ??
+        (
+          await db.query.users.findFirst({
+            where: eq(users.email, "admin.test@example.com"),
+          })
+        )?.id;
+
+      if (adminUserId) {
+        await db
+          .insert(userRoles)
+          .values({
+            userId: adminUserId,
+            roleId: adminRole.id,
+          })
+          .onConflictDoNothing();
+        console.log("Test admin account ready: admin.test@example.com / password123");
+      }
+    }
+
     // 1. Seed test Organizer account: organizer.test@example.com / password123
     const organizerRole = await db.query.roles.findFirst({
       where: eq(roles.name, "Organizer"),
