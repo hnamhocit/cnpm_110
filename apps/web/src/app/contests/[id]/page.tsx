@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ContestCtaButton } from "@/components/contest/contest-cta-button";
 import { RegistrationGuideSection } from "@/components/contest/registration-guide-section";
 import { Footer } from "@/components/home/footer";
 import { Navbar } from "@/components/home/navbar";
@@ -198,22 +199,10 @@ export default async function ContestDetailPage({
                   </p>
                 </div>
 
-                <div className="space-y-3">
-                  <a
-                    href="#registration-guide"
-                    className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-600/30 transition-all"
-                  >
-                    <Upload className="h-4 w-4" />
-                    <span>Xem hướng dẫn nộp bài</span>
-                  </a>
-                  <Link
-                    href="/login"
-                    className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-300 transition-colors shadow-sm"
-                  >
-                    <UserCheck className="h-3.5 w-3.5" />
-                    <span>Đăng nhập nộp tác phẩm</span>
-                  </Link>
-                </div>
+                <ContestCtaButton
+                  contestId={contest.id}
+                  contestName={contest.name}
+                />
               </div>
             </div>
           </div>
