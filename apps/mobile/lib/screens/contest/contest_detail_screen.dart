@@ -170,6 +170,87 @@ class _ContestDetailBody extends ConsumerWidget {
                   label: 'Kết thúc',
                   value: contest.endAt,
                 ),
+                if (contest.status == ContestStatus.published ||
+                    contest.status == ContestStatus.completed ||
+                    contest.status == ContestStatus.archived) ...[
+                  const SizedBox(height: 20),
+                  InkWell(
+                    onTap: () {
+                      context.push(
+                        '/contests/${contest.id}/winners',
+                        extra: {'contestTitle': contest.name},
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.amber.shade700,
+                            Colors.orange.shade800,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.amber.withValues(alpha: 0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: const BoxDecoration(
+                              color: Colors.white24,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.emoji_events,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [
+                                Text(
+                                  'BẢNG VÀNG VINH DANH',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Khám phá các kiệt tác đạt giải & lời bình giám khảo',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
                 if (contest.description != null &&
                     contest.description!.isNotEmpty) ...[
                   const SizedBox(height: 24),
@@ -195,6 +276,31 @@ class _ContestDetailBody extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (contest.status == ContestStatus.published ||
+                    contest.status == ContestStatus.completed ||
+                    contest.status == ContestStatus.archived) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.amber.shade700,
+                        foregroundColor: Colors.black,
+                      ),
+                      onPressed: () {
+                        context.push(
+                          '/contests/${contest.id}/winners',
+                          extra: {'contestTitle': contest.name},
+                        );
+                      },
+                      icon: const Icon(Icons.emoji_events),
+                      label: const Text(
+                        'Xem Bảng Vàng Vinh Danh',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 if (contest.status == ContestStatus.open ||
                     contest.status == ContestStatus.ongoing) ...[
                   SizedBox(

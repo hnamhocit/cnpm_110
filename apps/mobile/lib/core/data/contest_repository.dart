@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../models/contest.dart';
+import '../../models/contest_winner.dart';
 import '../network/api_exception.dart';
 
 abstract interface class ContestRepository {
@@ -11,6 +12,9 @@ abstract interface class ContestRepository {
   });
 
   Future<Contest> fetchContest(String id);
+
+  /// BR-16 & DTO 4.9.4: Lấy kết quả công bố chính thức và danh sách tác phẩm đạt giải
+  Future<ContestResults> fetchContestResults(String contestId);
 }
 
 class ApiContestRepository implements ContestRepository {
@@ -84,6 +88,34 @@ class ApiContestRepository implements ContestRepository {
     } on DioException catch (error) {
       if (error.response?.statusCode == 404) {
         throw const ApiException('Không tìm thấy cuộc thi');
+      }
+      throw ApiException.fromDio(error);
+    }
+  }
+
+  @override
+  Future<ContestResults> fetchContestResults(String contestId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/contests/$contestId/results',
+      );
+
+      final body = response.data ?? const <String, dynamic>{};
+      final data = body['data'] as Map<String, dynamic>?;
+      if (data == null) {
+        throw const ApiException('Không có dữ liệu bảng vàng cho cuộc thi này');
+      }
+
+      return ContestResults.fromJson(data);
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        throw const ApiException('Không tìm thấy cuộc thi hoặc kết quả');
+      }
+      if (error.response?.statusCode == 400) {
+        final message = error.response?.data is Map
+            ? (error.response!.data as Map)['message']?.toString()
+            : null;
+        throw ApiException(message ?? 'Cuộc thi chưa công bố kết quả chính thức');
       }
       throw ApiException.fromDio(error);
     }

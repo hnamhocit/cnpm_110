@@ -10,6 +10,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/splash_screen.dart';
 import '../screens/contest/contest_detail_screen.dart';
+import '../screens/contest/winners_showcase_screen.dart';
 import '../screens/film_dev_scan/film_dev_scan_screen.dart';
 import '../screens/film_params/film_params_screen.dart';
 import '../screens/main_screen.dart';
@@ -82,6 +83,29 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final contestId = state.pathParameters['id']!;
         return ContestDetailScreen(contestId: contestId);
+      },
+    ),
+    GoRoute(
+      path: '/contests/:id/winners',
+      builder: (context, state) {
+        final contestId = state.pathParameters['id']!;
+        final contestTitle = state.uri.queryParameters['contestTitle'] ??
+            (state.extra is Map ? (state.extra as Map)['contestTitle'] as String? : null);
+        return WinnersShowcaseScreen(
+          contestId: contestId,
+          contestTitle: contestTitle,
+        );
+      },
+    ),
+    GoRoute(
+      path: '/winners',
+      builder: (context, state) {
+        final contestId = state.uri.queryParameters['contestId'] ?? '';
+        final contestTitle = state.uri.queryParameters['contestTitle'];
+        return WinnersShowcaseScreen(
+          contestId: contestId,
+          contestTitle: contestTitle,
+        );
       },
     ),
     GoRoute(

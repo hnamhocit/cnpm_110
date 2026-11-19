@@ -266,14 +266,16 @@ void main() {
     // Tap on fullscreen icon on thumbnail
     final fullscreenIcon = find.byIcon(Icons.fullscreen).first;
     await tester.tap(fullscreenIcon);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byType(ImagePreviewDialog), findsOneWidget);
     expect(find.text('Phố Cổ Mùa Thu'), findsWidgets);
 
     // Tap close
     await tester.tap(find.byIcon(Icons.close));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(ImagePreviewDialog), findsNothing);
   });
 
