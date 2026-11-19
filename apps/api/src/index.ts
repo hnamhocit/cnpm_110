@@ -1,3 +1,4 @@
+import { serveStatic } from "hono/bun";
 import { authenticate, requireRoles } from "./middlewares/auth";
 import { uploadToR2 } from "./r2";
 import { Hono } from "hono";
@@ -15,23 +16,40 @@ import { timing } from "hono/timing";
 
 const app = new Hono();
 
+app.use("*", cors());
+app.use("/uploads/*", serveStatic({ root: "./" }));
+app.use("*", secureHeaders({ crossOriginResourcePolicy: false }));
 app.use("*", requestId());
 app.use('*', async (c, next) => {
   await next();
-  if (c.res.headers.get('Content-Type')?.includes('application/json')) {
-    const body = await c.res.json();
-    c.res = new Response(JSON.stringify({
-      code: c.res.status,
-      message: body.message || 'Success',
-      data: body.data || body,
-      error: body.error || null
-    }), c.res);
+  const contentType = c.res.headers.get('content-type') || c.res.headers.get('Content-Type');
+  if (contentType?.includes('application/json')) {
+    try {
+      const clonedRes = c.res.clone();
+      const text = await clonedRes.text();
+      if (!text || !text.trim()) return;
+      const body = JSON.parse(text);
+      if (body && typeof body === 'object' && 'code' in body && ('data' in body || 'message' in body)) {
+        return;
+      }
+      const newHeaders = new Headers(c.res.headers);
+      newHeaders.set('content-type', 'application/json; charset=UTF-8');
+      c.res = new Response(JSON.stringify({
+        code: c.res.status,
+        message: body?.message || (c.res.status < 400 ? 'Success' : (body?.error || 'Error')),
+        data: body?.data !== undefined ? body.data : body,
+        error: body?.error || (c.res.status >= 400 ? (body?.message || 'Error') : null)
+      }), {
+        status: c.res.status,
+        headers: newHeaders,
+      });
+    } catch {
+      // Keep original response
+    }
   }
 });
 app.use("*", logger());
 app.use("*", timing());
-app.use("*", secureHeaders());
-app.use("*", cors());
 app.use("*", compress());
 
 app.route("/health", healthRoute);
@@ -90,27 +108,9 @@ app.post("/api/v1/upload", async (c) => {
   }
 });
 
-
-// Các API mẫu kiểm tra phân quyền RBAC
+// API kiểm tra phân quyền RBAC cho Portal
 app.use("/api/v1/rbac/*", authenticate);
 
-app.get("/api/v1/rbac/admin", requireRoles("Admin"), (c) => {
-  return c.json({ message: "Admin truy cập thành công" });
-});
-
-app.get("/api/v1/rbac/organizer", requireRoles("Organizer"), (c) => {
-  return c.json({ message: "Organizer truy cập thành công" });
-});
-
-app.get("/api/v1/rbac/judge", requireRoles("Judge"), (c) => {
-  return c.json({ message: "Judge truy cập thành công" });
-});
-
-app.get("/api/v1/rbac/participant", requireRoles("Participant"), (c) => {
-  return c.json({ message: "Participant truy cập thành công" });
-});
-
-// API cho phép Admin và Organizer quản lý cuộc thi
 app.get(
   "/api/v1/rbac/manage-contest",
   requireRoles("Admin", "Organizer"),

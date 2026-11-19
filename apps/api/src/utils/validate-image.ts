@@ -15,6 +15,7 @@ export type ImageValidationOptions = {
   minWidth: number;
   minHeight: number;
   maxPixels: number;
+  allowedTypes?: Array<"image/jpeg" | "image/tiff">;
 };
 
 export type ValidatedImage = {
@@ -30,10 +31,30 @@ export async function validateImage(
   file: File,
   options: ImageValidationOptions,
 ): Promise<ValidatedImage> {
-  for (const [name, value] of Object.entries(options)) {
+  for (const name of [
+    "maxBytes",
+    "minWidth",
+    "minHeight",
+    "maxPixels",
+  ] as const) {
+    const value = options[name];
+
     if (!Number.isSafeInteger(value) || value <= 0) {
       throw new Error(`Invalid image validation option: ${name}`);
     }
+  }
+
+  if (
+    options.allowedTypes !== undefined &&
+    (
+      !Array.isArray(options.allowedTypes) ||
+      options.allowedTypes.length === 0 ||
+      options.allowedTypes.some(
+        (type) => type !== "image/jpeg" && type !== "image/tiff"
+      )
+    )
+  ) {
+    throw new Error("Invalid allowed image types");
   }
 
   if (file.size === 0) {
@@ -98,7 +119,18 @@ export async function validateImage(
   ) {
     throw new ImageValidationError("Image format is invalid", 415);
   }
+  const contentType =
+    format === "jpeg" ? "image/jpeg" : "image/tiff";
 
+  if (
+    options.allowedTypes &&
+    !options.allowedTypes.includes(contentType)
+  ) {
+    throw new ImageValidationError(
+      "Image type is not allowed",
+      415,
+    );
+  }
   if ((metadata.pages ?? 1) !== 1) {
     throw new ImageValidationError(
       "Only single-page images are accepted",
@@ -143,7 +175,7 @@ export async function validateImage(
   return {
     format,
     extension: format === "jpeg" ? "jpg" : "tiff",
-    contentType: format === "jpeg" ? "image/jpeg" : "image/tiff",
+    contentType,
     width,
     height,
     size: file.size,

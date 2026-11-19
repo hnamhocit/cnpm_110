@@ -27,7 +27,7 @@ export async function GET() {
 
     const user = await response.json();
     return Response.json({ user });
-  } catch (error) {
+  } catch {
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

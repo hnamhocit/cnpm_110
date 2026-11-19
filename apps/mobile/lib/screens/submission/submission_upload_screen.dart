@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import '../../core/components/custom_button.dart';
 import '../../core/components/custom_input_field.dart';
 import '../../core/data/submission_repository.dart';
 import '../../core/network/api_exception.dart';
+import '../../core/services/image_compression_service.dart';
 import '../../core/services/image_picker_service.dart';
 import '../../models/film_dev_scan_params.dart';
 import '../../models/film_shooting_params.dart';
@@ -60,8 +62,12 @@ class _SubmissionUploadScreenState
   FilmDevScanParams? _devScanParams;
 
   bool _isSubmitting = false;
+  bool _isCompressingScan = false;
+  bool _isCompressingProof = false;
+  String? _scanCompressionInfo;
+  String? _proofCompressionInfo;
 
-  static const int _maxScanBytes = 100 * 1024 * 1024; // 100 MiB
+  static const int _maxScanBytes = 25 * 1024 * 1024; // 25 MiB (Chuẩn BR-07)
   static const int _maxProofBytes = 20 * 1024 * 1024; // 20 MiB
 
   @override
@@ -85,25 +91,77 @@ class _SubmissionUploadScreenState
   Future<void> _pickScanImage(ImageSource source) async {
     try {
       final picker = ref.read(imagePickerServiceProvider);
-      final attachment = await picker.pickAttachment(source: source);
+      final rawAttachment = await picker.pickAttachment(source: source);
 
-      if (attachment == null) return;
+      if (!mounted) return;
+      if (rawAttachment == null) return;
 
+      setState(() {
+        _isCompressingScan = true;
+        _scanImage = null; // Xóa ảnh cũ để không gửi nhầm khi đang nén ảnh mới
+        _scanImageError = null;
+        _scanCompressionInfo = null;
+      });
+
+      final compression = ref.read(imageCompressionServiceProvider);
+      final result = await compression.compressAttachment(
+        rawAttachment,
+        config: ImageCompressionConfig.forScan,
+      );
+
+      if (!mounted) return;
+
+      final attachment = result.attachment;
+
+      // 1. Kiểm tra giới hạn dung lượng tối đa 25MB (BR-07)
       if (attachment.sizeInBytes > _maxScanBytes) {
         setState(() {
+          _isCompressingScan = false;
+          _scanImage = null;
           _scanImageError =
-              'Ảnh scan vượt quá dung lượng tối đa 100MB (${attachment.formattedSize}).';
+              'Ảnh scan vượt quá dung lượng tối đa 25MB (${attachment.formattedSize}).';
         });
         return;
       }
 
+      // 2. Kiểm tra cạnh ngắn tối thiểu 2000px (BR-07)
+      final w = attachment.width ?? result.compressedWidth ?? 0;
+      final h = attachment.height ?? result.compressedHeight ?? 0;
+      if (w > 0 && h > 0) {
+        final shortEdge = math.min(w, h);
+        if (shortEdge < 2000) {
+          setState(() {
+            _isCompressingScan = false;
+            _scanImage = null;
+            _scanImageError =
+                'Ảnh scan không đạt chuẩn BR-07: cạnh ngắn phải từ 2000px trở lên (hiện tại: ${shortEdge}px).';
+          });
+          return;
+        }
+      }
+
       setState(() {
         _scanImage = attachment;
+        _isCompressingScan = false;
         _scanImageError = null;
+        if (result.wasCompressed) {
+          _scanCompressionInfo =
+              'Đã nén tối ưu: ${rawAttachment.formattedSize} → ${attachment.formattedSize} (giảm ${result.savedPercent.toStringAsFixed(0)}%)';
+        } else {
+          _scanCompressionInfo = null;
+        }
       });
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('ERROR in _pickScanImage: $e\n$st');
+      if (!mounted) return;
       setState(() {
-        _scanImageError = 'Không thể chọn ảnh: $e';
+        _isCompressingScan = false;
+        _scanImage = null;
+        if (e is ImageCompressionException) {
+          _scanImageError = e.message;
+        } else {
+          _scanImageError = 'Không thể xử lý ảnh: $e';
+        }
       });
     }
   }
@@ -111,12 +169,32 @@ class _SubmissionUploadScreenState
   Future<void> _pickNegativeProof(ImageSource source) async {
     try {
       final picker = ref.read(imagePickerServiceProvider);
-      final attachment = await picker.pickAttachment(source: source);
+      final rawAttachment = await picker.pickAttachment(source: source);
 
-      if (attachment == null) return;
+      if (!mounted) return;
+      if (rawAttachment == null) return;
+
+      setState(() {
+        _isCompressingProof = true;
+        _negativeProof = null; // Xóa ảnh cũ để không gửi nhầm khi đang nén ảnh mới
+        _negativeProofError = null;
+        _proofCompressionInfo = null;
+      });
+
+      final compression = ref.read(imageCompressionServiceProvider);
+      final result = await compression.compressAttachment(
+        rawAttachment,
+        config: ImageCompressionConfig.forProof,
+      );
+
+      if (!mounted) return;
+
+      final attachment = result.attachment;
 
       if (attachment.sizeInBytes > _maxProofBytes) {
         setState(() {
+          _isCompressingProof = false;
+          _negativeProof = null;
           _negativeProofError =
               'Ảnh âm bản vượt quá dung lượng tối đa 20MB (${attachment.formattedSize}).';
         });
@@ -125,11 +203,25 @@ class _SubmissionUploadScreenState
 
       setState(() {
         _negativeProof = attachment;
+        _isCompressingProof = false;
         _negativeProofError = null;
+        if (result.wasCompressed) {
+          _proofCompressionInfo =
+              'Đã nén tối ưu: ${rawAttachment.formattedSize} → ${attachment.formattedSize} (giảm ${result.savedPercent.toStringAsFixed(0)}%)';
+        } else {
+          _proofCompressionInfo = null;
+        }
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _negativeProofError = 'Không thể chọn ảnh âm bản: $e';
+        _isCompressingProof = false;
+        _negativeProof = null;
+        if (e is ImageCompressionException) {
+          _negativeProofError = e.message;
+        } else {
+          _negativeProofError = 'Không thể xử lý ảnh âm bản: $e';
+        }
       });
     }
   }
@@ -143,6 +235,7 @@ class _SubmissionUploadScreenState
   }
 
   void _resetForm() {
+    if (_isSubmitting || _isCompressingScan || _isCompressingProof) return;
     setState(() {
       _titleController.clear();
       _descController.clear();
@@ -150,17 +243,61 @@ class _SubmissionUploadScreenState
       _negativeProof = null;
       _scanImageError = null;
       _negativeProofError = null;
+      _scanCompressionInfo = null;
+      _proofCompressionInfo = null;
       _shootingParams = widget.initialShootingParams;
       _devScanParams = widget.initialDevScanParams;
     });
   }
 
   Future<void> _submitForm() async {
+    // 1. Chặn submit khi đang nén ảnh scan hoặc ảnh âm bản
+    if (_isCompressingScan || _isCompressingProof) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Hình ảnh đang được xử lý và nén tối ưu, vui lòng đợi trong giây lát...',
+          ),
+        ),
+      );
+      return;
+    }
+
     final formValid = _formKey.currentState?.validate() ?? false;
 
     if (_scanImage == null) {
       setState(() {
         _scanImageError = 'Vui lòng chọn ảnh scan bài dự thi (bắt buộc).';
+      });
+      return;
+    }
+
+    if (_scanImage!.sizeInBytes > _maxScanBytes) {
+      setState(() {
+        _scanImageError =
+            'Ảnh scan vượt quá dung lượng tối đa 25MB (${_scanImage!.formattedSize}).';
+      });
+      return;
+    }
+
+    final scanW = _scanImage!.width ?? 0;
+    final scanH = _scanImage!.height ?? 0;
+    if (scanW > 0 && scanH > 0) {
+      final shortEdge = math.min(scanW, scanH);
+      if (shortEdge < 2000) {
+        setState(() {
+          _scanImageError =
+              'Ảnh scan không đạt chuẩn BR-07: cạnh ngắn phải từ 2000px trở lên (hiện tại: ${shortEdge}px).';
+        });
+        return;
+      }
+    }
+
+    if (_negativeProof != null &&
+        _negativeProof!.sizeInBytes > _maxProofBytes) {
+      setState(() {
+        _negativeProofError =
+            'Ảnh âm bản vượt quá dung lượng tối đa 20MB (${_negativeProof!.formattedSize}).';
       });
       return;
     }
@@ -285,7 +422,7 @@ class _SubmissionUploadScreenState
             ),
           ),
           actions: [
-            FilledButton(
+            OutlinedButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 if (context.canPop()) {
@@ -294,7 +431,14 @@ class _SubmissionUploadScreenState
                   context.go('/');
                 }
               },
-              child: const Text('Hoàn tất & Về trang chủ'),
+              child: const Text('Về trang chủ'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                context.push('/my-submissions');
+              },
+              child: const Text('Xem bài thi của tôi'),
             ),
           ],
         );
@@ -306,6 +450,8 @@ class _SubmissionUploadScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isCompressing = _isCompressingScan || _isCompressingProof;
+    final isBusy = _isSubmitting || isCompressing;
 
     return Scaffold(
       appBar: AppBar(
@@ -314,7 +460,7 @@ class _SubmissionUploadScreenState
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Đặt lại form',
-            onPressed: _isSubmitting ? null : _resetForm,
+            onPressed: isBusy ? null : _resetForm,
           ),
         ],
       ),
@@ -413,9 +559,11 @@ class _SubmissionUploadScreenState
             const SizedBox(height: 12),
             ImagePickerCard(
               title: 'Ảnh scan bài thi',
-              subtitle: 'Bắt buộc • Tối đa 100MB',
-              helperText:
-                  'Ảnh scan chất lượng cao từ lab tráng scan hoặc scan cá nhân. Khuyến nghị độ phân giải tối thiểu 1000x1000px.',
+              subtitle: 'Bắt buộc • Tối đa 25MB (BR-07)',
+              helperText: _isCompressingScan
+                  ? 'Đang tối ưu hóa và nén hình ảnh...'
+                  : (_scanCompressionInfo ??
+                      'Ảnh scan chất lượng cao từ lab tráng scan hoặc scan cá nhân. Khuyến nghị độ phân giải tối thiểu 2000px.'),
               attachment: _scanImage,
               isRequired: true,
               errorMessage: _scanImageError,
@@ -425,6 +573,7 @@ class _SubmissionUploadScreenState
                 setState(() {
                   _scanImage = null;
                   _scanImageError = null;
+                  _scanCompressionInfo = null;
                 });
               },
               onPreview: _scanImage != null
@@ -444,8 +593,10 @@ class _SubmissionUploadScreenState
             ImagePickerCard(
               title: 'Ảnh âm bản / Contact Sheet',
               subtitle: 'Tùy chọn • Tối đa 20MB',
-              helperText:
-                  'Đính kèm ảnh chụp dải phim âm bản (negative strip) hoặc contact sheet để ban tổ chức và AI xác thực bài thi được chụp bằng máy phim thật.',
+              helperText: _isCompressingProof
+                  ? 'Đang tối ưu hóa và nén ảnh âm bản...'
+                  : (_proofCompressionInfo ??
+                      'Đính kèm ảnh chụp dải phim âm bản (negative strip) hoặc contact sheet để ban tổ chức và AI xác thực bài thi được chụp bằng máy phim thật.'),
               attachment: _negativeProof,
               isRequired: false,
               errorMessage: _negativeProofError,
@@ -455,6 +606,7 @@ class _SubmissionUploadScreenState
                 setState(() {
                   _negativeProof = null;
                   _negativeProofError = null;
+                  _proofCompressionInfo = null;
                 });
               },
               onPreview: _negativeProof != null
@@ -551,11 +703,11 @@ class _SubmissionUploadScreenState
               label: 'Nộp bài thi',
               icon: const Icon(Icons.cloud_upload_outlined),
               isLoading: _isSubmitting,
-              onPressed: _submitForm,
+              onPressed: isBusy ? null : _submitForm,
             ),
             const SizedBox(height: 12),
             OutlinedButton(
-              onPressed: _isSubmitting ? null : _resetForm,
+              onPressed: isBusy ? null : _resetForm,
               child: const Text('Đặt lại form'),
             ),
             const SizedBox(height: 40),

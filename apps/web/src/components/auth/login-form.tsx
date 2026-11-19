@@ -62,7 +62,11 @@ export function LoginForm() {
         role: data.user?.role || "Organizer",
       });
 
-      router.push("/portal");
+      // Tạo cookie session để Server Components đọc được trực tiếp
+      // biome-ignore lint/suspicious/noDocumentCookie: Required for SSR auth in Next.js App Router
+      document.cookie = `access_token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
+
+      window.location.href = "/portal";
     } catch (err) {
       setError(
         err instanceof Error
@@ -95,6 +99,23 @@ export function LoginForm() {
         </header>
 
         <div className="flex w-full flex-col gap-5">
+          <div className="flex flex-col gap-2 rounded-lg border border-blue-100 bg-blue-50/70 p-3 text-xs text-slate-600">
+            <span className="font-medium text-slate-700">Tài khoản thử nghiệm:</span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="rounded-md border border-blue-200 bg-white px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-xs transition-colors hover:bg-blue-50"
+                onClick={() => {
+                  setEmail("organizer.test@example.com");
+                  setPassword("password123");
+                  setError("");
+                }}
+              >
+                Điền nhanh: Ban tổ chức (Organizer)
+              </button>
+            </div>
+          </div>
+
           <AuthField
             id="email"
             label="Email"
@@ -102,7 +123,7 @@ export function LoginForm() {
             className={fieldInputClassName}
             type="email"
             autoComplete="email"
-            placeholder="ban@example.com"
+            placeholder="organizer.test@example.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />

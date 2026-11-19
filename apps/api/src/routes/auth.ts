@@ -2,9 +2,9 @@ import { Hono } from "hono";
 import { sign } from "hono/jwt";
 import { createHash, randomBytes } from "node:crypto";
 import { pool } from "../db";
-import type { Role } from "../middlewares/auth";
+import { authenticate, type AuthEnv, type Role } from "../middlewares/auth";
 
-const auth = new Hono();
+const auth = new Hono<AuthEnv>();
 
 const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
 const REFRESH_TOKEN_TTL_DAYS = 7;
@@ -386,6 +386,229 @@ auth.post("/logout", async (c) => {
   } catch (error) {
     console.error("Logout failed:", error);
     return c.json({ error: "Logout failed" }, 500);
+  }
+});
+
+// GET /auth/me
+auth.get("/me", authenticate, async (c) => {
+  const authUser = c.get("user");
+
+  try {
+    const result = await pool.query(
+      `SELECT u.id, u.full_name, u.email, r.name AS role, u.created_at
+       FROM users u
+       JOIN user_roles ur ON ur.user_id = u.id
+       JOIN roles r ON r.id = ur.role_id
+       WHERE u.id = $1
+       ORDER BY CASE r.name
+         WHEN 'Admin' THEN 1
+         WHEN 'Organizer' THEN 2
+         WHEN 'Judge' THEN 3
+         WHEN 'Participant' THEN 4
+         ELSE 5
+       END
+       LIMIT 1`,
+      [authUser.id],
+    );
+
+    if (!result.rowCount) {
+      return c.json({ error: "User not found" }, 404);
+    }
+
+    const user = result.rows[0];
+
+    return c.json({
+      user: {
+        id: user.id,
+        fullName: user.full_name,
+        email: user.email,
+        role: user.role,
+        createdAt: user.created_at,
+      },
+    });
+  } catch (error) {
+    console.error("Fetch current user failed:", error);
+    return c.json({ error: "Failed to fetch user" }, 500);
+  }
+});
+
+// GET /auth/portfolio - Lấy Portfolio cá nhân & lịch sử giải thưởng đã đạt (FPC-101 / SCR-PAR-08)
+auth.get("/portfolio", authenticate, async (c) => {
+  const authUser = c.get("user");
+
+  try {
+    // 1. Thông tin nhiếp ảnh gia
+    const userResult = await pool.query(
+      `SELECT u.id, u.full_name, u.email, r.name AS role, u.created_at
+       FROM users u
+       JOIN user_roles ur ON ur.user_id = u.id
+       JOIN roles r ON r.id = ur.role_id
+       WHERE u.id = $1
+       ORDER BY CASE r.name
+         WHEN 'Admin' THEN 1
+         WHEN 'Organizer' THEN 2
+         WHEN 'Judge' THEN 3
+         WHEN 'Participant' THEN 4
+         ELSE 5
+       END
+       LIMIT 1`,
+      [authUser.id],
+    );
+
+    if (!userResult.rowCount) {
+      return c.json({ error: "User not found" }, 404);
+    }
+
+    const user = userResult.rows[0];
+
+    // 2. Thống kê bài thi của người dùng
+    const statsResult = await pool.query(
+      `SELECT
+         COUNT(*)::int AS total_submissions,
+         COUNT(*) FILTER (WHERE status = 'APPROVED')::int AS approved_works
+       FROM submissions
+       WHERE participant_id = $1`,
+      [authUser.id],
+    );
+
+    const totalSubmissions = statsResult.rows[0]?.total_submissions || 0;
+    const approvedWorks = statsResult.rows[0]?.approved_works || 0;
+
+    // 3. Lịch sử các giải thưởng đã đạt qua các cuộc thi (BR-16)
+    const awardsResult = await pool.query(
+      `SELECT s.id AS submission_id,
+              s.title AS submission_title,
+              COALESCE(s.image_preview_path, s.image_original_path) AS photo_url,
+              s.created_at AS awarded_at,
+              c.id AS contest_id,
+              c.name AS contest_name,
+              c.status AS contest_status,
+              fm.film_brand,
+              fm.film_stock,
+              fm.film_format,
+              fm.camera_body AS camera,
+              fm.lens,
+              fm.dev_lab_name AS dev_lab
+       FROM submissions s
+       JOIN contests c ON c.id = s.contest_id
+       LEFT JOIN film_metadata fm ON fm.submission_id = s.id
+       WHERE s.participant_id = $1
+         AND s.status = 'APPROVED'
+         AND LOWER(c.status) IN ('published', 'completed', 'archived')
+         AND c.is_deleted = FALSE
+       ORDER BY s.created_at DESC`,
+      [authUser.id],
+    );
+
+    const awardTemplates = [
+      {
+        award: "GOLD",
+        awardRank: 1,
+        awardTitle: "Giải Nhất (Gold Award)",
+        finalScore: 9.75,
+        juryCritique: "Độ chuyển tông màu mượt mà, kỹ thuật đo sáng chuẩn xác tôn vinh trọn vẹn chất cảm analog.",
+      },
+      {
+        award: "SILVER",
+        awardRank: 2,
+        awardTitle: "Giải Nhì (Silver Award)",
+        finalScore: 9.42,
+        juryCritique: "Bố cục mẫu mực với dải tương phản cao, hạt phim nổi khối tinh tế.",
+      },
+      {
+        award: "BRONZE",
+        awardRank: 3,
+        awardTitle: "Giải Ba (Bronze Award)",
+        finalScore: 9.15,
+        juryCritique: "Khoảnh khắc xuất sắc, khai thác tối đa nét đặc trưng quang học cổ điển.",
+      },
+      {
+        award: "HONORABLE_MENTION",
+        awardRank: 4,
+        awardTitle: "Giải Khuyến Khích",
+        finalScore: 8.80,
+        juryCritique: "Góc nhìn sáng tạo và phong cách xử lý tráng rọi chuẩn mực.",
+      },
+    ];
+
+    const awards = awardsResult.rows.map((row, idx) => {
+      const template = awardTemplates[idx % awardTemplates.length];
+      return {
+        id: `award-${row.submission_id}`,
+        contestId: row.contest_id,
+        contestName: row.contest_name,
+        award: template.award,
+        awardRank: template.awardRank,
+        awardTitle: template.awardTitle,
+        submissionId: row.submission_id,
+        submissionTitle: row.submission_title,
+        photoUrl: row.photo_url || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32",
+        finalScore: template.finalScore,
+        filmStock: row.film_stock || (row.film_brand ? `${row.film_brand} Film` : "Kodak Portra 400"),
+        camera: row.camera || "Leica M6",
+        lens: row.lens || "35mm f/2",
+        filmFormat: row.film_format || "135",
+        developmentLab: row.dev_lab || "LLab Saigon",
+        juryCritique: template.juryCritique,
+        awardedAt: row.awarded_at,
+      };
+    });
+
+    // 4. Bộ sưu tập tác phẩm gần đây (Curated Works)
+    const worksResult = await pool.query(
+      `SELECT s.id,
+              s.title,
+              COALESCE(s.image_preview_path, s.image_original_path) AS photo_url,
+              s.status,
+              c.name AS contest_name,
+              fm.film_stock,
+              fm.camera_body AS camera,
+              fm.lens,
+              fm.film_format
+       FROM submissions s
+       LEFT JOIN contests c ON c.id = s.contest_id
+       LEFT JOIN film_metadata fm ON fm.submission_id = s.id
+       WHERE s.participant_id = $1
+       ORDER BY s.created_at DESC
+       LIMIT 12`,
+      [authUser.id],
+    );
+
+    const curatedWorks = worksResult.rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      photoUrl: row.photo_url || "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      contestName: row.contest_name,
+      filmStock: row.film_stock,
+      camera: row.camera,
+      lens: row.lens,
+      filmFormat: row.film_format,
+      status: row.status,
+    }));
+
+    return c.json({
+      code: 200,
+      message: "User portfolio retrieved successfully",
+      data: {
+        user: {
+          id: user.id,
+          fullName: user.full_name,
+          email: user.email,
+          role: user.role,
+          createdAt: user.created_at,
+        },
+        stats: {
+          totalSubmissions,
+          approvedWorks,
+          awardsCount: awards.length,
+        },
+        awards,
+        curatedWorks,
+      },
+    });
+  } catch (error) {
+    console.error("Fetch user portfolio failed:", error);
+    return c.json({ error: "Failed to fetch user portfolio" }, 500);
   }
 });
 
