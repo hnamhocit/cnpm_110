@@ -28,19 +28,25 @@ export function Navbar() {
         {/* Desktop Nav Links */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
           <Link
-            href="#ongoing-contests"
+            href="/#ongoing-contests"
             className="text-slate-600 hover:text-blue-600 transition-colors"
           >
             Cuộc thi đang diễn ra
           </Link>
           <Link
-            href="#ai-features"
+            href="/archive"
+            className="text-slate-600 hover:text-blue-600 transition-colors"
+          >
+            Triển lãm số (Archive)
+          </Link>
+          <Link
+            href="/#ai-features"
             className="text-slate-600 hover:text-blue-600 transition-colors"
           >
             Tính năng AI
           </Link>
           <Link
-            href="#how-it-works"
+            href="/#how-it-works"
             className="text-slate-600 hover:text-blue-600 transition-colors"
           >
             Thể lệ tham gia
@@ -82,14 +88,21 @@ export function Navbar() {
       {mobileMenuOpen && (
         <div className="md:hidden border-b border-slate-200 bg-white px-6 pt-3 pb-6 space-y-3">
           <Link
-            href="#ongoing-contests"
+            href="/#ongoing-contests"
             onClick={() => setMobileMenuOpen(false)}
             className="block rounded-md px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-50"
           >
             Cuộc thi đang diễn ra
           </Link>
           <Link
-            href="#ai-features"
+            href="/archive"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block rounded-md px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Triển lãm số (Archive)
+          </Link>
+          <Link
+            href="/#ai-features"
             onClick={() => setMobileMenuOpen(false)}
             className="block rounded-md px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-50"
           >
