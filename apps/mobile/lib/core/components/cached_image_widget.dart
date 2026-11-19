@@ -1,5 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+
+import '../services/contest_cache_manager.dart';
+import 'contest_cached_image.dart';
 
 /// Component hiển thị hình ảnh từ mạng có bộ nhớ đệm (Disk & RAM cache),
 /// hỗ trợ tự động downsampling để tối ưu RAM, hiển thị placeholder và error state.
@@ -19,11 +22,13 @@ class CachedImageWidget extends StatelessWidget {
     this.maxHeightDiskCache,
     this.cacheKey,
     this.httpHeaders,
-    this.fadeInDuration = const Duration(milliseconds: 200),
-    this.fadeOutDuration = const Duration(milliseconds: 100),
+    this.cacheManager,
+    this.isThumbnail = true,
+    this.fadeInDuration = const Duration(milliseconds: 120),
+    this.fadeOutDuration = const Duration(milliseconds: 50),
   });
 
-  /// URL đầy đủ của hình ảnh (bao gồm cả presigned query tokens nếu có)
+  /// URL đầy đủ của hình ảnh
   final String imageUrl;
 
   /// Chiều rộng hiển thị (logical pixels)
@@ -45,10 +50,10 @@ class CachedImageWidget extends StatelessWidget {
   final Widget Function(BuildContext context, String url, Object error)?
       errorWidget;
 
-  /// Giới hạn chiều rộng giải mã vào RAM (Downsampling để tránh OOM)
+  /// Giới hạn chiều rộng giải mã vào RAM
   final int? memCacheWidth;
 
-  /// Giới hạn chiều cao giải mã vào RAM (Downsampling để tránh OOM)
+  /// Giới hạn chiều cao giải mã vào RAM
   final int? memCacheHeight;
 
   /// Chiều rộng tối đa khi lưu tệp vào bộ nhớ đệm đĩa
@@ -57,11 +62,17 @@ class CachedImageWidget extends StatelessWidget {
   /// Chiều cao tối đa khi lưu tệp vào bộ nhớ đệm đĩa
   final int? maxHeightDiskCache;
 
-  /// Khóa bộ nhớ đệm tùy chọn (nếu cần tách biệt với URL)
+  /// Khóa bộ nhớ đệm tùy chọn
   final String? cacheKey;
 
-  /// Headers HTTP khi gửi yêu cầu tải ảnh (VD: Bearer Token)
+  /// Headers HTTP khi gửi yêu cầu tải ảnh
   final Map<String, String>? httpHeaders;
+
+  /// CacheManager tùy chọn (mặc định ContestCacheManager.instance)
+  final BaseCacheManager? cacheManager;
+
+  /// Cờ phân biệt thumbnail vs detail
+  final bool isThumbnail;
 
   /// Thời gian hiệu ứng mờ chuyển dần khi ảnh nạp xong
   final Duration fadeInDuration;
@@ -74,19 +85,12 @@ class CachedImageWidget extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    Widget image = CachedNetworkImage(
+    return ContestCachedImage(
       imageUrl: imageUrl,
-      cacheKey: cacheKey,
-      httpHeaders: httpHeaders,
       width: width,
       height: height,
       fit: fit,
-      memCacheWidth: memCacheWidth,
-      memCacheHeight: memCacheHeight,
-      maxWidthDiskCache: maxWidthDiskCache,
-      maxHeightDiskCache: maxHeightDiskCache,
-      fadeInDuration: fadeInDuration,
-      fadeOutDuration: fadeOutDuration,
+      borderRadius: borderRadius,
       placeholder: placeholder ??
           (context, url) => Container(
                 width: width,
@@ -100,33 +104,23 @@ class CachedImageWidget extends StatelessWidget {
                     height: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
+                      value: 0.5,
                       color: colorScheme.primary,
                     ),
                   ),
                 ),
               ),
-      errorWidget: errorWidget ??
-          (context, url, error) => Container(
-                width: width,
-                height: height,
-                color: colorScheme.surfaceContainerHighest,
-                child: Center(
-                  child: Icon(
-                    Icons.broken_image_outlined,
-                    size: (width != null && width! < 60) ? 24 : 36,
-                    color: colorScheme.outline,
-                  ),
-                ),
-              ),
+      errorWidget: errorWidget,
+      memCacheWidth: memCacheWidth,
+      memCacheHeight: memCacheHeight,
+      maxWidthDiskCache: maxWidthDiskCache,
+      maxHeightDiskCache: maxHeightDiskCache,
+      cacheKey: cacheKey,
+      httpHeaders: httpHeaders,
+      cacheManager: cacheManager ?? ContestCacheManager.instance,
+      isThumbnail: isThumbnail,
+      fadeInDuration: fadeInDuration,
+      fadeOutDuration: fadeOutDuration,
     );
-
-    if (borderRadius != null) {
-      image = ClipRRect(
-        borderRadius: borderRadius!,
-        child: image,
-      );
-    }
-
-    return image;
   }
 }
