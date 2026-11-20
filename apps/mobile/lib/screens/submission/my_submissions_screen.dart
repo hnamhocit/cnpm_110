@@ -11,9 +11,10 @@ import '../../core/components/loading_dialog.dart';
 import '../../core/data/submission_repository.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/providers/my_submissions_provider.dart';
-import '../../core/services/contest_cache_manager.dart';
+import '../../core/providers/notification_provider.dart';
 import '../../core/services/image_compression_service.dart';
 import '../../core/services/image_picker_service.dart';
+import '../../models/app_notification.dart';
 import '../../models/image_attachment.dart';
 import '../../models/user_submission.dart';
 import 'components/image_preview_dialog.dart';
@@ -72,22 +73,24 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
     final theme = Theme.of(context);
 
     if (sub.status == SubmissionStatus.approved) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text('Bài thi "${sub.title}" đã được duyệt Hợp lệ!'),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.green.shade800,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 4),
+      ref.read(notificationsProvider.notifier).addNotification(
+        AppNotification(
+          id: 'judging_status_${sub.id}_${DateTime.now().millisecondsSinceEpoch}',
+          title: 'Bài thi được đưa vào vòng chấm điểm 🎯',
+          message:
+              'Tác phẩm "${sub.title}" của bạn đã vượt qua khâu kiểm duyệt và chính thức bước vào vòng chấm điểm ẩn danh (Judging Round)!',
+          type: NotificationType.submissionApprovedForJudging,
+          createdAt: DateTime.now(),
+          isRead: false,
+          submissionId: sub.id,
+          submissionTitle: sub.title,
+          contestId: sub.contestId,
+          route: '/my-submissions',
         ),
+        context: context,
+        showInAppPush: true,
       );
+      return;
     } else if (sub.status == SubmissionStatus.proofRequested) {
       scaffoldMessenger.showSnackBar(
         SnackBar(
@@ -407,6 +410,107 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+
+                // Judging Round Status Card (FPC-83 / BR-12 / BR-24)
+                if (submission.status == SubmissionStatus.approved) ...[
+                  Container(
+                    key: const Key('details_judging_round_banner'),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFF3B82F6), width: 1.5),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF3B82F6),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.gavel_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Đang trong vòng chấm điểm',
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF1E3A8A),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDBEAFE),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'ẨN DANH KÉP (BR-12)',
+                                      style: TextStyle(
+                                        color: Color(0xFF1D4ED8),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Tác phẩm đã vượt qua thẩm định và đang được Hội đồng Giám khảo đánh giá độc lập theo bộ tiêu chí chuyên môn. Danh tính của bạn được bảo mật tuyệt đối theo quy tắc Chấm thi ẩn danh kép (BR-12).',
+                          style: TextStyle(
+                            color: Color(0xFF1E40AF),
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFBFDBFE)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.lock_outline_rounded, size: 14, color: Color(0xFF2563EB)),
+                              SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Khóa chỉnh sửa thông số & rút bài theo quy định BR-24.',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1E40AF),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 // Real-time Moderation Timeline (FPC-63)
                 Card(
@@ -1248,6 +1352,32 @@ class _SubmissionCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
+                        if (submission.status == SubmissionStatus.approved) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: const Color(0xFFBFDBFE)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.gavel_rounded, size: 12, color: Color(0xFF2563EB)),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Đang trong vòng chấm điểm',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1D4ED8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/services/notification_service.dart';
 import 'router/app_router.dart';
 
 void main() {
@@ -15,6 +16,7 @@ class MainApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'Film Contest',
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: rootScaffoldMessengerKey,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF386A5A)),
