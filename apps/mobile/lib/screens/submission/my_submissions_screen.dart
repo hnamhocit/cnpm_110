@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/components/contest_cached_image.dart';
 import '../../core/components/loading_dialog.dart';
 import '../../core/data/submission_repository.dart';
 import '../../core/network/api_exception.dart';
@@ -629,28 +630,10 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
     }
 
     if (path.startsWith('http://') || path.startsWith('https://')) {
-      return Image.network(
-        path,
+      return ContestCachedImage(
+        imageUrl: path,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Container(
-          color: Colors.grey.shade200,
-          child: const Center(
-            child: Icon(Icons.broken_image_outlined, size: 36, color: Colors.grey),
-          ),
-        ),
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            color: Colors.grey.shade100,
-            child: const Center(
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          );
-        },
+        isThumbnail: false,
       );
     }
 
@@ -718,6 +701,29 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
         ),
       ),
     );
+  }
+
+  void _precacheNextSubmissions(
+    BuildContext context,
+    List<UserSubmission> submissions,
+    int currentIndex,
+  ) {
+    // Bổ sung cơ chế precacheImage cho 2–3 bài dự thi kế tiếp để ảnh sẵn sàng trước khi lướt tới
+    const precacheCount = 3;
+    for (int i = 1; i <= precacheCount; i++) {
+      final nextIndex = currentIndex + i;
+      if (nextIndex < submissions.length) {
+        final nextItem = submissions[nextIndex];
+        final imagePath = nextItem.bestDisplayImagePath;
+        if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+          ContestCacheManager.precache(
+            context,
+            imagePath,
+            isThumbnail: true,
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -999,10 +1005,13 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
                 return RefreshIndicator(
                   onRefresh: () => ref.read(mySubmissionsProvider.notifier).refresh(),
                   child: ListView.separated(
+                    // ignore: deprecated_member_use
+                    cacheExtent: 600,
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                     itemCount: filteredSubmissions.length,
                     separatorBuilder: (context, index) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
+                      _precacheNextSubmissions(context, filteredSubmissions, index);
                       final submission = filteredSubmissions[index];
                       return _SubmissionCard(
                         submission: submission,
@@ -1087,19 +1096,12 @@ class _SubmissionCard extends StatelessWidget {
     }
 
     if (path.startsWith('http://') || path.startsWith('https://')) {
-      return Image.network(
-        path,
+      return ContestCachedImage(
+        imageUrl: path,
         width: 84,
         height: 84,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Container(
-          width: 84,
-          height: 84,
-          color: Colors.grey.shade200,
-          child: const Center(
-            child: Icon(Icons.broken_image_outlined, size: 28, color: Colors.grey),
-          ),
-        ),
+        isThumbnail: true,
       );
     }
 

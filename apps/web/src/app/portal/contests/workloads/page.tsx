@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   BarChart3,
   CheckCircle2,
+  ClipboardCheck,
   Clock,
   Layers,
   Search,
@@ -161,6 +162,12 @@ export default function JudgeWorkloadTrackerPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            href="/portal/contests/judging-progress"
+            className="inline-flex items-center rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+          >
+            <ClipboardCheck className="mr-1.5 h-4 w-4" /> Tiến độ chi tiết
+          </Link>
           <select
             id={contestSelectId}
             value={selectedContest}
