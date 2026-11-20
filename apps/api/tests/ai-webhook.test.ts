@@ -11,7 +11,7 @@ beforeAll(async () => {
   process.env.AI_WEBHOOK_SECRET = testSecret;
 
   const { default: aiWebhook } = await import(
-    "../src/routes/ai-webhook"
+    "../src/routes/ai-webhook.route"
   );
 
   app = new Hono();

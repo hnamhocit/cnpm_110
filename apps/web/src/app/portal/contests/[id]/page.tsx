@@ -1,12 +1,12 @@
 import {
   ArrowLeft,
   Calendar,
-  Clock,
+  ClipboardCheck,
   ExternalLink,
   Film,
   Layers,
+  Medal,
   Settings,
-  Sparkles,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -111,6 +111,11 @@ export default async function PortalContestOverviewPage({
           <Link href={`/portal/contests/${contest.id}/submissions`}>
             <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs">
               <Film className="w-3.5 h-3.5 mr-1.5" /> Quản lý bài dự thi
+            </Button>
+          </Link>
+          <Link href="/portal/contests/judging-progress">
+            <Button variant="outline" size="sm" className="text-xs">
+              <ClipboardCheck className="w-3.5 h-3.5" /> Tiến độ chấm thi
             </Button>
           </Link>
         </div>

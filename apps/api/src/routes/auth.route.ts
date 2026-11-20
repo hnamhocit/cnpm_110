@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { sign } from "hono/jwt";
 import { createHash, randomBytes } from "node:crypto";
+
 import { pool } from "../db";
 import { authenticate, type AuthEnv, type Role } from "../middlewares/auth";
 

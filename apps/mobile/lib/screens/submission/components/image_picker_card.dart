@@ -97,6 +97,7 @@ class ImagePickerCard extends StatelessWidget {
         fit: BoxFit.cover,
         memCacheWidth: 400,
         memCacheHeight: 400,
+        isThumbnail: true,
         errorWidget: (context, url, error) => const Center(
           child: Icon(Icons.broken_image_outlined, size: 36, color: Colors.grey),
         ),
@@ -128,6 +129,7 @@ class ImagePickerCard extends StatelessWidget {
       fit: BoxFit.cover,
       memCacheWidth: 400,
       memCacheHeight: 400,
+      isThumbnail: true,
       errorWidget: (context, url, error) => const Center(
         child: Icon(Icons.broken_image_outlined, size: 36, color: Colors.grey),
       ),

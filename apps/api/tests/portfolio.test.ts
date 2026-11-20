@@ -2,7 +2,7 @@ import { describe, expect, test, spyOn } from "bun:test";
 import { Hono } from "hono";
 import { sign } from "hono/jwt";
 import { pool } from "../src/db";
-import auth from "../src/routes/auth";
+import auth from "../src/routes/auth.route";
 
 const TEST_SECRET = "portfolio-test-secret-at-least-32-chars";
 
