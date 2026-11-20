@@ -27,7 +27,7 @@ mock.module("../src/services/ai-analysis", () => ({
 }));
 
 const { processAiJob } = await import(
-  "../src/services/ai-job-processor"
+  "../src/services/ai/ai-job-processor"
 );
 
 describe("FPC-54: AI Job Processor integration", () => {

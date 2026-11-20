@@ -1,10 +1,10 @@
 import { and, eq, inArray, isNotNull, ne } from "drizzle-orm";
-import { db } from "../db/index";
-import { submissionAiAnalyses, submissions } from "../db/schema";
-import { AppError } from "../utils/errors";
+import { db } from "../../db/index";
+import { submissionAiAnalyses, submissions } from "../../db/schema";
+import { AppError } from "../../utils/errors";
 import { classifyAiDetection } from "./ai-detection";
 import { classifyAiResult } from "./ai-result-classification";
-import { findClosestDuplicate } from "./duplicate-detection";
+import { findClosestDuplicate } from "../duplicate-detection";
 
 export interface PredictedTagInput {
   tag: string;

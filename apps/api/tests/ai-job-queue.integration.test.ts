@@ -1,10 +1,9 @@
-
 import { describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { pool } from "../src/db";
 import { db } from "../src/db/index";
-import { claimNextAiJob } from "../src/services/ai-job-queue";
+import { claimNextAiJob } from "../src/services/ai/ai-job-queue";
 import {
   aiAnalysisJobs,
   categories,

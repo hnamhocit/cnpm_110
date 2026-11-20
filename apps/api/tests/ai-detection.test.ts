@@ -1,6 +1,5 @@
-
 import { describe, expect, test } from "bun:test";
-import { classifyAiDetection } from "../src/services/ai-detection";
+import { classifyAiDetection } from "../src/services/ai/ai-detection";
 
 describe("FPC-54 AI Detection", () => {
   test("Probability below 0.75 is not flagged", () => {

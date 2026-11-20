@@ -3,7 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import {
   type AiWebhookPayload,
   processAiWebhookAnalysis,
-} from "../services/ai-webhook.service";
+} from "../services/ai/ai-webhook.service";
 import { AppError } from "../utils/errors";
 
 const UUID_REGEX =

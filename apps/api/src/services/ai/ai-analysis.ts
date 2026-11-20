@@ -1,5 +1,4 @@
-
-import { getR2SignedReadUrl } from "../r2";
+import { getR2SignedReadUrl } from "../../r2";
 import {
   detectAiGeneratedImage,
   type AiModelResult,

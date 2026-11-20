@@ -1,4 +1,3 @@
-
 import { AI_HIGH_RISK_THRESHOLD } from "./ai-detection";
 
 export type VerificationStatus =

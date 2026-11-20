@@ -1,11 +1,10 @@
-
 import { and, eq, inArray } from "drizzle-orm";
-import { db } from "../db/index";
+import { db } from "../../db/index";
 import {
   aiAnalysisJobs,
   submissionAiAnalyses,
   submissions,
-} from "../db/schema";
+} from "../../db/schema";
 import { analyzeSubmissionImage } from "./ai-analysis";
 import { classifyAiDetection } from "./ai-detection";
 import { classifyAiResult } from "./ai-result-classification";
