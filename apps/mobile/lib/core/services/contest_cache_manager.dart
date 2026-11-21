@@ -2,9 +2,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
-/// Singleton CacheManager chuyên biệt cho hình ảnh bài dự thi (Contest Entries).
-/// Cấu hình giới hạn bộ nhớ đệm đĩa (max 300 objects) và thời gian lưu trữ (7 ngày)
-/// để tránh phình dung lượng lưu trữ và đảm bảo tốc độ truy xuất tối ưu.
+/// Singleton CacheManager chuyên biệt cho hình ảnh bài dự thi & ảnh triển lãm (Contest Entries / Winners).
+/// Cấu hình giới hạn bộ nhớ đệm đĩa (tối đa 300 đối tượng) và thời gian lưu trữ (7 ngày)
+/// để tránh phình bộ nhớ thiết bị đồng thời duy trì tốc độ đọc từ đĩa siêu nhanh.
 class ContestCacheManager extends CacheManager with ImageCacheManager {
   static const String key = 'contest_entries_cache';
 
@@ -27,7 +27,7 @@ class ContestCacheManager extends CacheManager with ImageCacheManager {
           ),
         );
 
-  /// Precache trước một hình ảnh vào ContestCacheManager để sẵn sàng hiển thị ngay lập tức
+  /// Precache trước một hình ảnh vào cache để khi người dùng cuộn đến sẽ hiển thị tức thì
   static void precache(
     BuildContext context,
     String url, {
@@ -43,11 +43,11 @@ class ContestCacheManager extends CacheManager with ImageCacheManager {
     );
 
     precacheImage(provider, context).catchError((_) {
-      // Bỏ qua lỗi ngầm khi precache (mạng yếu hoặc URL không hợp lệ) để không làm crash UI
+      // Bỏ qua lỗi precache ngầm (mạng yếu hoặc URL hỏng) để không gián đoạn UI
     });
   }
 
-  /// Xóa toàn bộ bộ nhớ đệm ảnh bài dự thi khi cần giải phóng dung lượng thủ công
+  /// Xóa bộ nhớ đệm hình ảnh bài thi khi cần giải phóng dung lượng thủ công
   Future<void> clearContestCache() async {
     await emptyCache();
   }

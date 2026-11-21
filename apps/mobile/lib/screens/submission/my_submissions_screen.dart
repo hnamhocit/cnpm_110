@@ -8,6 +8,8 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/components/contest_cached_image.dart';
 import '../../core/components/loading_dialog.dart';
+import '../../core/components/shimmer_loading.dart';
+import '../../core/services/contest_cache_manager.dart';
 import '../../core/data/submission_repository.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/providers/my_submissions_provider.dart';
@@ -1028,16 +1030,7 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
             child: (submissionsAsync.hasError && !submissionsAsync.hasValue)
                 ? _buildErrorView(context, submissionsAsync.error!)
                 : submissionsAsync.when(
-                    loading: () => const Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 16),
-                          Text('Đang tải danh sách bài thi...'),
-                        ],
-                      ),
-                    ),
+                    loading: () => const SubmissionsListSkeleton(),
                     error: (error, stack) => _buildErrorView(context, error),
                     data: (_) {
                 if (filteredSubmissions.isEmpty) {
