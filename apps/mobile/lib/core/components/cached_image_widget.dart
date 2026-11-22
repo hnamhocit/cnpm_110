@@ -3,9 +3,10 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 import '../services/contest_cache_manager.dart';
 import 'contest_cached_image.dart';
+import 'shimmer_loading.dart';
 
 /// Component hiển thị hình ảnh từ mạng có bộ nhớ đệm (Disk & RAM cache),
-/// hỗ trợ tự động downsampling để tối ưu RAM, hiển thị placeholder và error state.
+/// hỗ trợ tự động downsampling để tối ưu RAM, hiển thị placeholder shimmer/skeleton và error state.
 class CachedImageWidget extends StatelessWidget {
   const CachedImageWidget({
     super.key,
@@ -16,6 +17,7 @@ class CachedImageWidget extends StatelessWidget {
     this.borderRadius,
     this.placeholder,
     this.errorWidget,
+    this.useShimmer = false,
     this.memCacheWidth,
     this.memCacheHeight,
     this.maxWidthDiskCache,
@@ -45,6 +47,9 @@ class CachedImageWidget extends StatelessWidget {
 
   /// Widget tùy biến hiển thị khi đang tải ảnh
   final Widget Function(BuildContext context, String url)? placeholder;
+
+  /// Bật hiệu ứng Shimmer Skeleton cho placeholder thay vì vòng xoay thông thường
+  final bool useShimmer;
 
   /// Widget tùy biến hiển thị khi tải ảnh thất bại
   final Widget Function(BuildContext context, String url, Object error)?
@@ -84,6 +89,18 @@ class CachedImageWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+
+    // Tính toán Downsampling thông minh vào RAM dựa theo kích thước màn hình
+    int? resolvedMemCacheWidth = memCacheWidth;
+    int? resolvedMemCacheHeight = memCacheHeight;
+
+    if (resolvedMemCacheWidth == null && width != null && width!.isFinite && width! > 0) {
+      resolvedMemCacheWidth = (width! * dpr).round();
+    }
+    if (resolvedMemCacheHeight == null && height != null && height!.isFinite && height! > 0) {
+      resolvedMemCacheHeight = (height! * dpr).round();
+    }
 
     return ContestCachedImage(
       imageUrl: imageUrl,
@@ -91,36 +108,56 @@ class CachedImageWidget extends StatelessWidget {
       height: height,
       fit: fit,
       borderRadius: borderRadius,
+      cacheKey: cacheKey,
+      cacheManager: cacheManager ?? ContestCacheManager.instance,
+      httpHeaders: httpHeaders,
+      isThumbnail: isThumbnail,
+      memCacheWidth: resolvedMemCacheWidth,
+      memCacheHeight: resolvedMemCacheHeight,
+      maxWidthDiskCache: maxWidthDiskCache,
+      maxHeightDiskCache: maxHeightDiskCache,
+      fadeInDuration: fadeInDuration,
+      fadeOutDuration: fadeOutDuration,
       placeholder: placeholder ??
-          (context, url) => Container(
+          (context, url) {
+            if (useShimmer) {
+              return ShimmerImagePlaceholder(
                 width: width,
                 height: height,
-                color: colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.5,
-                ),
-                child: Center(
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      value: 0.5,
-                      color: colorScheme.primary,
-                    ),
+                borderRadius: borderRadius,
+              );
+            }
+            return Container(
+              width: width,
+              height: height,
+              color: colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.5,
+              ),
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: colorScheme.primary,
                   ),
                 ),
               ),
-      errorWidget: errorWidget,
-      memCacheWidth: memCacheWidth,
-      memCacheHeight: memCacheHeight,
-      maxWidthDiskCache: maxWidthDiskCache,
-      maxHeightDiskCache: maxHeightDiskCache,
-      cacheKey: cacheKey,
-      httpHeaders: httpHeaders,
-      cacheManager: cacheManager ?? ContestCacheManager.instance,
-      isThumbnail: isThumbnail,
-      fadeInDuration: fadeInDuration,
-      fadeOutDuration: fadeOutDuration,
+            );
+          },
+      errorWidget: errorWidget ??
+          (context, url, error) => Container(
+                width: width,
+                height: height,
+                color: colorScheme.surfaceContainerHighest,
+                child: Center(
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    size: (width != null && width! < 60) ? 24 : 36,
+                    color: colorScheme.outline,
+                  ),
+                ),
+              ),
     );
   }
 }
