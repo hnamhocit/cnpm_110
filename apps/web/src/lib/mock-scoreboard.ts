@@ -1,7 +1,7 @@
 import type { ScoreboardEntry, ScoreboardSnapshot } from "@/types/scoreboard";
 
 // TODO(Backend): thay bằng GET /api/v1/contests/:contestId/scoreboard
-// khi endpoint được chốt trong docs/09-api-contracts.md.
+// khi endpoint được chốt trong docs/ai/09-api-contracts.md.
 // Mock data tạm thời cho UI testing, xoá khi backend sẵn sàng.
 export const MOCK_SCOREBOARD_CONTESTS = [
   {

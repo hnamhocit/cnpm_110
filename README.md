@@ -58,18 +58,18 @@ film-contest/
 
 | Module | Tệp đặc tả | Phạm vi nghiệp vụ cốt lõi |
 | :---: | :--- | :--- |
-| **01** | [`docs/01-auth-and-rbac.md`](docs/01-auth-and-rbac.md) | Xác thực JWT, Refresh Token Rotation, Ma trận phân quyền RBAC, Chống brute-force |
-| **02** | [`docs/02-analog-master-data.md`](docs/02-analog-master-data.md) | Danh mục Phim (Film Stocks), Máy ảnh, Ống kính, Phòng Lab tráng/quét phim |
-| **03** | [`docs/03-contest-lifecycle.md`](docs/03-contest-lifecycle.md) | Vòng đời cuộc thi, Hạng mục, Chuẩn hóa trọng số 100% (BR-15), Lịch trình tuần tự (BR-08) |
-| **04** | [`docs/04-film-logbook.md`](docs/04-film-logbook.md) | Sổ tay cuộn phim, Khung hình, Giới hạn vật lý khổ phim (BR-23), Push/Pull ISO |
-| **05** | [`docs/05-submission-and-proof.md`](docs/05-submission-and-proof.md) | Nộp bài thi, Chống trùng lặp (BR-05), Đồng hồ 48h nộp âm bản (BR-19), Chuẩn ảnh (BR-07) |
-| **06** | [`docs/06-ai-verification.md`](docs/06-ai-verification.md) | Giám định AI ($P_{AI} \ge 75\%$), Trùng lặp pHash 64-bit, Vector CLIP, Redis Worker Queue |
-| **07** | [`docs/07-blind-judging.md`](docs/07-blind-judging.md) | Chấm thi ẩn danh kép (BR-12), Giám khảo độc lập (BR-13), Lệch điểm > 30% (BR-14) |
-| **08** | [`docs/08-archive-and-exhibition.md`](docs/08-archive-and-exhibition.md) | Tính bất biến kết quả (BR-16), Lưu trữ 2 vùng Private/Public Watermark (BR-17) |
-| **09** | [`docs/09-api-contracts.md`](docs/09-api-contracts.md) | Chuẩn hóa DTO, Response Envelopes và hợp đồng API dùng chung đa nền tảng |
-| **10** | [`docs/10-database-and-storage.md`](docs/10-database-and-storage.md) | DDL PostgreSQL 16+, Extension `pgvector`, Bảng `digital_assets`, Cloud Storage S3/R2 |
+| **01** | [`docs/ai/01-auth-and-rbac.md`](docs/ai/01-auth-and-rbac.md) | Xác thực JWT, Refresh Token Rotation, Ma trận phân quyền RBAC, Chống brute-force |
+| **02** | [`docs/ai/02-analog-master-data.md`](docs/ai/02-analog-master-data.md) | Danh mục Phim (Film Stocks), Máy ảnh, Ống kính, Phòng Lab tráng/quét phim |
+| **03** | [`docs/ai/03-contest-lifecycle.md`](docs/ai/03-contest-lifecycle.md) | Vòng đời cuộc thi, Hạng mục, Chuẩn hóa trọng số 100% (BR-15), Lịch trình tuần tự (BR-08) |
+| **04** | [`docs/ai/04-film-logbook.md`](docs/ai/04-film-logbook.md) | Sổ tay cuộn phim, Khung hình, Giới hạn vật lý khổ phim (BR-23), Push/Pull ISO |
+| **05** | [`docs/ai/05-submission-and-proof.md`](docs/ai/05-submission-and-proof.md) | Nộp bài thi, Chống trùng lặp (BR-05), Đồng hồ 48h nộp âm bản (BR-19), Chuẩn ảnh (BR-07) |
+| **06** | [`docs/ai/06-ai-verification.md`](docs/ai/06-ai-verification.md) | Giám định AI ($P_{AI} \ge 75\%$), Trùng lặp pHash 64-bit, Vector CLIP, Redis Worker Queue |
+| **07** | [`docs/ai/07-blind-judging.md`](docs/ai/07-blind-judging.md) | Chấm thi ẩn danh kép (BR-12), Giám khảo độc lập (BR-13), Lệch điểm > 30% (BR-14) |
+| **08** | [`docs/ai/08-archive-and-exhibition.md`](docs/ai/08-archive-and-exhibition.md) | Tính bất biến kết quả (BR-16), Lưu trữ 2 vùng Private/Public Watermark (BR-17) |
+| **09** | [`docs/ai/09-api-contracts.md`](docs/ai/09-api-contracts.md) | Chuẩn hóa DTO, Response Envelopes và hợp đồng API dùng chung đa nền tảng |
+| **10** | [`docs/ai/10-database-and-storage.md`](docs/ai/10-database-and-storage.md) | DDL PostgreSQL 16+, Extension `pgvector`, Bảng `digital_assets`, Cloud Storage S3/R2 |
 
-Xem [danh mục endpoint](docs/09-api-contracts.md#6-danh-mục-endpoint) để biết trạng thái triển khai trong [OpenAPI](docs/openapi.yaml) và [Postman](docs/film-contest.postman_collection.json).
+Xem [danh mục endpoint](docs/ai/09-api-contracts.md#6-danh-mục-endpoint) để biết trạng thái triển khai trong [OpenAPI](docs/openapi.yaml) và [Postman](docs/film-contest.postman_collection.json).
 
 ---
 
@@ -158,6 +158,12 @@ bun add -d <package-name>
 # Thêm package vào Mobile (Flutter):
 cd apps/mobile && flutter pub add <package-name>
 ```
+
+---
+
+## Theo dõi tiến độ
+
+Xem [tổng quan độ phủ dự án](docs/progress/overview.md). Giao việc và xem trạng thái trong [bảng công việc](docs/progress/tasks.md). Mỗi thành viên dùng [mẫu cập nhật tuần](docs/progress/update-template.md). Xem [cách tổng hợp tiến độ](docs/progress/README.md).
 
 ---
 

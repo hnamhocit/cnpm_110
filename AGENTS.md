@@ -15,24 +15,24 @@ This block is written and re-added by `turbo` before repository-scoped commands 
 
 Before writing or proposing code, schemas, or API changes, read the master SRS and the modules relevant to the task. Apply any workspace-specific `AGENTS.md` as well.
 
-- [`docs/srs.md`](docs/srs.md) governs business requirements and message codes. Modules 01–10 describe the technical design.
-- For API work, read [Module 09](docs/09-api-contracts.md) and check [OpenAPI](docs/openapi.yaml) and the Hono route registrations. `x-implementation: mounted` identifies registered routes. `planned` identifies module contracts awaiting a route. Registration alone does not establish SRS compliance.
+- [`docs/srs.md`](docs/srs.md) governs business requirements and message codes. Modules 01–10 in [`docs/ai/`](docs/ai/) describe the technical design.
+- For API work, read [Module 09](docs/ai/09-api-contracts.md) and check [OpenAPI](docs/openapi.yaml) and the Hono route registrations. `x-implementation: mounted` identifies registered routes. `planned` identifies module contracts awaiting a route. Registration alone does not establish SRS compliance.
 - If requirements or contracts conflict, identify the difference and use the governing document for the task. Missing business rules, routes, or DTOs need an explicit decision before implementation.
 
 ## 1. Domain & Business Rules Mapping (SSOT)
 
 Always map your task to the Single Source of Truth before coding:
 - **Master SRS**: [`docs/srs.md`](docs/srs.md) (Actors, Use Cases UC-01 to UC-43, Business Rules BR-01 to BR-25, App Messages MSG001 to MSG028)
-- **Module 01 (Auth & RBAC)**: [`docs/01-auth-and-rbac.md`](docs/01-auth-and-rbac.md) (JWT, Refresh Token Rotation, RBAC Matrix, Brute-force lockout)
-- **Module 02 (Analog Master Data)**: [`docs/02-analog-master-data.md`](docs/02-analog-master-data.md) (Film Stocks, Cameras, Lenses, Labs, Soft delete)
-- **Module 03 (Contest Lifecycle)**: [`docs/03-contest-lifecycle.md`](docs/03-contest-lifecycle.md) (Timeline order BR-08, 100% weight validation BR-15, Quorum BR-20, Conflict of Interest BR-21, 6-state machine)
-- **Module 04 (Film Logbook)**: [`docs/04-film-logbook.md`](docs/04-film-logbook.md) (Film rolls, Frame logs, Physical frame limits BR-23, Push/Pull ISO, Offline sync)
-- **Module 05 (Submission & Proof)**: [`docs/05-submission-and-proof.md`](docs/05-submission-and-proof.md) (Photo technical standards BR-07, Duplicate check BR-05, Mandatory 48h proof countdown BR-19, Mandatory reason BR-18, 5 metadata fields BR-22)
-- **Module 06 (AI Verification)**: [`docs/06-ai-verification.md`](docs/06-ai-verification.md) (AI-generated flag P_AI >= 75% BR-09, pHash Hamming ≤ 5 or cosine similarity ≥ 92% (BR-10), pgvector)
-- **Module 07 (Blind Judging)**: [`docs/07-blind-judging.md`](docs/07-blind-judging.md) (Double-blind DTO stripping BR-12, Judge independence BR-13, Score discrepancy alert > 30% BR-14, Score average BR-25)
-- **Module 08 (Archive & Exhibition)**: [`docs/08-archive-and-exhibition.md`](docs/08-archive-and-exhibition.md) (Result immutability BR-16, Dual digital asset storage BR-17)
-- **Module 09 (Shared API Contracts)**: [`docs/09-api-contracts.md`](docs/09-api-contracts.md) (Standard response envelopes, DTOs, Zod schemas)
-- **Module 10 (Database & Storage)**: [`docs/10-database-and-storage.md`](docs/10-database-and-storage.md) (PostgreSQL 16+, pgvector, digital_assets, S3/R2 presigned URLs)
+- **Module 01 (Auth & RBAC)**: [`docs/ai/01-auth-and-rbac.md`](docs/ai/01-auth-and-rbac.md) (JWT, Refresh Token Rotation, RBAC Matrix, Brute-force lockout)
+- **Module 02 (Analog Master Data)**: [`docs/ai/02-analog-master-data.md`](docs/ai/02-analog-master-data.md) (Film Stocks, Cameras, Lenses, Labs, Soft delete)
+- **Module 03 (Contest Lifecycle)**: [`docs/ai/03-contest-lifecycle.md`](docs/ai/03-contest-lifecycle.md) (Timeline order BR-08, 100% weight validation BR-15, Quorum BR-20, Conflict of Interest BR-21, 6-state machine)
+- **Module 04 (Film Logbook)**: [`docs/ai/04-film-logbook.md`](docs/ai/04-film-logbook.md) (Film rolls, Frame logs, Physical frame limits BR-23, Push/Pull ISO, Offline sync)
+- **Module 05 (Submission & Proof)**: [`docs/ai/05-submission-and-proof.md`](docs/ai/05-submission-and-proof.md) (Photo technical standards BR-07, Duplicate check BR-05, Mandatory 48h proof countdown BR-19, Mandatory reason BR-18, 5 metadata fields BR-22)
+- **Module 06 (AI Verification)**: [`docs/ai/06-ai-verification.md`](docs/ai/06-ai-verification.md) (AI-generated flag P_AI >= 75% BR-09, pHash Hamming ≤ 5 or cosine similarity ≥ 92% (BR-10), pgvector)
+- **Module 07 (Blind Judging)**: [`docs/ai/07-blind-judging.md`](docs/ai/07-blind-judging.md) (Double-blind DTO stripping BR-12, Judge independence BR-13, Score discrepancy alert > 30% BR-14, Score average BR-25)
+- **Module 08 (Archive & Exhibition)**: [`docs/ai/08-archive-and-exhibition.md`](docs/ai/08-archive-and-exhibition.md) (Result immutability BR-16, Dual digital asset storage BR-17)
+- **Module 09 (Shared API Contracts)**: [`docs/ai/09-api-contracts.md`](docs/ai/09-api-contracts.md) (Standard response envelopes, DTOs, Zod schemas)
+- **Module 10 (Database & Storage)**: [`docs/ai/10-database-and-storage.md`](docs/ai/10-database-and-storage.md) (PostgreSQL 16+, pgvector, digital_assets, S3/R2 presigned URLs)
 
 ## 2. Inviolable Core Constraints
 

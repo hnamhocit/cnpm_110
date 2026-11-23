@@ -350,18 +350,18 @@ stateDiagram-v2
 
 ## 4. Module Specifications Mapping (Chỉ mục Ánh xạ Module Chi tiết)
 
-Các module dưới đây mô tả thiết kế kỹ thuật. Khi có khác biệt về nghiệp vụ, áp dụng BR và UC trong SRS. Xem [danh mục endpoint](09-api-contracts.md#6-danh-mục-endpoint) để kiểm tra trạng thái triển khai.
+Các module dưới đây mô tả thiết kế kỹ thuật. Khi có khác biệt về nghiệp vụ, áp dụng BR và UC trong SRS. Xem [danh mục endpoint](ai/09-api-contracts.md#6-danh-mục-endpoint) để kiểm tra trạng thái triển khai.
 
-1.  [`docs/01-auth-and-rbac.md`](01-auth-and-rbac.md): Quản lý Định danh, Phân quyền RBAC, Phiên làm việc JWT & Quản trị Người dùng.
-2.  [`docs/02-analog-master-data.md`](02-analog-master-data.md): Quản lý Danh mục Dữ liệu dùng chung Nhiếp ảnh Phim (Film Stocks, Cameras, Lenses, Labs).
-3.  [`docs/03-contest-lifecycle.md`](03-contest-lifecycle.md): Vòng đời Cuộc thi, Hạng mục, Bộ tiêu chí Chấm điểm & Cơ cấu Giải thưởng.
-4.  [`docs/04-film-logbook.md`](04-film-logbook.md): Sổ tay Quản lý Cuộn phim (Film Rolls) & Siêu dữ liệu Khung hình (Frame Logging).
-5.  [`docs/05-submission-and-proof.md`](05-submission-and-proof.md): Quy trình Nộp bài thi, Đối chứng Bằng chứng Âm bản & Kiểm duyệt Ban tổ chức.
-6.  [`docs/06-ai-verification.md`](06-ai-verification.md): Thẩm định Trí tuệ Nhân tạo (Phát hiện Trùng lặp pHash, Xác suất Ảnh AI tạo sinh & Gán thẻ).
-7.  [`docs/07-blind-judging.md`](07-blind-judging.md): Không gian Chấm thi Ẩn danh kép (Double-Blind), Chấm điểm Tiêu chí & Điều phối Lệch điểm.
-8.  [`docs/08-archive-and-exhibition.md`](08-archive-and-exhibition.md): Kho Lưu trữ Di sản Số, Bảo vệ Tác quyền, Đóng dấu Bản quyền & Phòng Triển lãm.
-9.  [`docs/09-api-contracts.md`](09-api-contracts.md): Chuẩn hóa Data Transfer Objects (DTO) và Hợp đồng API dùng chung đa nền tảng.
-10. [`docs/10-database-and-storage.md`](10-database-and-storage.md): Lược đồ PostgreSQL, Cấu hình pgvector & Quản lý Tệp Lưu trữ Đám mây S3/R2.
+1.  [`docs/ai/01-auth-and-rbac.md`](ai/01-auth-and-rbac.md): Quản lý Định danh, Phân quyền RBAC, Phiên làm việc JWT & Quản trị Người dùng.
+2.  [`docs/ai/02-analog-master-data.md`](ai/02-analog-master-data.md): Quản lý Danh mục Dữ liệu dùng chung Nhiếp ảnh Phim (Film Stocks, Cameras, Lenses, Labs).
+3.  [`docs/ai/03-contest-lifecycle.md`](ai/03-contest-lifecycle.md): Vòng đời Cuộc thi, Hạng mục, Bộ tiêu chí Chấm điểm & Cơ cấu Giải thưởng.
+4.  [`docs/ai/04-film-logbook.md`](ai/04-film-logbook.md): Sổ tay Quản lý Cuộn phim (Film Rolls) & Siêu dữ liệu Khung hình (Frame Logging).
+5.  [`docs/ai/05-submission-and-proof.md`](ai/05-submission-and-proof.md): Quy trình Nộp bài thi, Đối chứng Bằng chứng Âm bản & Kiểm duyệt Ban tổ chức.
+6.  [`docs/ai/06-ai-verification.md`](ai/06-ai-verification.md): Thẩm định Trí tuệ Nhân tạo (Phát hiện Trùng lặp pHash, Xác suất Ảnh AI tạo sinh & Gán thẻ).
+7.  [`docs/ai/07-blind-judging.md`](ai/07-blind-judging.md): Không gian Chấm thi Ẩn danh kép (Double-Blind), Chấm điểm Tiêu chí & Điều phối Lệch điểm.
+8.  [`docs/ai/08-archive-and-exhibition.md`](ai/08-archive-and-exhibition.md): Kho Lưu trữ Di sản Số, Bảo vệ Tác quyền, Đóng dấu Bản quyền & Phòng Triển lãm.
+9.  [`docs/ai/09-api-contracts.md`](ai/09-api-contracts.md): Chuẩn hóa Data Transfer Objects (DTO) và Hợp đồng API dùng chung đa nền tảng.
+10. [`docs/ai/10-database-and-storage.md`](ai/10-database-and-storage.md): Lược đồ PostgreSQL, Cấu hình pgvector & Quản lý Tệp Lưu trữ Đám mây S3/R2.
 
 ---
 

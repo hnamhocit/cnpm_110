@@ -2025,7 +2025,7 @@ Dùng danh mục thông báo trong SRS §6.3.
 
 ### 5.1. Message Code Catalog (MSG001–MSG028)
 
-Dùng danh mục mã và ngữ nghĩa tại [SRS §6.3](srs.md#63-danh-mục-mã-thông-báo-ứng-dụng-application-messages-catalog-msg001-đến-msg028). HTTP status phản ánh kết quả request. Việc truyền mã MSG trong response cần được định nghĩa theo từng hợp đồng.
+Dùng danh mục mã và ngữ nghĩa tại [SRS §6.3](../srs.md#63-danh-mục-mã-thông-báo-ứng-dụng-application-messages-catalog-msg001-đến-msg028). HTTP status phản ánh kết quả request. Việc truyền mã MSG trong response cần được định nghĩa theo từng hợp đồng.
 
 ### 5.2. Validation & Error Handling
 
@@ -2898,8 +2898,8 @@ Các nội dung cần được nhóm xác nhận trước khi triển khai chín
 Sau khi được phê duyệt, tài liệu cần được đồng bộ với OpenAPI và mã nguồn Backend để đảm bảo các Client sử dụng cùng một hợp đồng API.
 ## 6. Danh mục endpoint
 
-[OpenAPI](openapi.yaml) và [Postman Film Contest](film-contest.postman_collection.json) cùng liệt kê **33** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **36** endpoint dự kiến đã có method và path trong các module. OpenAPI ghi trạng thái qua `x-implementation`. Các mục trong thư mục Postman `Planned` dùng để tra cứu đường dẫn và module chứa DTO.
+[OpenAPI](../openapi.yaml) và [Postman Film Contest](../film-contest.postman_collection.json) cùng liệt kê **33** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **36** endpoint dự kiến đã có method và path trong các module. OpenAPI ghi trạng thái qua `x-implementation`. Các mục trong thư mục Postman `Planned` dùng để tra cứu đường dẫn và module chứa DTO.
 
-Các chức năng còn thiếu method/path trong đặc tả gồm quản lý role và permission, tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, quản lý hạng mục và vòng chấm, sửa hoặc rút bài thi, bảng điểm cá nhân và điều phối lệch điểm. Xem yêu cầu nghiệp vụ tương ứng tại [SRS](srs.md#22-use-case-catalog-43-ca-sử-dụng-cốt-lõi).
+Các chức năng còn thiếu method/path trong đặc tả gồm quản lý role và permission, tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, quản lý hạng mục và vòng chấm, sửa hoặc rút bài thi, bảng điểm cá nhân và điều phối lệch điểm. Xem yêu cầu nghiệp vụ tương ứng tại [SRS](../srs.md#22-use-case-catalog-43-ca-sử-dụng-cốt-lõi).
 
 Route công khai `GET /api/v1/contests/{id}/results` hiện dùng dữ liệu giải và điểm mẫu. DTO lịch trình của `POST /api/v1/contests` hiện dùng hai mốc `startAt` và `endAt`. Quy tắc công bố kết quả và lịch trình đích được mô tả trong Module 03 và 08.

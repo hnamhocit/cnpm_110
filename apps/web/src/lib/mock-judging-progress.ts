@@ -1,7 +1,7 @@
 import type { JudgeProgress } from "@/types/judging";
 
 // TODO(Backend): thay bằng GET /api/v1/contests/:contestId/judging-progress
-// khi contract được chốt trong docs/09-api-contracts.md.
+// khi contract được chốt trong docs/ai/09-api-contracts.md.
 // Mock data tạm thời cho UI testing, xoá khi backend sẵn sàng.
 export const MOCK_JUDGING_CONTESTS = [
   {

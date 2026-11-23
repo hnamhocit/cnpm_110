@@ -277,7 +277,7 @@ Dùng cho màn hình Admin/Organizer Review bài nộp.
 - **422 Unprocessable Entity**: AI job failed due to internal processing error.
 - **500 Internal Server Error**: Unexpected server error.
 
-All error responses follow the standard error schema defined in `docs/09-api-contracts.md`.
+All error responses follow the standard error schema defined in `docs/ai/09-api-contracts.md`.
 
 ## 7. Security & Access Control
 

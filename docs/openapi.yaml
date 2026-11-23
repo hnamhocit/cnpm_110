@@ -90,7 +90,7 @@ paths:
   /api/v1/auth/forgot-password:
     post:
       summary: POST /api/v1/auth/forgot-password
-      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](01-auth-and-rbac.md). Route chưa được đăng ký trong
+      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
         Hono.
       tags:
       - Planned · 01
@@ -377,7 +377,7 @@ paths:
   /api/v1/auth/reset-password:
     post:
       summary: POST /api/v1/auth/reset-password
-      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](01-auth-and-rbac.md). Route chưa được đăng ký trong
+      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
         Hono.
       tags:
       - Planned · 01
@@ -592,7 +592,7 @@ paths:
   /api/v1/contests/{id}/archive:
     post:
       summary: POST /api/v1/contests/{id}/archive
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](08-archive-and-exhibition.md). Route chưa
+      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
         được đăng ký trong Hono.
       tags:
       - Planned · 08
@@ -650,7 +650,7 @@ paths:
   /api/v1/contests/{id}/judges:
     post:
       summary: POST /api/v1/contests/{id}/judges
-      description: Hợp đồng dự kiến trong [03-contest-lifecycle.md](03-contest-lifecycle.md). Route chưa được đăng
+      description: Hợp đồng dự kiến trong [03-contest-lifecycle.md](ai/03-contest-lifecycle.md). Route chưa được đăng
         ký trong Hono.
       tags:
       - Planned · 03
@@ -669,7 +669,7 @@ paths:
   /api/v1/contests/{id}/publish-results:
     post:
       summary: POST /api/v1/contests/{id}/publish-results
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](08-archive-and-exhibition.md). Route chưa
+      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
         được đăng ký trong Hono.
       tags:
       - Planned · 08
@@ -737,7 +737,7 @@ paths:
   /api/v1/contests/{id}/status:
     patch:
       summary: PATCH /api/v1/contests/{id}/status
-      description: Hợp đồng dự kiến trong [03-contest-lifecycle.md](03-contest-lifecycle.md). Route chưa được đăng
+      description: Hợp đồng dự kiến trong [03-contest-lifecycle.md](ai/03-contest-lifecycle.md). Route chưa được đăng
         ký trong Hono.
       tags:
       - Planned · 03
@@ -756,7 +756,7 @@ paths:
   /api/v1/exhibitions:
     get:
       summary: GET /api/v1/exhibitions
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](08-archive-and-exhibition.md). Route chưa
+      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
         được đăng ký trong Hono.
       tags:
       - Planned · 08
@@ -768,7 +768,7 @@ paths:
   /api/v1/exhibitions/{id}:
     get:
       summary: GET /api/v1/exhibitions/{id}
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](08-archive-and-exhibition.md). Route chưa
+      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
         được đăng ký trong Hono.
       tags:
       - Planned · 08
@@ -787,7 +787,7 @@ paths:
   /api/v1/exhibitions/{id}/process:
     post:
       summary: POST /api/v1/exhibitions/{id}/process
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](08-archive-and-exhibition.md). Route chưa
+      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
         được đăng ký trong Hono.
       tags:
       - Planned · 08
@@ -806,7 +806,7 @@ paths:
   /api/v1/exhibitions/{id}/status:
     get:
       summary: GET /api/v1/exhibitions/{id}/status
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](08-archive-and-exhibition.md). Route chưa
+      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
         được đăng ký trong Hono.
       tags:
       - Planned · 08
@@ -825,7 +825,7 @@ paths:
   /api/v1/film-rolls:
     get:
       summary: GET /api/v1/film-rolls
-      description: Hợp đồng dự kiến trong [04-film-logbook.md](04-film-logbook.md). Route chưa được đăng ký trong
+      description: Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong
         Hono.
       tags:
       - Planned · 04
@@ -836,7 +836,7 @@ paths:
       operationId: getFilmRolls
     post:
       summary: POST /api/v1/film-rolls
-      description: Hợp đồng dự kiến trong [04-film-logbook.md](04-film-logbook.md). Route chưa được đăng ký trong
+      description: Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong
         Hono.
       tags:
       - Planned · 04
@@ -848,7 +848,7 @@ paths:
   /api/v1/film-rolls/{id}:
     delete:
       summary: DELETE /api/v1/film-rolls/{id}
-      description: Hợp đồng dự kiến trong [04-film-logbook.md](04-film-logbook.md). Route chưa được đăng ký trong
+      description: Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong
         Hono.
       tags:
       - Planned · 04
@@ -866,7 +866,7 @@ paths:
       operationId: deleteFilmRollsById
     get:
       summary: GET /api/v1/film-rolls/{id}
-      description: Hợp đồng dự kiến trong [04-film-logbook.md](04-film-logbook.md). Route chưa được đăng ký trong
+      description: Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong
         Hono.
       tags:
       - Planned · 04
@@ -884,7 +884,7 @@ paths:
       operationId: getFilmRollsById
     patch:
       summary: PATCH /api/v1/film-rolls/{id}
-      description: Hợp đồng dự kiến trong [04-film-logbook.md](04-film-logbook.md). Route chưa được đăng ký trong
+      description: Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong
         Hono.
       tags:
       - Planned · 04
@@ -903,7 +903,7 @@ paths:
   /api/v1/film-rolls/{id}/frames:
     post:
       summary: POST /api/v1/film-rolls/{id}/frames
-      description: Hợp đồng dự kiến trong [04-film-logbook.md](04-film-logbook.md). Route chưa được đăng ký trong
+      description: Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong
         Hono.
       tags:
       - Planned · 04
@@ -922,7 +922,7 @@ paths:
   /api/v1/master-data/cameras:
     get:
       summary: GET /api/v1/master-data/cameras
-      description: Hợp đồng dự kiến trong [02-analog-master-data.md](02-analog-master-data.md). Route chưa được
+      description: Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được
         đăng ký trong Hono.
       tags:
       - Planned · 02
@@ -933,7 +933,7 @@ paths:
       operationId: getMasterDataCameras
     post:
       summary: POST /api/v1/master-data/cameras
-      description: Hợp đồng dự kiến trong [02-analog-master-data.md](02-analog-master-data.md). Route chưa được
+      description: Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được
         đăng ký trong Hono.
       tags:
       - Planned · 02
@@ -945,7 +945,7 @@ paths:
   /api/v1/master-data/film-labs:
     get:
       summary: GET /api/v1/master-data/film-labs
-      description: Hợp đồng dự kiến trong [02-analog-master-data.md](02-analog-master-data.md). Route chưa được
+      description: Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được
         đăng ký trong Hono.
       tags:
       - Planned · 02
@@ -957,7 +957,7 @@ paths:
   /api/v1/master-data/film-stocks:
     get:
       summary: GET /api/v1/master-data/film-stocks
-      description: Hợp đồng dự kiến trong [02-analog-master-data.md](02-analog-master-data.md). Route chưa được
+      description: Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được
         đăng ký trong Hono.
       tags:
       - Planned · 02
@@ -968,7 +968,7 @@ paths:
       operationId: getMasterDataFilmStocks
     post:
       summary: POST /api/v1/master-data/film-stocks
-      description: Hợp đồng dự kiến trong [02-analog-master-data.md](02-analog-master-data.md). Route chưa được
+      description: Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được
         đăng ký trong Hono.
       tags:
       - Planned · 02
@@ -980,7 +980,7 @@ paths:
   /api/v1/master-data/film-stocks/{id}:
     delete:
       summary: DELETE /api/v1/master-data/film-stocks/{id}
-      description: Hợp đồng dự kiến trong [02-analog-master-data.md](02-analog-master-data.md). Route chưa được
+      description: Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được
         đăng ký trong Hono.
       tags:
       - Planned · 02
@@ -999,7 +999,7 @@ paths:
   /api/v1/master-data/lenses:
     get:
       summary: GET /api/v1/master-data/lenses
-      description: Hợp đồng dự kiến trong [02-analog-master-data.md](02-analog-master-data.md). Route chưa được
+      description: Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được
         đăng ký trong Hono.
       tags:
       - Planned · 02
@@ -1444,7 +1444,7 @@ paths:
   /api/v1/storage/assets/{id}/signed-url:
     get:
       summary: GET /api/v1/storage/assets/{id}/signed-url
-      description: Hợp đồng dự kiến trong [10-database-and-storage.md](10-database-and-storage.md). Route chưa được
+      description: Hợp đồng dự kiến trong [10-database-and-storage.md](ai/10-database-and-storage.md). Route chưa được
         đăng ký trong Hono.
       tags:
       - Planned · 10
@@ -1463,7 +1463,7 @@ paths:
   /api/v1/storage/confirm-upload:
     post:
       summary: POST /api/v1/storage/confirm-upload
-      description: Hợp đồng dự kiến trong [10-database-and-storage.md](10-database-and-storage.md). Route chưa được
+      description: Hợp đồng dự kiến trong [10-database-and-storage.md](ai/10-database-and-storage.md). Route chưa được
         đăng ký trong Hono.
       tags:
       - Planned · 10
@@ -1475,7 +1475,7 @@ paths:
   /api/v1/storage/presigned-upload:
     post:
       summary: POST /api/v1/storage/presigned-upload
-      description: Hợp đồng dự kiến trong [10-database-and-storage.md](10-database-and-storage.md). Route chưa được
+      description: Hợp đồng dự kiến trong [10-database-and-storage.md](ai/10-database-and-storage.md). Route chưa được
         đăng ký trong Hono.
       tags:
       - Planned · 10
@@ -1641,7 +1641,7 @@ paths:
   /api/v1/submissions/presigned-url:
     post:
       summary: POST /api/v1/submissions/presigned-url
-      description: Hợp đồng dự kiến trong [05-submission-and-proof.md](05-submission-and-proof.md). Route chưa được
+      description: Hợp đồng dự kiến trong [05-submission-and-proof.md](ai/05-submission-and-proof.md). Route chưa được
         đăng ký trong Hono.
       tags:
       - Planned · 05
@@ -1692,7 +1692,7 @@ paths:
   /api/v1/submissions/{id}/ai-scan:
     post:
       summary: POST /api/v1/submissions/{id}/ai-scan
-      description: Hợp đồng dự kiến trong [06-ai-verification.md](06-ai-verification.md). Route chưa được đăng ký
+      description: Hợp đồng dự kiến trong [06-ai-verification.md](ai/06-ai-verification.md). Route chưa được đăng ký
         trong Hono.
       tags:
       - Planned · 06
@@ -1862,7 +1862,7 @@ paths:
   /api/v1/submissions/{id}/proof:
     post:
       summary: POST /api/v1/submissions/{id}/proof
-      description: Hợp đồng dự kiến trong [05-submission-and-proof.md](05-submission-and-proof.md). Route chưa được
+      description: Hợp đồng dự kiến trong [05-submission-and-proof.md](ai/05-submission-and-proof.md). Route chưa được
         đăng ký trong Hono.
       tags:
       - Planned · 05
@@ -1939,7 +1939,7 @@ paths:
   /api/v1/submissions/{id}/request-proof:
     post:
       summary: POST /api/v1/submissions/{id}/request-proof
-      description: Hợp đồng dự kiến trong [05-submission-and-proof.md](05-submission-and-proof.md). Route chưa được
+      description: Hợp đồng dự kiến trong [05-submission-and-proof.md](ai/05-submission-and-proof.md). Route chưa được
         đăng ký trong Hono.
       tags:
       - Planned · 05
@@ -2012,7 +2012,7 @@ paths:
   /api/v1/users:
     get:
       summary: GET /api/v1/users
-      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](01-auth-and-rbac.md). Route chưa được đăng ký trong
+      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
         Hono.
       tags:
       - Planned · 01
@@ -2023,7 +2023,7 @@ paths:
       operationId: getUsers
     post:
       summary: POST /api/v1/users
-      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](01-auth-and-rbac.md). Route chưa được đăng ký trong
+      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
         Hono.
       tags:
       - Planned · 01
@@ -2035,7 +2035,7 @@ paths:
   /api/v1/users/me:
     get:
       summary: GET /api/v1/users/me
-      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](01-auth-and-rbac.md). Route chưa được đăng ký trong
+      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
         Hono.
       tags:
       - Planned · 01
@@ -2047,7 +2047,7 @@ paths:
   /api/v1/users/me/password:
     patch:
       summary: PATCH /api/v1/users/me/password
-      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](01-auth-and-rbac.md). Route chưa được đăng ký trong
+      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
         Hono.
       tags:
       - Planned · 01
@@ -2059,7 +2059,7 @@ paths:
   /api/v1/users/me/profile:
     put:
       summary: PUT /api/v1/users/me/profile
-      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](01-auth-and-rbac.md). Route chưa được đăng ký trong
+      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
         Hono.
       tags:
       - Planned · 01
@@ -2071,7 +2071,7 @@ paths:
   /api/v1/users/{id}/status:
     patch:
       summary: PATCH /api/v1/users/{id}/status
-      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](01-auth-and-rbac.md). Route chưa được đăng ký trong
+      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
         Hono.
       tags:
       - Planned · 01
