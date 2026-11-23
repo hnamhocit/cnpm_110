@@ -4,9 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
   Maximize,
   Minimize,
   Shield,
@@ -31,7 +28,6 @@ export function FocusJudgingView({
 }: FocusJudgingViewProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showMetadataSidebar, setShowMetadataSidebar] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [scorecard, setScorecard] = useState<ScorecardInput>({
     scores: {
@@ -52,19 +48,8 @@ export function FocusJudgingView({
     }
   };
 
-  const handleSubmitScore = async () => {
-    setIsSubmitting(true);
-    try {
-      // Mock submit evaluation
-      await new Promise((r) => setTimeout(r, 700));
-      toast.success("Đã ghi nhận phiếu chấm thành công!", {
-        description: `Mã bài ${submission.anonymousCode} đã được lưu kết quả đánh giá.`,
-      });
-    } catch {
-      toast.error("Không thể gửi kết quả chấm điểm. Vui lòng thử lại!");
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleSubmitScore = () => {
+    toast.info("Phiếu chấm thử chưa được lưu vào hệ thống.");
   };
 
   return (
@@ -133,7 +118,7 @@ export function FocusJudgingView({
           value={scorecard}
           onChange={setScorecard}
           onSubmit={handleSubmitScore}
-          isSubmitting={isSubmitting}
+          isSubmitting={false}
         />
       </div>
     </div>

@@ -238,12 +238,12 @@ export async function handleUpdateContest(c: Context<AuthEnv>) {
     input.endAt = body.endAt === null ? null : new Date(body.endAt as string);
   }
 
-  const updated = await updateContest(id, input);
+  const updated = await updateContest(id, input, c.get("user"));
   return c.ok(updated, "Contest updated successfully");
 }
 
 export async function handleDeleteContest(c: Context<AuthEnv>) {
   const { id } = c.req.param();
-  const deleted = await softDeleteContest(id);
+  const deleted = await softDeleteContest(id, c.get("user"));
   return c.ok(deleted, "Contest deleted successfully (BR-03: Soft Delete)");
 }

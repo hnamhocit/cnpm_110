@@ -43,7 +43,7 @@ function parseWebhookPayload(raw: unknown): AiWebhookPayload {
 
   if (
     !Array.isArray(data.predictedTags) ||
-    data.predictedTags.length > 50 ||
+    data.predictedTags.length > 5 ||
     !data.predictedTags.every((item: unknown) => {
       if (!item || typeof item !== "object" || Array.isArray(item)) return false;
       const tagItem = item as Record<string, unknown>;

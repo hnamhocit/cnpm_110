@@ -10,8 +10,8 @@ Dùng cột **Hiện tại** để quản lý từ đây. Cột **Jira** giữ �
 | --- | ---: | ---: |
 | TODO | 37 | 36 |
 | DOING | 1 | 3 |
-| REVIEW | 17 | 22 |
-| DONE | 73 | 67 |
+| REVIEW | 17 | 31 |
+| DONE | 73 | 58 |
 | **Tổng** | **128** | **128** |
 
 ## Sprint 1 · Nền tảng và xác thực
@@ -19,17 +19,17 @@ Dùng cột **Hiện tại** để quản lý từ đây. Cột **Jira** giữ �
 | Mã | Phạm vi | Công việc | Người phụ trách | Jira | Hiện tại | Ghi chú |
 | --- | --- | --- | --- | --- | --- | --- |
 | FPC-7 | Backend | Thiết lập Backend theo lớp và kết nối PostgreSQL | Duong Nguyen | DONE | DONE | — |
-| FPC-8 | Backend | Thiết kế schema Users, Roles và Permissions | Duong Nguyen | DONE | DONE | — |
-| FPC-9 | Backend | API Register/Login cấp JWT access token và refresh token | Duong Nguyen | DONE | DONE | — |
+| FPC-8 | Backend | Thiết kế schema Users, Roles và Permissions | Duong Nguyen | DONE | DONE | Có các bảng Users, Roles, Permissions và bảng liên kết. Thiếu số điện thoại xác thực và cơ chế phiên bản token theo Module 01. |
+| FPC-9 | Backend | API Register/Login cấp JWT access token và refresh token | Duong Nguyen | DONE | REVIEW | Đăng ký cấp token ngay, thiếu xác thực định danh theo BR-01. Đăng nhập và refresh hiện kiểm tra tài khoản hoạt động. |
 | FPC-11 | Backend | Tích hợp SDK Cloud Storage và thử upload ảnh lớn | Hà Đức Bình | DONE | REVIEW | Có tích hợp R2. Chưa xác minh thử upload lớn. |
-| FPC-12 | Backend | Middleware RBAC cho Admin, Organizer, Judge và Participant | Hà Đức Bình | DONE | DONE | — |
-| FPC-13 | Backend | Unit test và integration test xác thực và refresh token | Hà Đức Bình | DONE | DONE | — |
+| FPC-12 | Backend | Middleware RBAC cho Admin, Organizer, Judge và Participant | Hà Đức Bình | DONE | REVIEW | Access token nay kiểm tra tài khoản còn hoạt động. Còn thiếu quy trình khóa tài khoản và thu hồi toàn bộ phiên. |
+| FPC-13 | Backend | Unit test và integration test xác thực và refresh token | Hà Đức Bình | DONE | DONE | Có unit test JWT/RBAC và bộ integration test refresh. Chưa thấy ca kiểm tra access token đang dùng khi tài khoản bị khóa. |
 | FPC-14 | Web | Thiết lập Next.js, Tailwind CSS và Shadcn UI | Vĩ Nguyễn | DONE | DONE | — |
 | FPC-15 | Web | Giao diện Login và Register cho Admin và Organizer | Vĩ Nguyễn | DONE | DONE | — |
 | FPC-16 | Web | HTTP client Axios/Fetch và interceptor tự refresh token | Vĩ Nguyễn | DONE | DONE | — |
 | FPC-17 | Web | Layout Portal chung gồm sidebar, header và profile menu | Phạm Tiến Thành Nhân | DONE | DONE | — |
 | FPC-18 | Web | Màn đăng nhập Judge bằng mã mời hoặc email | Phạm Tiến Thành Nhân | DONE | DONE | — |
-| FPC-19 | Web | Router guard kiểm tra quyền theo vai trò | Phạm Tiến Thành Nhân | DONE | DONE | — |
+| FPC-19 | Web | Router guard kiểm tra quyền theo vai trò | Phạm Tiến Thành Nhân | DONE | DONE | Đã bỏ fallback đọc JWT chưa xác minh. Portal kiểm tra quyền qua Backend. |
 | FPC-20 | Mobile | Thiết lập Flutter và state management | Hoài Bảo Từ | DONE | DONE | — |
 | FPC-21 | Mobile | Màn Splash, Login và Register cho Participant | Hoài Bảo Từ | DONE | DONE | — |
 | FPC-22 | Mobile | Lưu Access/Refresh Token bằng Flutter Secure Storage | Hoài Bảo Từ | DONE | DONE | — |
@@ -43,13 +43,13 @@ Dùng cột **Hiện tại** để quản lý từ đây. Cột **Jira** giữ �
 
 | Mã | Phạm vi | Công việc | Người phụ trách | Jira | Hiện tại | Ghi chú |
 | --- | --- | --- | --- | --- | --- | --- |
-| FPC-28 | Backend | Schema Contests, Categories và Scoring Criteria | Duong Nguyen | DONE | DONE | — |
-| FPC-29 | Backend | CRUD cuộc thi gồm tiêu chí, hạn nộp, thể lệ và cơ cấu giải | Duong Nguyen | DONE | DOING | Có CRUD cơ bản. Thiếu tiêu chí, cơ cấu giải và lịch trình đầy đủ. |
-| FPC-30 | Backend | API danh sách cuộc thi đang mở và tìm kiếm | Duong Nguyen | DONE | DONE | — |
-| FPC-31 | Backend | Schema Submissions, FilmRolls và FilmMetadata | Hà Đức Bình | DONE | DONE | — |
-| FPC-32 | Backend | API nộp bài bằng multipart cho ảnh scan độ phân giải cao | Hà Đức Bình | DONE | DONE | — |
-| FPC-33 | Backend | Validate TIFF/JPEG, dung lượng và kích thước tối thiểu | Hà Đức Bình | DONE | DONE | — |
-| FPC-34 | Web | Dashboard danh sách cuộc thi của Organizer | Vĩ Nguyễn | DONE | DONE | — |
+| FPC-28 | Backend | Schema Contests, Categories và Scoring Criteria | Duong Nguyen | DONE | REVIEW | Có cả ba bảng. Schema cuộc thi chỉ có hai mốc, weight lưu hai chữ số thập phân và chưa có kiểm tra tổng đúng 1.0000 theo BR-08/15. |
+| FPC-29 | Backend | CRUD cuộc thi gồm tiêu chí, hạn nộp, thể lệ và cơ cấu giải | Duong Nguyen | DONE | DOING | Có CRUD cơ bản và kiểm tra Organizer sở hữu cuộc thi khi sửa/xóa. Thiếu tiêu chí, giải, lịch 5 mốc và điều kiện chuyển trạng thái. |
+| FPC-30 | Backend | API danh sách cuộc thi đang mở và tìm kiếm | Duong Nguyen | DONE | DONE | Có tìm kiếm, phân trang và lọc theo trạng thái. Trạng thái hiện là bộ lọc tùy chọn, không xác định đang mở dựa trên hạn nộp. |
+| FPC-31 | Backend | Schema Submissions, FilmRolls và FilmMetadata | Hà Đức Bình | DONE | DONE | Có cả ba bảng. Mã cuộn phim trong metadata là chuỗi, chưa liên kết khóa ngoại với FilmRolls. Xem quy tắc đầu vào ở FPC-32. |
+| FPC-32 | Backend | API nộp bài bằng multipart cho ảnh scan độ phân giải cao | Hà Đức Bình | DONE | REVIEW | Đã kiểm tra trạng thái nhận bài, giới hạn frame và Lab/quy trình. Khóa theo cuộn–frame khi ghi bài. Chưa chạy tích hợp PostgreSQL. |
+| FPC-33 | Backend | Validate TIFF/JPEG, dung lượng và kích thước tối thiểu | Hà Đức Bình | DONE | DONE | Test qua phần định dạng, dung lượng, kích thước theo phạm vi Jira. Chưa thấy bước kiểm tra watermark trong luồng nộp theo BR-07. |
+| FPC-34 | Web | Dashboard danh sách cuộc thi của Organizer | Vĩ Nguyễn | DONE | DONE | Đã khôi phục bộ lọc `createdBy` cho danh sách Portal của Organizer. |
 | FPC-35 | Web | Form tạo cuộc thi có chủ đề và lịch nộp, chấm | Vĩ Nguyễn | DONE | DONE | Phạm vi form đã có. Lưu đầy đủ lịch trình phụ thuộc FPC-29. |
 | FPC-36 | Web | Giao diện tiêu chí động và trọng số | Vĩ Nguyễn | DONE | DONE | Phạm vi UI có. Chưa có API đọc/lưu tiêu chí. |
 | FPC-37 | Web | Trang chủ hiển thị các cuộc thi đang diễn ra | Phạm Tiến Thành Nhân | DONE | DONE | — |
@@ -68,13 +68,13 @@ Dùng cột **Hiện tại** để quản lý từ đây. Cột **Jira** giữ �
 
 | Mã | Phạm vi | Công việc | Người phụ trách | Jira | Hiện tại | Ghi chú |
 | --- | --- | --- | --- | --- | --- | --- |
-| FPC-49 | Backend | API danh sách bài cho Organizer với bộ lọc trạng thái và cờ AI | Nam Nguyễn | DONE | DONE | Commit `f028185` trên develop. Cần xác nhận nghiệm thu. |
-| FPC-50 | Backend | API duyệt hoặc từ chối bài kèm lý do | Nam Nguyễn | DONE | DONE | Commit `24baa31` trên develop. Cần xác nhận nghiệm thu. |
-| FPC-51 | Backend | API chi tiết đối sánh bài nghi vấn với bài gốc | Nam Nguyễn | DONE | DONE | Commit `37144de` trên develop. Cần xác nhận nghiệm thu. |
-| FPC-52 | Backend | Webhook nhận và lưu pHash, xác suất AI và auto-tags | Hà Đức Bình | DONE | DONE | — |
+| FPC-49 | Backend | API danh sách bài cho Organizer với bộ lọc trạng thái và cờ AI | Nam Nguyễn | DONE | REVIEW | Có lọc trạng thái, cờ AI và phạm vi cuộc thi của Organizer. Chưa chạy tích hợp PostgreSQL. |
+| FPC-50 | Backend | API duyệt hoặc từ chối bài kèm lý do | Nam Nguyễn | DONE | REVIEW | Đã chặn Organizer ngoài phạm vi, bài sau công bố và duyệt bài AI rủi ro cao. Còn thiếu xác minh âm bản, gỡ cờ và hạn 48 giờ. |
+| FPC-51 | Backend | API chi tiết đối sánh bài nghi vấn với bài gốc | Nam Nguyễn | DONE | REVIEW | Đã giới hạn phạm vi Organizer và bỏ số liệu đối sánh mẫu. Chưa chạy tích hợp PostgreSQL. |
+| FPC-52 | Backend | Webhook nhận và lưu pHash, xác suất AI và auto-tags | Hà Đức Bình | DONE | REVIEW | Đã giới hạn 5 tags. Chưa có cảnh báo lệch hạng mục theo BR-11. |
 | FPC-53 | Backend | Phát hiện ảnh trùng bằng perceptual hash hoặc vector embeddings | Hà Đức Bình | DONE | DONE | Có pHash theo phạm vi task. Vector 92% vẫn là khoảng trống theo SRS. |
 | FPC-54 | Backend | Kết nối model nhận diện ảnh AI và gán mức tin cậy | Hà Đức Bình | DONE | DONE | — |
-| FPC-55 | Backend | Lưu kết quả phân tích và phân loại Verified/Suspicious/Flagged | Hà Đức Bình | DONE | DONE | — |
+| FPC-55 | Backend | Lưu kết quả phân tích và phân loại Verified/Suspicious/Flagged | Hà Đức Bình | DONE | REVIEW | Có lưu phân tích và phân loại Verified/Suspicious/Flagged. Trạng thái rủi ro cao và trùng ảnh chưa khớp BR-09/10. Điều kiện giữ bài và gỡ cờ theo FPC-50 vẫn còn thiếu. |
 | FPC-56 | Web | Bảng quản lý, duyệt bài và hiển thị cờ AI | Vĩ Nguyễn | DONE | DONE | — |
 | FPC-57 | Web | Modal so sánh hai ảnh nghi trùng | Vĩ Nguyễn | DONE | DONE | — |
 | FPC-58 | Web | Thao tác duyệt hoặc từ chối hàng loạt | Vĩ Nguyễn | DONE | DONE | — |
@@ -103,9 +103,9 @@ Dùng cột **Hiện tại** để quản lý từ đây. Cột **Jira** giữ �
 | FPC-76 | Web | Màn theo dõi tiến độ chấm của từng giám khảo | Vĩ Nguyễn | REVIEW | REVIEW | Có màn theo dõi với dữ liệu mẫu. Commit `0d5b809` trên develop. |
 | FPC-77 | Web | Bảng điểm tổng hợp cập nhật cho Organizer | Vĩ Nguyễn | REVIEW | REVIEW | Có bảng điểm với dữ liệu mẫu. Commit `940d758` trên develop. |
 | FPC-78 | Web | Nhắc giám khảo sắp trễ hạn qua email | Vĩ Nguyễn | TODO | TODO | — |
-| FPC-79 | Web | Giao diện chấm toàn màn hình | Phạm Tiến Thành Nhân | REVIEW | REVIEW | — |
-| FPC-80 | Web | Trình xem ảnh chất lượng cao có zoom và metadata | Phạm Tiến Thành Nhân | REVIEW | REVIEW | — |
-| FPC-81 | Web | Thanh trượt chấm từng tiêu chí và nhập nhận xét | Phạm Tiến Thành Nhân | REVIEW | REVIEW | — |
+| FPC-79 | Web | Giao diện chấm toàn màn hình | Phạm Tiến Thành Nhân | REVIEW | REVIEW | [PR #147](https://github.com/hnamhocit/cnpm_110/pull/147), tích hợp qua #150. Có Focus Mode toàn màn hình trên trang demo dùng bài mẫu. Chưa nối danh sách phân công và kiểm soát quyền Judge. |
+| FPC-80 | Web | Trình xem ảnh chất lượng cao có zoom và metadata | Phạm Tiến Thành Nhân | REVIEW | REVIEW | [PR #148](https://github.com/hnamhocit/cnpm_110/pull/148), tích hợp qua #150. Có zoom đến 350%, kéo ảnh và xem thông số phim/máy từ dữ liệu mẫu. Chưa thử với ảnh scan thật. |
+| FPC-81 | Web | Thanh trượt chấm từng tiêu chí và nhập nhận xét | Phạm Tiến Thành Nhân | REVIEW | REVIEW | [PR #149](https://github.com/hnamhocit/cnpm_110/pull/149), tích hợp qua #150. Có slider, nhận xét, kiểm tra đầu vào và tính điểm theo trọng số. Nút gửi giả lập thành công, chưa lưu điểm. |
 | FPC-82 | Mobile | Thông báo khi bài được đưa vào vòng chấm | Dương Nguyễn | REVIEW | REVIEW | Commit `90d6f07` trên develop. Cần xác nhận nghiệm thu. |
 | FPC-83 | Mobile | Hiển thị trạng thái đang trong vòng chấm | Dương Nguyễn | REVIEW | REVIEW | Commit `f5eec7e` trên develop. Cần xác nhận nghiệm thu. |
 | FPC-84 | Mobile | Cache ảnh bài thi | Huỳnh Trần Gia Bảo | REVIEW | REVIEW | Commit `260dd1f` trên develop. Cần xác nhận nghiệm thu. |
