@@ -29,6 +29,7 @@ void main() {
     expect(find.text('Thẩm định AI & Trùng lặp'), findsOneWidget);
     expect(find.text('Xác thực dải âm bản gốc (BR-06, BR-19)'), findsOneWidget);
     expect(find.text('Hợp lệ (Đã phê duyệt)'), findsOneWidget);
+    expect(find.text('Vòng chấm điểm chuyên môn (BR-12)'), findsOneWidget);
   });
 
   testWidgets('ModerationTimelineWidget renders proof requested step with BR-19 info', (tester) async {

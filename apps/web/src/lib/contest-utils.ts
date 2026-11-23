@@ -7,7 +7,17 @@ export function filterContests(
 ): Contest[] {
   const query = searchQuery.trim().toLowerCase();
   return contests.filter((c) => {
-    if (statusFilter !== "all" && c.status !== statusFilter) {
+    const currentStatus = (c.status || "").toLowerCase();
+    if (
+      statusFilter === "ongoing" &&
+      !["ongoing", "open"].includes(currentStatus)
+    ) {
+      return false;
+    }
+    if (
+      statusFilter === "published" &&
+      !["published", "completed", "archived"].includes(currentStatus)
+    ) {
       return false;
     }
     if (!query) return true;

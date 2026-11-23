@@ -49,7 +49,7 @@ film-contest/
 
 ## 📚 Tài liệu Đặc tả AI-First (SSOT)
 
-Dự án áp dụng phương pháp **AI-First Specification** làm nguồn chân lý duy nhất (Single Source of Truth). Mọi tác vụ lập trình (của con người hoặc AI Assistant) bắt buộc phải đối chiếu theo hệ thống tài liệu trong thư mục [`docs/`](docs/):
+[SRS](docs/srs.md) quy định nghiệp vụ. Các module trong [`docs/`](docs/) mô tả thiết kế kỹ thuật và hợp đồng API.
 
 ### Tài liệu Tổng thể (Master SRS)
 *   📖 **[Master SRS Specification](docs/srs.md)**: Đặc tả toàn diện hệ thống, 43 Use Cases cốt lõi, sơ đồ kiến trúc Mermaid, ma trận phân quyền màn hình, 25 Business Rules (`BR-01` $\to$ `BR-25`), 7 Common Rules và 28 Mã thông báo chuẩn.
@@ -58,18 +58,18 @@ Dự án áp dụng phương pháp **AI-First Specification** làm nguồn chân
 
 | Module | Tệp đặc tả | Phạm vi nghiệp vụ cốt lõi |
 | :---: | :--- | :--- |
-| **01** | [`docs/01-auth-and-rbac.md`](docs/01-auth-and-rbac.md) | Xác thực JWT, Refresh Token Rotation, Ma trận phân quyền RBAC, Chống brute-force |
-| **02** | [`docs/02-analog-master-data.md`](docs/02-analog-master-data.md) | Danh mục Phim (Film Stocks), Máy ảnh, Ống kính, Phòng Lab tráng/quét phim |
-| **03** | [`docs/03-contest-lifecycle.md`](docs/03-contest-lifecycle.md) | Vòng đời cuộc thi, Hạng mục, Chuẩn hóa trọng số 100% (BR-15), Lịch trình tuần tự (BR-08) |
-| **04** | [`docs/04-film-logbook.md`](docs/04-film-logbook.md) | Sổ tay cuộn phim, Khung hình, Giới hạn vật lý khổ phim (BR-04, BR-23), Push/Pull ISO |
-| **05** | [`docs/05-submission-and-proof.md`](docs/05-submission-and-proof.md) | Nộp bài thi, Chống trùng lặp (BR-05), Đồng hồ 48h nộp âm bản (BR-19), Chuẩn ảnh (BR-07) |
-| **06** | [`docs/06-ai-verification.md`](docs/06-ai-verification.md) | Giám định AI ($P_{AI} \ge 75\%$), Trùng lặp pHash 64-bit, Vector CLIP, Redis Worker Queue |
-| **07** | [`docs/07-blind-judging.md`](docs/07-blind-judging.md) | Chấm thi ẩn danh kép (BR-12), Giám khảo độc lập (BR-13), Lệch điểm > 30% (BR-14) |
-| **08** | [`docs/08-archive-and-exhibition.md`](docs/08-archive-and-exhibition.md) | Tính bất biến kết quả (BR-16), Lưu trữ 2 vùng Private/Public Watermark (BR-17) |
-| **09** | [`docs/09-api-contracts.md`](docs/09-api-contracts.md) | Chuẩn hóa DTO, Response Envelopes và hợp đồng API dùng chung đa nền tảng |
-| **10** | [`docs/10-database-and-storage.md`](docs/10-database-and-storage.md) | DDL PostgreSQL 16+, Extension `pgvector`, Bảng `digital_assets`, Cloud Storage S3/R2 |
+| **01** | [`docs/ai/01-auth-and-rbac.md`](docs/ai/01-auth-and-rbac.md) | Xác thực JWT, Refresh Token Rotation, Ma trận phân quyền RBAC, Chống brute-force |
+| **02** | [`docs/ai/02-analog-master-data.md`](docs/ai/02-analog-master-data.md) | Danh mục Phim (Film Stocks), Máy ảnh, Ống kính, Phòng Lab tráng/quét phim |
+| **03** | [`docs/ai/03-contest-lifecycle.md`](docs/ai/03-contest-lifecycle.md) | Vòng đời cuộc thi, Hạng mục, Chuẩn hóa trọng số 100% (BR-15), Lịch trình tuần tự (BR-08) |
+| **04** | [`docs/ai/04-film-logbook.md`](docs/ai/04-film-logbook.md) | Sổ tay cuộn phim, Khung hình, Giới hạn vật lý khổ phim (BR-23), Push/Pull ISO |
+| **05** | [`docs/ai/05-submission-and-proof.md`](docs/ai/05-submission-and-proof.md) | Nộp bài thi, Chống trùng lặp (BR-05), Đồng hồ 48h nộp âm bản (BR-19), Chuẩn ảnh (BR-07) |
+| **06** | [`docs/ai/06-ai-verification.md`](docs/ai/06-ai-verification.md) | Giám định AI ($P_{AI} \ge 75\%$), Trùng lặp pHash 64-bit, Vector CLIP, Redis Worker Queue |
+| **07** | [`docs/ai/07-blind-judging.md`](docs/ai/07-blind-judging.md) | Chấm thi ẩn danh kép (BR-12), Giám khảo độc lập (BR-13), Lệch điểm > 30% (BR-14) |
+| **08** | [`docs/ai/08-archive-and-exhibition.md`](docs/ai/08-archive-and-exhibition.md) | Tính bất biến kết quả (BR-16), Lưu trữ 2 vùng Private/Public Watermark (BR-17) |
+| **09** | [`docs/ai/09-api-contracts.md`](docs/ai/09-api-contracts.md) | Chuẩn hóa DTO, Response Envelopes và hợp đồng API dùng chung đa nền tảng |
+| **10** | [`docs/ai/10-database-and-storage.md`](docs/ai/10-database-and-storage.md) | DDL PostgreSQL 16+, Extension `pgvector`, Bảng `digital_assets`, Cloud Storage S3/R2 |
 
-*   **API Testing**: [`docs/openapi.yaml`](docs/openapi.yaml) (OpenAPI 3.0) & [`docs/film-contest.postman_collection.json`](docs/film-contest.postman_collection.json) (Postman Collection tự động hóa lưu Token).
+Xem [danh mục endpoint](docs/ai/09-api-contracts.md#6-danh-mục-endpoint) để biết trạng thái triển khai trong [OpenAPI](docs/openapi.yaml) và [Postman](docs/film-contest.postman_collection.json).
 
 ---
 
@@ -161,10 +161,12 @@ cd apps/mobile && flutter pub add <package-name>
 
 ---
 
+## Theo dõi tiến độ
+
+Xem [tổng quan độ phủ và đối chiếu Jira](docs/progress/overview.md).
+
+---
+
 ## 🤖 Quy chuẩn AI Coding Assistant
 
-Dự án đã tích hợp các bộ quy tắc tự động bắt buộc tất cả AI Assistant (Cursor, GitHub Copilot, Claude Code, Devin...) phải đọc tài liệu đặc tả trước khi code:
-*   **[`AGENTS.md`](AGENTS.md)**: Hướng dẫn cốt lõi cho các Agent tự hành.
-*   **[`.cursorrules`](.cursorrules)** & **[`.cursor/rules/srs-context.mdc`](.cursor/rules/srs-context.mdc)**: Ép buộc Cursor AI nạp context từ `docs/srs.md`.
-*   **[`.github/copilot-instructions.md`](.github/copilot-instructions.md)**: Chỉ dẫn chuẩn hóa cho GitHub Copilot.
-*   **[`CLAUDE.md`](CLAUDE.md)**: Chỉ dẫn cho Claude Code CLI.
+[`AGENTS.md`](AGENTS.md) là chỉ dẫn chung. Các tệp cho [Cursor](.cursor/rules/srs-context.mdc), [Copilot](.github/copilot-instructions.md) và [Claude Code](CLAUDE.md) trỏ về tài liệu này. Các yêu cầu riêng cho Next.js được ghi trong [`apps/web/AGENTS.md`](apps/web/AGENTS.md).

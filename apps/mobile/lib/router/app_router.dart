@@ -4,12 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/utils/page_transitions.dart';
+import '../models/contest_winner.dart';
 import '../models/film_dev_scan_params.dart';
 import '../models/film_shooting_params.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/splash_screen.dart';
 import '../screens/contest/contest_detail_screen.dart';
+import '../screens/contest/photo_detail_screen.dart';
+import '../screens/contest/winners_showcase_screen.dart';
 import '../screens/film_dev_scan/film_dev_scan_screen.dart';
 import '../screens/film_params/film_params_screen.dart';
 import '../screens/main_screen.dart';
@@ -79,9 +83,83 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/contests/:id',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final contestId = state.pathParameters['id']!;
-        return ContestDetailScreen(contestId: contestId);
+        return AppTransitions.slideUpFade(
+          key: state.pageKey,
+          child: ContestDetailScreen(contestId: contestId),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/contests/:id/winners',
+      pageBuilder: (context, state) {
+        final contestId = state.pathParameters['id']!;
+        final contestTitle = state.uri.queryParameters['contestTitle'] ??
+            (state.extra is Map ? (state.extra as Map)['contestTitle'] as String? : null);
+        return AppTransitions.slideUpFade(
+          key: state.pageKey,
+          child: WinnersShowcaseScreen(
+            contestId: contestId,
+            contestTitle: contestTitle,
+          ),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/contests/:id/winners/:submissionId',
+      pageBuilder: (context, state) {
+        final winner = state.extra is ContestWinner ? state.extra as ContestWinner : null;
+        if (winner == null) {
+          return AppTransitions.fadeScale(
+            key: state.pageKey,
+            child: Scaffold(
+              appBar: AppBar(title: const Text('Chi tiết tác phẩm')),
+              body: const Center(child: Text('Không tìm thấy thông tin tác phẩm')),
+            ),
+          );
+        }
+        final contestTitle = state.uri.queryParameters['contestTitle'];
+        return AppTransitions.fadeScale(
+          key: state.pageKey,
+          child: PhotoDetailScreen(
+            winner: winner,
+            contestTitle: contestTitle,
+          ),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/winners',
+      pageBuilder: (context, state) {
+        final contestId = state.uri.queryParameters['contestId'] ?? '';
+        final contestTitle = state.uri.queryParameters['contestTitle'];
+        return AppTransitions.slideUpFade(
+          key: state.pageKey,
+          child: WinnersShowcaseScreen(
+            contestId: contestId,
+            contestTitle: contestTitle,
+          ),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/photos/detail',
+      pageBuilder: (context, state) {
+        final winner = state.extra is ContestWinner ? state.extra as ContestWinner : null;
+        if (winner == null) {
+          return AppTransitions.fadeScale(
+            key: state.pageKey,
+            child: Scaffold(
+              appBar: AppBar(title: const Text('Chi tiết ảnh')),
+              body: const Center(child: Text('Không tìm thấy thông tin tác phẩm')),
+            ),
+          );
+        }
+        return AppTransitions.fadeScale(
+          key: state.pageKey,
+          child: PhotoDetailScreen(winner: winner),
+        );
       },
     ),
     GoRoute(

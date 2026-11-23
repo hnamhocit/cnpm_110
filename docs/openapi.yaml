@@ -1,18 +1,51 @@
 openapi: 3.0.3
 info:
   title: Film Contest API Specification
-  description: Tài liệu đặc tả RESTful API cho hệ thống cuộc thi nhiếp ảnh phim (Film Contest Monorepo).
+  description: Danh mục REST API của Film Contest. x-implementation đánh dấu route đang mount (mounted) hoặc hợp
+    đồng module chưa có route (planned). Route đang mount có thể còn lệch nghiệp vụ SRS.
   version: 1.0.0
 servers:
-  - url: http://localhost:8080
-    description: Local Development Server
-
+- url: http://localhost:8080
+  description: Local Development Server
 paths:
-  /auth/register:
+  /api/v1/ai/webhook:
     post:
-      summary: Đăng ký tài khoản mới (Participant)
+      summary: Nhận kết quả phân tích từ dịch vụ AI
       tags:
-        - Authentication
+      - AI Webhook
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: object
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          description: Payload vượt 64 KiB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Webhook chưa được cấu hình
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - AiWebhookSecret: []
       requestBody:
         required: true
         content:
@@ -20,9 +53,280 @@ paths:
             schema:
               type: object
               required:
-                - fullName
-                - email
-                - password
+              - submissionId
+              - phashHex
+              - aiGeneratedProbability
+              - predictedTags
+              properties:
+                submissionId:
+                  type: string
+                  format: uuid
+                phashHex:
+                  type: string
+                  pattern: ^[0-9a-fA-F]{16}$
+                aiGeneratedProbability:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                predictedTags:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                    - tag
+                    - confidence
+                    properties:
+                      tag:
+                        type: string
+                        minLength: 1
+                        maxLength: 100
+                      confidence:
+                        type: number
+                        minimum: 0
+                        maximum: 1
+                  maxItems: 50
+      x-implementation: mounted
+      operationId: postAiWebhook
+  /api/v1/auth/forgot-password:
+    post:
+      summary: POST /api/v1/auth/forgot-password
+      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
+        Hono.
+      tags:
+      - Planned · 01
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: postAuthForgotPassword
+  /api/v1/auth/login:
+    post:
+      summary: Đăng nhập hệ thống
+      tags:
+      - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - email
+              - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: participant@example.com
+                password:
+                  type: string
+                  example: SecurePass123!
+      responses:
+        '200':
+          description: Đăng nhập thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: object
+                      properties:
+                        user:
+                          $ref: '#/components/schemas/UserResponse'
+                        accessToken:
+                          type: string
+                        refreshToken:
+                          type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Tài khoản đã bị khoá
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-implementation: mounted
+      operationId: postAuthLogin
+  /api/v1/auth/logout:
+    post:
+      summary: Đăng xuất và thu hồi Refresh Token
+      tags:
+      - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Đăng xuất thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: object
+                      nullable: true
+                      enum:
+                      - null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      x-implementation: mounted
+      operationId: postAuthLogout
+  /api/v1/auth/me:
+    get:
+      summary: Thông tin tài khoản hiện tại
+      tags:
+      - Auth
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: object
+                      properties:
+                        user:
+                          $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security:
+      - BearerAuth: []
+      x-implementation: mounted
+      operationId: getAuthMe
+  /api/v1/auth/portfolio:
+    get:
+      summary: Portfolio của tài khoản hiện tại
+      tags:
+      - Auth
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: object
+                      properties:
+                        user:
+                          $ref: '#/components/schemas/UserResponse'
+                        stats:
+                          type: object
+                        awards:
+                          type: array
+                          items:
+                            type: object
+                        curatedWorks:
+                          type: array
+                          items:
+                            type: object
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security:
+      - BearerAuth: []
+      x-implementation: mounted
+      operationId: getAuthPortfolio
+  /api/v1/auth/refresh:
+    post:
+      summary: Cấp mới Access Token bằng Refresh Token (Token Rotation)
+      tags:
+      - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  example: 6N7K4nFzD-example-token
+      responses:
+        '200':
+          description: Cấp token mới thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: object
+                      properties:
+                        accessToken:
+                          type: string
+                        refreshToken:
+                          type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Refresh token không hợp lệ hoặc đã hết hạn
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-implementation: mounted
+      operationId: postAuthRefresh
+  /api/v1/auth/register:
+    post:
+      summary: Đăng ký tài khoản mới (Participant)
+      tags:
+      - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - fullName
+              - email
+              - password
               properties:
                 fullName:
                   type: string
@@ -44,17 +348,22 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Registration successful
-                  user:
-                    $ref: '#/components/schemas/UserResponse'
-                  accessToken:
-                    type: string
-                  refreshToken:
-                    type: string
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 201
+                    data:
+                      type: object
+                      properties:
+                        user:
+                          $ref: '#/components/schemas/UserResponse'
+                        accessToken:
+                          type: string
+                        refreshToken:
+                          type: string
         '400':
           $ref: '#/components/responses/BadRequest'
         '409':
@@ -63,225 +372,91 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /auth/login:
+      x-implementation: mounted
+      operationId: postAuthRegister
+  /api/v1/auth/reset-password:
     post:
-      summary: Đăng nhập hệ thống
+      summary: POST /api/v1/auth/reset-password
+      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
+        Hono.
       tags:
-        - Authentication
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - email
-                - password
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: participant@example.com
-                password:
-                  type: string
-                  example: SecurePass123!
+      - Planned · 01
+      x-implementation: planned
       responses:
-        '200':
-          description: Đăng nhập thành công
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Login successful
-                  user:
-                    $ref: '#/components/schemas/UserResponse'
-                  accessToken:
-                    type: string
-                  refreshToken:
-                    type: string
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          description: Tài khoản đã bị khoá
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /auth/refresh:
-    post:
-      summary: Cấp mới Access Token bằng Refresh Token (Token Rotation)
-      tags:
-        - Authentication
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - refreshToken
-              properties:
-                refreshToken:
-                  type: string
-                  example: 6N7K4nFzD-example-token
-      responses:
-        '200':
-          description: Cấp token mới thành công
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  accessToken:
-                    type: string
-                  refreshToken:
-                    type: string
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          description: Refresh token không hợp lệ hoặc đã hết hạn
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /auth/logout:
-    post:
-      summary: Đăng xuất và thu hồi Refresh Token
-      tags:
-        - Authentication
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - refreshToken
-              properties:
-                refreshToken:
-                  type: string
-      responses:
-        '200':
-          description: Đăng xuất thành công
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Logout successful
-        '400':
-          $ref: '#/components/responses/BadRequest'
-
-  /upload:
-    post:
-      summary: Upload ảnh lên Cloudflare R2
-      tags:
-        - Storage
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required:
-                - file
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: File ảnh (JPEG, PNG, WebP) dung lượng tối đa 50MB.
-      responses:
-        '200':
-          description: Upload thành công
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Upload successful
-                  key:
-                    type: string
-                    example: images/550e8400-e29b-41d4-a716-446655440000.jpg
-                  size:
-                    type: integer
-                    example: 2048576
-        '400':
-          description: File không hợp lệ hoặc sai định dạng
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '413':
-          description: File vượt quá kích thước 50MB
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /contests:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: postAuthResetPassword
+  /api/v1/contests:
     get:
       summary: Lấy danh sách cuộc thi đang mở
       tags:
-        - Contests
+      - Contests
       parameters:
-        - name: search
-          in: query
-          schema:
-            type: string
-          description: Tìm theo tên cuộc thi
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [published, ongoing]
-          description: Lọc theo trạng thái
-        - name: page
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 10
+      - name: search
+        in: query
+        schema:
+          type: string
+        description: Tìm theo tên cuộc thi
+      - name: status
+        in: query
+        schema:
+          type: string
+        description: Lọc theo trạng thái
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+      - name: createdBy
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: created_by
+        in: query
+        schema:
+          type: string
+          format: uuid
       responses:
         '200':
           description: Danh sách cuộc thi
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Contest'
-                  pagination:
-                    $ref: '#/components/schemas/Pagination'
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: object
+                      properties:
+                        items:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Contest'
+                        pagination:
+                          $ref: '#/components/schemas/Pagination'
         '400':
           $ref: '#/components/responses/BadRequest'
+      x-implementation: mounted
+      operationId: getContests
     post:
       summary: Tạo cuộc thi
       tags:
-        - Contests
+      - Contests
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -294,48 +469,100 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContestMutationResponse'
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 201
+                    data:
+                      $ref: '#/components/schemas/Contest'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-
-  /contests/{id}:
+      description: Request hiện hành dùng startAt và endAt. Module 03 mô tả thiết kế đủ năm mốc theo BR-08.
+      x-implementation: mounted
+      operationId: postContests
+  /api/v1/contests/{id}:
+    delete:
+      summary: Xoá cuộc thi
+      tags:
+      - Contests
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/ContestId'
+      responses:
+        '200':
+          description: Xoá cuộc thi thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-implementation: mounted
+      operationId: deleteContestsById
     get:
       summary: Lấy chi tiết cuộc thi
       tags:
-        - Contests
+      - Contests
       parameters:
-        - $ref: '#/components/parameters/ContestId'
+      - $ref: '#/components/parameters/ContestId'
       responses:
         '200':
           description: Chi tiết cuộc thi
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/Contest'
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      $ref: '#/components/schemas/Contest'
         '404':
           $ref: '#/components/responses/NotFound'
+      x-implementation: mounted
+      operationId: getContestsById
     put:
       summary: Cập nhật cuộc thi
       tags:
-        - Contests
+      - Contests
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/ContestId'
+      - $ref: '#/components/parameters/ContestId'
       requestBody:
         required: true
         content:
           application/json:
             schema:
               allOf:
-                - $ref: '#/components/schemas/ContestInput'
+              - $ref: '#/components/schemas/ContestInput'
               description: Gửi ít nhất một field cần cập nhật.
       responses:
         '200':
@@ -343,7 +570,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContestMutationResponse'
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      $ref: '#/components/schemas/Contest'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -352,31 +587,500 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-    delete:
-      summary: Xoá cuộc thi
+      x-implementation: mounted
+      operationId: putContestsById
+  /api/v1/contests/{id}/archive:
+    post:
+      summary: POST /api/v1/contests/{id}/archive
+      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
+        được đăng ký trong Hono.
       tags:
-        - Contests
-      security:
-        - BearerAuth: []
+      - Planned · 08
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
       parameters:
-        - $ref: '#/components/parameters/ContestId'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: postContestsByIdArchive
+  /api/v1/contests/{id}/categories:
+    get:
+      summary: Hạng mục cuộc thi
+      tags:
+      - Contests
       responses:
         '200':
-          description: Xoá cuộc thi thành công
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          name:
+                            type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      x-implementation: mounted
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: getContestsByIdCategories
+  /api/v1/contests/{id}/judges:
+    post:
+      summary: POST /api/v1/contests/{id}/judges
+      description: Hợp đồng dự kiến trong [03-contest-lifecycle.md](ai/03-contest-lifecycle.md). Route chưa được đăng
+        ký trong Hono.
+      tags:
+      - Planned · 03
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: postContestsByIdJudges
+  /api/v1/contests/{id}/publish-results:
+    post:
+      summary: POST /api/v1/contests/{id}/publish-results
+      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
+        được đăng ký trong Hono.
+      tags:
+      - Planned · 08
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: postContestsByIdPublishResults
+  /api/v1/contests/{id}/results:
+    get:
+      summary: Kết quả cuộc thi đã công bố
+      tags:
+      - Contests
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: object
+                      properties:
+                        contestId:
+                          type: string
+                          format: uuid
+                        contestName:
+                          type: string
+                        status:
+                          type: string
+                        resultsLocked:
+                          type: boolean
+                        winners:
+                          type: array
+                          items:
+                            type: object
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      description: Route hiện có dùng dữ liệu điểm và giải mẫu. Luồng công bố chính thức theo BR-06 và BR-16 được
+        mô tả ở Module 08.
+      x-implementation: mounted
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: getContestsByIdResults
+  /api/v1/contests/{id}/status:
+    patch:
+      summary: PATCH /api/v1/contests/{id}/status
+      description: Hợp đồng dự kiến trong [03-contest-lifecycle.md](ai/03-contest-lifecycle.md). Route chưa được đăng
+        ký trong Hono.
+      tags:
+      - Planned · 03
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: patchContestsByIdStatus
+  /api/v1/exhibitions:
+    get:
+      summary: GET /api/v1/exhibitions
+      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
+        được đăng ký trong Hono.
+      tags:
+      - Planned · 08
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: getExhibitions
+  /api/v1/exhibitions/{id}:
+    get:
+      summary: GET /api/v1/exhibitions/{id}
+      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
+        được đăng ký trong Hono.
+      tags:
+      - Planned · 08
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: getExhibitionsById
+  /api/v1/exhibitions/{id}/process:
+    post:
+      summary: POST /api/v1/exhibitions/{id}/process
+      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
+        được đăng ký trong Hono.
+      tags:
+      - Planned · 08
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: postExhibitionsByIdProcess
+  /api/v1/exhibitions/{id}/status:
+    get:
+      summary: GET /api/v1/exhibitions/{id}/status
+      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
+        được đăng ký trong Hono.
+      tags:
+      - Planned · 08
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: getExhibitionsByIdStatus
+  /api/v1/film-rolls:
+    get:
+      summary: GET /api/v1/film-rolls
+      description: Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong
+        Hono.
+      tags:
+      - Planned · 04
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: getFilmRolls
+    post:
+      summary: POST /api/v1/film-rolls
+      description: Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong
+        Hono.
+      tags:
+      - Planned · 04
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: postFilmRolls
+  /api/v1/film-rolls/{id}:
+    delete:
+      summary: DELETE /api/v1/film-rolls/{id}
+      description: Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong
+        Hono.
+      tags:
+      - Planned · 04
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: deleteFilmRollsById
+    get:
+      summary: GET /api/v1/film-rolls/{id}
+      description: Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong
+        Hono.
+      tags:
+      - Planned · 04
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: getFilmRollsById
+    patch:
+      summary: PATCH /api/v1/film-rolls/{id}
+      description: Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong
+        Hono.
+      tags:
+      - Planned · 04
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: patchFilmRollsById
+  /api/v1/film-rolls/{id}/frames:
+    post:
+      summary: POST /api/v1/film-rolls/{id}/frames
+      description: Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong
+        Hono.
+      tags:
+      - Planned · 04
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: postFilmRollsByIdFrames
+  /api/v1/master-data/cameras:
+    get:
+      summary: GET /api/v1/master-data/cameras
+      description: Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được
+        đăng ký trong Hono.
+      tags:
+      - Planned · 02
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: getMasterDataCameras
+    post:
+      summary: POST /api/v1/master-data/cameras
+      description: Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được
+        đăng ký trong Hono.
+      tags:
+      - Planned · 02
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: postMasterDataCameras
+  /api/v1/master-data/film-labs:
+    get:
+      summary: GET /api/v1/master-data/film-labs
+      description: Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được
+        đăng ký trong Hono.
+      tags:
+      - Planned · 02
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: getMasterDataFilmLabs
+  /api/v1/master-data/film-stocks:
+    get:
+      summary: GET /api/v1/master-data/film-stocks
+      description: Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được
+        đăng ký trong Hono.
+      tags:
+      - Planned · 02
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: getMasterDataFilmStocks
+    post:
+      summary: POST /api/v1/master-data/film-stocks
+      description: Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được
+        đăng ký trong Hono.
+      tags:
+      - Planned · 02
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: postMasterDataFilmStocks
+  /api/v1/master-data/film-stocks/{id}:
+    delete:
+      summary: DELETE /api/v1/master-data/film-stocks/{id}
+      description: Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được
+        đăng ký trong Hono.
+      tags:
+      - Planned · 02
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: deleteMasterDataFilmStocksById
+  /api/v1/master-data/lenses:
+    get:
+      summary: GET /api/v1/master-data/lenses
+      description: Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được
+        đăng ký trong Hono.
+      tags:
+      - Planned · 02
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: getMasterDataLenses
+  /api/v1/organizer/submissions:
+    get:
+      summary: Hàng đợi kiểm duyệt bài dự thi
+      tags:
+      - Submissions
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Submission'
+                    pagination:
+                      $ref: '#/components/schemas/Pagination'
+                  required:
+                  - pagination
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/v1/submissions:
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: contestId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: categoryId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: status
+        in: query
+        schema:
+          type: string
+      - name: aiFlagged
+        in: query
+        schema:
+          type: boolean
+      - name: search
+        in: query
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+      - name: limit
+        in: query
+        schema:
+          type: integer
+      x-implementation: mounted
+      operationId: getOrganizerSubmissions
     post:
       summary: Nộp bài dự thi kèm ảnh phim
       tags:
-        - Submissions
+      - Submissions
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -389,13 +1093,15 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    $ref: '#/components/schemas/Submission'
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 201
+                    data:
+                      $ref: '#/components/schemas/Submission'
         '400':
           $ref: '#/components/responses/SubmissionBadRequest'
         '401':
@@ -404,91 +1110,1022 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '413':
           description: Request hoặc file vượt quá giới hạn kích thước
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '415':
           description: Content-Type không phải multipart/form-data
-
-  /rbac/admin:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-implementation: mounted
+      operationId: postOrganizerSubmissions
+  /api/v1/organizer/submissions/my:
     get:
-      summary: API yêu cầu quyền Admin
+      summary: Bài dự thi của tôi
       tags:
-        - RBAC
-      security:
-        - BearerAuth: []
+      - Submissions
       responses:
         '200':
-          description: Truy cập thành công
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Submission'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: contestId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: status
+        in: query
+        schema:
+          type: string
+      x-implementation: mounted
+      operationId: getOrganizerSubmissionsMy
+  /api/v1/organizer/submissions/{id}/ai-analysis:
+    get:
+      summary: Báo cáo AI của bài thi
+      tags:
+      - Submissions
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: object
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-
-  /rbac/organizer:
-    get:
-      summary: API yêu cầu quyền Organizer
-      tags:
-        - RBAC
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
       security:
-        - BearerAuth: []
+      - BearerAuth: []
+      x-implementation: mounted
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: getOrganizerSubmissionsByIdAiAnalysis
+  /api/v1/organizer/submissions/{id}/approve:
+    post:
+      summary: Duyệt bài thi
+      tags:
+      - Submissions
       responses:
         '200':
-          description: Truy cập thành công
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      $ref: '#/components/schemas/Submission'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-
-  /rbac/judge:
-    get:
-      summary: API yêu cầu quyền Judge
-      tags:
-        - RBAC
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
       security:
-        - BearerAuth: []
+      - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      x-implementation: mounted
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: postOrganizerSubmissionsByIdApprove
+  /api/v1/organizer/submissions/{id}/comparison:
+    get:
+      summary: Đối sánh ảnh và báo cáo AI
+      tags:
+      - Submissions
       responses:
         '200':
-          description: Truy cập thành công
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: object
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-
-  /rbac/participant:
-    get:
-      summary: API yêu cầu quyền Participant
-      tags:
-        - RBAC
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
       security:
-        - BearerAuth: []
+      - BearerAuth: []
+      x-implementation: mounted
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: getOrganizerSubmissionsByIdComparison
+  /api/v1/organizer/submissions/{id}/moderate:
+    post:
+      summary: Kiểm duyệt bài thi
+      tags:
+      - Submissions
       responses:
         '200':
-          description: Truy cập thành công
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      $ref: '#/components/schemas/Submission'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-
-  /rbac/manage-contest:
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Thiếu lý do kiểm duyệt hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Tối thiểu 10 ký tự cho DISQUALIFY, REQUEST_PROOF và OVERRIDE_AI_FLAG.
+                action:
+                  type: string
+                  enum:
+                  - APPROVE_FOR_JUDGING
+                  - DISQUALIFY
+                  - REQUEST_PROOF
+                  - OVERRIDE_AI_FLAG
+              required:
+              - action
+      x-implementation: mounted
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: postOrganizerSubmissionsByIdModerate
+  /api/v1/organizer/submissions/{id}/reject:
+    post:
+      summary: Loại bài thi
+      tags:
+      - Submissions
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      $ref: '#/components/schemas/Submission'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Thiếu lý do kiểm duyệt hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - reason
+              properties:
+                reason:
+                  type: string
+                  minLength: 10
+                  maxLength: 1000
+      x-implementation: mounted
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: postOrganizerSubmissionsByIdReject
+  /api/v1/rbac/manage-contest:
     get:
       summary: API yêu cầu quyền Admin hoặc Organizer
       tags:
-        - RBAC
+      - RBAC
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       responses:
         '200':
           description: Truy cập thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: object
+                      nullable: true
+                      enum:
+                      - null
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-
+      x-implementation: mounted
+      operationId: getRbacManageContest
+  /api/v1/storage/assets/{id}/signed-url:
+    get:
+      summary: GET /api/v1/storage/assets/{id}/signed-url
+      description: Hợp đồng dự kiến trong [10-database-and-storage.md](ai/10-database-and-storage.md). Route chưa được
+        đăng ký trong Hono.
+      tags:
+      - Planned · 10
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: getStorageAssetsByIdSignedUrl
+  /api/v1/storage/confirm-upload:
+    post:
+      summary: POST /api/v1/storage/confirm-upload
+      description: Hợp đồng dự kiến trong [10-database-and-storage.md](ai/10-database-and-storage.md). Route chưa được
+        đăng ký trong Hono.
+      tags:
+      - Planned · 10
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: postStorageConfirmUpload
+  /api/v1/storage/presigned-upload:
+    post:
+      summary: POST /api/v1/storage/presigned-upload
+      description: Hợp đồng dự kiến trong [10-database-and-storage.md](ai/10-database-and-storage.md). Route chưa được
+        đăng ký trong Hono.
+      tags:
+      - Planned · 10
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: postStoragePresignedUpload
+  /api/v1/submissions:
+    get:
+      summary: Hàng đợi kiểm duyệt bài dự thi
+      tags:
+      - Submissions
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Submission'
+                    pagination:
+                      $ref: '#/components/schemas/Pagination'
+                  required:
+                  - pagination
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: contestId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: categoryId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: status
+        in: query
+        schema:
+          type: string
+      - name: aiFlagged
+        in: query
+        schema:
+          type: boolean
+      - name: search
+        in: query
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+      - name: limit
+        in: query
+        schema:
+          type: integer
+      x-implementation: mounted
+      operationId: getSubmissions
+    post:
+      summary: Nộp bài dự thi kèm ảnh phim
+      tags:
+      - Submissions
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubmissionForm'
+      responses:
+        '201':
+          description: Nộp bài thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 201
+                    data:
+                      $ref: '#/components/schemas/Submission'
+        '400':
+          $ref: '#/components/responses/SubmissionBadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: Request hoặc file vượt quá giới hạn kích thước
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '415':
+          description: Content-Type không phải multipart/form-data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-implementation: mounted
+      operationId: postSubmissions
+  /api/v1/submissions/my:
+    get:
+      summary: Bài dự thi của tôi
+      tags:
+      - Submissions
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Submission'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: contestId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: status
+        in: query
+        schema:
+          type: string
+      x-implementation: mounted
+      operationId: getSubmissionsMy
+  /api/v1/submissions/presigned-url:
+    post:
+      summary: POST /api/v1/submissions/presigned-url
+      description: Hợp đồng dự kiến trong [05-submission-and-proof.md](ai/05-submission-and-proof.md). Route chưa được
+        đăng ký trong Hono.
+      tags:
+      - Planned · 05
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: postSubmissionsPresignedUrl
+  /api/v1/submissions/{id}/ai-analysis:
+    get:
+      summary: Báo cáo AI của bài thi
+      tags:
+      - Submissions
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: object
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+      x-implementation: mounted
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: getSubmissionsByIdAiAnalysis
+  /api/v1/submissions/{id}/ai-scan:
+    post:
+      summary: POST /api/v1/submissions/{id}/ai-scan
+      description: Hợp đồng dự kiến trong [06-ai-verification.md](ai/06-ai-verification.md). Route chưa được đăng ký
+        trong Hono.
+      tags:
+      - Planned · 06
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: postSubmissionsByIdAiScan
+  /api/v1/submissions/{id}/approve:
+    post:
+      summary: Duyệt bài thi
+      tags:
+      - Submissions
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      $ref: '#/components/schemas/Submission'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      x-implementation: mounted
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: postSubmissionsByIdApprove
+  /api/v1/submissions/{id}/comparison:
+    get:
+      summary: Đối sánh ảnh và báo cáo AI
+      tags:
+      - Submissions
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: object
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+      - BearerAuth: []
+      x-implementation: mounted
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: getSubmissionsByIdComparison
+  /api/v1/submissions/{id}/moderate:
+    post:
+      summary: Kiểm duyệt bài thi
+      tags:
+      - Submissions
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      $ref: '#/components/schemas/Submission'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Thiếu lý do kiểm duyệt hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Tối thiểu 10 ký tự cho DISQUALIFY, REQUEST_PROOF và OVERRIDE_AI_FLAG.
+                action:
+                  type: string
+                  enum:
+                  - APPROVE_FOR_JUDGING
+                  - DISQUALIFY
+                  - REQUEST_PROOF
+                  - OVERRIDE_AI_FLAG
+              required:
+              - action
+      x-implementation: mounted
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: postSubmissionsByIdModerate
+  /api/v1/submissions/{id}/proof:
+    post:
+      summary: POST /api/v1/submissions/{id}/proof
+      description: Hợp đồng dự kiến trong [05-submission-and-proof.md](ai/05-submission-and-proof.md). Route chưa được
+        đăng ký trong Hono.
+      tags:
+      - Planned · 05
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: postSubmissionsByIdProof
+  /api/v1/submissions/{id}/reject:
+    post:
+      summary: Loại bài thi
+      tags:
+      - Submissions
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      $ref: '#/components/schemas/Submission'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Thiếu lý do kiểm duyệt hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - reason
+              properties:
+                reason:
+                  type: string
+                  minLength: 10
+                  maxLength: 1000
+      x-implementation: mounted
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: postSubmissionsByIdReject
+  /api/v1/submissions/{id}/request-proof:
+    post:
+      summary: POST /api/v1/submissions/{id}/request-proof
+      description: Hợp đồng dự kiến trong [05-submission-and-proof.md](ai/05-submission-and-proof.md). Route chưa được
+        đăng ký trong Hono.
+      tags:
+      - Planned · 05
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: postSubmissionsByIdRequestProof
+  /api/v1/upload:
+    post:
+      summary: Upload ảnh lên Cloudflare R2
+      tags:
+      - Storage
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File ảnh (JPEG, PNG, WebP) dung lượng tối đa 50MB.
+      responses:
+        '200':
+          description: Upload thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                          example: images/550e8400-e29b-41d4-a716-446655440000.jpg
+                        size:
+                          type: integer
+                          example: 2048576
+        '400':
+          description: File không hợp lệ hoặc sai định dạng
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: File vượt quá kích thước 50MB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-implementation: mounted
+      operationId: postUpload
+  /api/v1/users:
+    get:
+      summary: GET /api/v1/users
+      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
+        Hono.
+      tags:
+      - Planned · 01
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: getUsers
+    post:
+      summary: POST /api/v1/users
+      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
+        Hono.
+      tags:
+      - Planned · 01
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: postUsers
+  /api/v1/users/me:
+    get:
+      summary: GET /api/v1/users/me
+      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
+        Hono.
+      tags:
+      - Planned · 01
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: getUsersMe
+  /api/v1/users/me/password:
+    patch:
+      summary: PATCH /api/v1/users/me/password
+      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
+        Hono.
+      tags:
+      - Planned · 01
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: patchUsersMePassword
+  /api/v1/users/me/profile:
+    put:
+      summary: PUT /api/v1/users/me/profile
+      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
+        Hono.
+      tags:
+      - Planned · 01
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      operationId: putUsersMeProfile
+  /api/v1/users/{id}/status:
+    patch:
+      summary: PATCH /api/v1/users/{id}/status
+      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
+        Hono.
+      tags:
+      - Planned · 01
+      x-implementation: planned
+      responses:
+        default:
+          description: Xem hợp đồng request và response trong module liên kết.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: patchUsersByIdStatus
+  /health:
+    get:
+      summary: Trạng thái API và kết nối cơ sở dữ liệu
+      tags:
+      - Health
+      responses:
+        '200':
+          description: Phản hồi trạng thái. HTTP status của route là 200, trạng thái kết nối nằm trong data.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 200
+                    data:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                        database:
+                          type: string
+                        httpStatus:
+                          type: integer
+      x-implementation: mounted
+      operationId: getHealth
 components:
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-
+    AiWebhookSecret:
+      type: apiKey
+      in: header
+      name: X-Webhook-Secret
   schemas:
     Contest:
       type: object
@@ -502,27 +2139,25 @@ components:
         description:
           type: string
           nullable: true
-        start_at:
-          type: string
-          format: date-time
-          nullable: true
-        end_at:
-          type: string
-          format: date-time
-          nullable: true
         status:
           type: string
-          enum: [draft, published, ongoing, completed, cancelled]
-        created_by:
+        startAt:
+          type: string
+          format: date-time
+          nullable: true
+        endAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdBy:
           type: string
           format: uuid
-        created_at:
+        createdAt:
           type: string
           format: date-time
-        updated_at:
+        updatedAt:
           type: string
           format: date-time
-
     ContestInput:
       type: object
       properties:
@@ -543,17 +2178,7 @@ components:
           nullable: true
         status:
           type: string
-          enum: [draft, published, ongoing, completed, cancelled]
           default: draft
-
-    ContestMutationResponse:
-      type: object
-      properties:
-        message:
-          type: string
-        data:
-          $ref: '#/components/schemas/Contest'
-
     Pagination:
       type: object
       properties:
@@ -565,20 +2190,21 @@ components:
           type: integer
         totalPages:
           type: integer
-
     SubmissionForm:
       type: object
       required:
-        - contestId
-        - categoryId
-        - title
-        - filmBrand
-        - filmStock
-        - filmFormat
-        - isoRated
-        - isoShot
-        - cameraBody
-        - image
+      - contestId
+      - categoryId
+      - title
+      - filmBrand
+      - filmStock
+      - filmFormat
+      - isoRated
+      - isoShot
+      - cameraBody
+      - image
+      - rollId
+      - frameNumber
       properties:
         contestId:
           type: string
@@ -631,12 +2257,11 @@ components:
         image:
           type: string
           format: binary
-          description: Ảnh chính, tối đa 100 MiB, tối thiểu 1000x1000 pixels.
+          description: Ảnh scan JPEG/JPG hoặc TIFF, tối đa 25 MiB, cạnh ngắn tối thiểu 2000 px.
         negativeProof:
           type: string
           format: binary
           description: Ảnh proof tuỳ chọn, tối đa 20 MiB.
-
     Submission:
       type: object
       properties:
@@ -669,7 +2294,6 @@ components:
         status:
           type: string
           example: PENDING_AI
-
     UserResponse:
       type: object
       properties:
@@ -683,18 +2307,49 @@ components:
           format: email
         role:
           type: string
-          enum: [Admin, Organizer, Judge, Participant]
+          enum:
+          - Admin
+          - Organizer
+          - Judge
+          - Participant
         createdAt:
           type: string
           format: date-time
-
     ErrorResponse:
       type: object
+      required:
+      - code
+      - message
+      - data
+      - error
       properties:
+        code:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          nullable: true
+          enum:
+          - null
         error:
           type: string
-          example: Error message description
-
+    SuccessEnvelope:
+      type: object
+      required:
+      - code
+      - message
+      - data
+      - error
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        error:
+          type: string
+          nullable: true
+          example: null
   responses:
     BadRequest:
       description: Dữ liệu gửi lên không hợp lệ
@@ -702,41 +2357,30 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
-
     Unauthorized:
       description: Thiếu token hoặc token không hợp lệ / hết hạn
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
-
     Forbidden:
       description: Không có quyền truy cập endpoint này
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
-
     NotFound:
       description: Không tìm thấy tài nguyên
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
-
     SubmissionBadRequest:
       description: Dữ liệu multipart không hợp lệ
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              success:
-                type: boolean
-                example: false
-              message:
-                type: string
-
+            $ref: '#/components/schemas/ErrorResponse'
   parameters:
     ContestId:
       name: id
