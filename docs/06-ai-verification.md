@@ -58,7 +58,7 @@ Các quy tắc nghiệp vụ của module AI Verification bao gồm:
 - **BR-09 (Phát hiện ảnh tạo bởi AI - AI-Generated Detection):**
   - AI Worker phân tích ảnh scan độ phân giải đầy đủ thông qua mô hình Deep Learning (EfficientNet/ViT Fine-tuned detector).
   - Nếu xác suất `P_AI >= 0.75` (75%):
-    - Tự động gán nhãn `AI_FLAGGED_HIGH_RISK` cho bài thi.
+    - Tự động chuyển bài thi sang trạng thái `AI_FLAGGED_HIGH_RISK`. Giữ bài ngoài danh sách chấm cho đến khi BTC xác minh âm bản và gỡ cờ thủ công.
     - Trạng thái thẩm định chuyển thành `FLAGGED`.
     - **Chặn tuyệt đối** việc phân bổ bài nộp vào danh sách chấm của Ban Giám khảo.
     - Đưa vào hàng đợi xác minh thủ công (Manual Review Queue) dành cho Trưởng BTC (Organizer Lead).
@@ -106,10 +106,10 @@ Các quy tắc nghiệp vụ của module AI Verification bao gồm:
    - Gợi ý tối đa 5 thẻ phân loại nội dung.
    - Cảnh báo nếu nội dung ảnh không phù hợp hạng mục dự thi.
 
-3. **AI_CLEAN / AI_FLAGGED (Kết quả kiểm tra)**
+3. **AI_CLEAN / AI_FLAGGED (Kết quả phân tích)**
    - `AI_CLEAN`: Chưa phát hiện dấu hiệu bất thường theo các ngưỡng kiểm tra.
    - `AI_FLAGGED`: Phát hiện dấu hiệu cần kiểm tra thêm.
-   - Nếu `P_AI >= 0.75`, gắn cờ `AI_FLAGGED_HIGH_RISK`.
+   - Nếu `P_AI >= 0.75`, chuyển trạng thái sang `AI_FLAGGED_HIGH_RISK`.
    - Nếu Hamming Distance `<= 5` hoặc Cosine Similarity `>= 0.92`, gắn cờ `DUPLICATE_SUSPECT`.
    - Bài bị gắn cờ rủi ro cao không được chuyển cho Giám khảo trước khi được Ban tổ chức kiểm tra và gỡ cờ.
 
@@ -291,7 +291,7 @@ All error responses follow the standard error schema defined in `docs/09-api-con
 
 ## 8. Non‑Functional Requirements
 
-- **Performance**: AI verification completes within 120 seconds per submission; API response time < 200 ms for job status queries.
+- **Performance**: Mục tiêu hoàn tất phân tích dưới 10 giây mỗi bài theo SRS §5.2.4; API response time < 200 ms for job status queries.
 - **Scalability**: Background workers consume jobs from Redis queue; multiple workers can be scaled horizontally.
 - **Reliability**: Jobs marked `FAILED` are automatically retried up to 3 times.
 - **Auditability**: All state transitions are logged with user ID, timestamp, and reason.

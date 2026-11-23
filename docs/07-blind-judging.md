@@ -71,11 +71,13 @@ Không tự giả định tên bảng hoặc cấu trúc cột khi chưa có đ�
   - Vòng chấm phải đóng trước khi Giám khảo được xem điểm và nhận xét của Giám khảo khác.
   - Mọi chênh lệch điểm được gắn cờ theo BR-14 phải được xử lý trước khi xác nhận kết quả cuối cùng.
 
+- **BR-15, BR-18 và UC-32–33:** Tổng trọng số mỗi hạng mục bằng đúng 1.0000. Điểm của mỗi giám khảo là tổng điểm từng tiêu chí nhân trọng số. Giám khảo được sửa phiếu trước khi khóa và xác nhận hoàn tất phiếu cá nhân. Điều chỉnh điểm khi phúc khảo yêu cầu lý do và AuditLog.
+
 ### 2.2 Nội dung cần xác nhận với nhóm
 
 - Thao tác nào được coi là khóa phiếu chấm điểm của một Giám khảo?
-- Phiếu chấm đã nộp có được mở lại để chỉnh sửa không?
-- Ai có thẩm quyền giải quyết `DISCREPANCY_CONFLICT` và quy trình giải quyết cụ thể là gì?
+- Thao tác mở lại phiếu đã khóa, nếu được nhóm xác định, cần có hợp đồng riêng.
+- Ban tổ chức và Trưởng ban giám khảo điều phối theo BR-14. Quyền thao tác chi tiết và DTO điều phối còn cần xác định.
 
 ---
 

@@ -30,7 +30,7 @@ với schema chính thức của Backend.
 ### 2.1. API Response Standardization
 
 - Các API cần sử dụng cấu trúc Response thống nhất giữa Backend, Web và Mobile.
-- Chuẩn Response đề xuất gồm ba trường: `code`, `message`, `data`.
+- Envelope chung có `code` (HTTP status), `message` và `data`. Runtime còn trả `error` dạng chuỗi khi lỗi hoặc `null` khi thành công.
 - HTTP Status phải phản ánh đúng kết quả xử lý.
 - Không trả về mật khẩu, token hoặc dữ liệu bí mật trong thông báo lỗi.
 
@@ -44,13 +44,13 @@ với schema chính thức của Backend.
 ### 2.3. Error Handling Rules
 
 - Các lỗi cần được ánh xạ sang HTTP Status phù hợp.
-- Danh mục `MSG001–MSG028` hiện là đề xuất, cần được nhóm xác nhận.
+- Dùng danh mục thông báo trong SRS §6.3.
 - Không trả về stack trace hoặc thông tin nội bộ trong Response.
 - Client không nên phụ thuộc vào chuỗi `message` để phân loại lỗi.
 
 ### 2.4. Implementation Notes
 
-- OpenAPI hiện tại chưa hoàn toàn thống nhất với cấu trúc `{ code, message, data }`.
+- OpenAPI đánh dấu mức triển khai của từng endpoint qua `x-implementation`. Mỗi mục `planned` liên kết tới module chứa hợp đồng.
 - Việc thay đổi hợp đồng API cần được nhóm thống nhất trước khi triển khai.
 
 
@@ -70,7 +70,7 @@ Quy trình xử lý một yêu cầu API:
 
 1. Backend phát hiện lỗi validation, xác thực, phân quyền hoặc nghiệp vụ.
 2. Xác định HTTP Status phù hợp.
-3. Ánh xạ mã MSG001–MSG028 nếu danh mục đã được nhóm phê duyệt.
+3. Đối chiếu ngữ nghĩa thông báo với SRS §6.3.
 4. Trả về thông báo lỗi theo API Contract đã thống nhất.
 5. Web và Mobile hiển thị thông báo phù hợp.
 
@@ -327,7 +327,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/auth/register`, `/
 
 #### 4.6.2. Register Request DTO
 
-**Endpoint:** `POST /auth/register`
+**Endpoint:** `POST /api/v1/auth/register`
 
 **Purpose:** Cho phép người dùng tạo tài khoản mới với vai trò Participant.
 
@@ -421,7 +421,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/auth/register`, `/
 
 #### 4.6.4. Login Request DTO
 
-**Endpoint:** `POST /auth/login`
+**Endpoint:** `POST /api/v1/auth/login`
 
 **Purpose:** Xác thực người dùng bằng email và password.
 
@@ -505,7 +505,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/auth/register`, `/
 
 #### 4.6.6. Refresh Token Request DTO
 
-**Endpoint:** `POST /auth/refresh`
+**Endpoint:** `POST /api/v1/auth/refresh`
 
 **Purpose:** Cấp Access Token mới khi Access Token hiện tại hết hạn.
 
@@ -571,7 +571,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/auth/register`, `/
 
 #### 4.6.8. Logout Request DTO
 
-**Endpoint:** `POST /auth/logout`
+**Endpoint:** `POST /api/v1/auth/logout`
 
 **Purpose:** Đăng xuất và thu hồi Refresh Token.
 
@@ -677,7 +677,7 @@ Các trường hợp lỗi sẽ được ánh xạ với mã thông báo `MSG001
 
 #### 4.7.1. Contest DTO Overview
 
-Contest DTOs định nghĩa cấu trúc dữ liệu trao đổi giữa Web Next.js, Mobile Flutter và Backend trong quá trình quản lý cuộc thi nhiếp ảnh phim.
+Mục này mô tả DTO của các route đang chạy. Backend hiện nhận `startAt` và `endAt`. Thiết kế đủ năm mốc theo BR-08 nằm trong [Module 03](03-contest-lifecycle.md), mục 4.2.
 
 Các chức năng bao gồm:
 
@@ -695,7 +695,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/contests` và `/co
 
 #### 4.7.2. Create Contest Request DTO
 
-**Endpoint:** `POST /contests`
+**Endpoint:** `POST /api/v1/contests`
 
 **Purpose:** Cho phép người dùng có quyền tạo cuộc thi mới.
 
@@ -803,7 +803,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/contests` và `/co
 
 #### 4.7.4. Get Contest List Request DTO
 
-**Endpoint:** `GET /contests`
+**Endpoint:** `GET /api/v1/contests`
 
 **Purpose:** Lấy danh sách cuộc thi có hỗ trợ tìm kiếm, lọc trạng thái và phân trang.
 
@@ -891,7 +891,7 @@ GET /contests?status=published&page=1&limit=10
 
 #### 4.7.6. Get Contest Detail DTO
 
-**Endpoint:** `GET /contests/{id}`
+**Endpoint:** `GET /api/v1/contests/{id}`
 
 **Purpose:** Lấy thông tin chi tiết của một cuộc thi.
 
@@ -943,7 +943,7 @@ GET /contests?status=published&page=1&limit=10
 
 #### 4.7.7. Update Contest Request DTO
 
-**Endpoint:** `PUT /contests/{id}`
+**Endpoint:** `PUT /api/v1/contests/{id}`
 
 **Purpose:** Cập nhật thông tin cuộc thi.
 
@@ -1029,7 +1029,7 @@ GET /contests?status=published&page=1&limit=10
 
 #### 4.7.9. Delete Contest DTO
 
-**Endpoint:** `DELETE /contests/{id}`
+**Endpoint:** `DELETE /api/v1/contests/{id}`
 
 **Purpose:** Xóa cuộc thi theo quyền được cấp.
 
@@ -1063,7 +1063,7 @@ GET /contests?status=published&page=1&limit=10
 
 - Không được làm mất dữ liệu kết quả đã công bố hoặc vi phạm yêu cầu lưu trữ.
 
-**Implementation Note:** OpenAPI hiện tại có endpoint DELETE nhưng chưa xác định rõ cơ chế Soft Delete. Cần thống nhất cách triển khai với nhóm.
+**Implementation Note:** Endpoint DELETE hiện hành cập nhật cờ xóa mềm theo BR-03.
 
 #### 4.7.10. Contest Error Handling
 
@@ -1097,7 +1097,7 @@ GET /contests?status=published&page=1&limit=10
 
 ```
 
-Các trường hợp lỗi cần được ánh xạ với danh mục `MSG001–MSG028` sau khi nhóm thống nhất nội dung từng mã.
+Dùng danh mục thông báo trong SRS §6.3.
 
 #### 4.7.11. Security & Integration Requirements
 
@@ -1207,9 +1207,9 @@ Request sử dụng `multipart/form-data` để gửi dữ liệu và file ảnh
 
 | `lens` | String | No | Tối đa 150 ký tự |
 
-| `rollId` | String | No | Tối đa 100 ký tự |
+| `rollId` | String | Yes | Tối đa 100 ký tự |
 
-| `frameNumber` | String | No | Tối đa 20 ký tự |
+| `frameNumber` | String | Yes | Tối đa 20 ký tự |
 
 | `devLabName` | String | No | Tối đa 150 ký tự |
 
@@ -1217,7 +1217,7 @@ Request sử dụng `multipart/form-data` để gửi dữ liệu và file ảnh
 
 | `scannerModel` | String | No | Tối đa 150 ký tự |
 
-| `image` | Binary File | Yes | Tối đa 100 MiB, tối thiểu 1000 × 1000 pixel |
+| `image` | Binary File | Yes | JPEG/JPG hoặc TIFF, tối đa 25 MiB, cạnh ngắn tối thiểu 2000 px (BR-07) |
 
 | `negativeProof` | Binary File | No | Tối đa 20 MiB |
 
@@ -1355,7 +1355,7 @@ Film Metadata DTO lưu thông tin kỹ thuật liên quan đến ảnh phim.
 
 - Không công khai đường dẫn ảnh Master hoặc Negative Proof cho người dùng không có quyền.
 
-**Implementation Note:** OpenAPI hiện tại trả về `success` và `data` cho endpoint nộp bài. Ví dụ trên là cấu trúc Response đề xuất theo chuẩn Jira.
+**Implementation Note:** API hiện hành trả HTTP 201 cùng envelope chung. Luồng presigned URL của Module 05 dùng DTO đích.
 
 #### 4.8.5. Submission Status
 
@@ -1439,7 +1439,7 @@ Theo database schema hiện tại, trường `submissions.status` hỗ trợ cá
 
 ```
 
-Các trường hợp lỗi cần được ánh xạ với danh mục `MSG001–MSG028` sau khi nhóm thống nhất nội dung từng mã.
+Dùng danh mục thông báo trong SRS §6.3.
 
 #### 4.8.8. Security & Integration Requirements
 
@@ -1999,7 +1999,7 @@ Các trạng thái trên là đề xuất của module Archive & Exhibition, ch�
 
 ```
 
-Các trường hợp lỗi sẽ được ánh xạ với danh mục `MSG001–MSG028` sau khi nhóm thống nhất mã thông báo.
+Dùng danh mục thông báo trong SRS §6.3.
 
 #### 4.9.10. Security & Integration Requirements
 
@@ -2025,325 +2025,7 @@ Các trường hợp lỗi sẽ được ánh xạ với danh mục `MSG001–MS
 
 ### 5.1. Message Code Catalog (MSG001–MSG028)
 
-#### 5.1.1. Message Code Overview
-
-Message Code Catalog định nghĩa danh mục mã thông báo dùng chung cho Backend, Web Next.js và Mobile Flutter.
-
-Mỗi mã `MSGxxx` đại diện cho một kết quả xử lý hoặc một trường hợp lỗi nghiệp vụ cụ thể.
-
-Mục tiêu:
-
-- Thống nhất cách nhận biết kết quả API.
-
-- Giúp Web và Mobile hiển thị thông báo phù hợp.
-
-- Hạn chế việc Client phụ thuộc trực tiếp vào nội dung chuỗi thông báo.
-
-- Hỗ trợ quản lý và mở rộng danh mục lỗi.
-
-**Catalog Status:** Proposed – Pending Team Approval.
-
-Danh mục `MSG001–MSG028` dưới đây là đề xuất cho dự án, chưa được xác nhận là danh mục mã chính thức của nhóm.
-
-#### 5.1.2. Message Code Catalog
-
-| Message Code | HTTP Status | Message | Description |
-
-|---|---|---|---|
-
-| `MSG001` | 200 | Success | Yêu cầu được xử lý thành công |
-
-| `MSG002` | 201 | Created successfully | Tạo dữ liệu thành công |
-
-| `MSG003` | 200 | Updated successfully | Cập nhật dữ liệu thành công |
-
-| `MSG004` | 200 | Deleted successfully | Xóa dữ liệu thành công |
-
-| `MSG005` | 400 | Invalid request data | Dữ liệu yêu cầu không hợp lệ |
-
-| `MSG006` | 400 | Missing required fields | Thiếu trường bắt buộc |
-
-| `MSG007` | 400 | Invalid data format | Sai định dạng dữ liệu |
-
-| `MSG008` | 401 | Unauthorized | Người dùng chưa xác thực |
-
-| `MSG009` | 401 | Invalid credentials | Email hoặc mật khẩu không đúng |
-
-| `MSG010` | 401 | Token expired | Token đã hết hạn |
-
-| `MSG011` | 401 | Invalid token | Token không hợp lệ |
-
-| `MSG012` | 403 | Forbidden | Người dùng không có quyền thực hiện |
-
-| `MSG013` | 403 | Account locked | Tài khoản đã bị khóa |
-
-| `MSG014` | 404 | Resource not found | Không tìm thấy tài nguyên |
-
-| `MSG015` | 409 | Email already exists | Email đã được đăng ký |
-
-| `MSG016` | 409 | Duplicate resource | Dữ liệu đã tồn tại |
-
-| `MSG017` | 400 | Invalid contest data | Thông tin cuộc thi không hợp lệ |
-
-| `MSG018` | 404 | Contest not found | Không tìm thấy cuộc thi |
-
-| `MSG019` | 409 | Invalid contest state | Trạng thái cuộc thi không cho phép thao tác |
-
-| `MSG020` | 400 | Invalid submission data | Dữ liệu bài dự thi không hợp lệ |
-
-| `MSG021` | 413 | File too large | File vượt quá giới hạn kích thước |
-
-| `MSG022` | 415 | Unsupported file type | Định dạng file không được hỗ trợ |
-
-| `MSG023` | 404 | Submission not found | Không tìm thấy bài dự thi |
-
-| `MSG024` | 409 | Results already locked | Kết quả cuộc thi đã bị khóa |
-
-| `MSG025` | 409 | Negative proof not verified | Bằng chứng âm bản chưa được xác minh |
-
-| `MSG026` | 404 | Exhibition not found | Không tìm thấy tác phẩm triển lãm |
-
-| `MSG027` | 500 | Image processing failed | Quá trình xử lý ảnh thất bại |
-
-| `MSG028` | 500 | Internal server error | Lỗi máy chủ nội bộ |
-
-#### 5.1.3. Message Code Usage
-
-Để Client nhận biết mã thông báo một cách ổn định, đề xuất bổ sung trường `messageCode` vào cấu trúc Response.
-
-**Proposed Extended Response:**
-
-```json
-
-{
-
-  "code": 400,
-
-  "messageCode": "MSG005",
-
-  "message": "Invalid request data",
-
-  "data": null
-
-}
-
-```
-
-| Field | Data Type | Required | Description |
-
-|---|---|---|---|
-
-| `code` | Integer | Yes | Mã HTTP Status |
-
-| `messageCode` | String | Theo đề xuất | Mã thông báo nghiệp vụ |
-
-| `message` | String | Yes | Nội dung thông báo |
-
-| `data` | Object / Array / Null | Yes | Dữ liệu phản hồi |
-
-**Compatibility Note:** Jira hiện yêu cầu cấu trúc `{ code, message, data }` và danh mục `MSG001–MSG028`, nhưng chưa xác định mã MSG được truyền qua trường riêng hay nằm trong `message`.
-
-Do đó, trường `messageCode` ở trên chỉ là phương án mở rộng đề xuất. Nếu nhóm yêu cầu giữ đúng ba trường Response, có thể dùng danh mục MSG trong logic Backend hoặc thống nhất phương án khác.
-
-#### 5.1.4. Authentication Message Examples
-
-**Invalid Credentials:**
-
-```json
-
-{
-
-  "code": 401,
-
-  "messageCode": "MSG009",
-
-  "message": "Invalid credentials",
-
-  "data": null
-
-}
-
-```
-
-**Email Already Exists:**
-
-```json
-
-{
-
-  "code": 409,
-
-  "messageCode": "MSG015",
-
-  "message": "Email already exists",
-
-  "data": null
-
-}
-
-```
-
-#### 5.1.5. Contest Message Examples
-
-**Contest Not Found:**
-
-```json
-
-{
-
-  "code": 404,
-
-  "messageCode": "MSG018",
-
-  "message": "Contest not found",
-
-  "data": null
-
-}
-
-```
-
-**Invalid Contest State:**
-
-```json
-
-{
-
-  "code": 409,
-
-  "messageCode": "MSG019",
-
-  "message": "Invalid contest state",
-
-  "data": null
-
-}
-
-```
-
-#### 5.1.6. Submission Message Examples
-
-**File Too Large:**
-
-```json
-
-{
-
-  "code": 413,
-
-  "messageCode": "MSG021",
-
-  "message": "File too large",
-
-  "data": null
-
-}
-
-```
-
-**Negative Proof Not Verified:**
-
-```json
-
-{
-
-  "code": 409,
-
-  "messageCode": "MSG025",
-
-  "message": "Negative proof not verified",
-
-  "data": null
-
-}
-
-```
-
-#### 5.1.7. Archive & Exhibition Message Examples
-
-**Results Already Locked:**
-
-```json
-
-{
-
-  "code": 409,
-
-  "messageCode": "MSG024",
-
-  "message": "Results already locked",
-
-  "data": null
-
-}
-
-```
-
-**Image Processing Failed:**
-
-```json
-
-{
-
-  "code": 500,
-
-  "messageCode": "MSG027",
-
-  "message": "Image processing failed",
-
-  "data": null
-
-}
-
-```
-
-#### 5.1.8. Message Code Management Rules
-
-- Mỗi mã MSG phải có ý nghĩa duy nhất.
-
-- Không sử dụng cùng một mã MSG cho các trường hợp lỗi không liên quan.
-
-- Backend chịu trách nhiệm xác định mã MSG tương ứng với kết quả xử lý.
-
-- Web và Mobile không nên dựa vào nội dung `message` để phân loại lỗi.
-
-- Nội dung thông báo có thể được dịch sang ngôn ngữ khác mà không làm thay đổi mã MSG.
-
-- Không được trả về thông tin bí mật, mật khẩu, token hoặc chi tiết hệ thống trong thông báo lỗi.
-
-- Các mã đã được sử dụng chính thức không nên bị thay đổi ý nghĩa.
-
-- Khi cần thêm mã mới, phải cập nhật tài liệu API Contracts và thông báo cho nhóm.
-
-#### 5.1.9. Integration Requirements
-
-**Backend:**
-
-- Ánh xạ lỗi và kết quả xử lý sang HTTP Status phù hợp.
-
-- Trả về thông báo nhất quán.
-
-- Không để lộ stack trace hoặc thông tin nhạy cảm.
-
-- Sử dụng danh mục mã MSG sau khi được nhóm phê duyệt.
-
-**Web Next.js:**
-
-- Xử lý lỗi dựa trên HTTP Status và mã MSG nếu được hỗ trợ.
-
-- Hiển thị thông báo dễ hiểu cho người dùng.
-
-- Không phụ thuộc vào việc so sánh chuỗi thông báo tiếng Anh.
-
-**Mobile Flutter:**
-
-- Sử dụng cùng danh mục MSG với Web.
-
-- Xử lý các lỗi xác thực, phân quyền và validation một cách thống nhất.
-
-- Hỗ trợ hiển thị thông báo phù hợp trên giao diện Mobile.
-
-**Implementation Note:** Danh mục `MSG001–MSG028`, cách ánh xạ HTTP Status và trường `messageCode` trong mục này đều là đề xuất. Trước khi áp dụng, nhóm cần đối chiếu với SRS, các tài liệu nghiệp vụ và hợp đồng API đã thống nhất.
+Dùng danh mục mã và ngữ nghĩa tại [SRS §6.3](srs.md#63-danh-mục-mã-thông-báo-ứng-dụng-application-messages-catalog-msg001-đến-msg028). HTTP status phản ánh kết quả request. Việc truyền mã MSG trong response cần được định nghĩa theo từng hợp đồng.
 
 ### 5.2. Validation & Error Handling
 
@@ -2543,17 +2225,17 @@ Các API Authentication phải xử lý những trường hợp lỗi sau:
 
 |---|---|---|
 
-| Email hoặc mật khẩu không đúng | 401 | `MSG009` |
+| Email hoặc mật khẩu không đúng | 401 | `MSG004` |
 
-| Access Token hết hạn | 401 | `MSG010` |
+| Access Token hết hạn | 401 | — |
 
-| Token không hợp lệ | 401 | `MSG011` |
+| Token không hợp lệ | 401 | — |
 
-| Người dùng không có quyền | 403 | `MSG012` |
+| Người dùng không có quyền | 403 | `MSG005` |
 
-| Tài khoản bị khóa | 403 | `MSG013` |
+| Tài khoản bị khóa | 403 | — |
 
-| Email đã được đăng ký | 409 | `MSG015` |
+| Email đã được đăng ký | 409 | — |
 
 **Example:**
 
@@ -2589,13 +2271,13 @@ Các API Contest phải kiểm tra dữ liệu và trạng thái cuộc thi.
 
 |---|---|---|
 
-| Dữ liệu cuộc thi không hợp lệ | 400 | `MSG017` |
+| Dữ liệu cuộc thi không hợp lệ | 400 | — |
 
-| Không tìm thấy cuộc thi | 404 | `MSG018` |
+| Không tìm thấy cuộc thi | 404 | — |
 
-| Trạng thái cuộc thi không cho phép thao tác | 409 | `MSG019` |
+| Trạng thái cuộc thi không cho phép thao tác | 409 | — |
 
-| Người dùng không có quyền quản lý | 403 | `MSG012` |
+| Người dùng không có quyền quản lý | 403 | `MSG005` |
 
 **Example:**
 
@@ -2631,15 +2313,15 @@ Các API Submission phải kiểm tra dữ liệu bài dự thi và file đượ
 
 |---|---|---|
 
-| Dữ liệu bài dự thi không hợp lệ | 400 | `MSG020` |
+| Dữ liệu bài dự thi không hợp lệ | 400 | — |
 
-| File vượt giới hạn kích thước | 413 | `MSG021` |
+| File vượt giới hạn kích thước | 413 | `MSG011` |
 
-| Định dạng file không hỗ trợ | 415 | `MSG022` |
+| Định dạng file không hỗ trợ | 415 | `MSG011` |
 
-| Không tìm thấy bài dự thi | 404 | `MSG023` |
+| Không tìm thấy bài dự thi | 404 | — |
 
-| Người dùng không có quyền nộp bài | 403 | `MSG012` |
+| Người dùng không có quyền nộp bài | 403 | `MSG005` |
 
 **Example:**
 
@@ -2679,15 +2361,15 @@ Các API Archive & Exhibition phải kiểm tra điều kiện công bố kết 
 
 |---|---|---|
 
-| Kết quả đã khóa | 409 | `MSG024` |
+| Kết quả đã khóa | 409 | — |
 
-| Negative Proof chưa xác minh | 409 | `MSG025` |
+| Negative Proof chưa xác minh | 409 | `MSG026` |
 
-| Không tìm thấy tác phẩm triển lãm | 404 | `MSG026` |
+| Không tìm thấy tác phẩm triển lãm | 404 | — |
 
-| Xử lý ảnh thất bại | 500 | `MSG027` |
+| Xử lý ảnh thất bại | 500 | — |
 
-| Người dùng không có quyền quản lý | 403 | `MSG012` |
+| Người dùng không có quyền quản lý | 403 | `MSG005` |
 
 **Example:**
 
@@ -2769,13 +2451,13 @@ Backend phải thực hiện các yêu cầu sau:
 
 - Cấu trúc `{ code, message, data }` là chuẩn Response theo yêu cầu Jira.
 
-- Danh mục `MSG001–MSG028` ở mục 8 hiện là đề xuất, chưa được xác nhận chính thức.
+- Dùng danh mục thông báo trong SRS §6.3.
 
 - Trường `messageCode` là phương án mở rộng tùy chọn, không bắt buộc khi nhóm chưa phê duyệt.
 
 - Cấu trúc `data.errors` là đề xuất cho trường hợp validation nhiều trường.
 
-- OpenAPI hiện tại vẫn sử dụng một số cấu trúc lỗi khác như `{ error: "..." }` và `{ success: false, message: "..." }`.
+- Các ví dụ module cũ còn trường `success` hoặc `error.code` minh họa hợp đồng dự kiến. Dùng envelope được mô tả trong OpenAPI cho route hiện hành.
 
 - Backend, Web và Mobile cần thống nhất hợp đồng API trước khi thay đổi cách xử lý lỗi trong mã nguồn.
 
@@ -3057,7 +2739,7 @@ Authorization: Bearer <access_token>
 
 #### 5.3.7. Message Code Integration
 
-Web và Mobile sử dụng chung danh mục mã thông báo `MSG001–MSG028` sau khi được nhóm phê duyệt.
+Dùng danh mục thông báo trong SRS §6.3.
 
 **Integration Rules:**
 
@@ -3199,7 +2881,7 @@ Các nội dung cần được nhóm xác nhận trước khi triển khai chín
 
 1. Cấu trúc Response `{ code, message, data }`.
 
-2. Danh mục và ý nghĩa chính thức của `MSG001–MSG028`.
+2. Cách truyền mã thông báo từ danh mục SRS §6.3 trong từng API.
 
 3. Có sử dụng trường `messageCode` hay không.
 
@@ -3214,3 +2896,10 @@ Các nội dung cần được nhóm xác nhận trước khi triển khai chín
 8. Quy ước tiền tố và phiên bản API.
 
 Sau khi được phê duyệt, tài liệu cần được đồng bộ với OpenAPI và mã nguồn Backend để đảm bảo các Client sử dụng cùng một hợp đồng API.
+## 6. Danh mục endpoint
+
+[OpenAPI](openapi.yaml) và [Postman Film Contest](film-contest.postman_collection.json) cùng liệt kê **33** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **36** endpoint dự kiến đã có method và path trong các module. OpenAPI ghi trạng thái qua `x-implementation`. Các mục trong thư mục Postman `Planned` dùng để tra cứu đường dẫn và module chứa DTO.
+
+Các chức năng còn thiếu method/path trong đặc tả gồm quản lý role và permission, tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, quản lý hạng mục và vòng chấm, sửa hoặc rút bài thi, bảng điểm cá nhân và điều phối lệch điểm. Xem yêu cầu nghiệp vụ tương ứng tại [SRS](srs.md#22-use-case-catalog-43-ca-sử-dụng-cốt-lõi).
+
+Route công khai `GET /api/v1/contests/{id}/results` hiện dùng dữ liệu giải và điểm mẫu. DTO lịch trình của `POST /api/v1/contests` hiện dùng hai mốc `startAt` và `endAt`. Quy tắc công bố kết quả và lịch trình đích được mô tả trong Module 03 và 08.

@@ -133,7 +133,7 @@ Lưu trữ thông tin cấu hình cốt lõi, vòng đời và các mốc thời
 > - `CREATE UNIQUE INDEX idx_contests_slug ON contests(slug) WHERE is_deleted = FALSE;`
 > - `CREATE INDEX idx_contests_status ON contests(status) WHERE is_deleted = FALSE;`
 > - `CREATE INDEX idx_contests_created_by ON contests(created_by);`
-> - `CONSTRAINT check_contest_schedule CHECK (registration_start_at < submission_deadline_at AND submission_deadline_at < judging_start_at AND judging_start_at < judging_deadline_at);`
+> - `CONSTRAINT check_contest_schedule CHECK (registration_start_at < submission_deadline_at AND submission_deadline_at < judging_start_at AND judging_start_at < judging_deadline_at AND (published_at IS NULL OR judging_deadline_at < published_at));`
 
 ---
 
@@ -213,11 +213,11 @@ Bảng gán trách nhiệm chấm điểm giữa Giám khảo chuyên môn và H
 | :--- | :--- | :--- | :--- |
 | **BR-02** | Phân quyền Khởi tạo | Chỉ tài khoản có Role `ORGANIZER` hoặc `ADMIN` mới được tạo và cấu hình cuộc thi. Organizer chỉ có quyền sửa cuộc thi do chính mình tạo ra (`created_by = current_user_id`). | HTTP 403 Forbidden (`MSG005`) |
 | **BR-03** | Xóa mềm Dữ liệu | Khi cuộc thi bị xóa, cập nhật `is_deleted = TRUE`. Không xóa vật lý các bản ghi liên quan (hạng mục, tiêu chí, bài thi). | Soft Delete Filter |
-| **BR-06** | Yêu cầu Đối chứng Âm bản | Cấu hình tại bảng `contest_categories.require_negative_proof_upfront`. Nếu `TRUE`, thí sinh phải upload âm bản ngay lúc nộp; nếu `FALSE`, chỉ bắt buộc đối với tác phẩm lọt vào Chung kết/Xét giải. | Validate tại Form Nộp bài |
+| **BR-06** | Yêu cầu Đối chứng Âm bản | Cấu hình tại bảng `contest_categories.require_negative_proof_upfront`. Nếu `TRUE`, thí sinh phải upload âm bản ngay lúc nộp; nếu `FALSE`, yêu cầu âm bản hoặc Contact Sheet đã xác minh đối với tác phẩm lọt vào Chung kết/Xét giải. | Validate tại Form Nộp bài |
 | **BR-08** | Lịch trình Tuần tự Bắt buộc | Bắt buộc tuân thủ thứ tự thời gian: $T_{reg\_start} < T_{sub\_deadline} < T_{judge\_start} < T_{judge\_deadline} < T_{publish}$. Khi $CurrentTime \ge T_{sub\_deadline}$, hệ thống tự động khóa cổng nhận bài và không cho phép thí sinh sửa/nộp mới. | HTTP 400 Bad Request (`MSG008`, `MSG014`) |
 | **BR-15** | Chuẩn hóa Trọng số Tiêu chí | Tổng trọng số các tiêu chí chấm trong 1 hạng mục phải bằng đúng $1.0000$ (100%): $\sum_{i=1}^n w_i = 1.0000$. Công thức tính điểm của một giám khảo: $S_{judge} = \sum_{i=1}^n (s_i \times w_i)$. | HTTP 422 Unprocessable (`MSG007`) |
 | **BR-16** | Tính Bất biến của Kết quả | Khi cuộc thi chuyển sang trạng thái `PUBLISHED`, toàn bộ điểm số, tiêu chí, giải thưởng và thông tin bài thi chuyển sang chế độ Read-Only vĩnh viễn. Không cho phép bất kỳ ai sửa đổi dữ liệu. | HTTP 403 / DB Trigger Lock |
-| **BR-20** | Tối thiểu 3 Giám khảo Quorum | Trước khi cuộc thi chuyển trạng thái sang `JUDGING`, mỗi hạng mục bắt buộc phải có ít nhất 3 giám khảo đang hoạt động (`is_active = TRUE`). | Chặn chuyển trạng thái (`MSG020`) |
+| **BR-20** | Tối thiểu 3 Giám khảo Quorum | Trước khi cuộc thi chuyển trạng thái sang `JUDGING`, mỗi hạng mục bắt buộc phải có ít nhất 3 giám khảo đang hoạt động (`is_active = TRUE`). | HTTP 422 Unprocessable |
 | **BR-21** | Ngăn chặn Xung đột Lợi ích | Một người dùng đã được gán làm `Judge` hoặc `Organizer` trong một cuộc thi thì bị hệ thống chặn không cho phép nộp bài thi (làm `Participant`) trong chính cuộc thi đó. Ngược lại, nếu tài khoản đã có bài dự thi, không được phép gán làm Giám khảo. | HTTP 400 Bad Request (`MSG022`) |
 | **BR-24** | Khóa Sửa & Rút Bài thi | Thí sinh chỉ được sửa thông số hoặc rút bài khi còn trong hạn nhận bài ($CurrentTime < T_{sub\_deadline}$) và bài thi chưa vào trạng thái đang chấm. | HTTP 403 Forbidden |
 | **BR-25** | Trung bình cộng Điểm Cuối | Điểm chung cuộc của bài thi là trung bình cộng điểm của toàn bộ giám khảo được phân công chấm hạng mục đó: $S_{final} = \frac{1}{M}\sum_{k=1}^M S_{judge\_k}$, làm tròn 2 chữ số thập phân. | Auto-calculated in Leaderboard |
@@ -234,7 +234,7 @@ stateDiagram-v2
     DRAFT --> OPEN : Đạt mốc registration_start_at & Đủ điều kiện cấu hình
     OPEN --> UNDER_REVIEW : Đạt mốc submission_deadline_at (Tự động khóa nộp bài)
     UNDER_REVIEW --> JUDGING : Hoàn thành thẩm định AI/Âm bản & Đủ tối thiểu 3 Giám khảo (BR-20)
-    JUDGING --> PUBLISHED : Đạt mốc judging_deadline_at, giải quyết xong lệch điểm (BR-14) & Xác minh âm bản giải thưởng (BR-06)
+    JUDGING --> PUBLISHED : Đạt mốc công bố kết quả, giải quyết xong lệch điểm (BR-14) & Xác minh âm bản giải thưởng (BR-06)
     PUBLISHED --> ARCHIVED : Chuyển toàn bộ tác phẩm vào Kho Lưu trữ Di sản Số (BR-17)
     ARCHIVED --> [*]
 ```
@@ -245,8 +245,8 @@ stateDiagram-v2
 | :--- | :--- | :--- | :--- | :--- |
 | `DRAFT` | `OPEN` | Organizer / Scheduler | - Cấu hình ít nhất 1 Category hợp lệ.<br>- Mỗi Category có $\sum weight = 100\%$ (BR-15).<br>- Lịch trình thời gian hợp lệ (BR-08). | Gửi thông báo tới cộng đồng; mở nút "+ Submit Entry" trên giao diện công chúng. |
 | `OPEN` | `UNDER_REVIEW`| System Cron Worker | $CurrentTime \ge submission\_deadline\_at$. | Khóa hoàn toàn API nộp và sửa bài (`MSG014`); đẩy toàn bộ bài thi sang hàng đợi thẩm định AI. |
-| `UNDER_REVIEW` | `JUDGING` | Organizer | - Toàn bộ bài thi đã có kết luận thẩm định AI.<br>- Mỗi hạng mục có $\ge 3$ Giám khảo hoạt động (BR-20). | Mở quyền truy cập Lightbox Workspace cho Giám khảo; kích hoạt bộ lọc Ẩn danh kép (BR-12). |
-| `JUDGING` | `PUBLISHED` | Organizer | - $100\%$ Giám khảo đã khóa bảng điểm (UC-33).<br>- Không còn bài thi bị cờ lệch điểm `DISCREPANCY_CONFLICT` (BR-14).<br>- Toàn bộ bài trong cơ cấu giải thưởng đã có âm bản hợp lệ (BR-06). | Kích hoạt khóa bất biến (BR-16); tính điểm trung bình (BR-25); công bố bảng vàng; gửi email thông báo thí sinh. |
+| `UNDER_REVIEW` | `JUDGING` | Organizer | - Đã tới mốc `judging_start_at`.<br>- Toàn bộ bài thi đã có kết luận thẩm định AI.<br>- Mỗi hạng mục có $\ge 3$ Giám khảo hoạt động (BR-20). | Mở quyền truy cập Lightbox Workspace cho Giám khảo; kích hoạt bộ lọc Ẩn danh kép (BR-12). |
+| `JUDGING` | `PUBLISHED` | Organizer | - Đã tới mốc công bố theo BR-08.<br>- $100\%$ Giám khảo đã khóa bảng điểm (UC-33).<br>- Không còn bài thi bị cờ lệch điểm `DISCREPANCY_CONFLICT` (BR-14).<br>- Toàn bộ bài vào chung kết hoặc xét giải đã có âm bản hoặc Contact Sheet hợp lệ (BR-06). | Kích hoạt khóa bất biến (BR-16); tính điểm trung bình (BR-25); công bố bảng vàng; gửi email thông báo thí sinh. |
 | `PUBLISHED` | `ARCHIVED` | Organizer / Admin | Cuộc thi kết thúc $\ge 30$ ngày sau khi công bố giải. | Sinh ảnh tối ưu kèm watermark; lưu trữ vĩnh viễn vào Digital Archive (BR-17). |
 
 ---
@@ -426,7 +426,7 @@ stateDiagram-v2
     ```json
     {
       "success": false,
-      "code": "MSG020_QUORUM_FAIL",
+      "code": 422,
       "message": "Không thể chuyển trạng thái sang JUDGING: Hạng mục 'CAT-COLOR-135' mới chỉ có 2 giám khảo (Yêu cầu tối thiểu 3 giám khảo hoạt động theo BR-20)."
     }
     ```

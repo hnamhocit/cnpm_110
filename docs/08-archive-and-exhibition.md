@@ -233,11 +233,11 @@ Mô tả vòng đời công bố kết quả cuộc thi và khóa dữ liệu th
 
 **Quy trình công bố và lưu trữ kết quả:**
 
-1. **IN_JUDGING (Đang chấm thi)**
+1. **JUDGING (Đang chấm thi)**
    - Giám khảo đang thực hiện đánh giá tác phẩm.
    - Khi hoàn tất chấm điểm và giải quyết các vấn đề liên quan, kết quả được chuẩn bị để xác nhận.
 
-2. **RESULTS_FINALIZED (Đã xác nhận kết quả)**
+2. **Chốt kết quả trong giai đoạn JUDGING**
    - Organizer xác nhận kết quả cuối cùng.
    - Kiểm tra các điều kiện trước khi công bố chính thức.
 
@@ -254,21 +254,20 @@ Mô tả vòng đời công bố kết quả cuộc thi và khóa dữ liệu th
 
 | State | Description |
 |---|---|
-| `IN_JUDGING` | Giám khảo đang thực hiện chấm điểm |
-| `RESULTS_FINALIZED` | Điểm số và kết quả đã được tổng hợp, xác nhận |
+| `JUDGING` | Giám khảo đang thực hiện chấm điểm |
 | `PUBLISHED` | Kết quả được công bố chính thức, toàn bộ điểm số và giải thưởng bị khóa |
 | `ARCHIVED` | Kết quả được lưu trữ để tra cứu lâu dài |
 
 **Transition Rules:**
 
-1. `IN_JUDGING → RESULTS_FINALIZED`
+1. Chốt kết quả trong `JUDGING`
    - Các giám khảo đã hoàn thành và khóa điểm.
    - Các vấn đề liên quan đến kết quả đã được giải quyết.
    - Organizer xác nhận kết quả cuối cùng.
 
-2. `RESULTS_FINALIZED → PUBLISHED`
+2. `JUDGING → PUBLISHED`
    - Organizer thực hiện chức năng Publish Official Results.
-   - Tất cả tác phẩm đạt giải đã được xác minh bằng chứng âm bản hợp lệ theo BR-06.
+   - Đã tới thời điểm công bố và toàn bộ tác phẩm vào chung kết hoặc xét giải đã được xác minh âm bản hoặc Contact Sheet hợp lệ theo BR-06.
    - Hệ thống công bố kết quả và hiển thị danh tính tác giả.
    - Toàn bộ điểm số, thứ hạng và thông tin tác phẩm đạt giải chuyển sang Read-Only theo BR-16.
 
@@ -277,7 +276,7 @@ Mô tả vòng đời công bố kết quả cuộc thi và khóa dữ liệu th
    - Dữ liệu kết quả vẫn ở trạng thái Read-Only.
    - Các tác phẩm được chuẩn bị để hiển thị trong triển lãm trực tuyến.
 
-**Lưu ý:** `RESULTS_FINALIZED` và `ARCHIVED` là trạng thái đề xuất để mô tả vòng đời. SRS xác định rõ trạng thái `PUBLISHED` nhưng không bắt buộc hai trạng thái này phải là giá trị của `contests.status`.
+Các trạng thái cuộc thi dùng chung với [Module 03](03-contest-lifecycle.md#3-state-machine--lifecycle-máy-trạng-thái-cuộc-thi).
 
 ### 3.2. Exhibition Image Lifecycle
 

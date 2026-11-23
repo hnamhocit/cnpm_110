@@ -13,7 +13,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- Định nghĩa các kiểu ENUM dùng chung
 CREATE TYPE user_role AS ENUM ('ADMIN', 'ORGANIZER', 'JUDGE', 'PARTICIPANT');
 CREATE TYPE contest_status AS ENUM ('DRAFT', 'UPCOMING', 'OPEN', 'JUDGING', 'COMPLETED', 'ARCHIVED');
-CREATE TYPE submission_status AS ENUM ('DRAFT', 'SUBMITTED', 'VERIFYING', 'FLAGGED', 'APPROVED', 'REJECTED');
+CREATE TYPE submission_status AS ENUM ('DRAFT', 'SUBMITTED', 'VERIFYING_AI', 'AI_FLAGGED_HIGH_RISK', 'DUPLICATE_SUSPECT', 'PROOF_REQUESTED', 'PROOF_SUBMITTED', 'APPROVED_FOR_JUDGING', 'DISQUALIFIED', 'DISQUALIFIED_NO_PROOF', 'WITHDRAWN');
 CREATE TYPE storage_provider AS ENUM ('CLOUDFLARE_R2', 'AWS_S3', 'CLOUDINARY');
 CREATE TYPE asset_type AS ENUM ('ORIGINAL_SCAN', 'NEGATIVE_PROOF', 'CONTACT_SHEET', 'THUMBNAIL_WEBP', 'WATERMARKED_PREVIEW');
 ```
@@ -92,15 +92,9 @@ WITH (m = 16, ef_construction = 64);
 
 | Mã Rule | Tên quy định | Chi tiết logic kỹ thuật & Điều kiện kiểm tra hợp lệ |
 | :--- | :--- | :--- |
-| **BR-20** | **Kiểm soát Truy cập & URL có thời hạn (Signed / Presigned URLs)** | • **Tuyệt đối không public bucket** ảnh scan gốc (`ORIGINAL_SCAN`) và ảnh âm bản (`NEGATIVE_PROOF`).<br>• Mọi hành động upload từ Web / Mobile App đều phải thông qua **Presigned Upload URL** được máy chủ cấp phát (có hiệu lực trong **15 phút**).<br>• Khi Giám khảo chấm bài, hệ thống cấp phát **Signed Download URL** có hiệu lực tối đa **60 phút**.<br>• Chỉ các ảnh thumbnail và ảnh triển lãm thuộc `Digital Archive` sau khi kết thúc giải mới được phân phối công khai qua CDN. |
-| **BR-21** | **Ràng buộc Toàn vẹn Tệp & Giới hạn Kích thước** | • Kích thước tệp tải lên tối đa: **50 MB** đối với ảnh scan (`TIFF`, `JPEG high-quality`) và **20 MB** đối với ảnh âm bản đối chứng.<br>• Phải kiểm tra trùng mã băm `sha256_hash` trên bảng `digital_assets`: Nếu cùng một thí sinh nộp lại tệp byte-to-byte giống hệt, chặn ngay từ khâu tiền xử lý.<br>• Bắt buộc xác minh Content-Type chuẩn thông qua Magic Bytes trên máy chủ sau khi client upload hoàn tất. |
-| **BR-22** | **Tối ưu Hóa Truy vấn Vector & Tìm kiếm Tương đồng (Similarity Threshold)** | • Khi truy vấn tìm bài thi tương đồng trong cùng một cuộc thi:<br>  ```sql
-  SELECT id, title, 1 - (image_embedding <=> query_vector) AS similarity
-  FROM submissions
-  WHERE contest_id = :contestId AND id != :currentId
-  ORDER BY image_embedding <=> query_vector ASC
-  LIMIT 5;
-  ```<br>• Sử dụng metric Cosine (`<=>`). Nếu độ tương đồng $> 0.90$, gắn cờ cảnh báo nghi vấn sao chép. |
+| **BR-02, BR-12, BR-17** | Truy cập tệp | Bảo vệ ảnh scan gốc và ảnh âm bản trong private bucket. Presigned URL tải lên có hiệu lực 15 phút. Signed URL đọc ảnh có hiệu lực tối đa 60 phút và yêu cầu quyền truy cập. CDN công khai phục vụ ảnh triển lãm đã qua xử lý. |
+| **BR-07** | Tiêu chuẩn ảnh scan | JPEG/JPG hoặc TIFF, tối đa 25 MiB, cạnh ngắn tối thiểu 2000 px và không có watermark cá nhân. Backend kiểm tra định dạng thực tế và tính toàn vẹn sau upload. Giới hạn 20 MiB cho ảnh đối chứng là quy ước riêng của module. |
+| **BR-10** | Tương đồng ảnh | So sánh với ảnh đã có trong hệ thống. Gắn cờ `DUPLICATE_SUSPECT` nếu Hamming distance của pHash ≤ 5 hoặc cosine similarity ≥ 0.92. Lưu liên kết giữa hai bài để Ban tổ chức đối sánh. |
 
 ---
 
@@ -131,8 +125,8 @@ Quy trình tải tệp từ Web/Mobile lên Cloud Storage:
 
 - Tệp gốc và ảnh âm bản phải được lưu trong vùng lưu trữ riêng tư.
 - Client không được truy cập trực tiếp bằng Access Key hoặc Secret Key của Cloud Storage.
-- Presigned Upload URL có thời hạn 15 phút theo BR-20.
-- Signed Download URL dành cho người có quyền truy cập có thời hạn tối đa 60 phút theo BR-20.
+- Presigned Upload URL có thời hạn 15 phút theo chính sách lưu trữ của module.
+- Signed Download URL dành cho người có quyền truy cập có thời hạn tối đa 60 phút theo chính sách lưu trữ của module.
 - Các bước trên mô tả quy trình thiết kế, chưa xác nhận tất cả endpoint đã được triển khai trong Backend.
 
 ---

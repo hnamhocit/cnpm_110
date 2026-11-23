@@ -797,7 +797,7 @@ export const CreateInternalUserSchema = z.object({
 ---
 
 ### 4.12 Quản trị viên Khóa / Mở khóa Tài khoản (Admin Lock/Unlock Account)
-- **Endpoint**: `PATCH /api/v1/users/:id/status`
+- **Endpoint**: `PATCH /api/v1/users/{id}/status`
 - **Quyền truy cập**: Authenticated (`ADMIN` - permission `users:lock_unlock`)
 - **Header Requirements**:
   ```http
@@ -809,7 +809,7 @@ export const CreateInternalUserSchema = z.object({
 ```json
 {
   "status": "LOCKED",
-  "reason": "Phát hiện dấu hiệu nộp ảnh kỹ thuật số giả lập màu phim và cố tình làm sai lệch siêu dữ liệu (Vi phạm BR-04, BR-18)."
+  "reason": "Phát hiện dấu hiệu nộp ảnh kỹ thuật số giả lập màu phim và cố tình làm sai lệch siêu dữ liệu (Vi phạm quy chế cuộc thi)."
 }
 ```
 

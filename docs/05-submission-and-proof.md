@@ -126,11 +126,11 @@ Lưu vết toàn bộ các quyết định hành chính nhạy cảm của Ban t
 | :--- | :--- | :--- | :--- |
 | **BR-03** | Xóa mềm Bản ghi | Cập nhật `is_deleted = TRUE` khi người dùng xóa bài thi. Tuyệt đối không xóa cứng khỏi cơ sở dữ liệu. | Soft Delete Filter |
 | **BR-05** | Chống Nộp Trùng Khung hình | Kiểm tra bộ ba `(contest_id, roll_id, frame_number)`. Nếu cặp cuộn phim và số khung hình này đã tồn tại trong cuộc thi ở trạng thái hợp lệ, từ chối nộp bài mới. | HTTP 400 Bad Request (`MSG012`) |
-| **BR-06** | Bắt buộc Âm bản (Upfront hoặc Xét Giải) | Cấu hình tại `contest_categories.require_negative_proof_upfront`: nếu `TRUE`, thí sinh phải upload 1-3 ảnh âm bản ngay khi nộp bài; nếu `FALSE`, chỉ bắt buộc khi tác phẩm lọt vòng Chung kết/xét Giải. Trong mọi trường hợp, bài xét giải phải có `submission_proofs` với `review_status = 'VALID'`; nếu BTC công bố giải mà thiếu âm bản hợp lệ, hệ thống chặn lại. | Chặn Công bố (`MSG026`) |
+| **BR-06** | Bắt buộc Âm bản (Upfront hoặc Xét Giải) | Cấu hình tại `contest_categories.require_negative_proof_upfront`: nếu `TRUE`, thí sinh phải upload 1-3 ảnh âm bản ngay khi nộp bài; nếu `FALSE`, chỉ bắt buộc khi tác phẩm lọt vòng Chung kết/xét Giải. Trong mọi trường hợp, bài vào chung kết hoặc xét giải phải có ảnh dải phim âm bản hoặc Contact Sheet trong `submission_proofs` với `review_status = 'VALID'`; nếu BTC công bố giải mà thiếu âm bản hợp lệ, hệ thống chặn lại. | Chặn Công bố (`MSG026`) |
 | **BR-07** | Tiêu chuẩn Kỹ thuật File Ảnh | Tệp ảnh scan tải lên bắt buộc phải là định dạng JPEG hoặc TIFF; dung lượng tối đa 25MB (26,214,400 bytes); cạnh ngắn nhất tối thiểu 2000px; không chứa chữ ký cá nhân (Watermark). | HTTP 400 Bad Request (`MSG011`) |
 | **BR-08** | Khóa Cổng Theo Thời hạn | Thí sinh chỉ được nộp bài hoặc chỉnh sửa bài thi khi $CurrentTime < submission\_deadline\_at$. Khi quá hạn, toàn bộ thao tác nộp mới hoặc sửa bài bị từ chối. | HTTP 400 Bad Request (`MSG014`) |
 | **BR-18** | Bắt buộc Nhập Lý do Kiểm duyệt | Mọi thao tác: Yêu cầu âm bản (`REQUEST_PROOF`), Loại bài (`DISQUALIFY`), Gỡ cờ AI (`OVERRIDE_AI_FLAG`) bắt buộc phải truyền trường `reason` tối thiểu 10 ký tự và ghi tự động vào `submission_moderation_logs`. | HTTP 422 Unprocessable (`MSG021`) |
-| **BR-19** | Đồng hồ Đếm ngược 48 Giờ | Khi bài thi chuyển sang `PROOF_REQUESTED`, hệ thống lưu `proof_requested_at = NOW()` và tính `proof_deadline_at = NOW() + INTERVAL '48 hours'`. Một cron worker chạy ngầm định kỳ: Nếu $NOW() > proof\_deadline\_at$ và thí sinh chưa nộp âm bản, tự động chuyển trạng thái bài thi sang `DISQUALIFIED_NO_PROOF`. | Tự động Loại bài Quá hạn |
+| **BR-19** | Đồng hồ Đếm ngược 48 Giờ | Khi bài thi chuyển sang `PROOF_REQUESTED`, hệ thống lưu `proof_requested_at = NOW()` và tính `proof_deadline_at = NOW() + INTERVAL '48 hours'`. Một cron worker chạy ngầm định kỳ: Nếu $NOW() \ge proof\_deadline\_at$ và thí sinh chưa nộp âm bản, tự động chuyển trạng thái bài thi sang `DISQUALIFIED_NO_PROOF`. | Tự động Loại bài Quá hạn |
 | **BR-21** | Chặn Xung đột Lợi ích | Người dùng đã được gán vai trò Judge hoặc Organizer trong một cuộc thi thì bị hệ thống chặn không cho phép nộp bài thi vào chính cuộc thi đó. | HTTP 403 Forbidden (`MSG022`) |
 | **BR-22** | 5 Tham số Kỹ thuật Bắt buộc | Mọi bài thi hợp lệ bắt buộc khai báo tối thiểu: (1) Film Stock, (2) Khổ phim Format, (3) Thân máy Camera, (4) Số Frame, (5) Phòng Lab/Quy trình tráng. | HTTP 422 Unprocessable |
 | **BR-24** | Quy định Sửa & Rút bài | Thí sinh chỉ được phép chỉnh sửa metadata hoặc rút bài (`WITHDRAWN`) khi $CurrentTime < submission\_deadline\_at$ và bài thi chưa chuyển sang vòng chấm điểm (`JUDGING`). Điều kiện chặn theo mốc thời gian của cuộc thi được quy định tại **BR-08**; BR-24 chỉ giới hạn quyền sửa/rút của thí sinh. | HTTP 403 Forbidden |
@@ -145,16 +145,17 @@ Lưu vết toàn bộ các quyết định hành chính nhạy cảm của Ban t
 | :--- | :--- | :--- | :--- | :--- |
 | `DRAFT` | `SUBMITTED` | Participant | Có ảnh scan hợp lệ và đủ 5 tham số kỹ thuật (BR-07, BR-22). | Tạo bản ghi `submitted_at`; đẩy tác vụ AI. |
 | `SUBMITTED` | `VERIFYING_AI` | System | Tác vụ AI Worker được xếp hàng thành công. | Bắt đầu quét AI (BR-09, BR-10). |
+| `VERIFYING_AI` | `DUPLICATE_SUSPECT` | System | pHash Hamming ≤ 5 hoặc cosine similarity ≥ 92% (BR-10). | Liên kết bài trùng để Organizer đối sánh. |
 | `VERIFYING_AI` | `APPROVED_FOR_JUDGING` | System | AI sạch và hạng mục không yêu cầu âm bản upfront (`require_negative_proof_upfront = FALSE`). | Đưa bài vào hàng đợi chấm. |
-| `VERIFYING_AI` | `AI_FLAGGED` | System | $P_{AI} \ge 0.75$ (BR-09) hoặc pHash Hamming $\le 5$ (BR-10). | Gắn cờ, chờ Organizer xác minh. |
+| `VERIFYING_AI` | `AI_FLAGGED_HIGH_RISK` | System | $P_{AI} \ge 0.75$ (BR-09). | Gắn cờ, chờ Organizer xác minh. |
 | `VERIFYING_AI` | `PROOF_SUBMITTED` | System | Hạng mục yêu cầu âm bản upfront và payload nộp bài đã có 1-3 ảnh âm bản (BR-06). | Ghi nhận `submission_proofs` ở trạng thái `PENDING`. |
-| `AI_FLAGGED` | `PROOF_REQUESTED` | Organizer | Organizer xem báo cáo AI và yêu cầu bổ sung âm bản (BR-18). | Lưu `proof_requested_at`, tính `proof_deadline_at = +48h` (BR-19). |
-| `AI_FLAGGED` | `DISQUALIFIED` | Organizer | Phát hiện vi phạm rõ ràng, có lý do (BR-18). | Ghi audit log và gửi thông báo. |
+| `AI_FLAGGED_HIGH_RISK`, `DUPLICATE_SUSPECT` | `PROOF_REQUESTED` | Organizer | Organizer xem báo cáo AI và yêu cầu bổ sung âm bản (BR-19). | Lưu `proof_requested_at`, tính `proof_deadline_at = +48h` (BR-19). |
+| `AI_FLAGGED_HIGH_RISK`, `DUPLICATE_SUSPECT` | `DISQUALIFIED` | Organizer | Phát hiện vi phạm rõ ràng, có lý do (BR-18). | Ghi audit log và gửi thông báo. |
 | `PROOF_REQUESTED` | `PROOF_SUBMITTED` | Participant | Upload 1-3 ảnh âm bản trước `proof_deadline_at` (BR-19). | Ghi nhận `submission_proofs`, chờ Organizer duyệt. |
-| `PROOF_REQUESTED` | `DISQUALIFIED_NO_PROOF` | Cron Worker | $NOW() > proof\_deadline\_at$ và chưa có âm bản (BR-19). | Tự động loại bài, ghi audit log. |
-| `PROOF_SUBMITTED` | `APPROVED_FOR_JUDGING` | Organizer | `submission_proofs.review_status = 'VALID'`. | Đưa bài vào hàng đợi chấm. |
+| `PROOF_REQUESTED` | `DISQUALIFIED_NO_PROOF` | Cron Worker | $NOW() \ge proof\_deadline\_at$ và chưa có âm bản (BR-19). | Tự động loại bài, ghi audit log. |
+| `PROOF_SUBMITTED` | `APPROVED_FOR_JUDGING` | Organizer | `submission_proofs.review_status = 'VALID'`. Với bài từng bị gắn cờ AI rủi ro cao, BTC phải gỡ cờ thủ công kèm lý do và AuditLog (BR-09, BR-18). | Đưa bài vào hàng đợi chấm. |
 | `PROOF_SUBMITTED` | `DISQUALIFIED` | Organizer | Âm bản giả mạo/không khớp khung hình, có lý do (BR-18). | Ghi audit log và gửi thông báo. |
-| `DRAFT`, `SUBMITTED`, `AI_FLAGGED`, `PROOF_REQUESTED` | `WITHDRAWN` | Participant | $CurrentTime < submission\_deadline\_at$ và bài chưa vào `JUDGING` (BR-08, BR-24). | Đánh dấu rút bài; giải phóng cặp `(roll_id, frame_number)` (BR-05). |
+| `DRAFT`, `SUBMITTED`, `AI_FLAGGED_HIGH_RISK`, `PROOF_REQUESTED` | `WITHDRAWN` | Participant | $CurrentTime < submission\_deadline\_at$ và bài chưa vào `JUDGING` (BR-08, BR-24). | Đánh dấu rút bài; giải phóng cặp `(roll_id, frame_number)` (BR-05). |
 
 ---
 
