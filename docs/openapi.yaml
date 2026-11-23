@@ -3,6 +3,7 @@ info:
   title: Film Contest API Specification
   description: Danh mục REST API của Film Contest. x-implementation đánh dấu route đang mount (mounted) hoặc hợp
     đồng module chưa có route (planned). Route đang mount có thể còn lệch nghiệp vụ SRS.
+    Route dùng BearerAuth kiểm tra chữ ký, hạn JWT và trạng thái hoạt động của tài khoản.
   version: 1.0.0
 servers:
 - url: http://localhost:8080
@@ -11,6 +12,7 @@ paths:
   /api/v1/ai/webhook:
     post:
       summary: Nhận kết quả phân tích từ dịch vụ AI
+      description: predictedTags nhận tối đa 5 phần tử. Payload có nhiều hơn 5 thẻ trả 400.
       tags:
       - AI Webhook
       responses:
@@ -84,7 +86,7 @@ paths:
                         type: number
                         minimum: 0
                         maximum: 1
-                  maxItems: 50
+                  maxItems: 5
       x-implementation: mounted
       operationId: postAiWebhook
   /api/v1/auth/forgot-password:
@@ -490,6 +492,7 @@ paths:
   /api/v1/contests/{id}:
     delete:
       summary: Xoá cuộc thi
+      description: Xóa mềm. Organizer chỉ xóa cuộc thi do mình tạo. Cuộc thi đã công bố, hoàn tất, lưu trữ hoặc ngoài phạm vi trả 404.
       tags:
       - Contests
       security:
@@ -550,6 +553,7 @@ paths:
       operationId: getContestsById
     put:
       summary: Cập nhật cuộc thi
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
       tags:
       - Contests
       security:
@@ -1011,6 +1015,7 @@ paths:
   /api/v1/organizer/submissions:
     get:
       summary: Hàng đợi kiểm duyệt bài dự thi
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi.
       tags:
       - Submissions
       responses:
@@ -1077,6 +1082,7 @@ paths:
       operationId: getOrganizerSubmissions
     post:
       summary: Nộp bài dự thi kèm ảnh phim
+      description: Chỉ nhận bài khi cuộc thi ở open hoặc ongoing và trong thời gian nhận bài. Phải có devLabName hoặc devChemistry. Trùng cuộn phim và frame trong cùng cuộc thi với cùng thí sinh trả 409.
       tags:
       - Submissions
       security:
@@ -1116,6 +1122,18 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '415':
           description: Content-Type không phải multipart/form-data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Trùng cuộn phim và frame trong cùng cuộc thi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Khổ phim hoặc số frame không hợp lệ hay thiếu Lab hoặc quy trình tráng
           content:
             application/json:
               schema:
@@ -1165,6 +1183,7 @@ paths:
   /api/v1/organizer/submissions/{id}/ai-analysis:
     get:
       summary: Báo cáo AI của bài thi
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Trường phân tích chưa có dữ liệu trả null, danh sách thẻ chưa có trả []. Bài gốc ngoài cuộc thi hiện tại được ẩn với Organizer.
       tags:
       - Submissions
       responses:
@@ -1181,7 +1200,7 @@ paths:
                       type: integer
                       example: 200
                     data:
-                      type: object
+                      $ref: '#/components/schemas/SubmissionComparison'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1204,6 +1223,7 @@ paths:
   /api/v1/organizer/submissions/{id}/approve:
     post:
       summary: Duyệt bài thi
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài rủi ro AI cao đang bị giữ hoặc bài đã duyệt trả 409. Bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
       tags:
       - Submissions
       responses:
@@ -1229,6 +1249,12 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Trạng thái bài hoặc cờ AI không cho phép thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       security:
       - BearerAuth: []
       requestBody:
@@ -1252,6 +1278,7 @@ paths:
   /api/v1/organizer/submissions/{id}/comparison:
     get:
       summary: Đối sánh ảnh và báo cáo AI
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Trường phân tích chưa có dữ liệu trả null, danh sách thẻ chưa có trả []. Bài gốc ngoài cuộc thi hiện tại được ẩn với Organizer.
       tags:
       - Submissions
       responses:
@@ -1268,7 +1295,7 @@ paths:
                       type: integer
                       example: 200
                     data:
-                      type: object
+                      $ref: '#/components/schemas/SubmissionComparison'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1291,6 +1318,7 @@ paths:
   /api/v1/organizer/submissions/{id}/moderate:
     post:
       summary: Kiểm duyệt bài thi
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF hiện chỉ đổi trạng thái và ghi log, chưa tạo hạn 48 giờ.
       tags:
       - Submissions
       responses:
@@ -1316,6 +1344,12 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Trạng thái bài hoặc cờ AI không cho phép thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
           description: Thiếu lý do kiểm duyệt hợp lệ
           content:
@@ -1355,6 +1389,7 @@ paths:
   /api/v1/organizer/submissions/{id}/reject:
     post:
       summary: Loại bài thi
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài đã bị loại trả 409. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
       tags:
       - Submissions
       responses:
@@ -1380,6 +1415,12 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Trạng thái bài hoặc cờ AI không cho phép thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
           description: Thiếu lý do kiểm duyệt hợp lệ
           content:
@@ -1413,6 +1454,7 @@ paths:
   /api/v1/rbac/manage-contest:
     get:
       summary: API yêu cầu quyền Admin hoặc Organizer
+      description: Bearer token phải hợp lệ và thuộc tài khoản đang hoạt động. Tài khoản không hoạt động trả 401. Vai trò khác Admin hoặc Organizer trả 403.
       tags:
       - RBAC
       security:
@@ -1487,6 +1529,7 @@ paths:
   /api/v1/submissions:
     get:
       summary: Hàng đợi kiểm duyệt bài dự thi
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi.
       tags:
       - Submissions
       responses:
@@ -1553,6 +1596,7 @@ paths:
       operationId: getSubmissions
     post:
       summary: Nộp bài dự thi kèm ảnh phim
+      description: Chỉ nhận bài khi cuộc thi ở open hoặc ongoing và trong thời gian nhận bài. Phải có devLabName hoặc devChemistry. Trùng cuộn phim và frame trong cùng cuộc thi với cùng thí sinh trả 409.
       tags:
       - Submissions
       security:
@@ -1592,6 +1636,18 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '415':
           description: Content-Type không phải multipart/form-data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Trùng cuộn phim và frame trong cùng cuộc thi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Khổ phim hoặc số frame không hợp lệ hay thiếu Lab hoặc quy trình tráng
           content:
             application/json:
               schema:
@@ -1653,6 +1709,7 @@ paths:
   /api/v1/submissions/{id}/ai-analysis:
     get:
       summary: Báo cáo AI của bài thi
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Trường phân tích chưa có dữ liệu trả null, danh sách thẻ chưa có trả []. Bài gốc ngoài cuộc thi hiện tại được ẩn với Organizer.
       tags:
       - Submissions
       responses:
@@ -1669,7 +1726,7 @@ paths:
                       type: integer
                       example: 200
                     data:
-                      type: object
+                      $ref: '#/components/schemas/SubmissionComparison'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1711,6 +1768,7 @@ paths:
   /api/v1/submissions/{id}/approve:
     post:
       summary: Duyệt bài thi
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài rủi ro AI cao đang bị giữ hoặc bài đã duyệt trả 409. Bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
       tags:
       - Submissions
       responses:
@@ -1736,6 +1794,12 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Trạng thái bài hoặc cờ AI không cho phép thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       security:
       - BearerAuth: []
       requestBody:
@@ -1759,6 +1823,7 @@ paths:
   /api/v1/submissions/{id}/comparison:
     get:
       summary: Đối sánh ảnh và báo cáo AI
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Trường phân tích chưa có dữ liệu trả null, danh sách thẻ chưa có trả []. Bài gốc ngoài cuộc thi hiện tại được ẩn với Organizer.
       tags:
       - Submissions
       responses:
@@ -1775,7 +1840,7 @@ paths:
                       type: integer
                       example: 200
                     data:
-                      type: object
+                      $ref: '#/components/schemas/SubmissionComparison'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1798,6 +1863,7 @@ paths:
   /api/v1/submissions/{id}/moderate:
     post:
       summary: Kiểm duyệt bài thi
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF hiện chỉ đổi trạng thái và ghi log, chưa tạo hạn 48 giờ.
       tags:
       - Submissions
       responses:
@@ -1823,6 +1889,12 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Trạng thái bài hoặc cờ AI không cho phép thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
           description: Thiếu lý do kiểm duyệt hợp lệ
           content:
@@ -1881,6 +1953,7 @@ paths:
   /api/v1/submissions/{id}/reject:
     post:
       summary: Loại bài thi
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài đã bị loại trả 409. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
       tags:
       - Submissions
       responses:
@@ -1906,6 +1979,12 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Trạng thái bài hoặc cờ AI không cho phép thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
           description: Thiếu lý do kiểm duyệt hợp lệ
           content:
@@ -2205,6 +2284,9 @@ components:
       - image
       - rollId
       - frameNumber
+      anyOf:
+      - required: [devLabName]
+      - required: [devChemistry]
       properties:
         contestId:
           type: string
@@ -2226,7 +2308,7 @@ components:
           maxLength: 150
         filmFormat:
           type: string
-          maxLength: 50
+          enum: ['135', '120_645', '120_66', '120_67', '4x5']
         isoRated:
           type: integer
           minimum: 1
@@ -2244,12 +2326,15 @@ components:
           maxLength: 100
         frameNumber:
           type: string
-          maxLength: 20
+          pattern: '^[0-9]{1,10}$'
+          description: Số nguyên dương truyền dưới dạng chuỗi. Giới hạn theo khổ phim lần lượt là 39, 16, 12, 10 và 1.
         devLabName:
           type: string
+          minLength: 1
           maxLength: 150
         devChemistry:
           type: string
+          minLength: 1
           maxLength: 50
         scannerModel:
           type: string
@@ -2262,6 +2347,61 @@ components:
           type: string
           format: binary
           description: Ảnh proof tuỳ chọn, tối đa 20 MiB.
+    SubmissionComparison:
+      type: object
+      properties:
+        submissionId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        isAiFlagged:
+          type: boolean
+        aiGeneratedProbability:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+        phashHex:
+          type: string
+          nullable: true
+        duplicateCheck:
+          type: object
+          properties:
+            isSuspect:
+              type: boolean
+            suspectSubmissionId:
+              type: string
+              format: uuid
+              nullable: true
+            hammingDistance:
+              type: integer
+              nullable: true
+            similarityScore:
+              type: number
+              nullable: true
+        grainAnalysis:
+          type: object
+          properties:
+            filmGrainScore:
+              type: number
+              nullable: true
+            assessment:
+              type: string
+              nullable: true
+        predictedTags:
+          type: array
+          items:
+            type: object
+        flagReasons:
+          type: array
+          items:
+            type: string
+        flaggedSubmission:
+          type: object
+        originalSubmission:
+          type: object
+          nullable: true
     Submission:
       type: object
       properties:

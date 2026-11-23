@@ -161,6 +161,14 @@ Lưu vết toàn bộ các quyết định hành chính nhạy cảm của Ban t
 
 ## 4. Shared API Contracts (Hợp đồng API Đa nền tảng Web & Mobile)
 
+### Hành vi Backend đang triển khai
+
+- `POST /api/v1/submissions` và alias `/api/v1/organizer/submissions` nhận multipart từ Participant. Cuộc thi phải ở `open` hoặc `ongoing` và trong khoảng nhận bài theo `startAt`/`endAt` nếu các mốc được đặt. Backend yêu cầu một trong hai trường `devLabName` và `devChemistry`.
+- `frameNumber` là số nguyên dương truyền dưới dạng chuỗi. Giới hạn theo `filmFormat` là `135` → 39, `120_645` → 16, `120_66` → 12, `120_67` → 10 và `4x5` → 1. Sai khổ, vượt giới hạn hoặc thiếu thông tin tráng trả 422. Trùng cuộn–frame trong cùng cuộc thi và cùng tài khoản trả 409. Backend kiểm tra trùng sau khi lấy khóa theo bộ giá trị này trong transaction ghi bài.
+- Danh sách, kiểm duyệt và đối sánh giới hạn Organizer theo cuộc thi do mình tạo. Yêu cầu chi tiết ngoài phạm vi trả 404. Thao tác sửa trạng thái bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
+- Duyệt và gỡ cờ AI trả 409 khi bài vẫn bị giữ do rủi ro cao. `REQUEST_PROOF` lưu trạng thái và log kiểm duyệt. Luồng tải/xác minh đối chứng bổ sung, gỡ cờ rủi ro cao sau xác minh và hạn 48 giờ vẫn cần triển khai.
+
+
 ### 4.1 Yêu cầu Presigned URL Tải Ảnh Scan (`POST /api/v1/submissions/presigned-url`)
 *   **Method**: `POST`
 *   **Path**: `/api/v1/submissions/presigned-url`

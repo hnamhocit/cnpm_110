@@ -168,6 +168,13 @@ Các quy tắc nghiệp vụ của module AI Verification bao gồm:
 
 ## 4. Shared API Contracts (Dùng chung cho Web & Mobile)
 
+### Hành vi Backend đang triển khai
+
+- `POST /api/v1/ai/webhook` nhận `predictedTags` tối đa 5 phần tử. Payload vượt giới hạn trả 400. Cảnh báo lệch hạng mục theo BR-11 vẫn cần triển khai.
+- `GET /api/v1/submissions/{id}/comparison` và `/{id}/ai-analysis` dùng cùng phản hồi, kể cả alias dưới `/api/v1/organizer/submissions`. Xác suất AI, pHash và thông tin grain chưa có trả `null`, danh sách thẻ chưa có trả `[]`. Với Organizer, dữ liệu bài gốc ngoài cuộc thi hiện tại được ẩn.
+- Backend lưu liên kết trùng từ pHash và đang ghi `FLAGGED` hoặc `SUSPICIOUS` theo kết quả phân loại. Các tên trạng thái đích và nhánh cosine similarity vẫn theo phần quy tắc SRS.
+
+
 ### 4.1 Endpoint 1: Kích hoạt quét AI thủ công (Re-scan / Trigger)
 Dành cho Ban tổ chức khi cần kiểm tra lại bài thi nghi vấn.
 

@@ -55,6 +55,8 @@ Cả bốn PR đã được duyệt và merge vào `develop`. Diff của ba merg
 
 ## Sửa lỗi sau rà soát
 
+Hành vi API sau sửa đã được ghi trong [OpenAPI](../openapi.yaml), [Postman](../film-contest.postman_collection.json) và [hợp đồng API](../ai/09-api-contracts.md).
+
 - Web đã khôi phục cấu hình và kiểu dữ liệu để qua TypeScript, dùng phản hồi đã xác thực từ Backend để mở Portal và khôi phục bộ lọc danh sách Organizer. Focus Mode báo rõ phiếu chấm thử chưa được lưu.
 - Backend đã kiểm tra tài khoản còn hoạt động khi dùng access token, giới hạn quyền Organizer theo cuộc thi, kiểm tra trạng thái nhận bài, frame và Lab/quy trình tráng. Ghi bài khóa theo cuộn–frame trong transaction. Kiểm duyệt chặn đổi bài sau công bố và duyệt bài AI rủi ro cao khi chưa có luồng xác minh âm bản. Đối sánh trả giá trị thiếu thay cho số liệu mẫu. Webhook giới hạn 5 tags.
 - Các task giữ REVIEW cho đến khi nghiệm thu các luồng còn thiếu gồm xác thực định danh, lịch 5 mốc, đối chứng 48 giờ, phân loại AI theo SRS và chấm điểm qua API.
