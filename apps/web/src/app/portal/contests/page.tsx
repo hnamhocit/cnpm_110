@@ -35,22 +35,7 @@ export default function OrganizerContestsPage() {
     const fetchContests = async () => {
       try {
         setLoading(true);
-
-        // RBAC: Organizer chỉ thấy cuộc thi do mình quản lý, Admin xem tất cả
-        let url = "/api/v1/contests";
-        try {
-          const userRes = await fetch("/api/auth/me");
-          if (userRes.ok) {
-            const userData = await userRes.json();
-            if (userData.user?.role === "Organizer" && userData.user?.id) {
-              url = `/api/v1/contests?createdBy=${userData.user.id}`;
-            }
-          }
-        } catch {
-          // ignore
-        }
-
-        const res = await http.get(url);
+        const res = await http.get("/api/v1/contests");
         const raw = res.data?.data ?? res.data;
         const items = Array.isArray(raw)
           ? raw

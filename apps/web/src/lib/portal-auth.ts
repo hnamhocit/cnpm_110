@@ -54,6 +54,16 @@ export async function checkPortalAccess(
     return "allow";
   }
 
+  // Khi backend trả về 404 (endpoint chưa mount hoặc đã chuyển router), fallback kiểm tra role trong JWT
+  if (response.status === 404) {
+    const payload = decodeJwtPayload(accessToken);
+    if (payload && canAccessPortal((payload.role as Role) ?? null)) {
+      return "allow";
+    }
+  }
+
   // Ném lỗi với mã lỗi API khi backend trả về 500 hoặc mã lỗi khác
   throw new Error(`Authentication API error: ${response.status}`);
 }
+
+

@@ -56,6 +56,40 @@ export async function generateMetadata({
   };
 }
 
+export async function generateMetadata({
+  params,
+}: ContestDetailPageProps): Promise<Metadata> {
+  const resolvedParams = await params;
+  const contest = await fetchContestDetail(resolvedParams.id);
+
+  if (!contest) {
+    return {
+      title: "Không tìm thấy cuộc thi | Film Contest",
+    };
+  }
+
+  return {
+    title: contest.name,
+    description:
+      contest.description ||
+      `Chi tiết cuộc thi nhiếp ảnh phim ${contest.name} trên nền tảng Film Contest.`,
+    openGraph: {
+      title: `${contest.name} | Film Contest`,
+      description:
+        contest.description ||
+        `Tham gia gửi bài dự thi cho ${contest.name} và khám phá các tác phẩm ảnh phim đoạt giải.`,
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: contest.name,
+      description:
+        contest.description ||
+        `Khám phá cuộc thi ảnh phim ${contest.name} trên nền tảng Film Contest.`,
+    },
+  };
+}
+
 async function fetchContestDetail(id: string): Promise<Contest | null> {
   const apiUrl =
     process.env.API_INTERNAL_URL ??
