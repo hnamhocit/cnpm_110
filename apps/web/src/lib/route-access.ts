@@ -1,7 +1,18 @@
-export type Role = "Admin" | "Organizer" | "Judge" | "Participant";
+export type Role =
+  | "Admin"
+  | "Organizer"
+  | "Judge"
+  | "Participant"
+  | "Contest Organizer"
+  | "Administrator";
 
 // Những Role được phép truy cập Portal quản lý.
-export const PORTAL_ALLOWED_ROLES: readonly Role[] = ["Admin", "Organizer"];
+export const PORTAL_ALLOWED_ROLES: readonly Role[] = [
+  "Admin",
+  "Organizer",
+  "Administrator",
+  "Contest Organizer",
+];
 
 // Kiểm tra một đường dẫn có thuộc Portal không.
 export function isProtectedRoute(pathname: string): boolean {
