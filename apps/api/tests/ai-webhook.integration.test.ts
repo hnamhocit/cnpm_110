@@ -9,7 +9,7 @@ import {
 import { randomBytes, randomUUID } from "node:crypto";
 import { Hono } from "hono";
 import { pool } from "../src/db";
-import aiWebhook from "../src/routes/ai-webhook";
+import aiWebhook from "../src/routes/ai-webhook.route";
 import { db } from "../src/db/index";
 import {
   users,

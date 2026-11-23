@@ -2,11 +2,18 @@
 
 import { LogOut, User } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 type HeaderProps = {
   onMenuClick: () => void;
+};
+
+type CurrentUser = {
+  id?: string;
+  fullName?: string;
+  email?: string;
+  role?: string;
 };
 
 export default function Header({ onMenuClick }: HeaderProps) {
@@ -14,13 +21,39 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const router = useRouter();
   const clearAuth = useAuthStore((state) => state.clear);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [user, setUser] = useState<CurrentUser | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadUser() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data.user) {
+            setUser(data.user);
+          }
+        }
+      } catch {
+        // Not authenticated
+      }
+    }
+    loadUser();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const pageName =
     pathname === "/portal/contests"
       ? "Contests"
       : pathname === "/portal/reports"
         ? "Reports"
-        : "Dashboard";
+        : pathname.startsWith("/portal/contests/judges")
+          ? "Judges Management"
+          : pathname.startsWith("/portal/contests/")
+            ? "Contest Detail"
+            : "Dashboard";
 
   async function handleLogout() {
     try {
@@ -37,6 +70,16 @@ export default function Header({ onMenuClick }: HeaderProps) {
       setIsLoggingOut(false);
     }
   }
+
+  // Nhận diện vai trò từ token / profile người dùng
+  const role = user?.role || "Organizer";
+  const isOrganizer = role === "Organizer";
+  const roleTitle = isOrganizer ? "Ban tổ chức (Organizer)" : "Quản trị viên (Admin)";
+  const roleSubtitle = isOrganizer
+    ? "Ban tổ chức Cuộc thi"
+    : "Quản trị viên Hệ thống";
+  const initials = isOrganizer ? "BTC" : "AD";
+  const displayName = user?.fullName || (isOrganizer ? "Ban Tổ Chức" : "Quản Trị Viên");
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
@@ -70,12 +113,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
       <details className="relative shrink-0">
         <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl p-1.5 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-blue-500 [&::-webkit-details-marker]:hidden">
           <span className="hidden text-sm font-medium text-slate-700 sm:block">
-            Quản trị viên
+            {roleTitle}
           </span>
 
           {/* AVATAR */}
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-sm shadow-blue-600/30">
-            AD
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-sm shadow-blue-600/30">
+            {initials}
           </span>
 
           <span className="hidden text-xs text-slate-400 sm:block">▼</span>
@@ -84,8 +127,15 @@ export default function Header({ onMenuClick }: HeaderProps) {
         {/* PROFILE DROPDOWN */}
         <div className="absolute right-0 top-full z-40 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-3 text-slate-900 shadow-xl">
           <div className="border-b border-slate-100 pb-3">
-            <p className="font-semibold text-slate-900">Tài khoản Quản trị</p>
-            <p className="mt-0.5 text-xs text-slate-500">Workspace Member</p>
+            <p className="font-semibold text-slate-900">{displayName}</p>
+            <p className="mt-0.5 text-xs text-blue-600 font-medium">
+              {roleSubtitle}
+            </p>
+            {user?.email && (
+              <p className="mt-0.5 text-xs text-slate-400 truncate">
+                {user.email}
+              </p>
+            )}
           </div>
 
           <div className="mt-2 space-y-1">

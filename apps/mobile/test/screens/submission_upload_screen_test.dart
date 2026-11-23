@@ -95,6 +95,12 @@ class FakeSubmissionRepository implements SubmissionRepository {
   }) async {
     return const [];
   }
+
+  @override
+  Future<void> uploadNegativeProof({
+    required String submissionId,
+    required ImageAttachment proofImage,
+  }) async {}
 }
 
 void main() {

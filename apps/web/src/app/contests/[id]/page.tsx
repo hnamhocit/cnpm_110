@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ContestCtaButton } from "@/components/contest/contest-cta-button";
 import { RegistrationGuideSection } from "@/components/contest/registration-guide-section";
 import { Footer } from "@/components/home/footer";
 import { Navbar } from "@/components/home/navbar";
@@ -21,7 +22,39 @@ interface ContestDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-export const instant = false;
+export async function generateMetadata({
+  params,
+}: ContestDetailPageProps): Promise<Metadata> {
+  const resolvedParams = await params;
+  const contest = await fetchContestDetail(resolvedParams.id);
+
+  if (!contest) {
+    return {
+      title: "Không tìm thấy cuộc thi | Film Contest",
+    };
+  }
+
+  return {
+    title: contest.name,
+    description:
+      contest.description ||
+      `Chi tiết cuộc thi nhiếp ảnh phim ${contest.name} trên nền tảng Film Contest.`,
+    openGraph: {
+      title: `${contest.name} | Film Contest`,
+      description:
+        contest.description ||
+        `Tham gia gửi bài dự thi cho ${contest.name} và khám phá các tác phẩm ảnh phim đoạt giải.`,
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: contest.name,
+      description:
+        contest.description ||
+        `Khám phá cuộc thi ảnh phim ${contest.name} trên nền tảng Film Contest.`,
+    },
+  };
+}
 
 export async function generateMetadata({
   params,
@@ -200,22 +233,10 @@ export default async function ContestDetailPage({
                   </p>
                 </div>
 
-                <div className="space-y-3">
-                  <a
-                    href="#registration-guide"
-                    className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-600/30 transition-all"
-                  >
-                    <Upload className="h-4 w-4" />
-                    <span>Xem hướng dẫn nộp bài</span>
-                  </a>
-                  <Link
-                    href="/login"
-                    className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-300 transition-colors shadow-sm"
-                  >
-                    <UserCheck className="h-3.5 w-3.5" />
-                    <span>Đăng nhập nộp tác phẩm</span>
-                  </Link>
-                </div>
+                <ContestCtaButton
+                  contestId={contest.id}
+                  contestName={contest.name}
+                />
               </div>
             </div>
           </div>

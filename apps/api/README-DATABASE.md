@@ -60,22 +60,7 @@ Migration khởi tạo tạo các bảng:
 
 Không chạy migration khởi tạo trên database đã có các bảng này, trừ khi lịch sử migration đã được thiết lập đúng. Nếu database đã tồn tại từ trước, cần đối chiếu schema và thiết lập baseline trước khi dùng Drizzle quản lý tiếp.
 
-## 6. Seed default roles
-
-Sau khi migration thành công, chạy:
-
-```bash
-bun run --filter api db:seed
-```
-
-Lệnh seed thêm các role mặc định nếu chưa tồn tại:
-
-- Admin
-- Organizer
-- Judge
-- Participant
-
-## 7. Important notes
+## 6. Important notes
 
 - Không commit `apps/api/.env`.
 - Không tự ý xóa bảng hoặc lịch sử migration trên database dùng chung.

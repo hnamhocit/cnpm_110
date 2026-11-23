@@ -29,16 +29,21 @@ export async function POST(request: Request) {
     cache: "no-store",
   });
 
-  const data = (await response.json().catch(() => ({}))) as LoginResponse;
+  // biome-ignore lint/suspicious/noExplicitAny: response unwrap
+  const rawData = (await response.json().catch(() => ({}))) as any;
+  const data = (rawData?.data && typeof rawData.data === "object" ? rawData.data : rawData) as LoginResponse;
+  const accessToken = data?.accessToken ?? rawData?.accessToken;
+  const refreshToken = data?.refreshToken ?? rawData?.refreshToken;
+  const user = data?.user ?? rawData?.user;
 
-  if (!response.ok || !data.accessToken || !data.refreshToken) {
+  if (!response.ok || !accessToken || !refreshToken) {
     return Response.json(
-      { error: data.error ?? "Đăng nhập thất bại." },
+      { error: data?.error ?? rawData?.error ?? rawData?.message ?? "Đăng nhập thất bại." },
       { status: response.ok ? 502 : response.status },
     );
   }
 
-  await setAuthCookies(data.accessToken, data.refreshToken);
+  await setAuthCookies(accessToken, refreshToken);
 
-  return Response.json({ accessToken: data.accessToken, user: data.user });
+  return Response.json({ accessToken, user });
 }

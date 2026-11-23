@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/contest.dart';
+import '../../models/contest_winner.dart';
 import '../data/contest_repository.dart';
 import '../network/api_exception.dart';
 import 'api_client_provider.dart';
@@ -139,3 +140,10 @@ final contestListProvider =
       ContestListNotifier.new,
       retry: (retryCount, error) => null,
     );
+
+/// BR-16 & DTO 4.9.4: Provider cung cấp kết quả bảng vàng và danh sách tác phẩm đạt giải
+final contestResultsProvider =
+    FutureProvider.family<ContestResults, String>((ref, contestId) async {
+  final repository = ref.watch(contestRepositoryProvider);
+  return repository.fetchContestResults(contestId);
+}, retry: (retryCount, error) => null);

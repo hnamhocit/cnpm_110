@@ -2,7 +2,7 @@
   "info": {
     "name": "Film Contest API",
     "_postman_id": "c1f7b8d4-51e9-4e76-8809-5a507e15d8f2",
-    "description": "Postman Collection cho toàn bộ API của dự án Film Contest Monorepo.",
+    "description": "Các route Hono đang mount và danh mục API dự kiến. Thư mục Planned chỉ dùng để tra cứu đường dẫn. Đặt baseUrl, token và ID theo môi trường trước khi gửi request.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -30,9 +30,56 @@
       "key": "categoryId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "submissionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "rollId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "masterDataId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "exhibitionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "assetId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "aiWebhookSecret",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Trạng thái API và kết nối cơ sở dữ liệu",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
+    },
     {
       "name": "Auth",
       "item": [
@@ -43,7 +90,7 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "const res = pm.response.json();",
+                  "const res = pm.response.json().data || {};",
                   "if (res.accessToken) {",
                   "    pm.collectionVariables.set('accessToken', res.accessToken);",
                   "}",
@@ -68,9 +115,16 @@
               "raw": "{\n  \"fullName\": \"Nguyen Van A\",\n  \"email\": \"participant@example.com\",\n  \"password\": \"Password@123\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "register"]
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
             }
           }
         },
@@ -81,7 +135,7 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "const res = pm.response.json();",
+                  "const res = pm.response.json().data || {};",
                   "if (res.accessToken) {",
                   "    pm.collectionVariables.set('accessToken', res.accessToken);",
                   "}",
@@ -106,9 +160,16 @@
               "raw": "{\n  \"email\": \"participant@example.com\",\n  \"password\": \"Password@123\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "login"]
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
             }
           }
         },
@@ -119,7 +180,7 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "const res = pm.response.json();",
+                  "const res = pm.response.json().data || {};",
                   "if (res.accessToken) {",
                   "    pm.collectionVariables.set('accessToken', res.accessToken);",
                   "}",
@@ -144,9 +205,16 @@
               "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/auth/refresh",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "refresh"]
+              "raw": "{{baseUrl}}/api/v1/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh"
+              ]
             }
           }
         },
@@ -165,9 +233,757 @@
               "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/auth/logout",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "logout"]
+              "raw": "{{baseUrl}}/api/v1/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "logout"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Thông tin tài khoản hiện tại",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/auth/me",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Portfolio của tài khoản hiện tại",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/auth/portfolio",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contests",
+      "item": [
+        {
+          "name": "List Published Contests",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contests?search=&status=published&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contests"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": "published"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Contest Detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/contests/{{contestId}}"
+          }
+        },
+        {
+          "name": "Hạng mục cuộc thi",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/contests/{{contestId}}/categories"
+          }
+        },
+        {
+          "name": "Kết quả cuộc thi đã công bố",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/contests/{{contestId}}/results"
+          }
+        },
+        {
+          "name": "Create Contest (Admin or Organizer)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hanoi Analog Film Contest\",\n  \"description\": \"Open film photography contest\",\n  \"startAt\": \"2026-11-01T00:00:00Z\",\n  \"endAt\": \"2026-12-01T00:00:00Z\",\n  \"status\": \"draft\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/contests"
+          }
+        },
+        {
+          "name": "Update Contest (Admin or Organizer)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated contest rules\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/contests/{{contestId}}"
+          }
+        },
+        {
+          "name": "Delete Contest (Admin or Organizer)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/contests/{{contestId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Submissions",
+      "item": [
+        {
+          "name": "Bài dự thi của tôi",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/submissions/my",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Hàng đợi kiểm duyệt bài dự thi",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/submissions",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Submission (Participant)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "contestId",
+                  "value": "{{contestId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "{{categoryId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "title",
+                  "value": "Rainy afternoon",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "A sample film submission",
+                  "type": "text"
+                },
+                {
+                  "key": "filmBrand",
+                  "value": "Kodak",
+                  "type": "text"
+                },
+                {
+                  "key": "filmStock",
+                  "value": "Portra 400",
+                  "type": "text"
+                },
+                {
+                  "key": "filmFormat",
+                  "value": "35mm",
+                  "type": "text"
+                },
+                {
+                  "key": "isoRated",
+                  "value": "400",
+                  "type": "text"
+                },
+                {
+                  "key": "isoShot",
+                  "value": "400",
+                  "type": "text"
+                },
+                {
+                  "key": "cameraBody",
+                  "value": "Nikon F3",
+                  "type": "text"
+                },
+                {
+                  "key": "lens",
+                  "value": "50mm f/1.8",
+                  "type": "text"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "rollId",
+                  "type": "text",
+                  "value": "{{rollId}}"
+                },
+                {
+                  "key": "frameNumber",
+                  "type": "text",
+                  "value": "1"
+                },
+                {
+                  "key": "devLabName",
+                  "type": "text",
+                  "value": "Example Film Lab"
+                },
+                {
+                  "key": "negativeProof",
+                  "type": "file",
+                  "src": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/submissions"
+          }
+        },
+        {
+          "name": "Duyệt bài thi",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/submissions/{{submissionId}}/approve",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Thông tin kiểm duyệt minh họa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Loại bài thi",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/submissions/{{submissionId}}/reject",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Thông tin kiểm duyệt minh họa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Kiểm duyệt bài thi",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/submissions/{{submissionId}}/moderate",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"REQUEST_PROOF\",\n  \"reason\": \"Thông tin kiểm duyệt minh họa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Đối sánh ảnh và báo cáo AI",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/submissions/{{submissionId}}/comparison",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Báo cáo AI của bài thi",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/submissions/{{submissionId}}/ai-analysis",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Organizer Submissions",
+      "item": [
+        {
+          "name": "Bài dự thi của tôi",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/organizer/submissions/my",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Hàng đợi kiểm duyệt bài dự thi",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/organizer/submissions",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Submission (Participant)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "contestId",
+                  "value": "{{contestId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "{{categoryId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "title",
+                  "value": "Rainy afternoon",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "A sample film submission",
+                  "type": "text"
+                },
+                {
+                  "key": "filmBrand",
+                  "value": "Kodak",
+                  "type": "text"
+                },
+                {
+                  "key": "filmStock",
+                  "value": "Portra 400",
+                  "type": "text"
+                },
+                {
+                  "key": "filmFormat",
+                  "value": "35mm",
+                  "type": "text"
+                },
+                {
+                  "key": "isoRated",
+                  "value": "400",
+                  "type": "text"
+                },
+                {
+                  "key": "isoShot",
+                  "value": "400",
+                  "type": "text"
+                },
+                {
+                  "key": "cameraBody",
+                  "value": "Nikon F3",
+                  "type": "text"
+                },
+                {
+                  "key": "lens",
+                  "value": "50mm f/1.8",
+                  "type": "text"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "rollId",
+                  "type": "text",
+                  "value": "{{rollId}}"
+                },
+                {
+                  "key": "frameNumber",
+                  "type": "text",
+                  "value": "1"
+                },
+                {
+                  "key": "devLabName",
+                  "type": "text",
+                  "value": "Example Film Lab"
+                },
+                {
+                  "key": "negativeProof",
+                  "type": "file",
+                  "src": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/organizer/submissions"
+          }
+        },
+        {
+          "name": "Duyệt bài thi",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/organizer/submissions/{{submissionId}}/approve",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Thông tin kiểm duyệt minh họa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Loại bài thi",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/organizer/submissions/{{submissionId}}/reject",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Thông tin kiểm duyệt minh họa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Kiểm duyệt bài thi",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/organizer/submissions/{{submissionId}}/moderate",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"REQUEST_PROOF\",\n  \"reason\": \"Thông tin kiểm duyệt minh họa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Đối sánh ảnh và báo cáo AI",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/organizer/submissions/{{submissionId}}/comparison",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Báo cáo AI của bài thi",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/organizer/submissions/{{submissionId}}/ai-analysis",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Webhook",
+      "item": [
+        {
+          "name": "Nhận kết quả phân tích từ dịch vụ AI",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/ai/webhook",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Webhook-Secret",
+                "value": "{{aiWebhookSecret}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"submissionId\": \"{{submissionId}}\",\n  \"phashHex\": \"0123456789abcdef\",\n  \"aiGeneratedProbability\": 0.25,\n  \"predictedTags\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           }
         }
@@ -192,101 +1008,16 @@
               ]
             },
             "url": {
-              "raw": "{{baseUrl}}/upload",
-              "host": ["{{baseUrl}}"],
-              "path": ["upload"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Contests",
-      "item": [
-        {
-          "name": "List Open Contests",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/contests?search=&status=published&page=1&limit=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["contests"],
-              "query": [
-                {"key": "search", "value": ""},
-                {"key": "status", "value": "published"},
-                {"key": "page", "value": "1"},
-                {"key": "limit", "value": "10"}
+              "raw": "{{baseUrl}}/api/v1/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "upload"
               ]
             }
-          }
-        },
-        {
-          "name": "Get Contest Detail",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/contests/{{contestId}}"
-          }
-        },
-        {
-          "name": "Create Contest (Admin or Organizer)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}", "type": "string"}]},
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Hanoi Analog Film Contest\",\n  \"description\": \"Open film photography contest\",\n  \"startAt\": \"2026-11-01T00:00:00Z\",\n  \"endAt\": \"2026-12-01T00:00:00Z\",\n  \"status\": \"draft\"\n}"
-            },
-            "url": "{{baseUrl}}/contests"
-          }
-        },
-        {
-          "name": "Update Contest (Admin or Organizer)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}", "type": "string"}]},
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\n  \"status\": \"published\"\n}"},
-            "url": "{{baseUrl}}/contests/{{contestId}}"
-          }
-        },
-        {
-          "name": "Delete Contest (Admin or Organizer)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}", "type": "string"}]},
-            "method": "DELETE",
-            "url": "{{baseUrl}}/contests/{{contestId}}"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Submissions",
-      "item": [
-        {
-          "name": "Upload Submission (Participant)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{accessToken}}", "type": "string"}]},
-            "method": "POST",
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {"key": "contestId", "value": "{{contestId}}", "type": "text"},
-                {"key": "categoryId", "value": "{{categoryId}}", "type": "text"},
-                {"key": "title", "value": "Rainy afternoon", "type": "text"},
-                {"key": "description", "value": "A sample film submission", "type": "text"},
-                {"key": "filmBrand", "value": "Kodak", "type": "text"},
-                {"key": "filmStock", "value": "Portra 400", "type": "text"},
-                {"key": "filmFormat", "value": "35mm", "type": "text"},
-                {"key": "isoRated", "value": "400", "type": "text"},
-                {"key": "isoShot", "value": "400", "type": "text"},
-                {"key": "cameraBody", "value": "Nikon F3", "type": "text"},
-                {"key": "lens", "value": "50mm f/1.8", "type": "text"},
-                {"key": "image", "type": "file", "src": ""},
-                {"key": "negativeProof", "type": "file", "src": ""}
-              ]
-            },
-            "url": "{{baseUrl}}/api/v1/submissions"
           }
         }
       ]
@@ -294,90 +1025,6 @@
     {
       "name": "RBAC",
       "item": [
-        {
-          "name": "Admin Only",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/rbac/admin",
-              "host": ["{{baseUrl}}"],
-              "path": ["rbac", "admin"]
-            }
-          }
-        },
-        {
-          "name": "Organizer Only",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/rbac/organizer",
-              "host": ["{{baseUrl}}"],
-              "path": ["rbac", "organizer"]
-            }
-          }
-        },
-        {
-          "name": "Judge Only",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/rbac/judge",
-              "host": ["{{baseUrl}}"],
-              "path": ["rbac", "judge"]
-            }
-          }
-        },
-        {
-          "name": "Participant Only",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/rbac/participant",
-              "host": ["{{baseUrl}}"],
-              "path": ["rbac", "participant"]
-            }
-          }
-        },
         {
           "name": "Manage Contest (Admin or Organizer)",
           "request": {
@@ -393,11 +1040,351 @@
             },
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/rbac/manage-contest",
-              "host": ["{{baseUrl}}"],
-              "path": ["rbac", "manage-contest"]
+              "raw": "{{baseUrl}}/api/v1/rbac/manage-contest",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rbac",
+                "manage-contest"
+              ]
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "Planned",
+      "item": [
+        {
+          "name": "04-film-logbook.md",
+          "item": [
+            {
+              "name": "DELETE /api/v1/film-rolls/{id}",
+              "request": {
+                "method": "DELETE",
+                "url": "{{baseUrl}}/api/v1/film-rolls/{{rollId}}",
+                "description": "Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "GET /api/v1/film-rolls",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/v1/film-rolls",
+                "description": "Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "GET /api/v1/film-rolls/{id}",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/v1/film-rolls/{{rollId}}",
+                "description": "Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "PATCH /api/v1/film-rolls/{id}",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/api/v1/film-rolls/{{rollId}}",
+                "description": "Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "POST /api/v1/film-rolls",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/film-rolls",
+                "description": "Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "POST /api/v1/film-rolls/{id}/frames",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/film-rolls/{{rollId}}/frames",
+                "description": "Hợp đồng dự kiến trong [04-film-logbook.md](ai/04-film-logbook.md). Route chưa được đăng ký trong Hono."
+              }
+            }
+          ]
+        },
+        {
+          "name": "02-analog-master-data.md",
+          "item": [
+            {
+              "name": "DELETE /api/v1/master-data/film-stocks/{id}",
+              "request": {
+                "method": "DELETE",
+                "url": "{{baseUrl}}/api/v1/master-data/film-stocks/{{masterDataId}}",
+                "description": "Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "GET /api/v1/master-data/cameras",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/v1/master-data/cameras",
+                "description": "Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "GET /api/v1/master-data/film-labs",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/v1/master-data/film-labs",
+                "description": "Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "GET /api/v1/master-data/film-stocks",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/v1/master-data/film-stocks",
+                "description": "Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "GET /api/v1/master-data/lenses",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/v1/master-data/lenses",
+                "description": "Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "POST /api/v1/master-data/cameras",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/master-data/cameras",
+                "description": "Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "POST /api/v1/master-data/film-stocks",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/master-data/film-stocks",
+                "description": "Hợp đồng dự kiến trong [02-analog-master-data.md](ai/02-analog-master-data.md). Route chưa được đăng ký trong Hono."
+              }
+            }
+          ]
+        },
+        {
+          "name": "08-archive-and-exhibition.md",
+          "item": [
+            {
+              "name": "GET /api/v1/exhibitions",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/v1/exhibitions",
+                "description": "Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "GET /api/v1/exhibitions/{id}",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/v1/exhibitions/{{exhibitionId}}",
+                "description": "Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "GET /api/v1/exhibitions/{id}/status",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/v1/exhibitions/{{exhibitionId}}/status",
+                "description": "Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "POST /api/v1/contests/{id}/archive",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/contests/{{contestId}}/archive",
+                "description": "Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "POST /api/v1/contests/{id}/publish-results",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/contests/{{contestId}}/publish-results",
+                "description": "Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "POST /api/v1/exhibitions/{id}/process",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/exhibitions/{{exhibitionId}}/process",
+                "description": "Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa được đăng ký trong Hono."
+              }
+            }
+          ]
+        },
+        {
+          "name": "10-database-and-storage.md",
+          "item": [
+            {
+              "name": "GET /api/v1/storage/assets/{id}/signed-url",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/v1/storage/assets/{{assetId}}/signed-url",
+                "description": "Hợp đồng dự kiến trong [10-database-and-storage.md](ai/10-database-and-storage.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "POST /api/v1/storage/confirm-upload",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/storage/confirm-upload",
+                "description": "Hợp đồng dự kiến trong [10-database-and-storage.md](ai/10-database-and-storage.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "POST /api/v1/storage/presigned-upload",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/storage/presigned-upload",
+                "description": "Hợp đồng dự kiến trong [10-database-and-storage.md](ai/10-database-and-storage.md). Route chưa được đăng ký trong Hono."
+              }
+            }
+          ]
+        },
+        {
+          "name": "01-auth-and-rbac.md",
+          "item": [
+            {
+              "name": "GET /api/v1/users",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/v1/users",
+                "description": "Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "GET /api/v1/users/me",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/api/v1/users/me",
+                "description": "Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "PATCH /api/v1/users/me/password",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/api/v1/users/me/password",
+                "description": "Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "PATCH /api/v1/users/{id}/status",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/api/v1/users/{{userId}}/status",
+                "description": "Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "POST /api/v1/auth/forgot-password",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/auth/forgot-password",
+                "description": "Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "POST /api/v1/auth/reset-password",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/auth/reset-password",
+                "description": "Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "POST /api/v1/users",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/users",
+                "description": "Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "PUT /api/v1/users/me/profile",
+              "request": {
+                "method": "PUT",
+                "url": "{{baseUrl}}/api/v1/users/me/profile",
+                "description": "Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong Hono."
+              }
+            }
+          ]
+        },
+        {
+          "name": "03-contest-lifecycle.md",
+          "item": [
+            {
+              "name": "PATCH /api/v1/contests/{id}/status",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/api/v1/contests/{{contestId}}/status",
+                "description": "Hợp đồng dự kiến trong [03-contest-lifecycle.md](ai/03-contest-lifecycle.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "POST /api/v1/contests/{id}/judges",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/contests/{{contestId}}/judges",
+                "description": "Hợp đồng dự kiến trong [03-contest-lifecycle.md](ai/03-contest-lifecycle.md). Route chưa được đăng ký trong Hono."
+              }
+            }
+          ]
+        },
+        {
+          "name": "05-submission-and-proof.md",
+          "item": [
+            {
+              "name": "POST /api/v1/submissions/presigned-url",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/submissions/presigned-url",
+                "description": "Hợp đồng dự kiến trong [05-submission-and-proof.md](ai/05-submission-and-proof.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "POST /api/v1/submissions/{id}/proof",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/submissions/{{submissionId}}/proof",
+                "description": "Hợp đồng dự kiến trong [05-submission-and-proof.md](ai/05-submission-and-proof.md). Route chưa được đăng ký trong Hono."
+              }
+            },
+            {
+              "name": "POST /api/v1/submissions/{id}/request-proof",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/submissions/{{submissionId}}/request-proof",
+                "description": "Hợp đồng dự kiến trong [05-submission-and-proof.md](ai/05-submission-and-proof.md). Route chưa được đăng ký trong Hono."
+              }
+            }
+          ]
+        },
+        {
+          "name": "06-ai-verification.md",
+          "item": [
+            {
+              "name": "POST /api/v1/submissions/{id}/ai-scan",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/api/v1/submissions/{{submissionId}}/ai-scan",
+                "description": "Hợp đồng dự kiến trong [06-ai-verification.md](ai/06-ai-verification.md). Route chưa được đăng ký trong Hono."
+              }
+            }
+          ]
         }
       ]
     }

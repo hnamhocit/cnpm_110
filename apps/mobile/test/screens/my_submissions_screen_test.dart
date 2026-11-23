@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_2/core/data/submission_repository.dart';
 import 'package:flutter_application_2/core/network/api_exception.dart';
+import 'package:flutter_application_2/models/image_attachment.dart';
 import 'package:flutter_application_2/models/submission_data.dart';
 import 'package:flutter_application_2/models/user_submission.dart';
 import 'package:flutter_application_2/screens/submission/components/image_preview_dialog.dart';
@@ -35,6 +36,12 @@ class MockSubmissionRepo implements SubmissionRepository {
     }
     return submissions;
   }
+
+  @override
+  Future<void> uploadNegativeProof({
+    required String submissionId,
+    required ImageAttachment proofImage,
+  }) async {}
 }
 
 final sampleSubmissions = [
@@ -259,14 +266,16 @@ void main() {
     // Tap on fullscreen icon on thumbnail
     final fullscreenIcon = find.byIcon(Icons.fullscreen).first;
     await tester.tap(fullscreenIcon);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byType(ImagePreviewDialog), findsOneWidget);
     expect(find.text('Phố Cổ Mùa Thu'), findsWidgets);
 
     // Tap close
     await tester.tap(find.byIcon(Icons.close));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(ImagePreviewDialog), findsNothing);
   });
 

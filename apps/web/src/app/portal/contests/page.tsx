@@ -128,15 +128,15 @@ export default function OrganizerContestsPage() {
                       className="flex-1"
                     >
                       <Button variant="outline" className="w-full text-xs">
-                        Xem chi tiết
+                        Chi tiết cuộc thi
                       </Button>
                     </Link>
                     <Link
-                      href={`/portal/contests/${contest.id}/edit`}
+                      href={`/portal/contests/${contest.id}/submissions`}
                       className="flex-1"
                     >
-                      <Button variant="outline" className="w-full text-xs">
-                        Chỉnh sửa
+                      <Button className="w-full text-xs bg-blue-600 hover:bg-blue-700 text-white">
+                        Bài dự thi
                       </Button>
                     </Link>
                   </div>

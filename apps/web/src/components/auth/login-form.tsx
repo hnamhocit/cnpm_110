@@ -57,12 +57,21 @@ export function LoginForm() {
         );
       }
 
+      const userRole = data.user?.role || "Participant";
       useAuthStore.getState().setTokens({
         accessToken: data.accessToken,
-        role: data.user?.role || "Organizer",
+        role: userRole,
       });
 
-      router.push("/portal");
+      // Tạo cookie session để Server Components đọc được trực tiếp
+      // biome-ignore lint/suspicious/noDocumentCookie: Required for SSR auth in Next.js App Router
+      document.cookie = `access_token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
+
+      if (userRole === "Admin" || userRole === "Organizer") {
+        window.location.href = "/portal";
+      } else {
+        window.location.href = "/";
+      }
     } catch (err) {
       setError(
         err instanceof Error
@@ -102,7 +111,7 @@ export function LoginForm() {
             className={fieldInputClassName}
             type="email"
             autoComplete="email"
-            placeholder="ban@example.com"
+            placeholder="organizer.test@example.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />

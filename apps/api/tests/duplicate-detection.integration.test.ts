@@ -5,7 +5,7 @@ import { Hono } from "hono";
 import { eq, inArray } from "drizzle-orm";
 import { pool } from "../src/db";
 import { db } from "../src/db/index";
-import aiWebhook from "../src/routes/ai-webhook";
+import aiWebhook from "../src/routes/ai-webhook.route";
 import {
     users,
     contests,
