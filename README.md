@@ -163,7 +163,7 @@ cd apps/mobile && flutter pub add <package-name>
 
 ## Theo dõi tiến độ
 
-Xem [tổng quan độ phủ dự án](docs/progress/overview.md). Giao việc và xem trạng thái trong [bảng công việc](docs/progress/tasks.md). Mỗi thành viên dùng [mẫu cập nhật tuần](docs/progress/update-template.md). Xem [cách tổng hợp tiến độ](docs/progress/README.md).
+Xem [tổng quan độ phủ và đối chiếu Jira](docs/progress/overview.md).
 
 ---
 
