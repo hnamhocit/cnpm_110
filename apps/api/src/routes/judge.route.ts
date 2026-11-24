@@ -1,6 +1,9 @@
 
 import { Hono } from "hono";
-import { handleGetAssignedSubmissions } from "../controllers/judge.controller";
+import {
+  handleGetAssignedSubmissions,
+  handleSubmitEvaluation,
+} from "../controllers/judge.controller";
 import {
   authenticate,
   requireRoles,
@@ -15,5 +18,10 @@ judge.get(
   requireRoles("Judge"),
   handleGetAssignedSubmissions,
 );
-
+judge.post(
+  "/submissions/:submissionId/evaluation",
+  authenticate,
+  requireRoles("Judge"),
+  handleSubmitEvaluation,
+);
 export default judge;
