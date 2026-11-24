@@ -176,6 +176,44 @@ export const scoringCriteria = pgTable(
   ],
 );
 
+export const contestJudges = pgTable(
+  "contest_judges",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    contestId: uuid("contest_id")
+      .notNull()
+      .references(() => contests.id, { onDelete: "cascade" }),
+
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+
+    judgeId: uuid("judge_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+
+    assignedBy: uuid("assigned_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+
+    isActive: boolean("is_active").notNull().default(true),
+
+    assignedAt: timestamp("assigned_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_contest_judges_judge_id").on(table.judgeId),
+    index("idx_contest_judges_category_id").on(table.categoryId),
+    index("idx_contest_judges_contest_id").on(table.contestId),
+
+    uniqueIndex("uq_contest_judges_active")
+      .on(table.categoryId, table.judgeId)
+      .where(sql`${table.isActive} = true`),
+  ],
+);
+
 export const filmRolls = pgTable(
   "film_rolls",
   {

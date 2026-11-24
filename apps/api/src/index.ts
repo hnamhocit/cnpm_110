@@ -13,6 +13,7 @@ import aiWebhookRoute from "./routes/ai-webhook.route";
 import authRoute from "./routes/auth.route";
 import contestsRoute from "./routes/contests.route";
 import healthRoute from "./routes/health.route";
+import judgeRoute from "./routes/judge.route";
 import submissionRoute from "./routes/submissions.route";
 import uploadRoute from "./routes/upload.route";
 import { AppError } from "./utils/errors";
@@ -60,6 +61,7 @@ const v1 = new Hono();
 
 v1.route("/auth", authRoute);
 v1.route("/contests", contestsRoute);
+v1.route("/judge", judgeRoute);
 v1.route("/submissions", submissionRoute);
 v1.route("/organizer/submissions", submissionRoute);
 v1.route("/ai", aiWebhookRoute);
