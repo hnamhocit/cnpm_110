@@ -54,6 +54,10 @@ async function createTestData() {
     const submissionId = crypto.randomUUID();
     const pendingSubmissionId = crypto.randomUUID();
 
+    const tiedSubmissionId = crypto.randomUUID();
+    const tiedSubmission2Id = crypto.randomUUID();
+    const lowerSubmissionId = crypto.randomUUID();
+
     const criterion1Id = crypto.randomUUID();
     const criterion2Id = crypto.randomUUID();
 
@@ -110,11 +114,14 @@ async function createTestData() {
 
     await pool.query(
         `INSERT INTO submissions
-            (id, contest_id, category_id, participant_id,
-             title, image_original_path, status)
+        (id, contest_id, category_id, participant_id,
+         title, image_original_path, status)
          VALUES
-            ($1, $2, $3, $4, $5, $6, 'APPROVED'),
-            ($7, $2, $3, $4, $8, $9, 'PENDING_AI')`,
+        ($1, $2, $3, $4, $5, $6, 'APPROVED'),
+        ($7, $2, $3, $4, $8, $9, 'PENDING_AI'),
+        ($10, $2, $3, $4, $11, $12, 'APPROVED'),
+        ($13, $2, $3, $4, $14, $15, 'APPROVED'),
+        ($16, $2, $3, $4, $17, $18, 'APPROVED')`,
         [
             submissionId,
             contestId,
@@ -125,6 +132,15 @@ async function createTestData() {
             pendingSubmissionId,
             "FPC74 Pending Film",
             "fpc74/pending.jpg",
+            tiedSubmissionId,
+            "FPC75 Tied Film",
+            "fpc75/tied.jpg",
+            tiedSubmission2Id,
+            "FPC75 Tied Film 2",
+            "fpc75/tied-2.jpg",
+            lowerSubmissionId,
+            "FPC75 Lower Film",
+            "fpc75/lower.jpg",
         ],
     );
 
@@ -164,7 +180,42 @@ async function createTestData() {
             crypto.randomUUID(),
         ],
     );
+    // Create complete scorecards for the three additional submissions.
+    for (const extraSubmissionId of [
+        tiedSubmissionId,
+        tiedSubmission2Id,
+        lowerSubmissionId,
+    ]) {
+        for (const judgeId of [judge1Id, judge2Id]) {
+            const evaluationId = crypto.randomUUID();
 
+            await pool.query(
+                `INSERT INTO evaluations (id, submission_id, judge_id)
+                 VALUES ($1, $2, $3)`,
+                [evaluationId, extraSubmissionId, judgeId],
+            );
+
+            const score = extraSubmissionId === lowerSubmissionId
+                ? 9
+                : 9.5;
+
+            await pool.query(
+                `INSERT INTO evaluation_scores
+                    (id, evaluation_id, criterion_id, score)
+                 VALUES
+                    ($1, $2, $3, $4),
+                    ($5, $2, $6, $4)`,
+                [
+                    crypto.randomUUID(),
+                    evaluationId,
+                    criterion1Id,
+                    score,
+                    crypto.randomUUID(),
+                    criterion2Id,
+                ],
+            );
+        }
+    }
     return {
         adminId,
         organizerId,
@@ -175,6 +226,9 @@ async function createTestData() {
         contestId,
         submissionId,
         pendingSubmissionId,
+        tiedSubmissionId,
+        tiedSubmission2Id,
+        lowerSubmissionId,
     };
 }
 
@@ -292,41 +346,76 @@ describe("FPC-74: GET /api/v1/contests/:id/scoreboard", () => {
         expect(response.status).toBe(403);
     });
 
-    test("Admin can retrieve the scoreboard", async () => {
-        const token = await createToken(testData.adminId, "Admin");
+   test("Admin can retrieve the scoreboard with competition ranking", async () => {
+    const token = await createToken(testData.adminId, "Admin");
 
-        const response = await app.request(
-            `/api/v1/contests/${testData.contestId}/scoreboard`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+    const response = await app.request(
+        `/api/v1/contests/${testData.contestId}/scoreboard`,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
             },
-        );
+        },
+    );
 
-        expect(response.status).toBe(200);
+    expect(response.status).toBe(200);
 
-        const body = await response.json();
+    const body = await response.json();
 
-        expect(body.code).toBe(200);
-        expect(body.data.entries).toHaveLength(1);
+    expect(body.code).toBe(200);
+    expect(body.data.entries).toHaveLength(4);
 
-        const entry = body.data.entries[0];
+    const entries = body.data.entries;
 
-        expect(entry.submissionId).toBe(testData.submissionId);
-        expect(entry.title).toBe("FPC74 Approved Film");
-        expect(entry.judgeCount).toBe(2);
-        expect(entry.scoreScale).toBe(10);
-        expect(entry.negativeProofVerified).toBe(false);
-        expect(entry.scores).toHaveLength(2);
+    const originalEntry = entries.find(
+        (item: { submissionId: string }) =>
+            item.submissionId === testData.submissionId,
+    );
 
-        const scores = entry.scores
-            .map((item: { totalScore: number }) => item.totalScore)
-            .sort((a: number, b: number) => a - b);
+    const tiedEntry1 = entries.find(
+        (item: { submissionId: string }) =>
+            item.submissionId === testData.tiedSubmissionId,
+    );
 
-        expect(scores).toEqual([7, 9]);
-    });
+    const tiedEntry2 = entries.find(
+        (item: { submissionId: string }) =>
+            item.submissionId === testData.tiedSubmission2Id,
+    );
 
+    const lowerEntry = entries.find(
+        (item: { submissionId: string }) =>
+            item.submissionId === testData.lowerSubmissionId,
+    );
+
+    expect(originalEntry).toBeDefined();
+    expect(tiedEntry1).toBeDefined();
+    expect(tiedEntry2).toBeDefined();
+    expect(lowerEntry).toBeDefined();
+
+    expect(originalEntry.finalScore).toBe(8);
+    expect(originalEntry.rank).toBe(4);
+
+    expect(tiedEntry1.finalScore).toBe(9.5);
+    expect(tiedEntry2.finalScore).toBe(9.5);
+    expect(tiedEntry1.rank).toBe(1);
+    expect(tiedEntry2.rank).toBe(1);
+
+    expect(lowerEntry.finalScore).toBe(9);
+    expect(lowerEntry.rank).toBe(3);
+
+    expect(originalEntry.title).toBe("FPC74 Approved Film");
+    expect(originalEntry.judgeCount).toBe(2);
+    expect(originalEntry.scoreScale).toBe(10);
+    expect(originalEntry.negativeProofVerified).toBe(false);
+
+    expect(originalEntry.scores).toHaveLength(2);
+
+    const scores = originalEntry.scores
+        .map((item: { totalScore: number }) => item.totalScore)
+        .sort((a: number, b: number) => a - b);
+
+    expect(scores).toEqual([7, 9]);
+});
     test("Organizer can view their own contest scoreboard", async () => {
         const token = await createToken(
             testData.organizerId,

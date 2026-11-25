@@ -24,6 +24,7 @@ import {
 } from "../db/schema";
 
 import { aggregateScores } from "./score-aggregation";
+import { assignCompetitionRanks } from "./scoreboard-ranking";
 import type { AuthEnv } from "../middlewares/auth";
 import { AppError } from "../utils/errors";
 
@@ -628,7 +629,7 @@ export async function getContestScoreboard(
       totalScore: number;
       submittedAt: string;
     }[] = [];
-
+    let finalScore: number | null = null;
     if (criteria.length > 0 && completeJudges.length > 0) {
       const aggregation = aggregateScores({
         criteria,
@@ -637,7 +638,12 @@ export async function getContestScoreboard(
           criterionScores: judge.criterionScores,
         })),
       });
-
+      if (
+        assignedJudgeIds.length > 0 &&
+        completeJudges.length === assignedJudgeIds.length
+      ) {
+        finalScore = aggregation.finalScore;
+      }
       const totalsMap = new Map(
         aggregation.judgeTotals.map((item) => [
           item.judgeId,
@@ -670,12 +676,13 @@ export async function getContestScoreboard(
       judgeCount: assignedJudgeIds.length,
       scoreScale,
       negativeProofVerified: false,
+      finalScore,
       scores,
     };
   });
-
+  const rankedEntries = assignCompetitionRanks(entries);
   return {
-    entries,
+    entries: rankedEntries,
     updatedAt: new Date().toISOString(),
   };
 }
