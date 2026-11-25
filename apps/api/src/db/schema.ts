@@ -199,6 +199,10 @@ export const contestJudges = pgTable(
 
     isActive: boolean("is_active").notNull().default(true),
 
+    lockedAt: timestamp("locked_at", {
+      withTimezone: true,
+    }),
+
     assignedAt: timestamp("assigned_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

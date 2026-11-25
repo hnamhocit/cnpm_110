@@ -64,6 +64,20 @@
       "when": 1795520756774,
       "tag": "0008_smooth_rockslide",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795564151556,
+      "tag": "0009_absurd_excalibur",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795564499690,
+      "tag": "0010_bent_madelyne_pryor",
+      "breakpoints": true
     }
   ]
 }

@@ -1,8 +1,11 @@
-import { submitEvaluation } from "../services/judge.service";
 import { AppError } from "../utils/errors";
 import type { Context } from "hono";
 import type { AuthEnv } from "../middlewares/auth";
-import { getAssignedSubmissions } from "../services/judge.service";
+import {
+    getAssignedSubmissions,
+    submitEvaluation,
+    lockJudgeAssignment,
+} from "../services/judge.service";
 
 export async function handleGetAssignedSubmissions(
     c: Context<AuthEnv>,
@@ -114,5 +117,30 @@ export async function handleSubmitEvaluation(
     return c.ok(
         result,
         "Evaluation submitted successfully",
+    );
+}
+export async function handleLockJudgeAssignment(
+    c: Context<AuthEnv>,
+) {
+    const judge = c.get("user");
+    const assignmentId = c.req.param("assignmentId");
+
+    const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    if (!assignmentId || !uuidRegex.test(assignmentId)) {
+        throw AppError.badRequest("Invalid assignment ID");
+    }
+
+    const result = await lockJudgeAssignment(
+        assignmentId,
+        judge.id,
+    );
+
+    return c.ok(
+        result,
+        result.alreadyLocked
+            ? "Evaluation sheet was already locked"
+            : "Evaluation sheet locked successfully",
     );
 }

@@ -40,13 +40,16 @@ async function insertUser(id: string, name: string) {
 
 async function createTestData() {
     const judgeId = crypto.randomUUID();
+    const otherJudgeId = crypto.randomUUID();
     const participantId = crypto.randomUUID();
     const contestId = crypto.randomUUID();
+    const assignmentId = crypto.randomUUID();
     const assignedCategoryId = crypto.randomUUID();
     const otherCategoryId = crypto.randomUUID();
 
-    await insertUser(judgeId, "FPC70 Test Judge");
-    await insertUser(participantId, "FPC70 Test Participant");
+    await insertUser(judgeId, "FPC72 Test Judge");
+    await insertUser(otherJudgeId, "FPC72 Other Judge");
+    await insertUser(participantId, "FPC72 Test Participant");
 
     await pool.query(
         `INSERT INTO contests (id, name, status, created_by)
@@ -71,7 +74,7 @@ async function createTestData() {
       (id, contest_id, category_id, judge_id, assigned_by, is_active)
      VALUES ($1, $2, $3, $4, $5, TRUE)`,
         [
-            crypto.randomUUID(),
+            assignmentId,
             contestId,
             assignedCategoryId,
             judgeId,
@@ -126,6 +129,8 @@ async function createTestData() {
 
     return {
         judgeId,
+        otherJudgeId,
+        assignmentId,
         participantId,
         contestId,
         assignedSubmissionId,
@@ -137,6 +142,7 @@ async function createTestData() {
 
 async function cleanupTestData(data: {
     judgeId: string;
+    otherJudgeId: string;
     participantId: string;
     contestId: string;
 }) {
@@ -162,7 +168,7 @@ async function cleanupTestData(data: {
 
     await pool.query(
         "DELETE FROM users WHERE id = ANY($1::uuid[])",
-        [[data.judgeId, data.participantId]],
+        [[data.judgeId, data.otherJudgeId, data.participantId]],
     );
 }
 
@@ -496,5 +502,93 @@ describe("FPC-70/FPC-71: Judge APIs", () => {
         );
 
         expect(response.status).toBe(400);
+    });
+    test("Another judge cannot lock someone else's assignment", async () => {
+        const token = await createToken(
+            testData.otherJudgeId,
+            "Judge",
+        );
+
+        const response = await app.request(
+            `/api/v1/judge/assignments/${testData.assignmentId}/lock`,
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            },
+        );
+
+        expect(response.status).toBe(403);
+    });
+
+    test("Judge can lock assignment and cannot update scores afterward", async () => {
+        const token = await createToken(
+            testData.judgeId,
+            "Judge",
+        );
+
+        const lockUrl =
+            `/api/v1/judge/assignments/${testData.assignmentId}/lock`;
+
+        const firstResponse = await app.request(lockUrl, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        expect(firstResponse.status).toBe(200);
+
+        const firstLock = await pool.query(
+            `SELECT locked_at
+             FROM contest_judges
+             WHERE id = $1`,
+            [testData.assignmentId],
+        );
+
+        expect(firstLock.rows[0].locked_at).not.toBeNull();
+
+        const secondResponse = await app.request(lockUrl, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        expect(secondResponse.status).toBe(200);
+
+        const secondLock = await pool.query(
+            `SELECT locked_at
+             FROM contest_judges
+             WHERE id = $1`,
+            [testData.assignmentId],
+        );
+
+        expect(secondLock.rows[0].locked_at.toISOString()).toBe(
+            firstLock.rows[0].locked_at.toISOString(),
+        );
+
+        const updateResponse = await app.request(
+            `/api/v1/judge/submissions/${testData.assignedSubmissionId}/evaluation`,
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    comment: "Trying to update after locking",
+                    scores: [
+                        {
+                            criterionId: testData.assignedCriterionId,
+                            score: 9,
+                        },
+                    ],
+                }),
+            },
+        );
+
+        expect(updateResponse.status).toBe(409);
     });
 });
