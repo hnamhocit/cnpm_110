@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import {
   handleGetAssignedSubmissions,
   handleSubmitEvaluation,
+  handleLockJudgeAssignment,
 } from "../controllers/judge.controller";
 import {
   authenticate,
@@ -23,5 +24,11 @@ judge.post(
   authenticate,
   requireRoles("Judge"),
   handleSubmitEvaluation,
+);
+judge.post(
+  "/assignments/:assignmentId/lock",
+  authenticate,
+  requireRoles("Judge"),
+  handleLockJudgeAssignment,
 );
 export default judge;

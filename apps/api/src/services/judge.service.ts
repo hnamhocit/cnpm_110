@@ -132,7 +132,10 @@ export async function submitEvaluation(input: SubmitEvaluationInput) {
 
     // 2. Check the judge's active assignment.
     const [assignment] = await tx
-      .select({ id: contestJudges.id })
+      .select({
+        id: contestJudges.id,
+        lockedAt: contestJudges.lockedAt,
+      })
       .from(contestJudges)
       .where(
         and(
@@ -142,7 +145,8 @@ export async function submitEvaluation(input: SubmitEvaluationInput) {
           eq(contestJudges.isActive, true),
         ),
       )
-      .limit(1);
+      .limit(1)
+      .for("update");
 
     if (!assignment) {
       throw AppError.forbidden(
@@ -150,6 +154,11 @@ export async function submitEvaluation(input: SubmitEvaluationInput) {
       );
     }
 
+    if (assignment.lockedAt) {
+      throw AppError.conflict(
+        "Your evaluation sheet has been locked and cannot be modified",
+      );
+    }
     // 3. Check that all criteria belong to the submission category.
     const criteria = await tx
       .select({
@@ -231,6 +240,55 @@ export async function submitEvaluation(input: SubmitEvaluationInput) {
       submissionId,
       comment: comment ?? null,
       scores,
+    };
+  });
+}
+export async function lockJudgeAssignment(
+  assignmentId: string,
+  judgeId: string,
+) {
+  return db.transaction(async (tx) => {
+    const [assignment] = await tx
+      .select({
+        id: contestJudges.id,
+        lockedAt: contestJudges.lockedAt,
+      })
+      .from(contestJudges)
+      .where(
+        and(
+          eq(contestJudges.id, assignmentId),
+          eq(contestJudges.judgeId, judgeId),
+          eq(contestJudges.isActive, true),
+        ),
+      )
+      .limit(1)
+      .for("update");
+
+    if (!assignment) {
+      throw AppError.forbidden(
+        "You are not authorized to lock this evaluation sheet",
+      );
+    }
+
+    if (assignment.lockedAt) {
+      return {
+        assignmentId: assignment.id,
+        lockedAt: assignment.lockedAt,
+        alreadyLocked: true,
+      };
+    }
+
+    const lockedAt = new Date();
+
+    await tx
+      .update(contestJudges)
+      .set({ lockedAt })
+      .where(eq(contestJudges.id, assignmentId));
+
+    return {
+      assignmentId,
+      lockedAt,
+      alreadyLocked: false,
     };
   });
 }
