@@ -14,10 +14,16 @@ import { db } from "../db";
 import {
   categories,
   contests,
+  contestJudges,
+  evaluations,
+  evaluationScores,
   filmMetadata,
+  scoringCriteria,
   submissions,
   users,
 } from "../db/schema";
+
+import { aggregateScores } from "./score-aggregation";
 import type { AuthEnv } from "../middlewares/auth";
 import { AppError } from "../utils/errors";
 
@@ -393,4 +399,283 @@ export async function softDeleteContest(id: string, actor: AuthEnv["Variables"][
   }
 
   return deleted;
+}
+export async function getContestScoreboard(
+  contestId: string,
+  actor: AuthEnv["Variables"]["user"],
+) {
+  // 1. Verify contest exists.
+  const [contest] = await db
+    .select({
+      id: contests.id,
+      createdBy: contests.createdBy,
+    })
+    .from(contests)
+    .where(
+      and(
+        eq(contests.id, contestId),
+        eq(contests.isDeleted, false),
+      ),
+    )
+    .limit(1);
+
+  if (!contest) {
+    throw AppError.notFound("Contest not found");
+  }
+
+  // 2. Organizers can only view their own contests.
+  if (
+    actor.role === "Organizer" &&
+    contest.createdBy !== actor.id
+  ) {
+    throw AppError.forbidden("You cannot view this contest scoreboard");
+  }
+
+  // 3. Get approved submissions.
+  const approvedSubmissions = await db
+    .select({
+      id: submissions.id,
+      title: submissions.title,
+      categoryId: submissions.categoryId,
+    })
+    .from(submissions)
+    .where(
+      and(
+        eq(submissions.contestId, contestId),
+        eq(submissions.status, "APPROVED"),
+      ),
+    );
+
+  if (approvedSubmissions.length === 0) {
+    return {
+      entries: [],
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  const categoryIds = [
+    ...new Set(approvedSubmissions.map((item) => item.categoryId)),
+  ];
+
+  // 4. Get category names.
+  const categoryRows = await db
+    .select({
+      id: categories.id,
+      name: categories.name,
+    })
+    .from(categories)
+    .where(inArray(categories.id, categoryIds));
+
+  const categoryMap = new Map(
+    categoryRows.map((category) => [category.id, category.name]),
+  );
+
+  // 5. Get active judges assigned to this contest.
+  const assignments = await db
+    .select({
+      categoryId: contestJudges.categoryId,
+      judgeId: contestJudges.judgeId,
+    })
+    .from(contestJudges)
+    .where(
+      and(
+        eq(contestJudges.contestId, contestId),
+        eq(contestJudges.isActive, true),
+      ),
+    );
+
+  const judgesByCategory = new Map<string, string[]>();
+
+  for (const assignment of assignments) {
+    const judgeIds =
+      judgesByCategory.get(assignment.categoryId) ?? [];
+
+    judgeIds.push(assignment.judgeId);
+    judgesByCategory.set(assignment.categoryId, judgeIds);
+  }
+
+  // 6. Get scoring criteria.
+  const criteriaRows = await db
+    .select({
+      id: scoringCriteria.id,
+      categoryId: scoringCriteria.categoryId,
+      maxScore: scoringCriteria.maxScore,
+      weight: scoringCriteria.weight,
+    })
+    .from(scoringCriteria)
+    .where(inArray(scoringCriteria.categoryId, categoryIds))
+    .orderBy(asc(scoringCriteria.sortOrder));
+
+  const criteriaByCategory = new Map<
+    string,
+    {
+      id: string;
+      maxScore: number;
+      weight: number;
+    }[]
+  >();
+
+  for (const criterion of criteriaRows) {
+    const items =
+      criteriaByCategory.get(criterion.categoryId) ?? [];
+
+    items.push({
+      id: criterion.id,
+      maxScore: Number(criterion.maxScore),
+      weight: Number(criterion.weight),
+    });
+
+    criteriaByCategory.set(criterion.categoryId, items);
+  }
+
+  // 7. Get evaluation scores and judge information.
+  const submissionIds = approvedSubmissions.map((item) => item.id);
+
+  const evaluationRows = await db
+    .select({
+      submissionId: evaluations.submissionId,
+      judgeId: evaluations.judgeId,
+      judgeName: users.fullName,
+      submittedAt: evaluations.updatedAt,
+      criterionId: evaluationScores.criterionId,
+      score: evaluationScores.score,
+    })
+    .from(evaluations)
+    .innerJoin(users, eq(users.id, evaluations.judgeId))
+    .leftJoin(
+      evaluationScores,
+      eq(evaluationScores.evaluationId, evaluations.id),
+    )
+    .where(inArray(evaluations.submissionId, submissionIds));
+
+  const evaluationMap = new Map<
+    string,
+    {
+      judgeName: string;
+      submittedAt: Date;
+      criterionScores: {
+        criterionId: string;
+        score: number;
+      }[];
+    }
+  >();
+
+  for (const row of evaluationRows) {
+    const key = `${row.submissionId}:${row.judgeId}`;
+
+    const evaluation = evaluationMap.get(key) ?? {
+      judgeName: row.judgeName,
+      submittedAt: row.submittedAt,
+      criterionScores: [],
+    };
+
+    if (row.criterionId !== null && row.score !== null) {
+      evaluation.criterionScores.push({
+        criterionId: row.criterionId,
+        score: Number(row.score),
+      });
+    }
+
+    evaluationMap.set(key, evaluation);
+  }
+
+  // 8. Build scoreboard entries.
+  const entries = approvedSubmissions.map((submission) => {
+    const criteria =
+      criteriaByCategory.get(submission.categoryId) ?? [];
+
+    const assignedJudgeIds =
+      judgesByCategory.get(submission.categoryId) ?? [];
+
+    const completeJudges = assignedJudgeIds
+      .map((judgeId) => {
+        const evaluation = evaluationMap.get(
+          `${submission.id}:${judgeId}`,
+        );
+
+        if (!evaluation || criteria.length === 0) {
+          return null;
+        }
+
+        // A judge must score every criterion exactly once.
+        const scoreIds = evaluation.criterionScores.map(
+          (item) => item.criterionId,
+        );
+
+        const hasAllCriteria =
+          scoreIds.length === criteria.length &&
+          new Set(scoreIds).size === criteria.length &&
+          criteria.every((criterion) =>
+            scoreIds.includes(criterion.id),
+          );
+
+        if (!hasAllCriteria) {
+          return null;
+        }
+
+        return {
+          judgeId,
+          judgeName: evaluation.judgeName,
+          submittedAt: evaluation.submittedAt,
+          criterionScores: evaluation.criterionScores,
+        };
+      })
+      .filter((judge) => judge !== null);
+
+    let scores: {
+      judgeId: string;
+      judgeName: string;
+      totalScore: number;
+      submittedAt: string;
+    }[] = [];
+
+    if (criteria.length > 0 && completeJudges.length > 0) {
+      const aggregation = aggregateScores({
+        criteria,
+        judges: completeJudges.map((judge) => ({
+          judgeId: judge.judgeId,
+          criterionScores: judge.criterionScores,
+        })),
+      });
+
+      const totalsMap = new Map(
+        aggregation.judgeTotals.map((item) => [
+          item.judgeId,
+          item.totalScore,
+        ]),
+      );
+
+      scores = completeJudges.map((judge) => ({
+        judgeId: judge.judgeId,
+        judgeName: judge.judgeName,
+        totalScore: totalsMap.get(judge.judgeId) ?? 0,
+        submittedAt: judge.submittedAt.toISOString(),
+      }));
+    }
+
+    // Weighted maximum score, consistent with score aggregation.
+    const scoreScale = criteria.reduce(
+      (sum, criterion) =>
+        sum + criterion.maxScore * criterion.weight,
+      0,
+    );
+
+    return {
+      submissionId: submission.id,
+      submissionCode: submission.id,
+      title: submission.title,
+      categoryId: submission.categoryId,
+      categoryName:
+        categoryMap.get(submission.categoryId) ?? "Unknown category",
+      judgeCount: assignedJudgeIds.length,
+      scoreScale,
+      negativeProofVerified: false,
+      scores,
+    };
+  });
+
+  return {
+    entries,
+    updatedAt: new Date().toISOString(),
+  };
 }

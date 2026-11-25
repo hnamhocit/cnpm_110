@@ -5,6 +5,7 @@ import {
   handleGetContest,
   handleGetContestCategories,
   handleGetContestResults,
+  handleGetContestScoreboard,
   handleListContests,
   handleUpdateContest,
 } from "../controllers/contest.controller";
@@ -20,7 +21,12 @@ contests.get("/", handleListContests);
 contests.get("/:id", handleGetContest);
 contests.get("/:id/categories", handleGetContestCategories);
 contests.get("/:id/results", handleGetContestResults);
-
+contests.get(
+  "/:id/scoreboard",
+  authenticate,
+  requireRoles("Admin", "Organizer"),
+  handleGetContestScoreboard,
+);
 contests.post(
   "/",
   authenticate,
