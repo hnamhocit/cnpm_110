@@ -20,7 +20,7 @@ Dương Nguyễn và Huỳnh Trần Gia Bảo cùng phụ trách Mobile. Nam Ngu
 
 ## Sprint 1 · Nền tảng và xác thực
 
-**Cập nhật theo SRS mới (2026-11-25).** Web và Mobile đã nối đăng ký, xác minh và khôi phục qua email. Backend bỏ SMS/Twilio và quyền động. Tích hợp Auth đạt với bộ gửi giả. Còn nghiệm thu SMTP thật và luồng đổi vai trò của tài khoản hiện có.
+**Cập nhật theo SRS mới (2026-11-25).** Web và Mobile đã nối đăng ký, xác minh và khôi phục qua email. Backend bỏ SMS/Twilio và quyền động. Tích hợp Auth đạt với bộ gửi giả. Web có màn hồ sơ và quản trị tài khoản, Mobile cập nhật được ảnh đại diện qua URL HTTPS. Bộ tích hợp Auth chạy 17 ca đạt, gồm đổi vai trò, thu hồi phiên và kiểm tra quyền mới. Còn nghiệm thu SMTP thật.
 
 | Mã | Phạm vi | Công việc | Người phụ trách | Trạng thái | Ghi chú |
 | --- | --- | --- | --- | --- | --- |
@@ -138,70 +138,46 @@ Các đầu việc dưới đây chưa có mã Jira riêng trong bảng phục d
 | FPC-86 | Lead | Review thuật toán tính điểm và kiểm tra xử lý đồng thời | Nam Nguyễn | DONE | Đã review và sửa tại `56c2576`. 15 unit test và 25 ca integration PostgreSQL đạt sau bản sửa. [Kết quả review](overview.md#review-fpc-86) |
 | FPC-87 | Lead | Cập nhật Swagger/Postman cho Judging | Nam Nguyễn | DONE | Năm route Judging đã được cập nhật trong OpenAPI và collection tại `56c2576`. [Hợp đồng](../ai/09-api-contracts.md#61-hợp-đồng-judging) |
 
-## Sprint 5 · Kết quả, triển lãm và kiểm thử
+## Tổng kết cuối Sprint 4
 
-**Cập nhật theo SRS mới (2026-11-25).** UC-28 dùng thống kê DB, xuất JSON và trả thống kê khi AI lỗi. Tích hợp xác nhận chỉ gửi dữ liệu tổng hợp cho AI. Còn công bố kết quả từ vòng cuối, ảnh xem trước công khai và nghiệm thu kho lưu trữ.
+| Nhóm | Kết quả chuyển giao |
+| --- | --- |
+| DONE | M01 Authentication & RBAC, theo xác nhận của Project Lead. |
+| PARTIAL | M03 Contest Lifecycle, M04 Film Logbook, M05 Submission & Proof, M06 AI Verification, M07 Blind Judging, M08 Archive & Exhibition. M09, M10 và M11 tiếp tục hỗ trợ song song. |
+| TODO | M02 Analog Master Data còn phần triển khai danh mục và tra cứu. |
+| Chưa nghiệm thu | UC-06–43. Xem phần còn thiếu và trạng thái theo nền tảng trong [bảng Use Case](use-cases.md). |
 
-| Mã | Phạm vi | Công việc | Người phụ trách | Trạng thái | Ghi chú |
-| --- | --- | --- | --- | --- | --- |
-| FPC-88 | Backend | API công bố kết quả và vinh danh người thắng | Nam Nguyễn | TODO | Route đọc kết quả hiện có. API công bố chính thức còn thiếu. |
-| FPC-89 | Backend | API Public Digital Archive có phân trang và bộ lọc | Nam Nguyễn | TODO | — |
-| FPC-90 | Backend | API chi tiết tác phẩm lưu trữ kèm điểm và nhận xét | Nam Nguyễn | TODO | — |
-| FPC-91 | Backend | API thống kê phim, ISO và lab | Hà Đức Bình | TODO | — |
-| FPC-92 | Backend | Bộ lọc nâng cao cho Archive theo film stock và camera | Hà Đức Bình | TODO | — |
-| FPC-93 | Backend | Index cho truy vấn tìm kiếm kho ảnh | Hà Đức Bình | TODO | — |
-| FPC-94 | Web | Dashboard biểu đồ thống kê cuộc thi | Vĩ Nguyễn | TODO | — |
-| FPC-95 | Web | Chốt và công bố kết quả với xác nhận nhiều bước | Vĩ Nguyễn | TODO | — |
-| FPC-96 | Web | Quản trị cài đặt hệ thống và Master Data | Vĩ Nguyễn | TODO | — |
-| FPC-97 | Web | Giao diện Digital Archive dạng masonry | Phạm Tiến Thành Nhân | REVIEW | Archive Web dùng dữ liệu mẫu, phụ thuộc FPC-89. Commit `212cef4` trên develop. |
-| FPC-98 | Web | Modal chi tiết tác phẩm đạt giải | Phạm Tiến Thành Nhân | REVIEW | Modal có UI, phụ thuộc FPC-90 để lấy dữ liệu thật. Commit `7a4e551` trên develop. |
-| FPC-99 | Web | Bộ lọc kho ảnh theo film stock, định dạng và năm | Phạm Tiến Thành Nhân | REVIEW | Lọc dữ liệu mẫu phía client; tích hợp Backend phụ thuộc FPC-89/92. Commit `eee91f0` trên develop. |
-| FPC-100 | Mobile | Màn Bảng vàng vinh danh | Dương Nguyễn | REVIEW | Đã gọi API kết quả. Backend còn điểm và giải mẫu. Commit `4c85926` trên develop. |
-| FPC-101 | Mobile | Portfolio cá nhân có lịch sử giải thưởng | Dương Nguyễn | REVIEW | Đã gọi API portfolio. Backend còn dữ liệu giải mẫu. Commit `f952350` trên develop. |
-| FPC-102 | Mobile | Chia sẻ tác phẩm đạt giải lên mạng xã hội | Huỳnh Trần Gia Bảo | TODO | — |
-| FPC-103 | Mobile | Kiểm tra Dark Mode và Light Mode trên Mobile | Huỳnh Trần Gia Bảo | TODO | — |
-| FPC-104 | Lead | Stress test tải đồng thời nhiều ảnh từ Cloud Storage | Nam Nguyễn | TODO | — |
-| FPC-105 | Lead | Rà soát bảo mật và quyền truy cập dữ liệu | Nam Nguyễn | TODO | — |
-| FPC-106 | Backend | Sửa lỗi phát hiện qua kiểm thử E2E | Nam Nguyễn | TODO | — |
-| FPC-107 | Backend | CORS, rate limiting, logging và bảo vệ endpoint nhạy cảm | Nam Nguyễn | TODO | — |
-| FPC-108 | Backend | Dữ liệu mẫu phục vụ demo | Nam Nguyễn | REVIEW | Repo có mã seed. Cần chạy và kiểm tra bộ mẫu đủ cho demo. |
+### Tồn đọng chuyển sang Sprint 5
 
-## Sprint 6 · Triển khai, phát hành và bàn giao
+| Module | UC liên quan | Việc chuyển tiếp |
+| --- | --- | --- |
+| M03 | UC-11–17, UC-34 | Chốt năm mốc và trạng thái. Hoàn thiện sao chép, đăng ký và cấu hình chấm theo vòng. Giữ các phần còn lại của FPC-29, FPC-35–36, FPC-42 và FPC-59–60 theo phạm vi SRS. |
+| M02, M04 | UC-06–08, UC-35–36 | Hoàn thiện danh mục gốc, CRUD cuộn/frame và quyền sở hữu. |
+| M05, M06 | UC-09, UC-18–23, UC-37–40 | Nối bài với đăng ký và cuộn/frame. Hoàn thiện yêu cầu đối chứng có hạn cấu hình, sửa/rút bài, quét theo yêu cầu và xác minh luồng Organizer. Chuyển phần còn thiếu của FPC-32, FPC-49–52 và FPC-65. |
+| M07 | UC-24–25, UC-29–33 | Nối Web với API chấm, kiểm tra khóa phiếu và chốt/chuyển vòng. Chuyển phần tích hợp của FPC-76–77 và FPC-79–81. |
+| M08 | UC-26–27, UC-41–43 | Hoàn thiện công bố theo kết quả vòng cuối và tích hợp kho ảnh/portfolio với dữ liệu thật. |
+| M09–11 | UC-10, UC-28 và hợp đồng/dữ liệu dùng chung | Đồng bộ API và schema theo từng UC, hoàn thiện audit/thông báo và nghiệm thu báo cáo. |
 
-**Cập nhật theo SRS mới (2026-11-25).** Web production build qua Webpack và Flutter web build đạt. Web 57 test đạt, API toàn suite 145 đạt/19 lỗi, Mobile 189 đạt/2 lỗi. Migration hiện có chỉ chạy trên PostgreSQL tạm. Chưa nghiệm thu triển khai hay build APK/iOS.
+### Công việc loại khỏi phạm vi bắt buộc
 
-| Mã | Phạm vi | Công việc | Người phụ trách | Trạng thái | Ghi chú |
-| --- | --- | --- | --- | --- | --- |
-| FPC-110 | Backend | Triển khai Backend production | Hà Đức Bình | TODO | — |
-| FPC-111 | Backend | Tên miền, SSL và reverse proxy | Hà Đức Bình | TODO | — |
-| FPC-112 | Backend | Sao lưu PostgreSQL tự động | Hà Đức Bình | TODO | — |
-| FPC-113 | Web | Kiểm tra responsive Admin và Organizer Portal | Vĩ Nguyễn | TODO | — |
-| FPC-114 | Web | Triển khai Web Portal | Vĩ Nguyễn | TODO | — |
-| FPC-115 | Web | Sửa UI/UX và tối ưu thời gian tải | Vĩ Nguyễn | TODO | — |
-| FPC-116 | Web | Kiểm tra responsive Public Contest và Digital Archive | Phạm Tiến Thành Nhân | REVIEW | Commit `8848894` trên develop. Cần xác nhận nghiệm thu. |
-| FPC-117 | Web | Tối ưu SEO và OpenGraph metadata | Phạm Tiến Thành Nhân | REVIEW | Commit `78a18d1` trên develop. Cần xác nhận nghiệm thu. |
-| FPC-118 | Web | Empty state và trang lỗi 404/500 | Phạm Tiến Thành Nhân | REVIEW | Commit `f4e96f7` trên develop. Cần xác nhận nghiệm thu. |
-| FPC-119 | Mobile | Bản phát hành Android APK và iOS TestFlight | Dương Nguyễn | TODO | — |
-| FPC-120 | Mobile | Kiểm thử Mobile trên thiết bị thật | Dương Nguyễn | TODO | — |
-| FPC-121 | Mobile | Màn thông báo mất kết nối Internet | Huỳnh Trần Gia Bảo | TODO | — |
-| FPC-122 | Mobile | Rà soát luồng Mobile từ đăng ký, nộp bài đến xem kết quả | Huỳnh Trần Gia Bảo | TODO | — |
-| FPC-123 | Lead | Tổng hợp Burndown và Velocity từ Jira | Nam Nguyễn | TODO | Ảnh Jira chỉ có trạng thái chụp tại một thời điểm. Burndown và Velocity cần lịch sử sprint hoặc dữ liệu thay thế có ghi phương pháp. |
-| FPC-124 | Lead | Hoàn thiện phần báo cáo thực nghiệm AI của Capstone | Nam Nguyễn | TODO | — |
-| FPC-125 | Lead | Kịch bản demo và video dự phòng | Nam Nguyễn | TODO | — |
+- Xác minh SMS/Twilio và chỉnh quyền động.
+- Xác minh Verified Partner Lab và giới hạn số frame cố định theo khổ phim.
+- Heatmap, phân tích hạt phim tổng hợp, giải thích bất thường quang học và công cụ đảo âm bản chuyên dụng.
+- Hạn đối chứng cố định 48 giờ và tự loại bài quá hạn.
+- Điều phối cờ lệch điểm 30%, phúc khảo/chỉnh điểm và yêu cầu tối thiểu ba giám khảo. Chỉ phần cờ và chặn theo lệch điểm của FPC-74 nằm ngoài phạm vi; giữ bảng xếp hạng. Giữ kiểm tra điểm và đồng thời trong FPC-86.
+- Yêu cầu đồng bộ thời gian thực, watermark tự động và push bắt buộc. Watermark và push là tùy chọn theo SRS.
 
-## Đặc tả liên sprint
+## Sprint 5 · Hoàn thiện module và Use Case
 
-| Mã | Phạm vi | Công việc | Người phụ trách | Trạng thái | Ghi chú |
-| --- | --- | --- | --- | --- | --- |
-| FPC-126 | Tài liệu | Module 01 Auth & RBAC | Huỳnh Trần Gia Bảo | DONE | Đã đồng bộ tài liệu với Backend và biến môi trường SMTP/Twilio. |
-| FPC-127 | Tài liệu | Module 02 Analog Master Data | Huỳnh Trần Gia Bảo | DONE | Đã có đặc tả. Theo dõi phần quản trị và tra cứu danh mục tại [overview](overview.md#độ-phủ-theo-module). |
-| FPC-128 | Tài liệu | Module 03 Contest Lifecycle | Dương Nguyễn | DONE | — |
-| FPC-129 | Tài liệu | Module 07 Blind Judging | Dương Nguyễn | DONE | — |
-| FPC-130 | Tài liệu | Module 04 Film Logbook | Vĩ Nguyễn | DONE | — |
-| FPC-131 | Tài liệu | Module 05 Submission & Proof | Vĩ Nguyễn | DONE | — |
-| FPC-132 | Tài liệu | Module 06 AI Verification | Phạm Tiến Thành Nhân | DONE | — |
-| FPC-133 | Tài liệu | Module 10 Database & Storage | Phạm Tiến Thành Nhân | DONE | — |
-| FPC-134 | Tài liệu | Module 08 Archive & Exhibition | Hà Đức Bình | DONE | — |
-| FPC-135 | Tài liệu | Module 09 Shared API Contracts | Hà Đức Bình | DONE | — |
-| FPC-136 | Backend | Chuẩn hóa tài liệu 06–10 theo mẫu dành cho AI | Hà Đức Bình | DONE | — |
-| FPC-137 | Backend | Bổ sung các phần còn lại của module 01–05 và mục 4–5 của SRS | Nam Nguyễn | DONE | — |
+**Trạng thái kế hoạch** · Chờ Project Lead chốt phạm vi, người phụ trách và ngày bắt đầu.
+
+- Dùng [thứ tự ưu tiên module](overview.md#thứ-tự-triển-khai) và bảng tồn đọng Sprint 4 để chọn UC theo phụ thuộc. Triển khai M09–11 song song theo nhu cầu của các UC đã chọn.
+- Quản lý từng UC trong [bảng Use Case](use-cases.md). Chốt phần còn thiếu và tiêu chí nghiệm thu từ SRS trước khi đánh dấu DONE.
+- Giữ phân công Jira cũ làm căn cứ truy vết. Lịch sử Sprint 5–6 trước khi đổi cách theo dõi nằm trong [bằng chứng kỹ thuật](technical-evidence.md#kế-hoạch-jira-trước-khi-tổ-chức-lại-sprint-56).
+
+## Sprint 6 · Integration, Testing, Deployment & Release
+
+- [ ] Kiểm thử tích hợp các luồng chính từ đăng ký đến công bố và tra cứu kết quả trên các nền tảng áp dụng.
+- [ ] Xác minh quyền, ẩn danh, khóa dữ liệu, lưu trữ và thông báo trên môi trường triển khai.
+- [ ] Sửa lỗi tích hợp, chạy hồi quy và xác nhận các UC đạt tiêu chí SRS.
+- [ ] Triển khai, kiểm tra sau triển khai và chốt bản phát hành.
