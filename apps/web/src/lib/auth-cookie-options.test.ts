@@ -23,7 +23,7 @@ describe("auth cookie options", () => {
 
     expect(REFRESH_COOKIE).toBe("refresh_token");
     expect(options.httpOnly).toBe(true);
-    expect(options.sameSite).toBe("lax");
+    expect(options.sameSite).toBe("strict");
     expect(options.path).toBe("/api/auth");
     expect(options.maxAge).toBe(7 * 24 * 60 * 60);
   });

@@ -2,7 +2,6 @@
 
 import { Aperture } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { AuthField } from "@/components/auth/auth-field";
@@ -24,7 +23,6 @@ const fieldInputClassName =
   "h-12 rounded-[10px] border-slate-300 bg-white px-4 text-[15px] leading-[22px] text-slate-900 placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 md:text-[15px]";
 
 export function LoginForm() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -62,10 +60,6 @@ export function LoginForm() {
         accessToken: data.accessToken,
         role: userRole,
       });
-
-      // Tạo cookie session để Server Components đọc được trực tiếp
-      // biome-ignore lint/suspicious/noDocumentCookie: Required for SSR auth in Next.js App Router
-      document.cookie = `access_token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
 
       if (userRole === "Admin" || userRole === "Organizer") {
         window.location.href = "/portal";

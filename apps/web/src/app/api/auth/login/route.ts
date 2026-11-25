@@ -1,4 +1,5 @@
 import { setAuthCookies } from "@/lib/auth-cookies";
+import { clearRefreshCache } from "@/lib/auth-tokens";
 import { API_INTERNAL_URL } from "@/lib/server-api";
 
 type LoginBody = { email?: unknown; password?: unknown };
@@ -31,18 +32,27 @@ export async function POST(request: Request) {
 
   // biome-ignore lint/suspicious/noExplicitAny: response unwrap
   const rawData = (await response.json().catch(() => ({}))) as any;
-  const data = (rawData?.data && typeof rawData.data === "object" ? rawData.data : rawData) as LoginResponse;
+  const data = (
+    rawData?.data && typeof rawData.data === "object" ? rawData.data : rawData
+  ) as LoginResponse;
   const accessToken = data?.accessToken ?? rawData?.accessToken;
   const refreshToken = data?.refreshToken ?? rawData?.refreshToken;
   const user = data?.user ?? rawData?.user;
 
   if (!response.ok || !accessToken || !refreshToken) {
     return Response.json(
-      { error: data?.error ?? rawData?.error ?? rawData?.message ?? "Đăng nhập thất bại." },
+      {
+        error:
+          data?.error ??
+          rawData?.error ??
+          rawData?.message ??
+          "Đăng nhập thất bại.",
+      },
       { status: response.ok ? 502 : response.status },
     );
   }
 
+  clearRefreshCache();
   await setAuthCookies(accessToken, refreshToken);
 
   return Response.json({ accessToken, user });

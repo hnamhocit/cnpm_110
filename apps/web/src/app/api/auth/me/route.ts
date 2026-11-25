@@ -1,43 +1,38 @@
 import { cookies } from "next/headers";
 
-import { REFRESH_COOKIE } from "@/lib/auth-cookie-options";
+import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/auth-cookie-options";
 import { setAuthCookies } from "@/lib/auth-cookies";
+import { refreshAuthTokens } from "@/lib/auth-tokens";
 import { API_INTERNAL_URL } from "@/lib/server-api";
+
+async function fetchMe(accessToken: string) {
+  return fetch(`${API_INTERNAL_URL}/api/v1/auth/me`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  });
+}
+
+// Đổi refresh token HttpOnly lấy access token mới và ghi lại cookie.
+// Trả về access token mới, hoặc null nếu refresh thất bại.
+async function tryRefresh(): Promise<string | null> {
+  const store = await cookies();
+  const refreshToken = store.get(REFRESH_COOKIE)?.value;
+
+  if (!refreshToken) return null;
+
+  const tokens = await refreshAuthTokens(refreshToken);
+  if (!tokens) return null;
+
+  await setAuthCookies(tokens.accessToken, tokens.refreshToken);
+  return tokens.accessToken;
+}
 
 export async function GET() {
   const cookieStore = await cookies();
-  let accessToken = cookieStore.get("access_token")?.value;
+  let accessToken = cookieStore.get(ACCESS_COOKIE)?.value ?? null;
 
-  // Nếu không có access_token hoặc vừa F5, thử khôi phục từ refresh_token
   if (!accessToken) {
-    const refreshToken = cookieStore.get(REFRESH_COOKIE)?.value;
-    if (refreshToken) {
-      try {
-        const refreshRes = await fetch(`${API_INTERNAL_URL}/api/v1/auth/refresh`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refreshToken }),
-          cache: "no-store",
-        });
-        if (refreshRes.ok) {
-          // biome-ignore lint/suspicious/noExplicitAny: unwrap
-          const rawData = (await refreshRes.json().catch(() => ({}))) as any;
-          const data =
-            rawData?.data && typeof rawData.data === "object"
-              ? rawData.data
-              : rawData;
-          const newAccess = data?.accessToken ?? rawData?.accessToken;
-          const newRefresh =
-            data?.refreshToken ?? rawData?.refreshToken ?? refreshToken;
-          if (newAccess) {
-            accessToken = newAccess;
-            await setAuthCookies(newAccess, newRefresh);
-          }
-        }
-      } catch {
-        // refresh failed
-      }
-    }
+    accessToken = await tryRefresh();
   }
 
   if (!accessToken) {
@@ -45,42 +40,14 @@ export async function GET() {
   }
 
   try {
-    let response = await fetch(`${API_INTERNAL_URL}/api/v1/auth/me`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      cache: "no-store",
-    });
+    let response = await fetchMe(accessToken);
 
-    // Nếu token hết hạn (401), tự động silent-refresh và thử lại
+    // Access token hết hạn: silent-refresh rồi thử lại một lần.
     if (response.status === 401) {
-      const refreshToken = cookieStore.get(REFRESH_COOKIE)?.value;
-      if (refreshToken) {
-        const refreshRes = await fetch(`${API_INTERNAL_URL}/api/v1/auth/refresh`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refreshToken }),
-          cache: "no-store",
-        });
-        if (refreshRes.ok) {
-          // biome-ignore lint/suspicious/noExplicitAny: unwrap
-          const rawData = (await refreshRes.json().catch(() => ({}))) as any;
-          const data =
-            rawData?.data && typeof rawData.data === "object"
-              ? rawData.data
-              : rawData;
-          const newAccess = data?.accessToken ?? rawData?.accessToken;
-          const newRefresh =
-            data?.refreshToken ?? rawData?.refreshToken ?? refreshToken;
-          if (newAccess) {
-            accessToken = newAccess;
-            await setAuthCookies(newAccess, newRefresh);
-            response = await fetch(`${API_INTERNAL_URL}/api/v1/auth/me`, {
-              headers: { Authorization: `Bearer ${newAccess}` },
-              cache: "no-store",
-            });
-          }
-        }
+      const refreshedToken = await tryRefresh();
+      if (refreshedToken) {
+        accessToken = refreshedToken;
+        response = await fetchMe(accessToken);
       }
     }
 
@@ -93,7 +60,8 @@ export async function GET() {
 
     // biome-ignore lint/suspicious/noExplicitAny: response unwrap
     const rawData = (await response.json().catch(() => ({}))) as any;
-    const user = rawData?.data?.user ?? rawData?.data ?? rawData?.user ?? rawData;
+    const user =
+      rawData?.data?.user ?? rawData?.data ?? rawData?.user ?? rawData;
     return Response.json({ user });
   } catch {
     return Response.json({ error: "Internal server error" }, { status: 500 });
