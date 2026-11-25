@@ -1,5 +1,15 @@
 # Module 11 · Nhật ký kiểm toán, thông báo và báo cáo
 
+## Phạm vi theo SRS hiện hành
+
+**UC-10/28, CR-04.** Ghi AuditLog cho các thay đổi nghiệp vụ, kèm người thực hiện, thời gian, thao tác, dữ liệu cũ/mới và lý do. Email và thông báo trong ứng dụng cho trạng thái bài, yêu cầu đối chứng và kết quả. Push là tùy chọn.
+
+Báo cáo theo cuộc thi/hạng mục chỉ truy cập theo quyền. Dùng truy vấn DB để tổng hợp số liệu, cung cấp xuất báo cáo cơ bản và gửi cho AI tập số liệu tổng hợp không chứa thông tin định danh. Khi AI lỗi, số liệu và xuất báo cáo cơ bản vẫn khả dụng.
+
+## Thiết kế trước lần cập nhật SRS
+
+> Tham chiếu lịch sử để truy vết thiết kế và các hợp đồng cũ. Yêu cầu nghiệp vụ hiện hành nằm trong [SRS](../srs.md) và mục trên.
+
 Module dùng chung cho Auth, cuộc thi, nộp bài, AI, chấm thi và công bố. Phạm vi lấy từ [SRS](../srs.md), gồm UC-10, UC-28, BR-18, CR-04 và yêu cầu SMTP/FCM ở §5.1.2.
 
 ## Nhật ký kiểm toán · UC-10, BR-18, CR-04
@@ -24,3 +34,9 @@ Module dùng chung cho Auth, cuộc thi, nộp bài, AI, chấm thi và công b�
 ## Quyết định cần chốt trước khi triển khai
 
 Thống nhất cấu trúc sự kiện audit, chính sách lưu và trường cần ẩn, kênh gửi theo sự kiện, và phạm vi/mẫu số/định dạng xuất báo cáo. Sau khi chốt, ghi DTO và quyền truy cập vào [Module 09](09-api-contracts.md), cập nhật OpenAPI và kiểm thử bằng route thực tế. Thứ tự triển khai nằm trong [overview](../progress/overview.md#thứ-tự-triển-khai).
+
+## Hợp đồng UC-28
+
+`GET /api/v1/contests/{id}/analytics` trả thống kê tổng thể và theo hạng mục cho Organizer sở hữu cuộc thi. `POST` cùng đường dẫn tạo nhận xét AI theo yêu cầu và trả số liệu gốc kèm nhận xét. Nếu dịch vụ AI chưa cấu hình hoặc không trả kết quả hợp lệ, nhận xét để trống và số liệu vẫn khả dụng. Web xuất thống kê và nhận xét hiện có thành JSON.
+
+Dịch vụ tại `AI_ANALYTICS_URL` nhận tổng số bài, số bài được cảnh báo và phân bố trạng thái; mỗi hạng mục dùng chỉ số thứ tự và số đếm. Không truyền UUID, tên, metadata tự do, URL ảnh hoặc thông tin thí sinh. Dịch vụ trả JSON `{ "report": "..." }`.

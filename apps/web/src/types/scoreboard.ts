@@ -12,13 +12,14 @@ export type ScoreboardEntry = {
   categoryId: string;
   categoryName: string;
   judgeCount: number;
-  /** Tổng điểm tối đa của hạng mục (tổng maxScore các tiêu chí) — dùng cho BR-14. */
+  /** Tổng điểm tối đa của hạng mục. */
   scoreScale: number;
+  proofRequired?: boolean;
   negativeProofVerified: boolean;
   scores: JudgeScore[];
 };
 
-export type ScoreboardStatus = "COMPLETE" | "JUDGING" | "DISCREPANCY";
+export type ScoreboardStatus = "COMPLETE" | "JUDGING";
 
 export type RankedScoreboardEntry = ScoreboardEntry & {
   finalScore: number | null;
@@ -35,6 +36,5 @@ export type ScoreboardSummary = {
   total: number;
   completed: number;
   judging: number;
-  discrepancy: number;
   missingProof: number;
 };

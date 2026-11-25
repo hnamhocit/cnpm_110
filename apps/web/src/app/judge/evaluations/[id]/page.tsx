@@ -56,8 +56,6 @@ const MOCK_SUBMISSION: BlindEvaluationSubmission = {
   status: "PENDING_EVALUATION",
 };
 
-export const instant = false;
-
 interface JudgingPageProps {
   params: Promise<{ id: string }>;
 }

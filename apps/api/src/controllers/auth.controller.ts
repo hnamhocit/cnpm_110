@@ -18,7 +18,6 @@ import {
   resendAccountVerification,
   resetAccountPassword,
   verifyAccountEmail,
-  verifyAccountPhone,
 } from "../services/identity.service";
 import { AppError } from "../utils/errors";
 
@@ -71,7 +70,7 @@ function accountInput(body: Record<string, unknown>, password: unknown) {
   return {
     fullName: boundedString(body.fullName, "fullName", 100, 2),
     email,
-    phoneNumber: normalizePhone(body.phoneNumber),
+    phoneNumber: body.phoneNumber == null ? undefined : normalizePhone(body.phoneNumber),
     password: validated,
   };
 }
@@ -96,18 +95,12 @@ export function identityHandlers(delivery: IdentityDelivery = identityDelivery) 
     },
     async verifyEmail(c: Context) {
       const body = await parseJsonBody(c);
-      return c.ok(await verifyAccountEmail(normalizeEmail(body.email), verificationCode(body.code), delivery));
-    },
-    async verifyPhone(c: Context) {
-      const body = await parseJsonBody(c);
-      await verifyAccountPhone(normalizeEmail(body.email), verificationCode(body.code), delivery);
-      return c.ok({ status: "ACTIVE" });
+      return c.ok(await verifyAccountEmail(normalizeEmail(body.email), verificationCode(body.code)));
     },
     async resendVerification(c: Context) {
       const body = await parseJsonBody(c);
       const password = boundedPassword(body.password);
-      const phone = body.phoneNumber === undefined ? undefined : normalizePhone(body.phoneNumber);
-      return c.ok(await resendAccountVerification(normalizeEmail(body.email), password, phone, delivery));
+      return c.ok(await resendAccountVerification(normalizeEmail(body.email), password, delivery));
     },
     async forgotPassword(c: Context) {
       const body = await parseJsonBody(c);

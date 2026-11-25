@@ -1,5 +1,5 @@
 import { createHmac, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
-import { and, eq, isNotNull, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "../db";
 import { accountAuditLogs, accountChallenges, roles, userRoles, users } from "../db/schema";
 import type { Role } from "../middlewares/auth";
@@ -8,11 +8,10 @@ import { revokeAccountSessions } from "./auth.service";
 import type { IdentityDelivery } from "./identity-delivery";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
-type Purpose = typeof accountChallenges.$inferSelect.purpose;
+type Purpose = "email" | "password_reset";
 type Account = typeof users.$inferSelect;
 
 const CODE_TTL_MS = 15 * 60_000;
-const PHONE_CHALLENGE_TTL_MS = 10 * 60_000;
 const RESEND_MS = 60_000;
 const MAX_ATTEMPTS = 5;
 
@@ -41,7 +40,7 @@ async function issueChallenge(tx: Transaction, accountId: string, purpose: Purpo
     : randomBytes(32).toString("base64url");
   const challenge = {
     tokenHash: digest(purpose, raw),
-    expiresAt: new Date(now + (purpose === "phone" ? PHONE_CHALLENGE_TTL_MS : CODE_TTL_MS)),
+    expiresAt: new Date(now + CODE_TTL_MS),
     requestedAt: new Date(now),
     consumedAt: null,
     attempts: 0,
@@ -51,7 +50,7 @@ async function issueChallenge(tx: Transaction, accountId: string, purpose: Purpo
   return raw;
 }
 
-async function consumeChallenge(tx: Transaction, accountId: string, purpose: Exclude<Purpose, "phone">, value: string) {
+async function consumeChallenge(tx: Transaction, accountId: string, purpose: Purpose, value: string) {
   const key = challengeKey(accountId, purpose);
   const [challenge] = await tx.select().from(accountChallenges).where(key);
   if (!challenge || challenge.consumedAt || challenge.attempts >= MAX_ATTEMPTS ||
@@ -66,14 +65,8 @@ async function consumeChallenge(tx: Transaction, accountId: string, purpose: Exc
   return true;
 }
 
-async function isPhoneInUse(tx: Transaction, phoneNumber: string) {
-  const [existing] = await tx.select({ id: users.id }).from(users)
-    .where(and(eq(users.phoneNumber, phoneNumber), isNotNull(users.phoneVerifiedAt)));
-  return Boolean(existing);
-}
-
 export async function createPendingAccount(
-  input: { fullName: string; email: string; password: string; phoneNumber: string; role: Role },
+  input: { fullName: string; email: string; password: string; phoneNumber?: string; role: Role },
   delivery: IdentityDelivery,
   actorId?: string,
 ) {
@@ -81,7 +74,6 @@ export async function createPendingAccount(
   const passwordHash = await Bun.password.hash(password);
   const result = await db.transaction(async (tx) => {
     if (await getAccountByEmail(tx, email)) throw AppError.conflict("Email is already registered");
-    if (await isPhoneInUse(tx, phoneNumber)) throw AppError.conflict("Phone number is already registered");
     const [assignedRole] = await tx.select({ id: roles.id }).from(roles).where(eq(roles.name, role));
     if (!assignedRole) throw new AppError("Requested role is unavailable", 503);
 
@@ -114,73 +106,29 @@ async function deliverCode(send: () => Promise<void>) {
   }
 }
 
-export async function verifyAccountEmail(email: string, code: string, delivery: IdentityDelivery) {
-  const result = await db.transaction(async (tx) => {
+export async function verifyAccountEmail(email: string, code: string) {
+  const verified = await db.transaction(async (tx) => {
     const account = await getAccountByEmail(tx, email);
-    if (!account?.isActive || account.emailVerifiedAt || !account.phoneNumber ||
-        !await consumeChallenge(tx, account.id, "email", code)) return null;
+    if (!account?.isActive || account.emailVerifiedAt ||
+        !await consumeChallenge(tx, account.id, "email", code)) return false;
     await tx.update(users).set({ emailVerifiedAt: new Date(), updatedAt: new Date() })
       .where(eq(users.id, account.id));
-    const started = await issueChallenge(tx, account.id, "phone");
-    return { phone: account.phoneNumber, started: Boolean(started) };
+    return true;
   });
-  if (!result) throw AppError.badRequest("Invalid or expired verification code");
-  return {
-    status: "PENDING_VERIFICATION",
-    deliveryStatus: result.started
-      ? await deliverCode(() => delivery.startPhoneVerification(result.phone))
-      : "RETRY_REQUIRED",
-  };
-}
-
-export async function verifyAccountPhone(email: string, code: string, delivery: IdentityDelivery) {
-  const result = await db.transaction(async (tx) => {
-    const account = await getAccountByEmail(tx, email);
-    if (!account?.isActive || !account.emailVerifiedAt || !account.phoneNumber ||
-        account.phoneVerifiedAt) return "invalid";
-    const key = challengeKey(account.id, "phone");
-    const [challenge] = await tx.select().from(accountChallenges).where(key);
-    if (!challenge || challenge.consumedAt || challenge.attempts >= MAX_ATTEMPTS ||
-        challenge.expiresAt.getTime() <= Date.now()) return "invalid";
-    if (!await delivery.checkPhoneVerification(account.phoneNumber, code)) {
-      await tx.update(accountChallenges).set({ attempts: challenge.attempts + 1 }).where(key);
-      return "invalid";
-    }
-    await tx.update(accountChallenges).set({ consumedAt: new Date() }).where(key);
-    // Serialize claims to the same phone across different accounts.
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${account.phoneNumber}, 0))`);
-    if (await isPhoneInUse(tx, account.phoneNumber)) return "duplicate";
-    await tx.update(users).set({ phoneVerifiedAt: new Date(), updatedAt: new Date() })
-      .where(eq(users.id, account.id));
-    return "verified";
-  });
-  if (result === "duplicate") throw AppError.conflict("Phone number is already registered");
-  if (result !== "verified") throw AppError.badRequest("Invalid or expired verification code");
+  if (!verified) throw AppError.badRequest("Invalid or expired verification code");
+  return { status: "ACTIVE" };
 }
 
 export async function resendAccountVerification(
-  email: string, password: string, suppliedPhone: string | undefined, delivery: IdentityDelivery,
+  email: string, password: string, delivery: IdentityDelivery,
 ) {
-  const result = await db.transaction(async (tx) => {
+  const code = await db.transaction(async (tx) => {
     const account = await getAccountByEmail(tx, email);
-    if (!account?.isActive || account.phoneVerifiedAt ||
+    if (!account?.isActive || account.emailVerifiedAt ||
         !await Bun.password.verify(password, account.passwordHash)) return null;
-
-    const phone = suppliedPhone ?? account.phoneNumber;
-    if (!phone) throw AppError.badRequest("Phone number is required");
-    const purpose = account.emailVerifiedAt ? "phone" : "email";
-    const code = await issueChallenge(tx, account.id, purpose);
-    if (!code) return null;
-    if (phone !== account.phoneNumber) {
-      if (await isPhoneInUse(tx, phone)) throw AppError.conflict("Phone number is already registered");
-      await tx.update(users).set({ phoneNumber: phone, updatedAt: new Date() }).where(eq(users.id, account.id));
-    }
-    return { code, purpose, phone };
+    return issueChallenge(tx, account.id, "email");
   });
-  if (!result) return { deliveryStatus: "ACCEPTED" };
-  const { code, purpose, phone } = result;
-  return { deliveryStatus: await deliverCode(() =>
-    purpose === "email" ? delivery.emailCode(email, code) : delivery.startPhoneVerification(phone)) };
+  return { deliveryStatus: code ? await deliverCode(() => delivery.emailCode(email, code)) : "ACCEPTED" };
 }
 
 export async function requestPasswordReset(email: string, delivery: IdentityDelivery) {

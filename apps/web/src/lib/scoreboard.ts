@@ -5,13 +5,9 @@ import type {
   ScoreboardSummary,
 } from "@/types/scoreboard";
 
-/** BR-14: chỉ gắn cờ khi chênh lệch LỚN HƠN 30% thang điểm. */
-export const DISCREPANCY_THRESHOLD = 0.3;
-
 export const SCOREBOARD_STATUS_LABELS: Record<ScoreboardStatus, string> = {
   COMPLETE: "Hoàn tất",
   JUDGING: "Đang chấm",
-  DISCREPANCY: "Lệch điểm",
 };
 
 function round2(value: number): number {
@@ -30,23 +26,11 @@ export function computeFinalScore(entry: ScoreboardEntry): number | null {
   return round2(total / entry.scores.length);
 }
 
-/**
- * BR-14: Delta_S = S_max - S_min; gắn cờ khi Delta_S > 30% * S_scale.
- * Cần tối thiểu 2 phiếu mới so sánh được.
- */
-export function isDiscrepancy(entry: ScoreboardEntry): boolean {
-  if (entry.scores.length < 2 || entry.scoreScale <= 0) return false;
-
-  const totals = entry.scores.map((score) => score.totalScore);
-  const delta = Math.max(...totals) - Math.min(...totals);
-  return delta > DISCREPANCY_THRESHOLD * entry.scoreScale;
-}
-
 export function getScoreboardStatus(entry: ScoreboardEntry): ScoreboardStatus {
   if (entry.judgeCount <= 0 || entry.scores.length < entry.judgeCount) {
     return "JUDGING";
   }
-  return isDiscrepancy(entry) ? "DISCREPANCY" : "COMPLETE";
+  return "COMPLETE";
 }
 
 function toRankedEntry(entry: ScoreboardEntry): RankedScoreboardEntry {
@@ -118,7 +102,6 @@ export function summarizeScoreboard(
     total: entries.length,
     completed: 0,
     judging: 0,
-    discrepancy: 0,
     missingProof: 0,
   };
 
@@ -126,8 +109,7 @@ export function summarizeScoreboard(
     const status = getScoreboardStatus(entry);
     if (status === "COMPLETE") summary.completed += 1;
     if (status === "JUDGING") summary.judging += 1;
-    if (status === "DISCREPANCY") summary.discrepancy += 1;
-    if (!entry.negativeProofVerified) summary.missingProof += 1;
+    if (entry.proofRequired && !entry.negativeProofVerified) summary.missingProof += 1;
   }
 
   return summary;

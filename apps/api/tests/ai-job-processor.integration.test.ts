@@ -1,9 +1,11 @@
 
-import { describe, expect, mock, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { pool } from "../src/db";
 import { db } from "../src/db/index";
+import * as aiAnalysis from "../src/services/ai/ai-analysis";
+import { processAiJob } from "../src/services/ai/ai-job-processor";
 import {
   aiAnalysisJobs,
   categories,
@@ -16,21 +18,16 @@ import {
 // Mock AI analysis to avoid real R2/API requests.
 let mockProbability = 0.85;
 
-const analyzeMock = mock(
-  async (_imagePath: string) => ({
-    aiGeneratedProbability: mockProbability,
-  }),
-);
-
-mock.module("../src/services/ai-analysis", () => ({
-  analyzeSubmissionImage: analyzeMock,
-}));
-
-const { processAiJob } = await import(
-  "../src/services/ai/ai-job-processor"
-);
-
 describe("FPC-54: AI Job Processor integration", () => {
+  let analyzeMock: ReturnType<typeof spyOn<typeof aiAnalysis, "analyzeSubmissionImage">>;
+
+  beforeAll(() => {
+    analyzeMock = spyOn(aiAnalysis, "analyzeSubmissionImage")
+      .mockImplementation(async () => ({ aiGeneratedProbability: mockProbability }));
+  });
+
+  afterAll(() => analyzeMock.mockRestore());
+
   test("Save AI score and complete job", async () => {
     // Safety: use only the dedicated test database.
     const result = await pool.query(

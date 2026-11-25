@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import { generateContestAnalytics, getContestAnalytics } from "../services/contest-analytics";
+import { AppError } from "../utils/errors";
 import {
   handleCreateContest,
   handleDeleteContest,
@@ -26,6 +28,21 @@ contests.get(
   authenticate,
   requirePermission("judging:read_scoreboard"),
   handleGetContestScoreboard,
+);
+contests.on(
+  ["GET", "POST"],
+  "/:id/analytics",
+  authenticate,
+  requirePermission("contests:read_analytics"),
+  async (c) => {
+    const contestId = c.req.param("id");
+    if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(contestId)) {
+      throw AppError.badRequest("Invalid contest ID");
+    }
+    const statistics = await getContestAnalytics(contestId, c.get("user").id);
+    const report = c.req.method === "POST" ? await generateContestAnalytics(statistics) : null;
+    return c.ok({ ...statistics, report });
+  },
 );
 contests.post(
   "/",

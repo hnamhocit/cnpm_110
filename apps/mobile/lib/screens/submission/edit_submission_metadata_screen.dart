@@ -317,49 +317,6 @@ class _EditSubmissionMetadataScreenState
   bool get isProofRequested =>
       widget.submissionStatus?.trim().toUpperCase() == 'PROOF_REQUESTED';
 
-  // --- BR-23 Physical Frame Limits ---
-  static int maxFramesForFormat(String format) {
-    final normalized = format.trim().toLowerCase();
-    if (normalized.contains('135') || normalized.contains('35mm')) {
-      return 39;
-    }
-    if (normalized.contains('645') || normalized.contains('6x4.5')) {
-      return 16;
-    }
-    if (normalized.contains('67') || normalized.contains('6x7')) {
-      return 10;
-    }
-    if (normalized.contains('120') ||
-        normalized.contains('66') ||
-        normalized.contains('6x6')) {
-      return 12;
-    }
-    if (normalized.contains('4x5')) {
-      return 1;
-    }
-    return 39;
-  }
-
-  String? _validateFrameNumber(String? value) {
-    final emptyCheck =
-        Validators.notEmpty(value, field: 'Số frame trên cuộn phim');
-    if (emptyCheck != null) return emptyCheck;
-
-    final trimmed = value!.trim();
-    final match = RegExp(r'^(\d+)').firstMatch(trimmed);
-    if (match == null) {
-      return 'Số frame phải bắt đầu bằng số (ví dụ: 12 hoặc 12A)';
-    }
-
-    final frameNum = int.tryParse(match.group(1)!);
-    final maxLimit = maxFramesForFormat(_selectedFormat);
-    if (frameNum == null || frameNum < 0 || frameNum > maxLimit) {
-      return 'Khổ $_selectedFormat tối đa $maxLimit frame theo BR-23';
-    }
-
-    return null;
-  }
-
   String _getPushPullText(int rated, int shot) {
     if (rated == shot) return 'Độ nhạy chuẩn';
     if (shot > rated) {
@@ -850,17 +807,12 @@ class _EditSubmissionMetadataScreenState
                           CustomInputField(
                             controller: _frameNumberController,
                             labelText: 'Số Frame trên cuộn phim *',
-                            hintText: 'Ví dụ: 14, 00, 36A...',
+                            hintText: 'Ví dụ: 14, 40, 120',
                             prefixIcon: const Icon(Icons.format_list_numbered),
-                            validator: _validateFrameNumber,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4, left: 12),
-                            child: Text(
-                              'Giới hạn vật lý: tối đa ${maxFramesForFormat(_selectedFormat)} frame theo BR-23',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
+                            validator: (value) =>
+                                Validators.positiveInteger(
+                              value,
+                              field: 'Số frame trên cuộn phim',
                             ),
                           ),
                           const SizedBox(height: 14),

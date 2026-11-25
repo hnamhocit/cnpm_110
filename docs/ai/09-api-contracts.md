@@ -1,5 +1,13 @@
 # Module Spec: 09 - Shared API Contracts
 
+## Phạm vi theo SRS hiện hành
+
+**Hợp đồng hiện hành.** Đối chiếu [OpenAPI](../openapi.yaml) và [route Hono](../../apps/api/src/index.ts) trước khi tích hợp client. `mounted` cho route đã đăng ký và `planned` cho hợp đồng chưa triển khai. Các hợp đồng cần cập nhật cho UC-11, UC-15/25, UC-17/34 gồm sao chép cấu hình, đăng ký hạng mục và khóa/chuyển vòng. UC-28 đã có GET/POST `/api/v1/contests/{id}/analytics`. Các DTO/trạng thái kỹ thuật bên dưới có thể còn phản ánh phiên bản cũ.
+
+## Thiết kế trước lần cập nhật SRS
+
+> Tham chiếu lịch sử để truy vết thiết kế và các hợp đồng cũ. Yêu cầu nghiệp vụ hiện hành nằm trong [SRS](../srs.md) và mục trên.
+
 ## 1. Domain Entities & Database Mapping
 
 ### 1.1 Tổng quan
@@ -1936,7 +1944,7 @@ Dùng danh mục thông báo trong SRS §6.3.
 
 ### 5.1. Message Code Catalog (MSG001–MSG028)
 
-Dùng danh mục mã và ngữ nghĩa tại [SRS §6.3](../srs.md#63-danh-mục-mã-thông-báo-ứng-dụng-application-messages-catalog-msg001-đến-msg028). HTTP status phản ánh kết quả request. Việc truyền mã MSG trong response cần được định nghĩa theo từng hợp đồng.
+Dùng danh mục mã và ngữ nghĩa tại [SRS §6.3](../srs.md#63-application-messages). HTTP status phản ánh kết quả request. Việc truyền mã MSG trong response cần được định nghĩa theo từng hợp đồng.
 
 ### 5.2. Validation & Error Handling
 
@@ -2811,7 +2819,7 @@ Sau khi được phê duyệt, tài liệu cần được đồng bộ với Ope
 
 [OpenAPI](../openapi.yaml) liệt kê **51** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **28** thao tác dự kiến đã có method và path. Dùng `x-implementation` để tra trạng thái và [đăng ký Hono](../../apps/api/src/index.ts) để lần tới route thực tế.
 
-Các chức năng còn thiếu method/path trong đặc tả gồm tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, quản lý hạng mục và vòng chấm, sửa metadata hoặc rút bài thi, đọc bảng điểm cá nhân, điều phối lệch điểm và xuất thống kê cuộc thi (UC-28, [Module 11](11-cross-cutting-services.md)). Xem yêu cầu nghiệp vụ tương ứng tại [SRS](../srs.md#22-use-case-catalog-43-ca-sử-dụng-cốt-lõi).
+Các chức năng còn thiếu method/path trong đặc tả gồm tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, quản lý hạng mục và vòng chấm, sửa metadata hoặc rút bài thi, đọc bảng điểm cá nhân, điều phối lệch điểm và xuất thống kê cuộc thi (UC-28, [Module 11](11-cross-cutting-services.md)). Xem yêu cầu nghiệp vụ tương ứng tại [SRS](../srs.md#22-use-case-catalog).
 
 Route công khai `GET /api/v1/contests/{id}/results` hiện dùng dữ liệu giải và điểm mẫu. DTO lịch trình của `POST /api/v1/contests` hiện dùng hai mốc `startAt` và `endAt`. Quy tắc công bố kết quả và lịch trình đích được mô tả trong Module 03 và 08.
 

@@ -18,6 +18,7 @@ const TEST_SECRET = "bug28-integration-test-secret-at-least-32-characters";
 mock.module("../src/r2", () => ({
     uploadToR2: async (_file: File, key: string) => key,
     deleteFromR2: async (_key: string) => { },
+    getR2SignedReadUrl: async (key: string) => `/uploads/${key}`,
 }));
 
 const { default: submissionRoute } = await import("../src/routes/submissions.route");
@@ -221,25 +222,28 @@ describe("Bug 28: Submission integration tests", () => {
         }
     });
 
-    test("BR-05: Rejects duplicate film roll and frame", async () => {
+    test("BR-05/23: Accepts frame 40 and rejects duplicate entries across categories", async () => {
         const { participantId, organizerId, contestId, categoryId } = await createTestData();
 
         try {
+            const secondCategoryId = crypto.randomUUID();
+            await pool.query("INSERT INTO categories (id, contest_id, name) VALUES ($1, $2, $3)",
+                [secondCategoryId, contestId, "Second category"]);
             const firstResponse = await submitTestImage(
                 participantId,
                 contestId,
                 categoryId,
                 "ROLL-001",
-                "01",
+                "40",
             );
             expect(firstResponse.status).toBe(201);
 
             const secondResponse = await submitTestImage(
                 participantId,
                 contestId,
-                categoryId,
+                secondCategoryId,
                 "ROLL-001",
-                "01",
+                "040",
             );
             expect(secondResponse.status).toBe(409);
 

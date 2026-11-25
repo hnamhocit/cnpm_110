@@ -373,9 +373,9 @@ export async function updateContest(
         .where(and(eq(contestJudges.contestId, id), eq(contestJudges.isActive, true)))
         .groupBy(contestJudges.categoryId);
       if (categoryWeights.length === 0 || categoryWeights.some(
-        ({ categoryId }) => (activeJudges.find((category) => category.categoryId === categoryId)?.total ?? 0) < 3,
+        ({ categoryId }) => (activeJudges.find((category) => category.categoryId === categoryId)?.total ?? 0) < 1,
       )) {
-        throw new AppError("Each category requires at least three active judges (BR-20)", 422);
+        throw new AppError("Each category requires at least one active judge (BR-20)", 422);
       }
       if (categoryWeights.some(({ valid }) => !valid)) {
         throw new AppError("Criterion weights must total 1.0000 per category (BR-15)", 422);
@@ -387,9 +387,6 @@ export async function updateContest(
         throw AppError.conflict("Contest is not ready for publication");
       }
       const scoreboard = await getContestScoreboard(id, actor, tx);
-      if (scoreboard.entries.some((entry) => entry.discrepancyFlag)) {
-        throw AppError.conflict("Resolve scoring discrepancies before publishing");
-      }
       const assignments = await tx.select({ lockedAt: contestJudges.lockedAt })
         .from(contestJudges)
         .where(and(eq(contestJudges.contestId, id), eq(contestJudges.isActive, true)));
@@ -669,7 +666,6 @@ export async function getContestScoreboard(
       submittedAt: string;
     }[] = [];
     let finalScore: number | null = null;
-    let discrepancyFlag: "DISCREPANCY_CONFLICT" | null = null;
     if (criteria.length > 0 && completeJudges.length > 0) {
       const aggregation = aggregateScores({
         criteria,
@@ -678,9 +674,7 @@ export async function getContestScoreboard(
           criterionScores: judge.criterionScores,
         })),
       });
-      discrepancyFlag = aggregation.flag;
       if (
-        !discrepancyFlag &&
         assignedJudgeIds.length > 0 &&
         completeJudges.length === assignedJudgeIds.length
       ) {
@@ -719,7 +713,7 @@ export async function getContestScoreboard(
       scoreScale,
       negativeProofVerified: false,
       finalScore,
-      discrepancyFlag,
+      discrepancyFlag: null,
       scores,
     };
   });

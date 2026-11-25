@@ -1,6 +1,7 @@
 export type SubmissionStatus =
   | "PENDING_AI"
   | "FLAGGED"
+  | "SUSPICIOUS"
   | "APPROVED"
   | "DISQUALIFIED"
   | "PROOF_REQUESTED"

@@ -1,4 +1,4 @@
-import { AI_HIGH_RISK_THRESHOLD } from "./ai-detection";
+import { aiProbabilityThreshold } from "./ai-thresholds";
 
 export type VerificationStatus =
   | "VERIFIED"
@@ -33,7 +33,7 @@ export function classifyAiResult(
     );
   }
 
-  if (aiGeneratedProbability >= AI_HIGH_RISK_THRESHOLD) {
+  if (aiGeneratedProbability >= aiProbabilityThreshold()) {
     return {
       status: "FLAGGED",
       reasons: ["AI_FLAGGED_HIGH_RISK"],

@@ -1,5 +1,13 @@
 # Module Spec: 08 - Archive & Exhibition
 
+## Phạm vi theo SRS hiện hành
+
+**UC-26–27, UC-41–43, BR-06/16/17/25.** Công bố từ vòng cuối đã chốt và các bài đã hoàn tất đối chứng bắt buộc. Giữ điểm, thứ hạng và giải bất biến sau công bố. Kho lưu trữ trình bày bản xem trước tối ưu và thông tin bản quyền; ảnh gốc riêng tư, watermark tùy chọn. Portfolio lấy từ lịch sử nộp bài và kết quả. Khách chỉ truy cập nội dung đã công bố.
+
+## Thiết kế trước lần cập nhật SRS
+
+> Tham chiếu lịch sử để truy vết thiết kế và các hợp đồng cũ. Yêu cầu nghiệp vụ hiện hành nằm trong [SRS](../srs.md) và mục trên.
+
 ## Phạm vi nghiệm thu và trạng thái hiện tại
 
 UC-26–27 và UC-41–43 gồm công bố, xuất bản triển lãm, kết quả/phản hồi cá nhân, portfolio và tra cứu công khai. API kết quả và portfolio hiện có, nhưng route kết quả còn dùng điểm và giải mẫu. Nghiệm thu bằng dữ liệu chấm thật, toàn bộ phiếu cần thiết đã khóa, cờ lệch điểm đã giải quyết, bài chung kết/xét giải có đối chứng đã duyệt và kết quả bất biến sau công bố. Chỉ xuất bản bản ảnh hiển thị đã xử lý, bảo vệ bản gốc theo BR-17. Báo cáo UC-28 được mô tả tại [Module 11](11-cross-cutting-services.md).

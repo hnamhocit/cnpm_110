@@ -180,7 +180,7 @@ export async function loginUser(input: { email: string; password: string }) {
       .where(eq(sql`LOWER(${users.email})`, email))
       .for("update")
       .limit(1);
-    if (!user || !user.isActive || (user.verificationRequired && !user.phoneVerifiedAt) || (user.lockedUntil && user.lockedUntil > new Date())) {
+    if (!user || !user.isActive || (user.verificationRequired && !user.emailVerifiedAt) || (user.lockedUntil && user.lockedUntil > new Date())) {
       return null;
     }
 
@@ -224,7 +224,7 @@ export async function refreshUserTokens(oldToken: string) {
     // Account changes and session issuance take locks in this order.
     const [account] = await tx.select().from(users)
       .where(eq(users.id, candidate.userId)).for("update");
-    if (!account?.isActive || (account.verificationRequired && !account.phoneVerifiedAt) || (account.lockedUntil && account.lockedUntil > new Date())) {
+    if (!account?.isActive || (account.verificationRequired && !account.emailVerifiedAt) || (account.lockedUntil && account.lockedUntil > new Date())) {
       throw AppError.unauthorized("Invalid or expired refresh token");
     }
 
@@ -260,8 +260,8 @@ export async function revokeAccountSessions(executor: DbExecutor, userId: string
 type AccountStatus = "ACTIVE" | "LOCKED" | "BANNED" | "PENDING_VERIFICATION";
 type ManagedStatus = Exclude<AccountStatus, "PENDING_VERIFICATION">;
 
-function accountStatus(account: { isActive: boolean; isBanned: boolean; verificationRequired: boolean; phoneVerifiedAt: Date | null }): AccountStatus {
-  if (account.isActive) return account.verificationRequired && !account.phoneVerifiedAt
+function accountStatus(account: { isActive: boolean; isBanned: boolean; verificationRequired: boolean; emailVerifiedAt: Date | null }): AccountStatus {
+  if (account.isActive) return account.verificationRequired && !account.emailVerifiedAt
     ? "PENDING_VERIFICATION" : "ACTIVE";
   return account.isBanned ? "BANNED" : "LOCKED";
 }
@@ -281,8 +281,8 @@ export async function listAccounts(input: {
   const condition = and(
     status ? eq(users.isActive, status === "ACTIVE" || status === "PENDING_VERIFICATION") : undefined,
     status === "LOCKED" || status === "BANNED" ? eq(users.isBanned, status === "BANNED") : undefined,
-    status === "ACTIVE" ? or(eq(users.verificationRequired, false), sql`${users.phoneVerifiedAt} is not null`) : undefined,
-    status === "PENDING_VERIFICATION" ? and(eq(users.verificationRequired, true), isNull(users.phoneVerifiedAt)) : undefined,
+    status === "ACTIVE" ? or(eq(users.verificationRequired, false), sql`${users.emailVerifiedAt} is not null`) : undefined,
+    status === "PENDING_VERIFICATION" ? and(eq(users.verificationRequired, true), isNull(users.emailVerifiedAt)) : undefined,
     role ? eq(sql`UPPER(${primaryRole})`, role) : undefined,
     term ? or(
       sql`strpos(lower(${users.email}), ${term}) > 0`,
@@ -294,14 +294,14 @@ export async function listAccounts(input: {
       id: users.id, fullName: users.fullName, email: users.email, role: primaryRole,
       isActive: users.isActive, isBanned: users.isBanned, tokenVersion: users.tokenVersion,
       lastLoginAt: users.lastLoginAt, createdAt: users.createdAt, phoneNumber: users.phoneNumber,
-      verificationRequired: users.verificationRequired, phoneVerifiedAt: users.phoneVerifiedAt,
+      verificationRequired: users.verificationRequired, emailVerifiedAt: users.emailVerifiedAt,
     }).from(users).where(condition).orderBy(desc(users.createdAt), users.id)
       .limit(limit).offset((page - 1) * limit),
     db.select({ value: count() }).from(users).where(condition),
   ]);
-  const items = accounts.map(({ isActive, isBanned, verificationRequired, phoneVerifiedAt, role, ...account }) => ({
+  const items = accounts.map(({ isActive, isBanned, verificationRequired, emailVerifiedAt, role, ...account }) => ({
     ...account, role: role ? { code: role.toUpperCase(), name: role } : null,
-    status: accountStatus({ isActive, isBanned, verificationRequired, phoneVerifiedAt }),
+    status: accountStatus({ isActive, isBanned, verificationRequired, emailVerifiedAt }),
   }));
   return { items, page, limit, totalRecords: total.value, totalPages: Math.ceil(total.value / limit) };
 }
@@ -353,7 +353,7 @@ export async function changeAccountPassword(
 ) {
   await db.transaction(async (tx) => {
     const [account] = await tx.select().from(users).where(eq(users.id, userId)).for("update");
-    if (!account?.isActive || (account.verificationRequired && !account.phoneVerifiedAt) || (account.lockedUntil && account.lockedUntil > new Date())) {
+    if (!account?.isActive || (account.verificationRequired && !account.emailVerifiedAt) || (account.lockedUntil && account.lockedUntil > new Date())) {
       throw AppError.unauthorized("Account is unavailable");
     }
     if (!(await Bun.password.verify(currentPassword, account.passwordHash))) {
@@ -378,7 +378,7 @@ export async function updateAccountProfile(
 ) {
   return db.transaction(async (tx) => {
     const [account] = await tx.select().from(users).where(eq(users.id, userId)).for("update");
-    if (!account?.isActive || (account.verificationRequired && !account.phoneVerifiedAt) || (account.lockedUntil && account.lockedUntil > new Date())) {
+    if (!account?.isActive || (account.verificationRequired && !account.emailVerifiedAt) || (account.lockedUntil && account.lockedUntil > new Date())) {
       throw AppError.unauthorized("Account is unavailable");
     }
     const updatedAt = new Date();

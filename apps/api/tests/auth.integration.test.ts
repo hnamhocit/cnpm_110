@@ -21,15 +21,9 @@ const PASSWORD = "Fpc13Test@123";
 
 const app = createTestApp();
 const emailCodes = new Map<string, string>();
-const startedPhones = new Set<string>();
-const SMS_TEST_CODE = "946285";
 const resetTokens = new Map<string, string>();
 const fakeDelivery = {
   async emailCode(to: string, code: string) { emailCodes.set(to, code); },
-  async startPhoneVerification(to: string) { startedPhones.add(to); },
-  async checkPhoneVerification(to: string, code: string) {
-    return code === SMS_TEST_CODE && startedPhones.delete(to);
-  },
   async passwordReset(to: string, token: string) { resetTokens.set(to, token); },
 };
 app.route("/auth", createAuthRoutes(fakeDelivery));
@@ -92,7 +86,6 @@ describe("Integration test xác thực và refresh token", () => {
     if (databaseChecked) {
       await pool.query("UPDATE users SET is_active = false WHERE email IN ($1, $2)", [email, adminEmail]);
       emailCodes.clear();
-      startedPhones.clear();
       resetTokens.clear();
     }
   });
@@ -112,7 +105,7 @@ describe("Integration test xác thực và refresh token", () => {
       fullName: "FPC13 Test User",
       email,
       password: PASSWORD,
-      phoneNumber,
+      role: "ADMIN",
     });
 
     expect(response.status).toBe(201);
@@ -123,19 +116,17 @@ describe("Integration test xác thực và refresh token", () => {
     expect(data.user.id).toBeString();
     expect(data.accessToken).toBeUndefined();
     expect((await post("login", { email, password: PASSWORD })).status).toBe(401);
-    expect(startedPhones.has(phoneNumber)).toBe(false);
-    expect((await post("verify-email", { email, code: emailCodes.get(email) })).status).toBe(200);
-    expect(startedPhones.has(phoneNumber)).toBe(true);
-    expect((await post("login", { email, password: PASSWORD })).status).toBe(401);
-    expect((await post("verify-phone", { email, code: "000000" })).status).toBe(400);
-    expect((await post("verify-phone", { email, code: SMS_TEST_CODE })).status).toBe(200);
-    expect((await post("verify-phone", { email, code: SMS_TEST_CODE })).status).toBe(400);
+    const code = emailCodes.get(email);
+    const verification = await post("verify-email", { email, code });
+    expect(verification.status).toBe(200);
+    expect((await verification.json()).data.status).toBe("ACTIVE");
+    expect((await post("verify-email", { email, code })).status).toBe(400);
     const login = await post("login", { email, password: PASSWORD });
     expect(login.status).toBe(200);
     return (await login.json()).data;
   }
 
-  test("Xác thực email, số điện thoại và lưu hash refresh token sau đăng nhập", async () => {
+  test("Đăng ký không cần số điện thoại, xác thực email và lưu hash refresh token sau đăng nhập", async () => {
     const data = await registerUser();
 
     expect(data.user.email).toBe(email);
@@ -325,7 +316,6 @@ describe("Integration test xác thực và refresh token", () => {
     expect((await response.json()).data).toMatchObject({ role: "Judge", status: "PENDING_VERIFICATION" });
     expect((await post("login", { email, password: PASSWORD })).status).toBe(401);
     expect((await post("verify-email", { email, code: emailCodes.get(email) })).status).toBe(200);
-    expect((await post("verify-phone", { email, code: SMS_TEST_CODE })).status).toBe(200);
     const login = await post("login", { email, password: PASSWORD });
     const data = (await login.json()).data;
     expect(data.user.role).toBe("Judge");
@@ -418,25 +408,18 @@ describe("Integration test xác thực và refresh token", () => {
     expect((await post("refresh", { refreshToken: registered.refreshToken })).status).toBe(401);
   });
 
-  test("Admin chỉnh quyền của role, không mở quyền ngoài phạm vi", async () => {
+  test("Admin xem bốn vai trò với quyền cố định", async () => {
     const registered = await registerUser();
     const admin = await adminSession();
-    const path = "/rbac/roles/Participant/permissions";
     const response = await signedRequest("/rbac/roles", admin);
     expect(response.status).toBe(200);
     const roles = (await response.json()).data;
-    const previous = roles.find(({ role }: { role: string }) => role === "Participant").permissions as string[];
-    expect((await signedRequest(path, admin, "PUT", { permissions: ["users:read_all"] })).status).toBe(400);
-    const reduced = previous.filter((permission) => permission !== "users:read_own_profile");
-    try {
-      expect((await signedRequest(path, admin, "PUT", { permissions: reduced })).status).toBe(200);
-      expect((await signedRequest("/auth/me", registered.accessToken)).status).toBe(401);
-      const login = await post("login", { email, password: PASSWORD });
-      expect(login.status).toBe(200);
-      const next = (await login.json()).data.accessToken;
-      expect((await signedRequest("/auth/me", next)).status).toBe(403);
-    } finally {
-      expect((await signedRequest(path, admin, "PUT", { permissions: previous })).status).toBe(200);
-    }
+    expect(roles).toHaveLength(4);
+    expect(roles.find(({ role }: { role: string }) => role === "Participant").permissions)
+      .toContain("users:read_own_profile");
+    expect((await signedRequest("/rbac/roles/Participant/permissions", admin, "PUT", {
+      permissions: [],
+    })).status).toBe(404);
+    expect((await signedRequest("/auth/me", registered.accessToken)).status).toBe(200);
   });
 });

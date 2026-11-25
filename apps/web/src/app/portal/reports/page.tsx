@@ -1,140 +1,171 @@
-import { Film, Layers, Sparkles } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+"use client";
 
-// TODO(Backend): Chờ API GET /api/v1/analytics/contest/:id để fetch thống kê thật.
-// Tất cả số liệu hiện tại (38%, 26%, 72%, 92.5%) là hardcoded HTML.
-// Cần implement useEffect để fetch data và render động khi backend sẵn sàng.
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { http } from "@/lib/http";
+
+type Contest = { id: string; name: string };
+type Counts = { submissions: number; aiWarnings: number; byStatus: Record<string, number> };
+type Analytics = {
+  contest: Contest;
+  totals: Counts;
+  categories: (Counts & { name: string })[];
+  report: string | null;
+};
+type Envelope<T> = { data: T };
+
 export default function ReportsPage() {
+  const [contests, setContests] = useState<Contest[]>([]);
+  const [contestId, setContestId] = useState("");
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadContests() {
+      try {
+        const response = await fetch("/api/auth/me", { signal: controller.signal });
+        const { user } = await response.json() as { user?: { id: string; role: string } };
+        if (!response.ok || user?.role !== "Organizer") {
+          setError("Báo cáo dành cho Ban tổ chức của cuộc thi.");
+          return;
+        }
+
+        const items: Contest[] = [];
+        let page = 1;
+        let totalPages = 1;
+        while (page <= totalPages) {
+          const { data } = await http.get<Envelope<{
+            items: Contest[];
+            pagination: { totalPages: number };
+          }>>("/api/v1/contests", {
+            params: { createdBy: user.id, page, limit: 100 },
+            signal: controller.signal,
+          });
+          items.push(...data.data.items);
+          totalPages = data.data.pagination.totalPages;
+          page += 1;
+        }
+        setContests(items);
+        setContestId(items[0]?.id ?? "");
+      } catch {
+        if (!controller.signal.aborted) setError("Không thể tải danh sách cuộc thi.");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }
+
+    void loadContests();
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    if (!contestId) return;
+    const controller = new AbortController();
+    async function loadAnalytics() {
+      setAnalytics(null);
+      setError("");
+      setNotice("");
+      try {
+        const { data } = await http.get<Envelope<Analytics>>(
+          `/api/v1/contests/${contestId}/analytics`,
+          { signal: controller.signal },
+        );
+        setAnalytics(data.data);
+      } catch {
+        if (!controller.signal.aborted) setError("Không thể tải thống kê cuộc thi.");
+      }
+    }
+    void loadAnalytics();
+    return () => controller.abort();
+  }, [contestId]);
+
+  async function generateReport() {
+    setGenerating(true);
+    setNotice("");
+    try {
+      const { data } = await http.post<Envelope<Analytics>>(`/api/v1/contests/${contestId}/analytics`);
+      setAnalytics(data.data);
+      if (!data.data.report) setNotice("Chưa tạo được nhận xét AI. Bạn vẫn có thể xem và xuất thống kê.");
+    } catch {
+      setNotice("Chưa tạo được nhận xét AI. Bạn vẫn có thể xem và xuất thống kê.");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="border-b border-gray-200 pb-5">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-          Báo cáo & Thống kê Cuộc thi (Analytics SCR-ORG-10)
-        </h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Thống kê xu hướng thiết bị analog, loại film stocks, phòng lab và tỷ
-          lệ cảnh báo thẩm định AI.
-        </p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Thống kê cuộc thi</h1>
+        <label className="mt-4 block text-sm font-medium" htmlFor="analytics-contest">Cuộc thi</label>
+        <select
+          className="mt-1 max-w-full rounded-md border bg-background p-2 text-sm"
+          id="analytics-contest"
+          value={contestId}
+          disabled={loading || generating || contests.length === 0}
+          onChange={(event) => setContestId(event.target.value)}
+        >
+          {!contests.length && <option value="">{loading ? "Đang tải…" : "Chưa có cuộc thi"}</option>}
+          {contests.map((contest) => <option key={contest.id} value={contest.id}>{contest.name}</option>)}
+        </select>
       </div>
-
-      {/* Grid Báo Cáo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Top Film Stocks */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Film className="w-4 h-4 text-amber-500" /> Top Loại Phim (Film
-              Stocks)
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Các dòng phim được thí sinh sử dụng nhiều nhất
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex items-center justify-between border-b pb-2">
-              <span className="font-medium text-gray-800">
-                Kodak Portra 400
-              </span>
-              <span className="font-bold text-gray-900">38%</span>
-            </div>
-            <div className="flex items-center justify-between border-b pb-2">
-              <span className="font-medium text-gray-800">
-                Ilford HP5 Plus 400
-              </span>
-              <span className="font-bold text-gray-900">26%</span>
-            </div>
-            <div className="flex items-center justify-between border-b pb-2">
-              <span className="font-medium text-gray-800">
-                Fujifilm Superia X-TRA
-              </span>
-              <span className="font-bold text-gray-900">18%</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-gray-800">Kodak Gold 200</span>
-              <span className="font-bold text-gray-900">18%</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Khổ phim */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Layers className="w-4 h-4 text-blue-500" /> Khổ Phim (Film
-              Formats)
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Phân bổ khổ phim nộp bài dự thi
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex items-center justify-between border-b pb-2">
-              <span className="font-medium text-gray-800">
-                35mm (135 format)
-              </span>
-              <span className="font-bold text-emerald-600">72%</span>
-            </div>
-            <div className="flex items-center justify-between border-b pb-2">
-              <span className="font-medium text-gray-800">
-                120 Medium Format (6x6)
-              </span>
-              <span className="font-bold text-blue-600">19%</span>
-            </div>
-            <div className="flex items-center justify-between border-b pb-2">
-              <span className="font-medium text-gray-800">
-                120 Medium Format (6x4.5)
-              </span>
-              <span className="font-bold text-purple-600">7%</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-gray-800">
-                Large Format (4x5)
-              </span>
-              <span className="font-bold text-amber-600">2%</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Thẩm định AI */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-purple-500" /> Thẩm định AI & Âm
-              bản
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Tỷ lệ quét tự động theo quy chuẩn BR-09 & BR-19
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex items-center justify-between border-b pb-2">
-              <span className="font-medium text-gray-800">
-                Ảnh quang học sạch (Clean)
-              </span>
-              <span className="font-bold text-emerald-600">92.5%</span>
-            </div>
-            <div className="flex items-center justify-between border-b pb-2">
-              <span className="font-medium text-gray-800">
-                Cảnh báo nghi vấn AI
-              </span>
-              <span className="font-bold text-amber-600">5.5%</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-gray-800">
-                Đối chứng âm bản thành công
-              </span>
-              <span className="font-bold text-blue-600">98.0%</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {!analytics && contestId && !error && <p role="status">Đang tải thống kê…</p>}
+      {analytics && (
+        <>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={() => void generateReport()} disabled={generating}>
+              {generating ? "Đang phân tích…" : "Tạo nhận xét AI"}
+            </Button>
+            <Button asChild variant="outline">
+              <a
+                download={`contest-${contestId}-analytics.json`}
+                href={`data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(analytics, null, 2))}`}
+              >
+                Xuất JSON
+              </a>
+            </Button>
+          </div>
+          <Card>
+            <CardHeader><CardTitle>{analytics.contest.name}</CardTitle></CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              <p>{analytics.totals.submissions} bài dự thi · {analytics.totals.aiWarnings} cảnh báo AI</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="p-2">Hạng mục</th>
+                      <th className="p-2">Số bài</th>
+                      <th className="p-2">Cảnh báo AI</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {analytics.categories.map((category) => (
+                      <tr key={category.name} className="border-b">
+                        <td className="p-2">{category.name}</td>
+                        <td className="p-2">{category.submissions}</td>
+                        <td className="p-2">{category.aiWarnings}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+          {notice && <p role="status" className="text-sm">{notice}</p>}
+          {analytics.report && (
+            <Card>
+              <CardHeader><CardTitle>Nhận xét AI</CardTitle></CardHeader>
+              <CardContent className="whitespace-pre-wrap text-sm">{analytics.report}</CardContent>
+            </Card>
+          )}
+        </>
+      )}
     </div>
   );
 }

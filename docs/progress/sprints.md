@@ -1,5 +1,7 @@
 # Bảng công việc theo sprint
 
+> Các bảng giữ trạng thái Jira tại thời điểm rà soát. Ghi chú đầu mỗi sprint phản ánh thay đổi theo SRS mới. Xem [overview](overview.md) cho điều kiện nghiệm thu còn thiếu.
+
 Bản phục dựng từ 8 ảnh Jira. Ảnh hiển thị mã, người phụ trách và trạng thái, không có tên hoặc ngày sprint. Sáu nhóm dưới đây được suy ra theo dải mã và chủ đề. Công việc đặc tả FPC-126–137 được ghi riêng vì ảnh không cho biết sprint gốc. Chỉ nhập hàng đọc được. Tên task được rút gọn theo phần chữ hiển thị.
 
 Cột **Trạng thái** ghi tiến độ đã đối chiếu. Dấu `—` ở ghi chú nghĩa là chưa đối chiếu riêng. Với công việc chỉ giao UI, DONE áp dụng cho phần UI.
@@ -17,6 +19,8 @@ Dương Nguyễn và Huỳnh Trần Gia Bảo cùng phụ trách Mobile. Nam Ngu
 | **Tổng** | **128** |
 
 ## Sprint 1 · Nền tảng và xác thực
+
+**Cập nhật theo SRS mới (2026-11-25).** Web và Mobile đã nối đăng ký, xác minh và khôi phục qua email. Backend bỏ SMS/Twilio và quyền động. Tích hợp Auth đạt với bộ gửi giả. Còn nghiệm thu SMTP thật và luồng đổi vai trò của tài khoản hiện có.
 
 | Mã | Phạm vi | Công việc | Người phụ trách | Trạng thái | Ghi chú |
 | --- | --- | --- | --- | --- | --- |
@@ -54,6 +58,8 @@ Các đầu việc dưới đây chưa có mã Jira riêng trong bảng phục d
 
 ## Sprint 2 · Cuộc thi và nộp bài
 
+**Cập nhật theo SRS mới (2026-11-25).** API và Mobile nhận số frame nguyên dương, bỏ giới hạn theo khổ. Test tích hợp chặn trùng frame giữa hai hạng mục. Còn thiếu năm mốc, trạng thái chuẩn, sao chép cuộc thi, đăng ký hạng mục và liên kết Film Roll/Frame.
+
 | Mã | Phạm vi | Công việc | Người phụ trách | Trạng thái | Ghi chú |
 | --- | --- | --- | --- | --- | --- |
 | FPC-28 | Backend | Schema Contests, Categories và Scoring Criteria | Nam Nguyễn | REVIEW | Có cả ba bảng. Schema cuộc thi chỉ có hai mốc, weight lưu hai chữ số thập phân và chưa có kiểm tra tổng đúng 1.0000 theo BR-08/15. |
@@ -78,6 +84,8 @@ Các đầu việc dưới đây chưa có mã Jira riêng trong bảng phục d
 | FPC-47 | Lead | Đặc tả Contest và Submission trên Postman/Swagger | Nam Nguyễn | DONE | — |
 
 ## Sprint 3 · Kiểm duyệt và thẩm định AI
+
+**Cập nhật theo SRS mới (2026-11-25).** Ngưỡng AI/pHash đọc từ cấu hình. Web hiển thị ảnh và đối chứng cạnh nhau khi có, điểm AI, ảnh tương tự và thẻ. Test webhook xác nhận AI chỉ gắn cờ. Còn luồng lưu hạn, tải và xác minh đối chứng.
 
 | Mã | Phạm vi | Công việc | Người phụ trách | Trạng thái | Ghi chú |
 | --- | --- | --- | --- | --- | --- |
@@ -105,6 +113,8 @@ Các đầu việc dưới đây chưa có mã Jira riêng trong bảng phục d
 
 ## Sprint 4 · Chấm thi
 
+**Cập nhật theo SRS mới (2026-11-25).** Bỏ cờ lệch điểm 30%. Mở chấm hiện yêu cầu ít nhất một Judge hoạt động mỗi hạng mục. Tích hợp xác nhận chấm ẩn danh và chặn ghi điểm sau công bố. Còn chốt/chuyển vòng, giới hạn bài đi tiếp và xử lý đồng điểm.
+
 Đối chiếu trên `develop`. Web qua kiểm tra TypeScript và 60 unit test. Trạng thái DONE của FPC-79–81 áp dụng cho phần UI đã review. Tiến độ chấm, bảng điểm và gửi phiếu thật vẫn cần tích hợp Web với Backend.
 
 | Mã | Phạm vi | Công việc | Người phụ trách | Trạng thái | Ghi chú |
@@ -129,6 +139,8 @@ Các đầu việc dưới đây chưa có mã Jira riêng trong bảng phục d
 | FPC-87 | Lead | Cập nhật Swagger/Postman cho Judging | Nam Nguyễn | DONE | Năm route Judging đã được cập nhật trong OpenAPI và collection tại `56c2576`. [Hợp đồng](../ai/09-api-contracts.md#61-hợp-đồng-judging) |
 
 ## Sprint 5 · Kết quả, triển lãm và kiểm thử
+
+**Cập nhật theo SRS mới (2026-11-25).** UC-28 dùng thống kê DB, xuất JSON và trả thống kê khi AI lỗi. Tích hợp xác nhận chỉ gửi dữ liệu tổng hợp cho AI. Còn công bố kết quả từ vòng cuối, ảnh xem trước công khai và nghiệm thu kho lưu trữ.
 
 | Mã | Phạm vi | Công việc | Người phụ trách | Trạng thái | Ghi chú |
 | --- | --- | --- | --- | --- | --- |
@@ -155,6 +167,8 @@ Các đầu việc dưới đây chưa có mã Jira riêng trong bảng phục d
 | FPC-108 | Backend | Dữ liệu mẫu phục vụ demo | Nam Nguyễn | REVIEW | Repo có mã seed. Cần chạy và kiểm tra bộ mẫu đủ cho demo. |
 
 ## Sprint 6 · Triển khai, phát hành và bàn giao
+
+**Cập nhật theo SRS mới (2026-11-25).** Web production build qua Webpack và Flutter web build đạt. Web 57 test đạt, API toàn suite 145 đạt/19 lỗi, Mobile 189 đạt/2 lỗi. Migration hiện có chỉ chạy trên PostgreSQL tạm. Chưa nghiệm thu triển khai hay build APK/iOS.
 
 | Mã | Phạm vi | Công việc | Người phụ trách | Trạng thái | Ghi chú |
 | --- | --- | --- | --- | --- | --- |

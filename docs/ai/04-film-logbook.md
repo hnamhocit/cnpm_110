@@ -1,5 +1,13 @@
 # Module Spec: 04-film-logbook.md
 
+## Phạm vi theo SRS hiện hành
+
+**UC-35–37, BR-03/05/22/23.** Giữ Film Roll và Film Frame cho Participant. Số frame là số nguyên dương, duy nhất trong cuộn, không giới hạn theo khổ phim. Khi chọn hoặc tạo Film Roll và Frame lúc nộp, kiểm tra chủ sở hữu và chống lặp frame trong cùng cuộc thi kể cả khác hạng mục. Giữ metadata chụp, tráng và scan. Các form nộp và sửa trên Mobile kiểm tra số nguyên dương; luồng logbook đầy đủ vẫn cần triển khai.
+
+## Thiết kế trước lần cập nhật SRS
+
+> Tham chiếu lịch sử để truy vết thiết kế và các hợp đồng cũ. Yêu cầu nghiệp vụ hiện hành nằm trong [SRS](../srs.md) và mục trên.
+
 ## Phạm vi nghiệm thu và trạng thái hiện tại
 
 UC-35–36 cần quản lý cuộn và frame của chính Participant, kiểm tra giới hạn vật lý theo BR-23 và tự đồng bộ Mobile khi có mạng. Hiện có bảng cuộn phim và form metadata trong luồng nộp bài. API Logbook còn dự kiến. Nghiệm thu tạo cuộn và frame khi offline, mở lại app, đồng bộ khi có mạng và thử lại sau lỗi mà không sinh bản ghi trùng. Cần thống nhất hợp đồng đồng bộ và xử lý xung đột trước khi triển khai. Kết quả đồng bộ cung cấp dữ liệu cho UC-37 ở [Module 05](05-submission-and-proof.md).

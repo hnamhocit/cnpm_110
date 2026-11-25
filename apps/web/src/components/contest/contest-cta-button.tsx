@@ -249,7 +249,7 @@ export function ContestCtaButton({
                   Nộp bài thi thành công!
                 </h3>
                 <p className="text-sm text-slate-600 max-w-md mx-auto">
-                  Tác phẩm <span className="font-semibold text-slate-900">"{title}"</span> đã được tiếp nhận. Hệ thống đang tiến hành thẩm định hạt phim (Grain) và quét AI pHash tự động theo chuẩn SRS BR-09.
+                  Tác phẩm <span className="font-semibold text-slate-900">"{title}"</span> đã được tiếp nhận. Hệ thống kiểm tra ảnh tạo sinh và ảnh tương tự để hỗ trợ Ban tổ chức thẩm định.
                 </p>
                 <div className="pt-4 flex justify-center gap-3">
                   <button

@@ -1,5 +1,15 @@
 ﻿# Module Spec: 07 - Blind Judging (Chấm thi ẩn danh)
 
+## Phạm vi theo SRS hiện hành
+
+**UC-14–16, UC-24–25, UC-29–33, BR-12–16/20/21/25.** Phân công Judge theo hạng mục/vòng, tối thiểu một Judge hoạt động và kiểm tra xung đột. DTO chấm thi ẩn tác giả; Judge chấm độc lập bằng tiêu chí có tổng trọng số 100%, trình xem ảnh có zoom và metadata.
+
+Organizer chốt vòng sau khi toàn bộ phiếu bắt buộc được xác nhận. Khóa vòng, xếp theo trung bình điểm trọng số và chọn danh sách đi tiếp theo giới hạn cấu hình. Điểm vòng cuối làm tròn hai chữ số để xếp hạng; đồng điểm xử lý theo thể lệ kèm lý do. Luồng chốt và chuyển vòng thay cho quy trình lệch điểm.
+
+## Thiết kế trước lần cập nhật SRS
+
+> Tham chiếu lịch sử để truy vết thiết kế và các hợp đồng cũ. Yêu cầu nghiệp vụ hiện hành nằm trong [SRS](../srs.md) và mục trên.
+
 ## Phạm vi nghiệm thu và trạng thái hiện tại
 
 UC-24–25 và UC-29–33 cần tiến độ thật, điều phối lệch điểm và chấm/khóa phiếu qua API. Backend có năm thao tác Judging. Web còn cần nối luồng phân công và lưu phiếu thật. Nghiệm thu từ phân công đủ điều kiện ở [Module 03](03-contest-lifecycle.md) và bài đã duyệt ở [Module 05](05-submission-and-proof.md), qua kiểm tra DTO/ảnh ẩn danh, truy cập ngoài phân công, chỉnh điểm có lý do và audit, khóa phiếu, tính trung bình và xử lý lệch điểm. Số điểm/lời bình của giám khảo khác phải được giữ kín cho đến khi kết thúc vòng.

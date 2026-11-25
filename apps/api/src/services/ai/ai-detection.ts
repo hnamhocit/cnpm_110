@@ -1,5 +1,4 @@
-
-export const AI_HIGH_RISK_THRESHOLD = 0.75;
+import { aiProbabilityThreshold } from "./ai-thresholds";
 
 export type AiRiskLevel = "LOW_RISK" | "HIGH_RISK";
 
@@ -24,7 +23,7 @@ export function classifyAiDetection(
   }
 
   const isAiFlagged =
-    probability >= AI_HIGH_RISK_THRESHOLD;
+    probability >= aiProbabilityThreshold();
 
   return {
     aiGeneratedProbability: probability,

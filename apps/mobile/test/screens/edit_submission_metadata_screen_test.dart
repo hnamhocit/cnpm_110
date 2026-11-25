@@ -195,14 +195,13 @@ void main() {
       expect(fakeRepo.lastUpdatedSubmissionId, isNull);
     });
 
-    testWidgets('BR-23: kiểm tra giới hạn frame vật lý theo khổ phim', (
+    testWidgets('BR-23: từ chối frame bằng 0 và chấp nhận frame 40 trên khổ 35mm', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 2400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
-      // Format 35mm: max 39
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
@@ -210,24 +209,23 @@ void main() {
         TextFormField,
         'Số Frame trên cuộn phim *',
       );
-      await tester.enterText(frameField, '40');
+      await tester.enterText(frameField, '0');
 
       await tester.tap(find.text('Lưu thay đổi metadata'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Khổ 35mm tối đa 39 frame theo BR-23'), findsOneWidget);
+      expect(find.text('Số frame trên cuộn phim phải là số hợp lệ từ 1 đến 2147483647'), findsOneWidget);
       expect(fakeRepo.lastUpdatedSubmissionId, isNull);
 
-      // Now enter valid 39 frame
-      await tester.enterText(frameField, '39');
+      await tester.enterText(frameField, '40');
       await tester.tap(find.text('Lưu thay đổi metadata'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Khổ 35mm tối đa 39 frame theo BR-23'), findsNothing);
+      expect(find.text('Số frame trên cuộn phim phải là số hợp lệ từ 1 đến 2147483647'), findsNothing);
       expect(fakeRepo.lastUpdatedSubmissionId, 'SUB-2026-0089');
     });
 
-    testWidgets('BR-23: kiểm tra giới hạn frame cho khổ 120 (6x6)', (
+    testWidgets('BR-23: chấp nhận frame 13 trên khổ 120 (6x6)', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 2400);
@@ -250,11 +248,7 @@ void main() {
       await tester.tap(find.text('Lưu thay đổi metadata'));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('Khổ 120 (6x6) tối đa 12 frame theo BR-23'),
-        findsOneWidget,
-      );
-      expect(fakeRepo.lastUpdatedSubmissionId, isNull);
+      expect(fakeRepo.lastUpdatedSubmissionId, 'SUB-2026-0089');
     });
   });
 

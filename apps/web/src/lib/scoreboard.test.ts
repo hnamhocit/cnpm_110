@@ -5,7 +5,6 @@ import {
   filterScoreboard,
   formatScore,
   getScoreboardStatus,
-  isDiscrepancy,
   rankScoreboard,
   summarizeScoreboard,
 } from "@/lib/scoreboard";
@@ -41,7 +40,7 @@ const completeEntry = entry({
   scores: [score("j1", 28), score("j2", 27.5), score("j3", 28.5)],
 });
 
-const discrepancyEntry = entry({
+const wideSpreadEntry = entry({
   submissionId: "b",
   scores: [score("j1", 29), score("j2", 18), score("j3", 28.5)],
 });
@@ -75,32 +74,11 @@ describe("FPC-77 computeFinalScore", () => {
   });
 });
 
-describe("FPC-77 isDiscrepancy (BR-14)", () => {
-  test("lệch 11 điểm trên thang 30 bị gắn cờ", () => {
-    expect(isDiscrepancy(discrepancyEntry)).toBe(true);
-  });
-
-  test("lệch đúng 30% thang điểm thì không gắn cờ", () => {
-    expect(
-      isDiscrepancy(
-        entry({
-          submissionId: "edge",
-          scores: [score("j1", 29), score("j2", 20), score("j3", 28.5)],
-        }),
-      ),
-    ).toBe(false);
-  });
-
-  test("chưa đủ 2 phiếu thì không so sánh", () => {
-    expect(isDiscrepancy(judgingEntry)).toBe(false);
-  });
-});
-
 describe("FPC-77 getScoreboardStatus", () => {
-  test("phân loại hoàn tất, đang chấm và lệch điểm", () => {
+  test("đánh dấu hoàn tất khi đủ phiếu", () => {
     expect(getScoreboardStatus(completeEntry)).toBe("COMPLETE");
     expect(getScoreboardStatus(judgingEntry)).toBe("JUDGING");
-    expect(getScoreboardStatus(discrepancyEntry)).toBe("DISCREPANCY");
+    expect(getScoreboardStatus(wideSpreadEntry)).toBe("COMPLETE");
   });
 });
 
@@ -108,7 +86,7 @@ describe("FPC-77 rankScoreboard", () => {
   const ranked = rankScoreboard([
     judgingEntry,
     completeEntry,
-    discrepancyEntry,
+    wideSpreadEntry,
     entry({
       submissionId: "e",
       categoryId: "cat-street",
@@ -146,18 +124,18 @@ describe("FPC-77 summarizeScoreboard", () => {
   test("đếm theo trạng thái và bài thiếu âm bản", () => {
     const summary = summarizeScoreboard([
       completeEntry,
-      discrepancyEntry,
+      wideSpreadEntry,
       judgingEntry,
       entry({
         submissionId: "f",
+        proofRequired: true,
         negativeProofVerified: false,
         scores: [score("j1", 20), score("j2", 20), score("j3", 20)],
       }),
     ]);
 
     expect(summary.total).toBe(4);
-    expect(summary.completed).toBe(2);
-    expect(summary.discrepancy).toBe(1);
+    expect(summary.completed).toBe(3);
     expect(summary.judging).toBe(1);
     expect(summary.missingProof).toBe(1);
   });
@@ -166,7 +144,7 @@ describe("FPC-77 summarizeScoreboard", () => {
 describe("FPC-77 filterScoreboard", () => {
   const ranked = rankScoreboard([
     completeEntry,
-    discrepancyEntry,
+    wideSpreadEntry,
     judgingEntry,
     entry({
       submissionId: "g",
@@ -189,7 +167,7 @@ describe("FPC-77 filterScoreboard", () => {
   });
 
   test("lọc theo trạng thái", () => {
-    expect(filterScoreboard(ranked, { status: "DISCREPANCY" })).toHaveLength(1);
+    expect(filterScoreboard(ranked, { status: "COMPLETE" })).toHaveLength(3);
     expect(filterScoreboard(ranked, { status: "JUDGING" })).toHaveLength(1);
   });
 

@@ -1,5 +1,13 @@
 # Module Spec: 10 - Database Schema & Cloud Storage (Cơ sở Dữ liệu & Lưu trữ Đám mây)
 
+## Phạm vi theo SRS hiện hành
+
+**BR-03/05/16/17/23, CR-04/07.** Dùng PostgreSQL/Drizzle, transaction và kiểm soát truy cập đồng thời. Giữ dữ liệu nghiệp vụ lịch sử; ưu tiên migration bổ sung và backfill. Ảnh gốc/bằng chứng trong vùng bảo mật với URL có thời hạn, ảnh xem trước tối ưu được cấp riêng cho nội dung công khai. Hàng đợi AI hiện dùng PostgreSQL. pgvector tùy phương án đối sánh.
+
+## Thiết kế trước lần cập nhật SRS
+
+> Tham chiếu lịch sử để truy vết thiết kế và các hợp đồng cũ. Yêu cầu nghiệp vụ hiện hành nằm trong [SRS](../srs.md) và mục trên.
+
 Các bảng Drizzle hiện tại được chia theo module và xuất từ [schemas/index.ts](../../apps/api/src/db/schemas/index.ts). [Hướng dẫn database](../../apps/api/README-DATABASE.md) mô tả baseline duy nhất và cách chuyển tiếp từ lịch sử cũ.
 
 ## Phạm vi nghiệm thu và trạng thái hiện tại

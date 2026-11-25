@@ -209,11 +209,8 @@ export async function handleCreateSubmission(c: Context<AuthEnv>) {
   const rollId = textField(form, "rollId", 100);
   const frameNumber = positiveIntegerField(form, "frameNumber");
   const filmFormat = textField(form, "filmFormat", 50, true)!;
-  const maxFrames = new Map([
-    ["135", 39], ["120_645", 16], ["120_66", 12], ["120_67", 10], ["4x5", 1],
-  ]).get(filmFormat);
-  if (maxFrames === undefined || frameNumber > maxFrames) {
-    throw new AppError("Invalid film format or frame number exceeds its limit", 422);
+  if (!["135", "120_645", "120_66", "120_67", "4x5"].includes(filmFormat)) {
+    throw new AppError("Invalid film format", 422);
   }
 
   const devLabName = textField(form, "devLabName", 150);

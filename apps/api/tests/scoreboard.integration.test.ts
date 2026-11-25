@@ -304,6 +304,49 @@ describe("FPC-74: GET /api/v1/contests/:id/scoreboard", () => {
         }
     });
 
+    test("UC-28: Reports aggregate counts and send no identifying fields to AI", async () => {
+        const url = `/api/v1/contests/${testData.contestId}/analytics`;
+        const token = await createToken(testData.organizerId, "Organizer");
+        const other = await createToken(testData.otherOrganizerId, "Organizer");
+        const headers = { Authorization: `Bearer ${token}` };
+        expect((await app.request(url, {
+            headers: { Authorization: `Bearer ${other}` },
+        })).status).toBe(404);
+        const baseline = await app.request(url, { headers });
+        expect(baseline.status).toBe(200);
+        const { data: stats } = await baseline.json();
+        expect(stats.totals.submissions).toBeGreaterThan(0);
+        expect(stats.report).toBeNull();
+
+        const previousUrl = Bun.env.AI_ANALYTICS_URL;
+        const originalFetch = globalThis.fetch;
+        const messages: unknown[] = [];
+        try {
+            Bun.env.AI_ANALYTICS_URL = "https://analytics.example.test";
+            globalThis.fetch = Object.assign(async (_input: RequestInfo | URL, options?: RequestInit) => {
+                messages.push(JSON.parse(String(options?.body)));
+                return messages.length === 1
+                    ? Response.json({ report: "Aggregate report" })
+                    : new Response(null, { status: 503 });
+            }, { preconnect: originalFetch.preconnect });
+            const generated = await app.request(url, { method: "POST", headers });
+            expect((await generated.json()).data.report).toBe("Aggregate report");
+            expect(messages[0]).toEqual({
+                totals: stats.totals,
+                categories: stats.categories.map(
+                    ({ submissions, aiWarnings, byStatus }: typeof stats.totals) =>
+                        ({ submissions, aiWarnings, byStatus }),
+                ),
+            });
+            const fallback = await app.request(url, { method: "POST", headers });
+            expect((await fallback.json()).data).toEqual(stats);
+        } finally {
+            globalThis.fetch = originalFetch;
+            if (previousUrl === undefined) delete Bun.env.AI_ANALYTICS_URL;
+            else Bun.env.AI_ANALYTICS_URL = previousUrl;
+        }
+    });
+
     test("Rejects requests without a token", async () => {
         const response = await app.request(
             `/api/v1/contests/${testData.contestId}/scoreboard`,
@@ -426,7 +469,7 @@ describe("FPC-74: GET /api/v1/contests/:id/scoreboard", () => {
 
     expect(scores).toEqual([7, 9]);
 });
-    test("Exposes unresolved discrepancies and blocks publishing", async () => {
+    test("Ranks entries with widely different scores", async () => {
         const token = await createToken(testData.organizerId, "Organizer");
         const { rows } = await pool.query(
             `SELECT s.id, s.score FROM evaluation_scores s JOIN evaluations e ON e.id = s.evaluation_id
@@ -442,9 +485,9 @@ describe("FPC-74: GET /api/v1/contests/:id/scoreboard", () => {
             expect(response.status).toBe(200);
             const { data } = await response.json();
             const entry = data.entries.find((item: { submissionId: string }) => item.submissionId === testData.submissionId);
-            expect(entry.discrepancyFlag).toBe("DISCREPANCY_CONFLICT");
-            expect(entry.finalScore).toBeNull();
-            expect(entry.rank).toBeNull();
+            expect(entry.discrepancyFlag).toBeNull();
+            expect(entry.finalScore).toBe(4.5);
+            expect(entry.rank).toBeNumber();
             const publish = await app.request(url, {
                 method: "PUT", headers, body: JSON.stringify({ status: "PUBLISHED" }),
             });

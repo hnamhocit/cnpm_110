@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  AlertCircle,
   ArrowLeft,
   BarChart3,
   CheckCircle2,
@@ -31,7 +30,6 @@ export type JudgeWorkload = {
   totalAllocated: number; // Tổng số bài được phân bổ
   completedEvaluations: number; // Đã chấm xong
   pendingEvaluations: number; // Còn đang chấm
-  flaggedVariances: number; // Số bài bị cảnh báo lệch điểm > 30% (BR-14)
   progressPercent: number; // % Tiến độ
 };
 
@@ -47,7 +45,6 @@ const INITIAL_WORKLOADS: JudgeWorkload[] = [
     totalAllocated: 45,
     completedEvaluations: 38,
     pendingEvaluations: 7,
-    flaggedVariances: 2,
     progressPercent: 84.4,
   },
   {
@@ -59,7 +56,6 @@ const INITIAL_WORKLOADS: JudgeWorkload[] = [
     totalAllocated: 52,
     completedEvaluations: 52,
     pendingEvaluations: 0,
-    flaggedVariances: 1,
     progressPercent: 100.0,
   },
   {
@@ -71,7 +67,6 @@ const INITIAL_WORKLOADS: JudgeWorkload[] = [
     totalAllocated: 38,
     completedEvaluations: 19,
     pendingEvaluations: 19,
-    flaggedVariances: 3,
     progressPercent: 50.0,
   },
   {
@@ -83,7 +78,6 @@ const INITIAL_WORKLOADS: JudgeWorkload[] = [
     totalAllocated: 48,
     completedEvaluations: 34,
     pendingEvaluations: 14,
-    flaggedVariances: 0,
     progressPercent: 70.8,
   },
 ];
@@ -110,10 +104,6 @@ export default function JudgeWorkloadTrackerPage() {
   );
   const totalPending = workloads.reduce(
     (sum, item) => sum + item.pendingEvaluations,
-    0,
-  );
-  const totalVariances = workloads.reduce(
-    (sum, item) => sum + item.flaggedVariances,
     0,
   );
   const overallProgress =
@@ -156,8 +146,7 @@ export default function JudgeWorkloadTrackerPage() {
             Bảng Theo dõi Phân bổ Bài thi cho Giám khảo
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Giám sát số lượng tác phẩm ảnh phim được giao, tiến độ chấm điểm và
-            các cảnh báo lệch điểm cần hội đồng điều phối.
+            Giám sát số lượng tác phẩm ảnh phim được giao, tiến độ chấm điểm.
           </p>
         </div>
 
@@ -185,7 +174,7 @@ export default function JudgeWorkloadTrackerPage() {
       </div>
 
       {/* 4 Thẻ chỉ số chính */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <Card className="border-gray-200">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
@@ -233,21 +222,6 @@ export default function JudgeWorkloadTrackerPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
-              <AlertCircle className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 font-medium">
-                Lệch điểm &gt; 30%
-              </p>
-              <p className="text-2xl font-bold text-rose-700">
-                {totalVariances}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Tìm kiếm & Lọc */}
@@ -311,7 +285,6 @@ export default function JudgeWorkloadTrackerPage() {
                   <th className="py-3.5 px-4 text-center">Được giao</th>
                   <th className="py-3.5 px-4 text-center">Đã chấm</th>
                   <th className="py-3.5 px-4 text-center">Còn lại</th>
-                  <th className="py-3.5 px-4 text-center">Lệch điểm (BR-14)</th>
                   <th className="py-3.5 px-4">Tiến độ hoàn thành</th>
                 </tr>
               </thead>
@@ -365,19 +338,6 @@ export default function JudgeWorkloadTrackerPage() {
 
                     <td className="py-4 px-4 text-center font-semibold text-amber-600">
                       {judge.pendingEvaluations}
-                    </td>
-
-                    <td className="py-4 px-4 text-center">
-                      {judge.flaggedVariances > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200">
-                          <AlertCircle className="w-3 h-3" />
-                          {judge.flaggedVariances} bài
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-400 font-medium">
-                          0
-                        </span>
-                      )}
                     </td>
 
                     {/* Thanh tiến độ */}
