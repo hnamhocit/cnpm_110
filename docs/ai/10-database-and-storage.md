@@ -1,5 +1,7 @@
 # Module Spec: 10 - Database Schema & Cloud Storage (Cơ sở Dữ liệu & Lưu trữ Đám mây)
 
+Các bảng Drizzle hiện tại được chia theo module và xuất từ [schemas/index.ts](../../apps/api/src/db/schemas/index.ts). [Hướng dẫn database](../../apps/api/README-DATABASE.md) mô tả baseline duy nhất và cách chuyển tiếp từ lịch sử cũ.
+
 ## Phạm vi nghiệm thu và trạng thái hiện tại
 
 Hiện có upload multipart qua Backend, lưu R2 hoặc local. Luồng presigned upload/confirm trực tiếp là thiết kế đích của SRS §5.1.2. Đối chiếu [route upload](../../apps/api/src/routes/upload.route.ts), [R2](../../apps/api/src/r2.ts) và [schema](../../apps/api/src/db/schema.ts) trước khi tích hợp. Áp dụng cho ảnh scan và đối chứng ở Module 05, vector ở Module 06 và hai bản ảnh triển lãm ở Module 08.

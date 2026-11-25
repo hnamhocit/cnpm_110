@@ -1,2 +1,0 @@
-ALTER TABLE "refresh_tokens" ADD COLUMN "session_id" uuid DEFAULT gen_random_uuid() NOT NULL;--> statement-breakpoint
-CREATE INDEX "idx_refresh_tokens_session_id" ON "refresh_tokens" USING btree ("session_id");
