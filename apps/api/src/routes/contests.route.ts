@@ -24,25 +24,25 @@ contests.get("/:id/results", handleGetContestResults);
 contests.get(
   "/:id/scoreboard",
   authenticate,
-  requireRoles("Admin", "Organizer"),
+  requireRoles("Organizer"),
   handleGetContestScoreboard,
 );
 contests.post(
   "/",
   authenticate,
-  requireRoles("Admin", "Organizer"),
+  requireRoles("Organizer"),
   handleCreateContest,
 );
 contests.put(
   "/:id",
   authenticate,
-  requireRoles("Admin", "Organizer"),
+  requireRoles("Organizer"),
   handleUpdateContest,
 );
 contests.delete(
   "/:id",
   authenticate,
-  requireRoles("Admin", "Organizer"),
+  requireRoles("Organizer"),
   handleDeleteContest,
 );
 

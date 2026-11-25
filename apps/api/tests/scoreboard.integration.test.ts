@@ -31,13 +31,15 @@ async function createToken(userId: string, role: string) {
     );
 }
 
-async function insertUser(id: string, name: string) {
+async function insertUser(id: string, name: string, role: string) {
     await pool.query(
         `INSERT INTO users
             (id, full_name, email, password_hash, is_active)
          VALUES ($1, $2, $3, $4, TRUE)`,
         [id, name, `${id}@fpc74-test.example`, "test-password-hash"],
     );
+    await pool.query("INSERT INTO roles (name) VALUES ($1) ON CONFLICT (name) DO NOTHING", [role]);
+    await pool.query("INSERT INTO user_roles (user_id, role_id) SELECT $1, id FROM roles WHERE name = $2", [id, role]);
 }
 
 async function createTestData() {
@@ -61,17 +63,17 @@ async function createTestData() {
     const criterion1Id = crypto.randomUUID();
     const criterion2Id = crypto.randomUUID();
 
-    await insertUser(adminId, "FPC74 Test Admin");
-    await insertUser(organizerId, "FPC74 Test Organizer");
-    await insertUser(otherOrganizerId, "FPC74 Other Organizer");
-    await insertUser(participantId, "FPC74 Test Participant");
-    await insertUser(judge1Id, "FPC74 Test Judge 1");
-    await insertUser(judge2Id, "FPC74 Test Judge 2");
+    await insertUser(adminId, "FPC74 Test Admin", "Admin");
+    await insertUser(organizerId, "FPC74 Test Organizer", "Organizer");
+    await insertUser(otherOrganizerId, "FPC74 Other Organizer", "Organizer");
+    await insertUser(participantId, "FPC74 Test Participant", "Participant");
+    await insertUser(judge1Id, "FPC74 Test Judge 1", "Judge");
+    await insertUser(judge2Id, "FPC74 Test Judge 2", "Judge");
 
     await pool.query(
         `INSERT INTO contests (id, name, status, created_by)
          VALUES ($1, $2, $3, $4)`,
-        [contestId, "FPC74 Scoreboard Test", "ongoing", organizerId],
+        [contestId, "FPC74 Scoreboard Test", "JUDGING", organizerId],
     );
 
     await pool.query(
@@ -310,6 +312,14 @@ describe("FPC-74: GET /api/v1/contests/:id/scoreboard", () => {
         expect(response.status).toBe(401);
     });
 
+    test("Admin cannot access an Organizer scoreboard", async () => {
+        const token = await createToken(testData.adminId, "Admin");
+        const response = await app.request(`/api/v1/contests/${testData.contestId}/scoreboard`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        expect(response.status).toBe(403);
+    });
+
     test("Participant cannot access scoreboard", async () => {
         const token = await createToken(
             testData.participantId,
@@ -346,8 +356,8 @@ describe("FPC-74: GET /api/v1/contests/:id/scoreboard", () => {
         expect(response.status).toBe(403);
     });
 
-   test("Admin can retrieve the scoreboard with competition ranking", async () => {
-    const token = await createToken(testData.adminId, "Admin");
+   test("Organizer can retrieve the scoreboard with competition ranking", async () => {
+    const token = await createToken(testData.organizerId, "Organizer");
 
     const response = await app.request(
         `/api/v1/contests/${testData.contestId}/scoreboard`,
@@ -465,7 +475,7 @@ describe("FPC-74: GET /api/v1/contests/:id/scoreboard", () => {
     });
 
     test("Returns 404 when contest does not exist", async () => {
-        const token = await createToken(testData.adminId, "Admin");
+        const token = await createToken(testData.organizerId, "Organizer");
 
         const response = await app.request(
             `/api/v1/contests/${crypto.randomUUID()}/scoreboard`,

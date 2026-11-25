@@ -50,6 +50,7 @@ function assignedSubmissions(judgeId: string, submissionId?: string) {
         eq(contestJudges.judgeId, judgeId),
         eq(contestJudges.isActive, true),
         eq(contests.isDeleted, false),
+        sql`lower(${contests.status}) = 'judging'`,
         eq(submissions.status, "APPROVED"),
         submissionId ? eq(submissions.id, submissionId) : undefined,
       ),

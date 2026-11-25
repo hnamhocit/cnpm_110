@@ -18,6 +18,7 @@ import {
   aiAnalysisJobs,
   categories,
   contests,
+  contestJudges,
   filmMetadata,
   submissionAiAnalyses,
   submissionModerationLogs,
@@ -342,6 +343,7 @@ export async function createSubmission(input: CreateSubmissionInput) {
   const [contest] = await db
     .select({
       id: contests.id,
+      createdBy: contests.createdBy,
       startAt: contests.startAt,
       endAt: contests.endAt,
       status: contests.status,
@@ -365,6 +367,19 @@ export async function createSubmission(input: CreateSubmissionInput) {
   }
   if (contest.endAt && now >= contest.endAt) {
     throw AppError.badRequest("Submission deadline has passed");
+  }
+
+  const [assignment] = await db.select({ id: contestJudges.id })
+    .from(contestJudges)
+    .where(and(
+      eq(contestJudges.contestId, contestId),
+      eq(contestJudges.judgeId, participantId),
+      eq(contestJudges.isActive, true),
+    ))
+    .limit(1);
+
+  if (contest.createdBy === participantId || assignment) {
+    throw AppError.forbidden("A contest organizer or assigned judge cannot submit to the same contest");
   }
 
   const id = crypto.randomUUID();
@@ -479,7 +494,7 @@ export async function createSubmission(input: CreateSubmissionInput) {
 type ModerationActor = AuthEnv["Variables"]["user"];
 
 function requireMutableContest(contest: typeof contests.$inferSelect, actor: ModerationActor) {
-  if (contest.isDeleted || (actor.role === "Organizer" && contest.createdBy !== actor.id)) {
+  if (contest.isDeleted || actor.role !== "Organizer" || contest.createdBy !== actor.id) {
     throw AppError.notFound("Submission not found");
   }
 

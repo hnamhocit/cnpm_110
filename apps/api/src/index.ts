@@ -70,7 +70,7 @@ v1.route("/upload", uploadRoute)
 const rbac = new Hono();
 rbac.use("*", authenticate);
 rbac.get("/manage-contest", requireRoles("Admin", "Organizer"), (c) => {
-  return c.ok(null, "Bạn được phép quản lý cuộc thi");
+  return c.ok(null, "Bạn được phép truy cập cổng quản trị");
 });
 
 v1.route("/rbac", rbac);

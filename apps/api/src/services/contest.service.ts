@@ -20,6 +20,8 @@ import {
   filmMetadata,
   scoringCriteria,
   submissions,
+  roles,
+  userRoles,
   users,
 } from "../db/schema";
 
@@ -265,15 +267,11 @@ export async function createContest(input: CreateContestInput) {
   const { name, description, startAt, endAt, status, createdBy } = input;
 
   // BR-08: Ràng buộc lịch trình tuần tự (startAt < endAt)
-  if (startAt && endAt) {
-    if (startAt >= endAt) {
-      throw AppError.badRequest(
-        "startAt must be strictly before endAt (BR-08: Sequential Schedule)",
-      );
-    }
-    if (status.toUpperCase() === "PUBLISHED" && endAt > new Date()) {
-      throw AppError.badRequest("Cannot publish contest before end date");
-    }
+  if (startAt && endAt && startAt >= endAt) {
+    throw AppError.badRequest("startAt must be strictly before endAt (BR-08: Sequential Schedule)");
+  }
+  if (status.toLowerCase() !== "draft") {
+    throw AppError.badRequest("A new contest must start in DRAFT");
   }
 
   const [created] = await db
@@ -326,7 +324,7 @@ export async function updateContest(
       throw AppError.notFound("Contest not found");
     }
 
-    if (actor.role === "Organizer" && current.createdBy !== actor.id) {
+    if (actor.role !== "Organizer" || current.createdBy !== actor.id) {
       throw AppError.forbidden("You do not manage this contest");
     }
 
@@ -353,19 +351,55 @@ export async function updateContest(
       );
     }
 
-    if (
-      status.toUpperCase() === "PUBLISHED" &&
-      endAt &&
-      new Date(endAt) > new Date()
-    ) {
-      throw AppError.badRequest("Cannot publish contest before end date");
+    const currentStatus = current.status.toLowerCase();
+    const nextStatus = status.toLowerCase();
+    if (nextStatus === "judging" && currentStatus !== "judging") {
+      if (currentStatus !== "under_review") {
+        throw AppError.conflict("Only contests under review can enter judging");
+      }
+      const categoryWeights = await tx.select({
+        categoryId: categories.id,
+        valid: sql<boolean>`COALESCE(sum(${scoringCriteria.weight}) = 1.0000, false)`,
+      }).from(categories)
+        .leftJoin(scoringCriteria, eq(scoringCriteria.categoryId, categories.id))
+        .where(eq(categories.contestId, id))
+        .groupBy(categories.id);
+      const activeJudges = await tx
+        .select({ categoryId: contestJudges.categoryId, total: count() })
+        .from(contestJudges)
+        .innerJoin(users, and(eq(users.id, contestJudges.judgeId), eq(users.isActive, true)))
+        .innerJoin(userRoles, eq(userRoles.userId, users.id))
+        .innerJoin(roles, and(eq(roles.id, userRoles.roleId), eq(roles.name, "Judge")))
+        .where(and(eq(contestJudges.contestId, id), eq(contestJudges.isActive, true)))
+        .groupBy(contestJudges.categoryId);
+      if (categoryWeights.length === 0 || categoryWeights.some(
+        ({ categoryId }) => (activeJudges.find((category) => category.categoryId === categoryId)?.total ?? 0) < 3,
+      )) {
+        throw new AppError("Each category requires at least three active judges (BR-20)", 422);
+      }
+      if (categoryWeights.some(({ valid }) => !valid)) {
+        throw new AppError("Criterion weights must total 1.0000 per category (BR-15)", 422);
+      }
     }
 
-    if (["published", "completed"].includes(status.toLowerCase())) {
+    if (nextStatus === "published") {
+      if (currentStatus !== "judging" || (endAt && endAt > new Date())) {
+        throw AppError.conflict("Contest is not ready for publication");
+      }
       const scoreboard = await getContestScoreboard(id, actor, tx);
       if (scoreboard.entries.some((entry) => entry.discrepancyFlag)) {
         throw AppError.conflict("Resolve scoring discrepancies before publishing");
       }
+      const assignments = await tx.select({ lockedAt: contestJudges.lockedAt })
+        .from(contestJudges)
+        .where(and(eq(contestJudges.contestId, id), eq(contestJudges.isActive, true)));
+      if (assignments.length === 0 || assignments.some(({ lockedAt }) => !lockedAt) ||
+          scoreboard.entries.some(({ finalScore }) => finalScore === null)) {
+        throw AppError.conflict("All scorecards must be complete and locked before publication");
+      }
+    }
+    if (nextStatus !== currentStatus && ["archived", "completed"].includes(nextStatus)) {
+      throw AppError.conflict("Use the contest publication workflow to publish results");
     }
 
     const [updated] = await tx
@@ -397,7 +431,7 @@ export async function softDeleteContest(id: string, actor: AuthEnv["Variables"][
     .where(and(
       eq(contests.id, id),
       eq(contests.isDeleted, false),
-      actor.role === "Organizer" ? eq(contests.createdBy, actor.id) : undefined,
+      eq(contests.createdBy, actor.id),
       sql`lower(${contests.status}) not in ('published', 'completed', 'archived')`,
     ))
     .returning({ id: contests.id });
@@ -433,10 +467,7 @@ export async function getContestScoreboard(
   }
 
   // 2. Organizers can only view their own contests.
-  if (
-    actor.role === "Organizer" &&
-    contest.createdBy !== actor.id
-  ) {
+  if (actor.role !== "Organizer" || contest.createdBy !== actor.id) {
     throw AppError.forbidden("You cannot view this contest scoreboard");
   }
 

@@ -32,12 +32,14 @@ async function createToken(userId: string, role: string) {
     );
 }
 
-async function insertUser(id: string, name: string) {
+async function insertUser(id: string, name: string, role: string) {
     await pool.query(
         `INSERT INTO users (id, full_name, email, password_hash, is_active)
      VALUES ($1, $2, $3, $4, TRUE)`,
         [id, name, `${id}@fpc70-test.example`, "test-password-hash"],
     );
+    await pool.query("INSERT INTO roles (name) VALUES ($1) ON CONFLICT (name) DO NOTHING", [role]);
+    await pool.query("INSERT INTO user_roles (user_id, role_id) SELECT $1, id FROM roles WHERE name = $2", [id, role]);
 }
 
 async function createTestData() {
@@ -49,9 +51,9 @@ async function createTestData() {
     const assignedCategoryId = crypto.randomUUID();
     const otherCategoryId = crypto.randomUUID();
 
-    await insertUser(judgeId, "FPC72 Test Judge");
-    await insertUser(otherJudgeId, "FPC72 Other Judge");
-    await insertUser(participantId, "FPC72 Test Participant");
+    await insertUser(judgeId, "FPC72 Test Judge", "Judge");
+    await insertUser(otherJudgeId, "FPC72 Other Judge", "Judge");
+    await insertUser(participantId, "FPC72 Test Participant", "Participant");
 
     await pool.query(
         `INSERT INTO contests (id, name, status, created_by)
@@ -267,6 +269,14 @@ describe("FPC-70/FPC-71: Judge APIs", () => {
         } finally {
             await unlink(file);
         }
+    });
+
+    test("Rejects a signed Judge claim when that role is not assigned to the account", async () => {
+        const token = await createToken(testData.participantId, "Judge");
+        const response = await app.request("/api/v1/judge/assignments", {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        expect(response.status).toBe(401);
     });
 
     test("Unassigned judges cannot fetch the anonymous image", async () => {

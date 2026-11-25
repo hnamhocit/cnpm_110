@@ -20,12 +20,12 @@ import { AppError } from "../utils/errors";
 const MiB = 1024 * 1024;
 const route = new Hono<AuthEnv>();
 
-route.get("/my", authenticate, handleGetMySubmissions);
+route.get("/my", authenticate, requireRoles("Participant"), handleGetMySubmissions);
 
 route.get(
   "/",
   authenticate,
-  requireRoles("Organizer", "Admin"),
+  requireRoles("Organizer"),
   handleListSubmissions,
 );
 
@@ -45,21 +45,21 @@ route.post(
 route.post(
   "/:id/approve",
   authenticate,
-  requireRoles("Organizer", "Admin"),
+  requireRoles("Organizer"),
   handleApproveSubmission,
 );
 
 route.post(
   "/:id/reject",
   authenticate,
-  requireRoles("Organizer", "Admin"),
+  requireRoles("Organizer"),
   handleRejectSubmission,
 );
 
 route.post(
   "/:id/moderate",
   authenticate,
-  requireRoles("Organizer", "Admin"),
+  requireRoles("Organizer"),
   handleModerateSubmission,
 );
 

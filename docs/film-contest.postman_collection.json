@@ -352,7 +352,7 @@
           }
         },
         {
-          "name": "Create Contest (Admin or Organizer)",
+          "name": "Create Contest (Organizer)",
           "request": {
             "auth": {
               "type": "bearer",
@@ -379,7 +379,7 @@
           }
         },
         {
-          "name": "Update Contest (Admin or Organizer)",
+          "name": "Update Contest (Organizer)",
           "request": {
             "auth": {
               "type": "bearer",
@@ -403,11 +403,11 @@
               "raw": "{\n  \"description\": \"Updated contest rules\"\n}"
             },
             "url": "{{baseUrl}}/api/v1/contests/{{contestId}}",
-            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403."
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403."
           }
         },
         {
-          "name": "Delete Contest (Admin or Organizer)",
+          "name": "Delete Contest (Organizer)",
           "request": {
             "auth": {
               "type": "bearer",
@@ -461,7 +461,7 @@
                 }
               ]
             },
-            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi."
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo."
           }
         },
         {
@@ -600,7 +600,7 @@
                 }
               }
             },
-            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài rủi ro AI cao đang bị giữ hoặc bài đã duyệt trả 409. Bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403."
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Bài rủi ro AI cao đang bị giữ hoặc bài đã duyệt trả 409. Bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403."
           }
         },
         {
@@ -633,7 +633,7 @@
                 }
               }
             },
-            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài đã bị loại trả 409. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403."
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Bài đã bị loại trả 409. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403."
           }
         },
         {
@@ -666,7 +666,7 @@
                 }
               }
             },
-            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF hiện chỉ đổi trạng thái và ghi log, chưa tạo hạn 48 giờ."
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF hiện chỉ đổi trạng thái và ghi log, chưa tạo hạn 48 giờ."
           }
         },
         {
@@ -742,7 +742,7 @@
                 }
               ]
             },
-            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi."
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo."
           }
         },
         {
@@ -881,7 +881,7 @@
                 }
               }
             },
-            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài rủi ro AI cao đang bị giữ hoặc bài đã duyệt trả 409. Bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403."
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Bài rủi ro AI cao đang bị giữ hoặc bài đã duyệt trả 409. Bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403."
           }
         },
         {
@@ -914,7 +914,7 @@
                 }
               }
             },
-            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài đã bị loại trả 409. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403."
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Bài đã bị loại trả 409. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403."
           }
         },
         {
@@ -947,7 +947,7 @@
                 }
               }
             },
-            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF hiện chỉ đổi trạng thái và ghi log, chưa tạo hạn 48 giờ."
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF hiện chỉ đổi trạng thái và ghi log, chưa tạo hạn 48 giờ."
           }
         },
         {
@@ -1047,6 +1047,16 @@
                 "api",
                 "v1",
                 "upload"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
               ]
             }
           }
@@ -1164,7 +1174,7 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/api/v1/contests/{{contestId}}/scoreboard",
-            "description": "Admin hoặc Organizer sở hữu cuộc thi. Trả bảng điểm theo hạng mục. Bài thiếu phiếu hoàn chỉnh có finalScore và rank bằng null. Xem docs/ai/09-api-contracts.md.",
+            "description": "Chỉ Organizer sở hữu cuộc thi được xem bảng điểm theo hạng mục. Bài thiếu phiếu hoàn chỉnh có finalScore và rank bằng null. Xem docs/ai/09-api-contracts.md.",
             "auth": {
               "type": "bearer",
               "bearer": [

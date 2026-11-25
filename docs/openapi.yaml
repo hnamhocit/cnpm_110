@@ -229,6 +229,7 @@ paths:
   /api/v1/auth/portfolio:
     get:
       summary: Portfolio của tài khoản hiện tại
+      description: Chỉ Participant được đọc portfolio của mình.
       tags:
       - Auth
       responses:
@@ -553,7 +554,7 @@ paths:
       operationId: getContestsById
     put:
       summary: Cập nhật cuộc thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
       tags:
       - Contests
       security:
@@ -1015,7 +1016,7 @@ paths:
   /api/v1/organizer/submissions:
     get:
       summary: Hàng đợi kiểm duyệt bài dự thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo.
       tags:
       - Submissions
       responses:
@@ -1143,6 +1144,7 @@ paths:
   /api/v1/organizer/submissions/my:
     get:
       summary: Bài dự thi của tôi
+      description: Chỉ Participant được đọc bài của mình qua alias.
       tags:
       - Submissions
       responses:
@@ -1223,7 +1225,7 @@ paths:
   /api/v1/organizer/submissions/{id}/approve:
     post:
       summary: Duyệt bài thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài rủi ro AI cao đang bị giữ hoặc bài đã duyệt trả 409. Bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Bài rủi ro AI cao đang bị giữ hoặc bài đã duyệt trả 409. Bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
       tags:
       - Submissions
       responses:
@@ -1318,7 +1320,7 @@ paths:
   /api/v1/organizer/submissions/{id}/moderate:
     post:
       summary: Kiểm duyệt bài thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF hiện chỉ đổi trạng thái và ghi log, chưa tạo hạn 48 giờ.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF hiện chỉ đổi trạng thái và ghi log, chưa tạo hạn 48 giờ.
       tags:
       - Submissions
       responses:
@@ -1389,7 +1391,7 @@ paths:
   /api/v1/organizer/submissions/{id}/reject:
     post:
       summary: Loại bài thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài đã bị loại trả 409. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Bài đã bị loại trả 409. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
       tags:
       - Submissions
       responses:
@@ -1529,7 +1531,7 @@ paths:
   /api/v1/submissions:
     get:
       summary: Hàng đợi kiểm duyệt bài dự thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo.
       tags:
       - Submissions
       responses:
@@ -1657,6 +1659,7 @@ paths:
   /api/v1/submissions/my:
     get:
       summary: Bài dự thi của tôi
+      description: Chỉ Participant được đọc bài của mình.
       tags:
       - Submissions
       responses:
@@ -1768,7 +1771,7 @@ paths:
   /api/v1/submissions/{id}/approve:
     post:
       summary: Duyệt bài thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài rủi ro AI cao đang bị giữ hoặc bài đã duyệt trả 409. Bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Bài rủi ro AI cao đang bị giữ hoặc bài đã duyệt trả 409. Bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
       tags:
       - Submissions
       responses:
@@ -1863,7 +1866,7 @@ paths:
   /api/v1/submissions/{id}/moderate:
     post:
       summary: Kiểm duyệt bài thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF hiện chỉ đổi trạng thái và ghi log, chưa tạo hạn 48 giờ.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF hiện chỉ đổi trạng thái và ghi log, chưa tạo hạn 48 giờ.
       tags:
       - Submissions
       responses:
@@ -1953,7 +1956,7 @@ paths:
   /api/v1/submissions/{id}/reject:
     post:
       summary: Loại bài thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài đã bị loại trả 409. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Bài đã bị loại trả 409. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
       tags:
       - Submissions
       responses:
@@ -2037,8 +2040,11 @@ paths:
   /api/v1/upload:
     post:
       summary: Upload ảnh lên Cloudflare R2
+      description: Yêu cầu Bearer JWT của tài khoản hoạt động.
       tags:
       - Storage
+      security:
+      - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -2074,6 +2080,8 @@ paths:
                         size:
                           type: integer
                           example: 2048576
+        '401':
+          description: Thiếu token hoặc tài khoản hay vai trò không còn hiệu lực.
         '400':
           description: File không hợp lệ hoặc sai định dạng
           content:
@@ -2297,7 +2305,7 @@ paths:
   /api/v1/contests/{id}/scoreboard:
     get:
       summary: GET /api/v1/contests/{id}/scoreboard
-      description: Admin hoặc Organizer sở hữu cuộc thi. Trả bảng điểm theo hạng mục. Bài thiếu phiếu hoặc có cờ DISCREPANCY_CONFLICT có finalScore và rank bằng null.
+      description: Chỉ Organizer sở hữu cuộc thi được xem bảng điểm theo hạng mục. Bài thiếu phiếu hoặc có cờ DISCREPANCY_CONFLICT có finalScore và rank bằng null.
       tags:
       - Judging
       x-implementation: mounted

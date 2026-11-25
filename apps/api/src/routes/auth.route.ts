@@ -7,7 +7,7 @@ import {
   handleRefresh,
   handleRegister,
 } from "../controllers/auth.controller";
-import { authenticate, type AuthEnv } from "../middlewares/auth";
+import { authenticate, requireRoles, type AuthEnv } from "../middlewares/auth";
 
 const auth = new Hono<AuthEnv>();
 
@@ -16,6 +16,6 @@ auth.post("/login", handleLogin);
 auth.post("/refresh", handleRefresh);
 auth.post("/logout", handleLogout);
 auth.get("/me", authenticate, handleGetMe);
-auth.get("/portfolio", authenticate, handleGetPortfolio);
+auth.get("/portfolio", authenticate, requireRoles("Participant"), handleGetPortfolio);
 
 export default auth;

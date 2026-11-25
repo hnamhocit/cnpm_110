@@ -1,6 +1,6 @@
 # Tổng quan tiến độ Film Contest
 
-**Mốc rà soát:** 2026-11-23, mã nguồn trên `develop` tại `6154028`. Bảng dựa trên route, lớp dữ liệu, màn hình và commit hiện có. Các luồng chưa được chạy đầu cuối trong lần rà soát này.
+**Mốc rà soát:** 2026-11-25, mã nguồn local trên `develop` tại `56c2576` cộng các sửa đổi schema/actor chưa commit. Đã áp dụng migration mới và rà controller, route, middleware, service cùng schema với SRS.
 
 - **Đặc tả:** Có đủ **10/10** tài liệu module. OpenAPI và Postman có **38 cặp method/path đang mount**, gồm các alias, và **36 endpoint dự kiến**. [Danh mục API](../ai/09-api-contracts.md#6-danh-mục-endpoint)
 - **Sprint 4:** Đã tích hợp FPC-70–75 và sửa các lỗi phát hiện trong FPC-86. Năm route Judging đã được đồng bộ với Swagger/Postman qua FPC-87. [Tracker](sprints.md#sprint-4--chấm-thi) · [Hợp đồng Judging](../ai/09-api-contracts.md#61-hợp-đồng-judging)
@@ -115,3 +115,14 @@ Một số task Done có bằng chứng đúng phạm vi đang rà. FPC-16 có i
 ### Kết quả tích hợp FPC-70–75
 
 Ảnh chấm thi dùng URL chứa mã bài, kiểm tra phân công và bỏ metadata. Ghi điểm và khóa phiếu yêu cầu trạng thái `JUDGING` và dùng khóa hàng cuộc thi để đồng bộ với cập nhật trạng thái. Điểm chung cuộc làm tròn sau khi lấy trung bình, trọng số được lưu với bốn chữ số thập phân, và bảng điểm gắn cờ chênh lệch trước khi công bố. PostgreSQL 18 tạm áp dụng migration thành công và **25 ca integration đạt**. **15 unit test** tính điểm và xếp hạng đạt.
+
+
+## Rà soát schema và actor Backend
+
+Đối chiếu trực tiếp các controller, route, middleware, service và Drizzle schema với SRS. Với quyền tạo và sửa cuộc thi, SRS UC-11/12 giao cho Organizer trong khi hợp đồng thiết kế Module 03 liệt kê thêm Admin. Backend áp dụng SRS. Admin giữ quyền đọc báo cáo AI theo Module 01 và quyền vào cổng quản trị. Organizer thao tác trên cuộc thi của mình. Participant xem bài và portfolio của mình. Judge chỉ dùng ảnh ẩn danh trong cuộc thi đang chấm và theo phân công còn hiệu lực. AI webhook dùng secret riêng.
+
+Migration kiểm tra hạng mục thuộc đúng cuộc thi cho bài nộp và phân công, giới hạn trọng số từng tiêu chí và yêu cầu điểm tối đa dương. Tổng trọng số được kiểm tra khi mở chấm. Backend đối chiếu role trong JWT với phân quyền hiện tại trong DB, và kiểm tra BR-21 khi nộp bài.
+
+Các phần còn thiếu theo SRS gồm lịch năm mốc và dữ liệu backfill, route phân công và cấu hình tiêu chí, kiểm chứng âm bản trước công bố, quy trình 48 giờ, dữ liệu điểm và giải đã chốt, thu hồi phiên đầy đủ khi khóa, cùng các bảng danh mục, logbook và tài sản số theo Module 02/04/10. Schema auth hiện chưa có số điện thoại xác minh và phiên bản token. Film metadata hiện lưu mã cuộn dạng chuỗi. `REQUEST_PROOF` hiện vướng ràng buộc trạng thái trong DB và cần triển khai thống nhất với deadline, nộp đối chứng và xử lý quá hạn.
+
+Migration sửa schema áp dụng thành công trên PostgreSQL 18 tạm. API type check qua. Các bộ API hiện có đạt **39 unit test**; tích hợp Judging, scoreboard và submission đạt **32 ca PostgreSQL**. Test submission trước đó dùng mã khổ phim sai chuẩn, đã sửa fixture thành `135` để khớp BR-23. Chưa kiểm chứng migration/backfill trên database triển khai.

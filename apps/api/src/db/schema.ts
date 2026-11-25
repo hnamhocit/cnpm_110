@@ -12,6 +12,7 @@ import {
   check,
   numeric,
   uniqueIndex,
+  foreignKey,
   bigint,
   jsonb,
 } from "drizzle-orm/pg-core";
@@ -131,6 +132,7 @@ export const categories = pgTable(
   },
   (table) => [
     index("idx_categories_contest_id").on(table.contestId),
+    uniqueIndex("uq_categories_id_contest").on(table.id, table.contestId),
     uniqueIndex("uq_categories_contest_name").on(
       table.contestId,
       table.name,
@@ -154,7 +156,7 @@ export const scoringCriteria = pgTable(
       .notNull()
       .default("10"),
     weight: numeric("weight", {
-      precision: 7,
+      precision: 5,
       scale: 4,
     })
       .notNull()
@@ -169,6 +171,8 @@ export const scoringCriteria = pgTable(
   },
   (table) => [
     index("idx_scoring_criteria_category_id").on(table.categoryId),
+    check("scoring_criteria_weight_range", sql`${table.weight} > 0 AND ${table.weight} <= 1`),
+    check("scoring_criteria_max_score_positive", sql`${table.maxScore} > 0`),
     uniqueIndex("uq_scoring_criteria_category_name").on(
       table.categoryId,
       table.name,
@@ -185,9 +189,7 @@ export const contestJudges = pgTable(
       .notNull()
       .references(() => contests.id, { onDelete: "cascade" }),
 
-    categoryId: uuid("category_id")
-      .notNull()
-      .references(() => categories.id, { onDelete: "cascade" }),
+    categoryId: uuid("category_id").notNull(),
 
     judgeId: uuid("judge_id")
       .notNull()
@@ -208,6 +210,11 @@ export const contestJudges = pgTable(
       .defaultNow(),
   },
   (table) => [
+    foreignKey({
+      name: "contest_judges_category_contest_fk",
+      columns: [table.categoryId, table.contestId],
+      foreignColumns: [categories.id, categories.contestId],
+    }).onDelete("restrict"),
     index("idx_contest_judges_judge_id").on(table.judgeId),
     index("idx_contest_judges_category_id").on(table.categoryId),
     index("idx_contest_judges_contest_id").on(table.contestId),
@@ -258,9 +265,7 @@ export const submissions = pgTable(
       .notNull()
       .references(() => contests.id, { onDelete: "restrict" }),
 
-    categoryId: uuid("category_id")
-      .notNull()
-      .references(() => categories.id, { onDelete: "restrict" }),
+    categoryId: uuid("category_id").notNull(),
 
     participantId: uuid("participant_id")
       .notNull()
@@ -297,6 +302,11 @@ export const submissions = pgTable(
       .defaultNow(),
   },
   (table) => [
+    foreignKey({
+      name: "submissions_category_contest_fk",
+      columns: [table.categoryId, table.contestId],
+      foreignColumns: [categories.id, categories.contestId],
+    }).onDelete("restrict"),
     index("idx_submissions_contest_id").on(table.contestId),
     index("idx_submissions_category_id").on(table.categoryId),
     index("idx_submissions_participant_id").on(table.participantId),
