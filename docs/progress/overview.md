@@ -1,6 +1,6 @@
 # Tổng quan tiến độ Film Contest
 
-**Mốc rà soát:** 2026-11-23, mã nguồn trên `develop` tại `a2ceb71`. Bảng dựa trên route, lớp dữ liệu, màn hình và commit hiện có. Các luồng chưa được chạy đầu cuối trong lần rà soát này.
+**Mốc rà soát:** 2026-11-23, mã nguồn trên `develop` tại `6154028`. Bảng dựa trên route, lớp dữ liệu, màn hình và commit hiện có. Các luồng chưa được chạy đầu cuối trong lần rà soát này.
 
 - **Đặc tả:** Có đủ **10/10** tài liệu module. OpenAPI và Postman có **33 cặp method/path đang mount**, gồm các alias, và **36 endpoint dự kiến**. [Danh mục API](../ai/09-api-contracts.md#6-danh-mục-endpoint)
 - **Nghiệp vụ có ít nhất một luồng nối API hoặc xử lý thật trong mã:** Web **4/8** module, Backend **5/8**, Mobile **4/8**. Mẫu số là module 01–08. Module 09–10 được đánh giá riêng vì dùng chung cho nhiều luồng.
@@ -12,16 +12,54 @@
 
 | Module | Web | Backend | Mobile | Khoảng trống chính |
 | --- | --- | --- | --- | --- |
-| [01 Auth & RBAC](../ai/01-auth-and-rbac.md) | Có luồng · Đăng nhập, đăng ký, phiên | Có luồng · JWT, refresh, logout, hồ sơ hiện tại | Có luồng · Đăng nhập, đăng ký, lưu phiên | Thiếu route khôi phục mật khẩu, chỉnh hồ sơ/mật khẩu và quản trị tài khoản. Mobile có màn hình gọi một số route chưa mount. |
+| [01 Auth & RBAC](../ai/01-auth-and-rbac.md) | Có luồng · Đăng nhập, đăng ký, phiên | Có luồng · JWT, refresh, logout, hồ sơ hiện tại | Có luồng · Đăng nhập, đăng ký, lưu phiên | Thiếu thu hồi access token tức thì khi khóa tài khoản, xác thực định danh, khôi phục mật khẩu, chỉnh hồ sơ/mật khẩu và quản trị tài khoản. Mobile có màn hình gọi một số route chưa mount. |
 | [02 Danh mục ảnh phim](../ai/02-analog-master-data.md) | — | — | — | Chưa thấy luồng CRUD hoặc tra cứu danh mục phim, máy, ống kính và lab tập trung. |
 | [03 Vòng đời cuộc thi](../ai/03-contest-lifecycle.md) | Có luồng · Danh sách, chi tiết, tạo cuộc thi và cập nhật trạng thái | Có luồng · CRUD cuộc thi, đọc hạng mục | Có luồng · Danh sách và chi tiết | Chưa đủ 5 mốc, đăng ký tham gia, cấu hình tiêu chí, phân công giám khảo và kiểm tra đủ số giám khảo. |
 | [04 Sổ tay cuộn phim](../ai/04-film-logbook.md) | — | Một phần · Có schema cuộn phim | Một phần · Có form thông số phim trong luồng nộp | Thiếu quản lý cuộn phim và frame riêng, tích hợp API và đồng bộ offline. |
-| [05 Nộp bài & đối chứng](../ai/05-submission-and-proof.md) | Có luồng · Nộp ảnh, hàng đợi, kiểm duyệt | Có luồng · Nộp và liệt kê bài, duyệt/loại và yêu cầu đối chứng qua kiểm duyệt | Có luồng · Danh sách bài và giao diện trạng thái, có màn nộp ảnh | Mobile thiếu hạng mục khi mở form nộp từ trang chi tiết. Route upload đối chứng và sửa metadata chưa mount. Chưa xác nhận hết hạn 48 giờ tự động hoặc rút bài. |
+| [05 Nộp bài & đối chứng](../ai/05-submission-and-proof.md) | Có luồng · Nộp ảnh, hàng đợi, kiểm duyệt | Có luồng · Nộp và liệt kê bài, duyệt/loại và yêu cầu đối chứng qua kiểm duyệt | Có luồng · Danh sách bài và giao diện trạng thái, có màn nộp ảnh | Mobile thiếu hạng mục khi mở form nộp từ trang chi tiết. Route upload đối chứng và sửa metadata chưa mount. Chưa lưu hạn đối chứng 48 giờ, chưa có xử lý hết hạn tự động hoặc route rút bài. |
 | [06 Thẩm định AI](../ai/06-ai-verification.md) | Có luồng · Gọi API đối sánh bài | Có luồng · Worker, webhook, phân loại và pHash | — | Chưa thấy API quét lại theo yêu cầu và nhánh tương đồng vector 92% trong mã hiện tại. |
-| [07 Chấm ẩn danh](../ai/07-blind-judging.md) | Một phần · Màn phân công, tiến độ và bảng điểm dùng dữ liệu mẫu hoặc thiếu API | — | Một phần · Hiển thị trạng thái bài vào vòng chấm | Thiếu workspace chấm ẩn danh nối API, DTO cho Judge, ghi/khóa điểm và điều phối lệch điểm. |
+| [07 Chấm ẩn danh](../ai/07-blind-judging.md) | Một phần · Có Focus Mode, zoom ảnh/metadata và form chấm điểm trên dữ liệu mẫu. Màn phân công, tiến độ và bảng điểm còn thiếu API | — | Một phần · Hiển thị trạng thái bài vào vòng chấm | Thiếu API danh sách bài phân công, DTO ẩn danh cho Judge, ghi/khóa điểm và điều phối lệch điểm. |
 | [08 Kết quả & triển lãm](../ai/08-archive-and-exhibition.md) | Một phần · Triển lãm dùng dữ liệu mẫu | Có luồng · Có route kết quả và portfolio, một số điểm/giải lấy từ mẫu | Có luồng · Gọi API bảng vàng và portfolio | Thiếu công bố kết quả chính thức, dữ liệu điểm/giải từ chấm thi và xuất bản ảnh triển lãm. |
 | [09 Hợp đồng API](../ai/09-api-contracts.md) | Có tích hợp một số API chuẩn | Có envelope và danh mục route | Có tích hợp một số API chuẩn | Một số màn hình còn gọi route dự kiến hoặc phụ thuộc DTO khác hợp đồng đích. |
 | [10 CSDL & lưu trữ](../ai/10-database-and-storage.md) | Tải multipart qua Backend | Có PostgreSQL/Drizzle và lưu R2 hoặc local | Tải multipart qua Backend | Thiếu contract presigned upload/confirm; chưa thấy đầy đủ luồng hai bản ảnh và lưu trữ vector. |
+
+## Rà soát 4 PR Web của Phạm Tiến Thành Nhân · 2026-11-23
+
+Cả bốn PR đã được duyệt và merge vào `develop`. Diff của ba merge commit #147–#149 rỗng vì #150 đã đưa các thay đổi đó vào trước.
+
+| PR | Phần đã có trong mã |
+| --- | --- |
+| [#147](https://github.com/hnamhocit/cnpm_110/pull/147) · FPC-79 | Focus Mode tại `/judge/evaluations/[id]`, có nút toàn màn hình và hiển thị mã bài. Trang dùng bài và tiêu chí mẫu. Chưa có luồng từ danh sách phân công hoặc kiểm tra quyền Judge trên trang. |
+| [#148](https://github.com/hnamhocit/cnpm_110/pull/148) · FPC-80 | Trình xem có zoom tới 350%, kéo ảnh và bảng metadata phim/máy. Ảnh và thông số dùng để demo. |
+| [#149](https://github.com/hnamhocit/cnpm_110/pull/149) · FPC-81 | Slider theo tiêu chí, ô nhận xét, kiểm tra đầu vào và tính điểm theo trọng số. Nút gửi chỉ hiện thông báo thành công sau khi giả lập chờ, chưa lưu phiếu chấm. |
+| [#150](https://github.com/hnamhocit/cnpm_110/pull/150) · Tích hợp Web | Đưa ba tính năng chấm vào `develop`, thêm fallback đọc role từ JWT khi API RBAC trả 404 và khai báo nguồn ảnh HTTPS. Danh sách Portal vẫn đọc `data.items` từ phản hồi phân trang, nhưng bỏ bộ lọc `createdBy` của Organizer. |
+
+- **Kiểm tra:** `bun --filter web test` qua **59/59**. TypeScript báo trùng khóa `images` trong `next.config.ts`, trùng hàm `generateMetadata` ở trang chi tiết cuộc thi và thiếu các kiểu dữ liệu mà màn tiến độ chấm FPC-76 dùng. Hai job CI Web/API và Mobile đều báo thất bại trên cả bốn PR. Chưa chạy luồng E2E.
+- **Phân quyền:** Fallback 404 đọc role từ JWT mà không xác minh chữ ký. Cần kiểm tra lại phạm vi danh sách Organizer sau khi bỏ `createdBy`. Các yêu cầu BR-12/13 còn phụ thuộc kiểm soát quyền và DTO từ Backend.
+- **Sprint 4:** FPC-79–81 giữ `REVIEW`. FPC-70–72 vẫn là các phần phụ thuộc để lấy bài phân công, lưu và khóa phiếu chấm thật.
+
+## Rà soát nghiệm thu Backend · 2026-11-23
+
+Đối chiếu SRS, module liên quan, OpenAPI và route Hono tại `6154028`. Cột **Hiện tại** chuyển 9 task từ `DONE` sang `REVIEW`. FPC-29 giữ `DOING`. Các task có tiêu đề hẹp như viết test, kiểm tra định dạng ảnh hoặc triển khai pHash giữ trạng thái theo phạm vi Jira.
+
+| Task | Kết quả đối chiếu |
+| --- | --- |
+| FPC-9, FPC-12 · Xác thực và RBAC | Đăng ký cấp token ngay, thiếu bước xác thực định danh theo BR-01. Middleware xác minh chữ ký và hạn JWT, nhưng không kiểm tra trạng thái tài khoản hoặc phiên bản token nên chưa thu hồi access token tức thì theo BR-04. Refresh từ chối tài khoản đang `is_active = FALSE`, chưa có route khóa tài khoản để thu hồi toàn bộ phiên. [Auth service](../../apps/api/src/services/auth.service.ts) · [Middleware](../../apps/api/src/middlewares/auth.ts) |
+| FPC-28, FPC-29 · Schema và vòng đời cuộc thi | Chỉ có `startAt` và `endAt` thay vì 5 mốc BR-08. Cột trọng số có hai chữ số thập phân và chưa có kiểm tra tổng 1.0000 (BR-15). Route sửa/xóa không xác minh chủ cuộc thi với Organizer. Đường cập nhật trạng thái chung chưa kiểm tra đủ 3 giám khảo khi mở chấm hoặc xác minh âm bản trước công bố (BR-02/06/20). [Schema](../../apps/api/src/db/schema.ts) · [Controller](../../apps/api/src/controllers/contest.controller.ts) · [Service](../../apps/api/src/services/contest.service.ts) |
+| FPC-32 · Nộp bài | Có kiểm tra thời gian theo hai mốc nhưng không dùng trạng thái cuộc thi để chặn nộp. `frameNumber` chỉ cần là chuỗi có nội dung, chưa kiểm tra giới hạn theo khổ (BR-23). Lab và quy trình tráng đều tùy chọn (BR-22). Kiểm tra trùng cuộn–frame chạy trước transaction ghi bài, chưa có ràng buộc chống hai yêu cầu đồng thời (BR-05). [Controller](../../apps/api/src/controllers/submission.controller.ts) · [Service](../../apps/api/src/services/submission.service.ts) |
+| FPC-49–51 · Danh sách, kiểm duyệt và đối sánh | Các route kiểm tra vai trò Organizer nhưng thiếu phạm vi cuộc thi. Kiểm duyệt có lý do loại bài và log, nhưng vẫn có thể đổi trạng thái bài sau công bố hoặc duyệt bài rủi ro AI chưa có âm bản được xác minh (BR-09/16/18). Yêu cầu đối chứng chỉ đổi trạng thái, chưa ghi hạn 48 giờ hoặc tự động loại (BR-19). Đối sánh trả xác suất và pHash mẫu khi thiếu phân tích. [Routes](../../apps/api/src/routes/submissions.route.ts) · [Service](../../apps/api/src/services/submission.service.ts) |
+| FPC-52, FPC-55 · Webhook và phân loại AI | Webhook cho lưu đến 50 tags và chưa thấy cảnh báo lệch hạng mục (BR-11). Phân loại dùng ngưỡng 75% nhưng ghi `FLAGGED` thay vì `AI_FLAGGED_HIGH_RISK`; liên kết trùng pHash được lưu, nhưng trạng thái dùng `SUSPICIOUS` thay vì `DUPLICATE_SUSPECT` khi chỉ phát hiện trùng (BR-09/10). FPC-53 có nhánh pHash, còn thiếu nhánh cosine 92%. FPC-54 có client và worker gọi model, chưa xác minh với dịch vụ model đang triển khai. [Webhook](../../apps/api/src/controllers/ai-webhook.controller.ts) · [Phân loại](../../apps/api/src/services/ai/ai-result-classification.ts) |
+| FPC-33 · Kiểm tra ảnh | Đúng phạm vi Jira về JPEG/TIFF, 25 MiB và cạnh ngắn từ 2000 px. Chưa thấy bước kiểm tra watermark cá nhân theo BR-07. [Validator](../../apps/api/src/utils/validate-image.ts) |
+
+`bun --filter api check-types` qua. `bun --filter api test` có **36 pass, 3 fail**. Cả ba lỗi thuộc bộ test kết quả cuộc thi FPC-100, với HTTP 500 trong test thay cho 404, 400 và 200 mong đợi. Chưa chạy integration với PostgreSQL hoặc xác minh trên môi trường triển khai. [Bộ test kết quả](../../apps/api/tests/contest-results.test.ts)
+
+## Sửa lỗi sau rà soát
+
+Hành vi API sau sửa đã được ghi trong [OpenAPI](../openapi.yaml), [Postman](../film-contest.postman_collection.json) và [hợp đồng API](../ai/09-api-contracts.md).
+
+- Web đã khôi phục cấu hình và kiểu dữ liệu để qua TypeScript, dùng phản hồi đã xác thực từ Backend để mở Portal và khôi phục bộ lọc danh sách Organizer. Focus Mode báo rõ phiếu chấm thử chưa được lưu.
+- Backend đã kiểm tra tài khoản còn hoạt động khi dùng access token, giới hạn quyền Organizer theo cuộc thi, kiểm tra trạng thái nhận bài, frame và Lab/quy trình tráng. Ghi bài khóa theo cuộn–frame trong transaction. Kiểm duyệt chặn đổi bài sau công bố và duyệt bài AI rủi ro cao khi chưa có luồng xác minh âm bản. Đối sánh trả giá trị thiếu thay cho số liệu mẫu. Webhook giới hạn 5 tags.
+- Các task giữ REVIEW cho đến khi nghiệm thu các luồng còn thiếu gồm xác thực định danh, lịch 5 mốc, đối chứng 48 giờ, phân loại AI theo SRS và chấm điểm qua API.
 
 ## Đối chiếu Jira cũ với hiện trạng
 

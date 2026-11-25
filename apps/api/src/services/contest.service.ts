@@ -18,6 +18,7 @@ import {
   submissions,
   users,
 } from "../db/schema";
+import type { AuthEnv } from "../middlewares/auth";
 import { AppError } from "../utils/errors";
 
 const AWARDS_METADATA = [
@@ -292,7 +293,11 @@ export interface UpdateContestInput {
   status?: string;
 }
 
-export async function updateContest(id: string, input: UpdateContestInput) {
+export async function updateContest(
+  id: string,
+  input: UpdateContestInput,
+  actor: AuthEnv["Variables"]["user"],
+) {
   return db.transaction(async (tx) => {
     // BR-03: Kiểm tra cuộc thi còn tồn tại và chưa bị xóa mềm
     const [current] = await tx
@@ -303,6 +308,7 @@ export async function updateContest(id: string, input: UpdateContestInput) {
         startAt: contests.startAt,
         endAt: contests.endAt,
         status: contests.status,
+        createdBy: contests.createdBy,
       })
       .from(contests)
       .where(and(eq(contests.id, id), eq(contests.isDeleted, false)))
@@ -311,6 +317,10 @@ export async function updateContest(id: string, input: UpdateContestInput) {
 
     if (!current) {
       throw AppError.notFound("Contest not found");
+    }
+
+    if (actor.role === "Organizer" && current.createdBy !== actor.id) {
+      throw AppError.forbidden("You do not manage this contest");
     }
 
     // BR-16: Tính bất biến của kết quả sau khi công bố
@@ -361,7 +371,7 @@ export async function updateContest(id: string, input: UpdateContestInput) {
   });
 }
 
-export async function softDeleteContest(id: string) {
+export async function softDeleteContest(id: string, actor: AuthEnv["Variables"]["user"]) {
   // BR-03: Tuyệt đối không DELETE vật lý, cập nhật is_deleted = TRUE
   const [deleted] = await db
     .update(contests)
@@ -370,7 +380,12 @@ export async function softDeleteContest(id: string) {
       status: "ARCHIVED",
       updatedAt: new Date(),
     })
-    .where(and(eq(contests.id, id), eq(contests.isDeleted, false)))
+    .where(and(
+      eq(contests.id, id),
+      eq(contests.isDeleted, false),
+      actor.role === "Organizer" ? eq(contests.createdBy, actor.id) : undefined,
+      sql`lower(${contests.status}) not in ('published', 'completed', 'archived')`,
+    ))
     .returning({ id: contests.id });
 
   if (!deleted) {

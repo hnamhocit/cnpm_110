@@ -1,5 +1,4 @@
-import type { RouteDecision } from "./route-access";
-import { canAccessPortal, type Role } from "./route-access";
+import { canAccessPortal, type Role, type RouteDecision } from "./route-access";
 import { API_INTERNAL_URL } from "./server-api";
 
 export async function checkPortalAccess(

@@ -158,10 +158,12 @@ export async function handleListSubmissions(c: Context<AuthEnv>) {
     throw AppError.badRequest("aiFlagged must be 'true' or 'false'");
   }
 
+  const actor = c.get("user");
   const { items, pagination } = await listAllSubmissions({
     contestId,
     categoryId,
     status: statusParam,
+    organizerId: actor.role === "Organizer" ? actor.id : undefined,
     aiFlagged:
       aiFlaggedParam === undefined ? undefined : aiFlaggedParam === "true",
     search,
@@ -205,25 +207,38 @@ export async function handleCreateSubmission(c: Context<AuthEnv>) {
   const description = textField(form, "description", 5000);
 
   const rollId = textField(form, "rollId", 100);
-  const frameNumber = textField(form, "frameNumber", 20);
+  const frameNumber = positiveIntegerField(form, "frameNumber");
+  const filmFormat = textField(form, "filmFormat", 50, true)!;
+  const maxFrames = new Map([
+    ["135", 39], ["120_645", 16], ["120_66", 12], ["120_67", 10], ["4x5", 1],
+  ]).get(filmFormat);
+  if (maxFrames === undefined || frameNumber > maxFrames) {
+    throw new AppError("Invalid film format or frame number exceeds its limit", 422);
+  }
+
+  const devLabName = textField(form, "devLabName", 150);
+  const devChemistry = textField(form, "devChemistry", 50);
+  if (!devLabName && !devChemistry) {
+    throw new AppError("Development lab or process is required", 422);
+  }
 
   // BR-05: Bắt buộc nhập mã cuộn phim và số frame
-  if (!rollId || !frameNumber) {
+  if (!rollId) {
     throw AppError.badRequest("Film roll ID and frame number are required");
   }
 
   const metadata = {
     filmBrand: textField(form, "filmBrand", 100, true)!,
     filmStock: textField(form, "filmStock", 150, true)!,
-    filmFormat: textField(form, "filmFormat", 50, true)!,
+    filmFormat,
     isoRated: positiveIntegerField(form, "isoRated"),
     isoShot: positiveIntegerField(form, "isoShot"),
     cameraBody: textField(form, "cameraBody", 150, true)!,
     lens: textField(form, "lens", 150),
     rollId,
-    frameNumber,
-    devLabName: textField(form, "devLabName", 150),
-    devChemistry: textField(form, "devChemistry", 50),
+    frameNumber: String(frameNumber),
+    devLabName,
+    devChemistry,
     scannerModel: textField(form, "scannerModel", 150),
   };
 
@@ -251,7 +266,7 @@ export async function handleApproveSubmission(c: Context<AuthEnv>) {
   const body = await c.req.json<{ reason?: unknown }>().catch(() => ({} as { reason?: unknown }));
   const reason = typeof body.reason === "string" ? body.reason : undefined;
 
-  const updated = await approveSubmission(id!, c.get("user").id, reason);
+  const updated = await approveSubmission(id!, c.get("user"), reason);
   return c.ok(updated, "Submission approved successfully");
 }
 
@@ -279,7 +294,7 @@ export async function handleRejectSubmission(c: Context<AuthEnv>) {
     throw AppError.badRequest("Reason must not exceed 1000 characters");
   }
 
-  const updated = await rejectSubmission(id!, c.get("user").id, trimmedReason);
+  const updated = await rejectSubmission(id!, c.get("user"), trimmedReason);
   return c.ok(updated, "Submission rejected successfully");
 }
 
@@ -318,7 +333,7 @@ export async function handleModerateSubmission(c: Context<AuthEnv>) {
 
   const updated = await moderateSubmission(
     id!,
-    c.get("user").id,
+    c.get("user"),
     action,
     reasonText,
   );
@@ -329,6 +344,6 @@ export async function handleGetSubmissionComparison(c: Context<AuthEnv>) {
   const id = c.req.param("id");
   assertUuid(id!, "submission ID");
 
-  const data = await getSubmissionComparison(id!);
+  const data = await getSubmissionComparison(id!, c.get("user"));
   return c.ok(data, "Flagged submission comparison retrieved successfully");
 }

@@ -300,6 +300,13 @@ stateDiagram-v2
 
 ## 4. Shared API Contracts (Dùng chung cho Web & Mobile)
 
+### Hành vi Backend đang triển khai
+
+- Middleware của các route có Bearer token kiểm tra chữ ký HS256, hạn JWT, ID người dùng và vai trò. Sau đó đọc `users.is_active`. Tài khoản bị khóa hoặc không còn tồn tại nhận HTTP 401.
+- `GET /api/v1/rbac/manage-contest` trả 200 cho Admin hoặc Organizer đang hoạt động, 403 cho vai trò khác. Portal Web dùng kết quả Backend để quyết định truy cập.
+- Refresh từ chối tài khoản không hoạt động và xoay vòng refresh token khi thành công. Quy trình khóa tài khoản, thu hồi toàn bộ phiên và phiên bản token theo BR-04 vẫn là thiết kế cần hoàn thiện. Role trên access token lấy từ token đã ký.
+
+
 Quy chuẩn kỹ thuật toàn hệ thống FilmContest-AI:
 - **Base URL**: `https://api.filmcontest.vn/api/v1`
 - **Content-Type**: `application/json; charset=utf-8`

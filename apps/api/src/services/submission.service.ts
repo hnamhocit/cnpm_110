@@ -12,6 +12,7 @@ import {
 } from "drizzle-orm";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
+import type { AuthEnv } from "../middlewares/auth";
 import { db } from "../db/index";
 import {
   aiAnalysisJobs,
@@ -109,6 +110,7 @@ export async function listMySubmissions(query: ListMySubmissionsQuery) {
 }
 
 export interface ListAllSubmissionsQuery {
+  organizerId?: string;
   contestId?: string;
   categoryId?: string;
   status?: string;
@@ -119,11 +121,12 @@ export interface ListAllSubmissionsQuery {
 }
 
 export async function listAllSubmissions(query: ListAllSubmissionsQuery) {
-  const { contestId, categoryId, status, aiFlagged, search, page, limit } =
+  const { contestId, categoryId, status, aiFlagged, search, page, limit, organizerId } =
     query;
   const offset = (page - 1) * limit;
 
   const conditions: SQL[] = [];
+  if (organizerId) conditions.push(eq(contests.createdBy, organizerId));
 
   if (contestId) conditions.push(eq(submissions.contestId, contestId));
   if (categoryId) conditions.push(eq(submissions.categoryId, categoryId));
@@ -163,6 +166,7 @@ export async function listAllSubmissions(query: ListAllSubmissionsQuery) {
     db
       .select({ value: count() })
       .from(submissions)
+      .innerJoin(contests, eq(contests.id, submissions.contestId))
       .leftJoin(
         submissionAiAnalyses,
         eq(submissionAiAnalyses.submissionId, submissions.id),
@@ -176,6 +180,7 @@ export async function listAllSubmissions(query: ListAllSubmissionsQuery) {
         author: users,
       })
       .from(submissions)
+      .innerJoin(contests, eq(contests.id, submissions.contestId))
       .leftJoin(filmMetadata, eq(filmMetadata.submissionId, submissions.id))
       .leftJoin(
         submissionAiAnalyses,
@@ -350,33 +355,16 @@ export async function createSubmission(input: CreateSubmissionInput) {
     throw AppError.notFound("Contest not found or unavailable");
   }
 
+  if (!["open", "ongoing"].includes(contest.status.toLowerCase())) {
+    throw AppError.badRequest("Contest is not accepting submissions");
+  }
+
   const now = new Date();
   if (contest.startAt && now < contest.startAt) {
     throw AppError.badRequest("Contest has not started yet");
   }
   if (contest.endAt && now >= contest.endAt) {
     throw AppError.badRequest("Submission deadline has passed");
-  }
-
-  // BR-05: Chống nộp trùng cuộn phim + số frame trong cùng cuộc thi
-  const [duplicateFrame] = await db
-    .select({ id: submissions.id })
-    .from(submissions)
-    .innerJoin(filmMetadata, eq(filmMetadata.submissionId, submissions.id))
-    .where(
-      and(
-        eq(submissions.contestId, contestId),
-        eq(submissions.participantId, participantId),
-        eq(filmMetadata.rollId, metadata.rollId),
-        eq(filmMetadata.frameNumber, metadata.frameNumber),
-      ),
-    )
-    .limit(1);
-
-  if (duplicateFrame) {
-    throw AppError.conflict(
-      "This film roll and frame have already been submitted to this contest",
-    );
   }
 
   const id = crypto.randomUUID();
@@ -406,6 +394,30 @@ export async function createSubmission(input: CreateSubmissionInput) {
     }
 
     await db.transaction(async (tx) => {
+      const frameKey = JSON.stringify([contestId, participantId, metadata.rollId, metadata.frameNumber]);
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${frameKey}, 0))`);
+
+      // BR-05: Chống nộp trùng cuộn phim + số frame trong cùng cuộc thi
+      const [duplicateFrame] = await tx
+        .select({ id: submissions.id })
+        .from(submissions)
+        .innerJoin(filmMetadata, eq(filmMetadata.submissionId, submissions.id))
+        .where(
+          and(
+            eq(submissions.contestId, contestId),
+            eq(submissions.participantId, participantId),
+            eq(filmMetadata.rollId, metadata.rollId),
+            eq(sql`ltrim(${filmMetadata.frameNumber}, '0')`, metadata.frameNumber),
+          ),
+        )
+        .limit(1);
+
+      if (duplicateFrame) {
+        throw AppError.conflict(
+          "This film roll and frame have already been submitted to this contest",
+        );
+      }
+
       await tx.insert(submissions).values({
         id,
         contestId,
@@ -464,15 +476,42 @@ export async function createSubmission(input: CreateSubmissionInput) {
   }
 }
 
+type ModerationActor = AuthEnv["Variables"]["user"];
+
+function requireMutableContest(contest: typeof contests.$inferSelect, actor: ModerationActor) {
+  if (contest.isDeleted || (actor.role === "Organizer" && contest.createdBy !== actor.id)) {
+    throw AppError.notFound("Submission not found");
+  }
+
+  if (["published", "completed", "archived"].includes(contest.status.toLowerCase())) {
+    throw AppError.forbidden("Published submissions are read-only");
+  }
+}
+
+async function requireClearedAiRisk(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  submission: { id: string; status: string },
+) {
+  const [analysis] = await tx.select({ flagged: submissionAiAnalyses.isAiFlagged })
+    .from(submissionAiAnalyses)
+    .where(eq(submissionAiAnalyses.submissionId, submission.id))
+    .limit(1);
+
+  if (analysis?.flagged || ["FLAGGED", "AI_FLAGGED_HIGH_RISK"].includes(submission.status)) {
+    throw AppError.conflict("High-risk submissions require verified negative proof");
+  }
+}
+
 export async function approveSubmission(
   submissionId: string,
-  moderatorId: string,
+  actor: ModerationActor,
   reason?: string,
 ) {
   return db.transaction(async (tx) => {
     const [submission] = await tx
-      .select({ id: submissions.id, status: submissions.status })
+      .select({ id: submissions.id, status: submissions.status, contest: contests })
       .from(submissions)
+      .innerJoin(contests, eq(contests.id, submissions.contestId))
       .where(eq(submissions.id, submissionId))
       .for("update")
       .limit(1);
@@ -480,6 +519,7 @@ export async function approveSubmission(
     if (!submission) {
       throw AppError.notFound("Submission not found");
     }
+    requireMutableContest(submission.contest, actor);
 
     if (
       submission.status === "APPROVED" ||
@@ -487,6 +527,8 @@ export async function approveSubmission(
     ) {
       throw AppError.conflict("Submission has already been processed");
     }
+
+    await requireClearedAiRisk(tx, submission);
 
     const approvalReason =
       reason?.trim() || "Approved for judging by organizer";
@@ -516,7 +558,7 @@ export async function approveSubmission(
 
     await tx.insert(submissionModerationLogs).values({
       submissionId,
-      moderatorId,
+      moderatorId: actor.id,
       action: "APPROVE_FOR_JUDGING",
       reason: approvalReason,
       previousStatus: submission.status,
@@ -529,13 +571,14 @@ export async function approveSubmission(
 
 export async function rejectSubmission(
   submissionId: string,
-  moderatorId: string,
+  actor: ModerationActor,
   reason: string,
 ) {
   return db.transaction(async (tx) => {
     const [submission] = await tx
-      .select({ id: submissions.id, status: submissions.status })
+      .select({ id: submissions.id, status: submissions.status, contest: contests })
       .from(submissions)
+      .innerJoin(contests, eq(contests.id, submissions.contestId))
       .where(eq(submissions.id, submissionId))
       .for("update")
       .limit(1);
@@ -543,6 +586,7 @@ export async function rejectSubmission(
     if (!submission) {
       throw AppError.notFound("Submission not found");
     }
+    requireMutableContest(submission.contest, actor);
 
     if (
       submission.status === "DISQUALIFIED" ||
@@ -577,7 +621,7 @@ export async function rejectSubmission(
 
     await tx.insert(submissionModerationLogs).values({
       submissionId,
-      moderatorId,
+      moderatorId: actor.id,
       action: "DISQUALIFY",
       reason,
       previousStatus: submission.status,
@@ -596,14 +640,15 @@ export type ModerationAction =
 
 export async function moderateSubmission(
   submissionId: string,
-  moderatorId: string,
+  actor: ModerationActor,
   action: ModerationAction,
   reasonText: string,
 ) {
   return db.transaction(async (tx) => {
     const [submission] = await tx
-      .select({ id: submissions.id, status: submissions.status })
+      .select({ id: submissions.id, status: submissions.status, contest: contests })
       .from(submissions)
+      .innerJoin(contests, eq(contests.id, submissions.contestId))
       .where(eq(submissions.id, submissionId))
       .for("update")
       .limit(1);
@@ -611,11 +656,13 @@ export async function moderateSubmission(
     if (!submission) {
       throw AppError.notFound("Submission not found");
     }
+    requireMutableContest(submission.contest, actor);
 
     let newStatus = submission.status;
     let rejectionReason: string | undefined;
 
     if (action === "APPROVE_FOR_JUDGING" || action === "OVERRIDE_AI_FLAG") {
+      await requireClearedAiRisk(tx, submission);
       newStatus = "APPROVED";
       rejectionReason = undefined;
     } else if (action === "DISQUALIFY") {
@@ -646,7 +693,7 @@ export async function moderateSubmission(
 
     await tx.insert(submissionModerationLogs).values({
       submissionId,
-      moderatorId,
+      moderatorId: actor.id,
       action,
       reason: reasonText || "Action performed by organizer",
       previousStatus: submission.status,
@@ -657,7 +704,7 @@ export async function moderateSubmission(
   });
 }
 
-export async function getSubmissionComparison(submissionId: string) {
+export async function getSubmissionComparison(submissionId: string, actor: ModerationActor) {
   const [row] = await db
     .select({
       submission: submissions,
@@ -665,12 +712,16 @@ export async function getSubmissionComparison(submissionId: string) {
       aiAnalysis: submissionAiAnalyses,
     })
     .from(submissions)
+    .innerJoin(contests, eq(contests.id, submissions.contestId))
     .leftJoin(filmMetadata, eq(filmMetadata.submissionId, submissions.id))
     .leftJoin(
       submissionAiAnalyses,
       eq(submissionAiAnalyses.submissionId, submissions.id),
     )
-    .where(eq(submissions.id, submissionId))
+    .where(and(
+      eq(submissions.id, submissionId),
+      actor.role === "Organizer" ? eq(contests.createdBy, actor.id) : undefined,
+    ))
     .limit(1);
 
   if (!row) {
@@ -683,10 +734,8 @@ export async function getSubmissionComparison(submissionId: string) {
   const aiProb =
     ai?.aiGeneratedProbability != null
       ? Number(ai.aiGeneratedProbability)
-      : sub.status === "FLAGGED"
-        ? 0.8845
-        : 0.05;
-  const phashHex = ai?.phashHex ?? "d8e3b2a19c4f7082";
+      : null;
+  const phashHex = ai?.phashHex ?? null;
   const duplicateSuspectId = ai?.duplicateSuspectId ?? null;
   const similarityScore =
     ai?.duplicateSimilarityScore != null
@@ -695,11 +744,9 @@ export async function getSubmissionComparison(submissionId: string) {
   const hammingDistance =
     similarityScore != null
       ? Math.round(64 * (1 - similarityScore))
-      : duplicateSuspectId
-        ? 3
-        : null;
+      : null;
   const filmGrainScore =
-    ai?.filmGrainScore != null ? Number(ai.filmGrainScore) : 0.32;
+    ai?.filmGrainScore != null ? Number(ai.filmGrainScore) : null;
 
   let originalSubmission = null;
   if (duplicateSuspectId) {
@@ -710,7 +757,10 @@ export async function getSubmissionComparison(submissionId: string) {
       })
       .from(submissions)
       .leftJoin(filmMetadata, eq(filmMetadata.submissionId, submissions.id))
-      .where(eq(submissions.id, duplicateSuspectId))
+      .where(and(
+        eq(submissions.id, duplicateSuspectId),
+        actor.role === "Organizer" ? eq(submissions.contestId, sub.contestId) : undefined,
+      ))
       .limit(1);
 
     if (origRow) {
@@ -743,14 +793,14 @@ export async function getSubmissionComparison(submissionId: string) {
       : [];
 
   if (flagReasons.length === 0) {
-    if (aiProb >= 0.75) {
+    if (aiProb !== null && aiProb >= 0.75) {
       flagReasons.push(
         `AI-Generated probability exceeds 75% threshold (${(aiProb * 100).toFixed(2)}%)`,
       );
     }
     if (duplicateSuspectId) {
       flagReasons.push(
-        `Near-duplicate found with submission #${duplicateSuspectId} (Hamming distance = ${hammingDistance ?? 3})`,
+        "Near-duplicate found",
       );
     }
     if (sub.status === "FLAGGED" && flagReasons.length === 0) {
@@ -760,13 +810,7 @@ export async function getSubmissionComparison(submissionId: string) {
     }
   }
 
-  const predictedTags =
-    Array.isArray(ai?.predictedTags) && (ai.predictedTags as unknown[]).length > 0
-      ? ai.predictedTags
-      : [
-        { tag: "Streetlife", confidence: 0.94 },
-        { tag: "Monochrome", confidence: 0.89 },
-      ];
+  const predictedTags = Array.isArray(ai?.predictedTags) ? ai.predictedTags : [];
 
   return {
     submissionId: sub.id,
@@ -776,14 +820,15 @@ export async function getSubmissionComparison(submissionId: string) {
     phashHex,
     duplicateCheck: {
       isSuspect: duplicateSuspectId != null,
-      suspectSubmissionId: duplicateSuspectId,
+      suspectSubmissionId: originalSubmission?.id ?? null,
       hammingDistance,
       similarityScore,
     },
     grainAnalysis: {
       filmGrainScore,
       assessment:
-        filmGrainScore < 0.4 ? "WEAK_ANALOG_TEXTURE" : "NATURAL_ANALOG_GRAIN",
+        filmGrainScore === null ? null
+          : filmGrainScore < 0.4 ? "WEAK_ANALOG_TEXTURE" : "NATURAL_ANALOG_GRAIN",
     },
     predictedTags,
     flagReasons,

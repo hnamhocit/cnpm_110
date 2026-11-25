@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { Hono } from "hono";
 import { sign } from "hono/jwt";
 import {
-  authenticate,
+  createAuthenticator,
   requireRoles,
   type AuthEnv,
 } from "../src/middlewares/auth";
@@ -26,7 +26,8 @@ afterEach(() => {
   }
 });
 
-function createTestApp() {
+function createTestApp(isAccountActive = async () => true) {
+  const authenticate = createAuthenticator(isAccountActive);
   const app = new Hono<AuthEnv>();
 
   app.use("/protected/*", authenticate);

@@ -253,6 +253,13 @@ stateDiagram-v2
 
 ## 4. Shared API Contracts (Hợp đồng API Đa nền tảng)
 
+### Hành vi Backend đang triển khai
+
+- `PUT /api/v1/contests/{id}` và `DELETE /api/v1/contests/{id}` yêu cầu Admin hoặc Organizer. Với Organizer, Backend kiểm tra `createdBy`. Sửa cuộc thi ngoài phạm vi trả 403, xóa ngoài phạm vi trả 404.
+- Sửa cuộc thi trạng thái `published`, `completed` hoặc `archived` trả 403. Xóa mềm các cuộc thi này trả 404. Trạng thái được so sánh không phân biệt hoa thường.
+- CRUD đang lưu `startAt` và `endAt`. Lịch 5 mốc, bộ điều kiện mở chấm và công bố ở phần thiết kế bên dưới vẫn cần triển khai.
+
+
 ### 4.1 Tra cứu Danh sách Cuộc thi (`GET /api/v1/contests`)
 *   **Method**: `GET`
 *   **Path**: `/api/v1/contests`

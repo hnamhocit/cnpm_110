@@ -83,6 +83,15 @@ Quy trình xử lý một yêu cầu API:
 
 ## 4. Shared API Contracts
 
+### Hành vi route đang mount tại `f06e312`
+
+- Bearer token cần thuộc tài khoản còn hoạt động. `GET /api/v1/rbac/manage-contest` chỉ chấp nhận Admin và Organizer. [Module 01](01-auth-and-rbac.md)
+- Organizer chỉ sửa/xóa cuộc thi do mình tạo. Danh sách, kiểm duyệt và báo cáo bài thi cũng giới hạn theo quyền sở hữu cuộc thi, kể cả các alias Organizer. [Module 03](03-contest-lifecycle.md) · [Module 05](05-submission-and-proof.md)
+- Khi nộp bài, cuộc thi phải đang nhận bài. Sai khổ, vượt giới hạn frame hoặc thiếu Lab/quy trình trả 422. Trùng cuộn–frame trả 409. Xem bảng multipart bên dưới.
+- Kiểm duyệt bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. Bài rủi ro AI cao đang bị giữ trả 409 khi duyệt hoặc gỡ cờ. Route yêu cầu đối chứng độc lập và upload đối chứng vẫn chưa mount.
+- Webhook AI nhận tối đa 5 thẻ. Báo cáo đối sánh trả `null` cho kết quả chưa có và `[]` khi thiếu danh sách thẻ. [Module 06](06-ai-verification.md)
+
+
 ### 4.1. Standard Success Response
 
 Tất cả API thuộc phạm vi chuẩn hóa sử dụng cấu trúc JSON thống nhất:
@@ -1197,7 +1206,7 @@ Request sử dụng `multipart/form-data` để gửi dữ liệu và file ảnh
 
 | `filmStock` | String | Yes | Tối đa 150 ký tự |
 
-| `filmFormat` | String | Yes | Tối đa 50 ký tự |
+| `filmFormat` | String | Yes | `135`, `120_645`, `120_66`, `120_67` hoặc `4x5` |
 
 | `isoRated` | Integer | Yes | Lớn hơn hoặc bằng 1 |
 
@@ -1209,11 +1218,11 @@ Request sử dụng `multipart/form-data` để gửi dữ liệu và file ảnh
 
 | `rollId` | String | Yes | Tối đa 100 ký tự |
 
-| `frameNumber` | String | Yes | Tối đa 20 ký tự |
+| `frameNumber` | String | Yes | Số nguyên dương, tối đa lần lượt 39/16/12/10/1 theo `filmFormat` |
 
-| `devLabName` | String | No | Tối đa 150 ký tự |
+| `devLabName` | String | Có điều kiện | Tối đa 150 ký tự. Bắt buộc nếu thiếu `devChemistry` |
 
-| `devChemistry` | String | No | Tối đa 50 ký tự |
+| `devChemistry` | String | Có điều kiện | Tối đa 50 ký tự. Bắt buộc nếu thiếu `devLabName` |
 
 | `scannerModel` | String | No | Tối đa 150 ký tự |
 

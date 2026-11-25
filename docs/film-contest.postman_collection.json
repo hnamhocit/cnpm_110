@@ -392,7 +392,8 @@
               "mode": "raw",
               "raw": "{\n  \"description\": \"Updated contest rules\"\n}"
             },
-            "url": "{{baseUrl}}/api/v1/contests/{{contestId}}"
+            "url": "{{baseUrl}}/api/v1/contests/{{contestId}}",
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403."
           }
         },
         {
@@ -409,7 +410,8 @@
               ]
             },
             "method": "DELETE",
-            "url": "{{baseUrl}}/api/v1/contests/{{contestId}}"
+            "url": "{{baseUrl}}/api/v1/contests/{{contestId}}",
+            "description": "Xóa mềm. Organizer chỉ xóa cuộc thi do mình tạo. Cuộc thi đã công bố, hoàn tất, lưu trữ hoặc ngoài phạm vi trả 404."
           }
         }
       ]
@@ -448,7 +450,8 @@
                   "type": "string"
                 }
               ]
-            }
+            },
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi."
           }
         },
         {
@@ -536,12 +539,14 @@
                 {
                   "key": "frameNumber",
                   "type": "text",
-                  "value": "1"
+                  "value": "1",
+                  "description": "Số nguyên dương theo khổ phim. Ví dụ 135 tối đa 39."
                 },
                 {
                   "key": "devLabName",
                   "type": "text",
-                  "value": "Example Film Lab"
+                  "value": "Example Film Lab",
+                  "description": "Tên Lab hoặc gửi devChemistry để mô tả quy trình tráng."
                 },
                 {
                   "key": "negativeProof",
@@ -551,7 +556,8 @@
                 }
               ]
             },
-            "url": "{{baseUrl}}/api/v1/submissions"
+            "url": "{{baseUrl}}/api/v1/submissions",
+            "description": "Chỉ nhận bài khi cuộc thi ở open hoặc ongoing và trong thời gian nhận bài. Phải có devLabName hoặc devChemistry. Trùng cuộn phim và frame trong cùng cuộc thi với cùng thí sinh trả 409."
           }
         },
         {
@@ -583,7 +589,8 @@
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài rủi ro AI cao đang bị giữ hoặc bài đã duyệt trả 409. Bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403."
           }
         },
         {
@@ -615,7 +622,8 @@
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài đã bị loại trả 409. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403."
           }
         },
         {
@@ -647,7 +655,8 @@
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF hiện chỉ đổi trạng thái và ghi log, chưa tạo hạn 48 giờ."
           }
         },
         {
@@ -664,7 +673,8 @@
                   "type": "string"
                 }
               ]
-            }
+            },
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Trường phân tích chưa có dữ liệu trả null, danh sách thẻ chưa có trả []. Bài gốc ngoài cuộc thi hiện tại được ẩn với Organizer."
           }
         },
         {
@@ -681,7 +691,8 @@
                   "type": "string"
                 }
               ]
-            }
+            },
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Trường phân tích chưa có dữ liệu trả null, danh sách thẻ chưa có trả []. Bài gốc ngoài cuộc thi hiện tại được ẩn với Organizer."
           }
         }
       ]
@@ -720,7 +731,8 @@
                   "type": "string"
                 }
               ]
-            }
+            },
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi."
           }
         },
         {
@@ -808,12 +820,14 @@
                 {
                   "key": "frameNumber",
                   "type": "text",
-                  "value": "1"
+                  "value": "1",
+                  "description": "Số nguyên dương theo khổ phim. Ví dụ 135 tối đa 39."
                 },
                 {
                   "key": "devLabName",
                   "type": "text",
-                  "value": "Example Film Lab"
+                  "value": "Example Film Lab",
+                  "description": "Tên Lab hoặc gửi devChemistry để mô tả quy trình tráng."
                 },
                 {
                   "key": "negativeProof",
@@ -823,7 +837,8 @@
                 }
               ]
             },
-            "url": "{{baseUrl}}/api/v1/organizer/submissions"
+            "url": "{{baseUrl}}/api/v1/organizer/submissions",
+            "description": "Chỉ nhận bài khi cuộc thi ở open hoặc ongoing và trong thời gian nhận bài. Phải có devLabName hoặc devChemistry. Trùng cuộn phim và frame trong cùng cuộc thi với cùng thí sinh trả 409."
           }
         },
         {
@@ -855,7 +870,8 @@
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài rủi ro AI cao đang bị giữ hoặc bài đã duyệt trả 409. Bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403."
           }
         },
         {
@@ -887,7 +903,8 @@
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài đã bị loại trả 409. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403."
           }
         },
         {
@@ -919,7 +936,8 @@
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF hiện chỉ đổi trạng thái và ghi log, chưa tạo hạn 48 giờ."
           }
         },
         {
@@ -936,7 +954,8 @@
                   "type": "string"
                 }
               ]
-            }
+            },
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Trường phân tích chưa có dữ liệu trả null, danh sách thẻ chưa có trả []. Bài gốc ngoài cuộc thi hiện tại được ẩn với Organizer."
           }
         },
         {
@@ -953,7 +972,8 @@
                   "type": "string"
                 }
               ]
-            }
+            },
+            "description": "Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Trường phân tích chưa có dữ liệu trả null, danh sách thẻ chưa có trả []. Bài gốc ngoài cuộc thi hiện tại được ẩn với Organizer."
           }
         }
       ]
@@ -984,7 +1004,8 @@
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "predictedTags nhận tối đa 5 phần tử. Payload có nhiều hơn 5 thẻ trả 400."
           }
         }
       ]
@@ -1050,7 +1071,8 @@
                 "rbac",
                 "manage-contest"
               ]
-            }
+            },
+            "description": "Bearer token phải hợp lệ và thuộc tài khoản đang hoạt động. Tài khoản không hoạt động trả 401. Vai trò khác Admin hoặc Organizer trả 403."
           }
         }
       ]

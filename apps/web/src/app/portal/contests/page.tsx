@@ -35,7 +35,6 @@ export default function OrganizerContestsPage() {
     const fetchContests = async () => {
       try {
         setLoading(true);
-
         // RBAC: Organizer chỉ thấy cuộc thi do mình quản lý, Admin xem tất cả
         let url = "/api/v1/contests";
         try {
