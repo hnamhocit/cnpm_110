@@ -1,5 +1,6 @@
 "use client";
 
+import { Copy } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -99,7 +100,7 @@ export default function OrganizerContestsPage() {
       </div>
 
       {/* Danh sách cuộc thi */}
-      {(!Array.isArray(contests) || contests.length === 0) ? (
+      {!Array.isArray(contests) || contests.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center text-gray-500">
             Bạn chưa có cuộc thi nào. Hãy tạo cuộc thi đầu tiên!
@@ -136,10 +137,10 @@ export default function OrganizerContestsPage() {
                       {formatContestDate(contest.endAt ?? contest.end_at)}
                     </p>
                   </div>
-                  <div className="mt-4 flex gap-2">
+                  <div className="mt-4 flex flex-wrap gap-2">
                     <Link
                       href={`/portal/contests/${contest.id}`}
-                      className="flex-1"
+                      className="flex-1 min-w-[120px]"
                     >
                       <Button variant="outline" className="w-full text-xs">
                         Chi tiết cuộc thi
@@ -147,10 +148,22 @@ export default function OrganizerContestsPage() {
                     </Link>
                     <Link
                       href={`/portal/contests/${contest.id}/submissions`}
-                      className="flex-1"
+                      className="flex-1 min-w-[120px]"
                     >
                       <Button className="w-full text-xs bg-brand-solid hover:bg-brand-hover text-white">
                         Bài dự thi
+                      </Button>
+                    </Link>
+                    <Link
+                      href={`/portal/contests/create?duplicate=${contest.id}`}
+                      title="Nhân bản cuộc thi"
+                    >
+                      <Button
+                        variant="outline"
+                        className="text-xs"
+                        aria-label="Nhân bản cuộc thi"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
                       </Button>
                     </Link>
                   </div>
