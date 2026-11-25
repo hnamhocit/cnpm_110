@@ -7,13 +7,13 @@ Module dùng chung cho Auth, cuộc thi, nộp bài, AI, chấm thi và công b�
 - Ghi vết các thao tác tạo, sửa, duyệt, loại và chốt điểm trên thực thể nhạy cảm. Bản ghi tra cứu gồm người thực hiện, IP, hành động, đối tượng, thời điểm, giá trị trước/sau và lý do khi áp dụng.
 - Yêu cầu lý do cụ thể khi loại bài, gỡ cờ AI hoặc chỉnh điểm. Nghiệm thu cả trường hợp thiếu lý do và trường hợp thao tác thành công. Chỉ ghi sự kiện thành công khi thay đổi tương ứng được lưu. Ẩn mật khẩu, token và bí mật cấu hình khỏi dữ liệu trước/sau.
 - Admin tra cứu nhật ký toàn hệ thống từ SCR-ADM-09. Kiểm tra API từ chối các vai trò khác và bộ lọc trả đúng bản ghi với đúng lý do.
-- Hiện có log kiểm duyệt riêng cho bài thi. Chưa thấy bảng `audit_logs` dùng chung hoặc route tra cứu hệ thống trong [schema](../../apps/api/src/db/schema.ts) và [đăng ký Hono](../../apps/api/src/index.ts).
+- Hiện có log kiểm duyệt riêng cho bài thi và `account_audit_logs` cho thao tác Module 01. Chưa thấy bảng `audit_logs` dùng chung hoặc route tra cứu hệ thống trong [schema](../../apps/api/src/db/schema.ts) và [đăng ký Hono](../../apps/api/src/index.ts).
 
 ## Thông báo · SRS §5.1.2
 
 - SMTP phục vụ email, gồm khôi phục mật khẩu theo UC-02. FCM phục vụ thông báo đẩy. Luồng đối chứng và công bố cần áp dụng các sự kiện từ Module 05 và 08.
 - Khi gửi yêu cầu đối chứng, lấy hạn 48 giờ từ dữ liệu đã lưu ở Backend. Khi công bố, lấy kết quả từ dữ liệu đã chốt. Việc gửi lại thông báo không được gia hạn đối chứng hoặc công bố lại.
-- Nghiệm thu bằng người nhận hợp lệ, thời hạn hiển thị khớp Backend, kết quả gửi được quan sát khi kênh gửi lỗi hoặc thử lại. Chưa xác nhận tích hợp SMTP/FCM chạy xuyên suốt trong repo.
+- Nghiệm thu bằng người nhận hợp lệ, thời hạn hiển thị khớp Backend, kết quả gửi được quan sát khi kênh gửi lỗi hoặc thử lại. Module 01 đã có adapter SMTP và test bằng bộ gửi giả. Cần nghiệm thu SMTP thật và triển khai FCM cho các sự kiện cần thông báo đẩy.
 
 ## Báo cáo cuộc thi · UC-28
 

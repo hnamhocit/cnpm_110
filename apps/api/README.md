@@ -109,3 +109,13 @@ API Server lắng nghe tại cổng: **[http://localhost:8080](http://localhost:
 | `bun --filter api db:generate`      | Sinh file SQL migration mới từ schema                |
 | `bun --filter api db:migrate`       | Áp dụng migration vào PostgreSQL                     |
 | `bun --filter api db:seed`          | Nạp dữ liệu vai trò ban đầu                          |
+
+## Xác thực định danh và khôi phục mật khẩu
+
+Áp dụng migration trước khi chạy API. Với môi trường triển khai, đặt `NODE_ENV=production` để chỉ seed role hệ thống khi khởi động.
+
+- Email dùng Nodemailer với `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` và địa chỉ gửi `SMTP_FROM`. Cổng 465 dùng TLS ngay khi kết nối. Cổng khác yêu cầu STARTTLS. [Nodemailer SMTP](https://nodemailer.com/smtp)
+- SMS dùng Twilio Verify với `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET` và `TWILIO_VERIFY_SERVICE_SID` (tiền tố `VA`). Chọn OTP 6 chữ số trong Verify Service. Backend yêu cầu Twilio gửi mã rồi dùng VerificationCheck để kiểm tra mã người dùng nhập. [Twilio Verify Services](https://www.twilio.com/docs/verify/api/service) · [Twilio VerificationCheck](https://www.twilio.com/docs/verify/api/verification-check)
+- `PASSWORD_RESET_URL` là URL HTTPS của màn đặt lại mật khẩu. Backend thêm tham số `token` vào link. Màn client gửi token, mật khẩu mới và xác nhận đến `POST /api/v1/auth/reset-password`.
+
+Đăng ký tạo tài khoản chờ xác thực. Client xác thực OTP email, xác thực OTP SMS rồi đăng nhập. Xem [Module 01](../../docs/ai/01-auth-and-rbac.md#4-shared-api-contracts-dùng-chung-cho-web--mobile). Integration test inject bộ gửi giả và cần PostgreSQL test có migration. Dùng `bun --filter api test:integration` với `DATABASE_URL` và `TEST_DB_NAME` trỏ vào database test.

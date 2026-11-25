@@ -11,7 +11,7 @@ import {
 } from "../controllers/contest.controller";
 import {
   authenticate,
-  requireRoles,
+  requirePermission,
   type AuthEnv,
 } from "../middlewares/auth";
 
@@ -24,25 +24,25 @@ contests.get("/:id/results", handleGetContestResults);
 contests.get(
   "/:id/scoreboard",
   authenticate,
-  requireRoles("Organizer"),
+  requirePermission("judging:read_scoreboard"),
   handleGetContestScoreboard,
 );
 contests.post(
   "/",
   authenticate,
-  requireRoles("Organizer"),
+  requirePermission("contests:create"),
   handleCreateContest,
 );
 contests.put(
   "/:id",
   authenticate,
-  requireRoles("Organizer"),
+  requirePermission("contests:update"),
   handleUpdateContest,
 );
 contests.delete(
   "/:id",
   authenticate,
-  requireRoles("Organizer"),
+  requirePermission("contests:delete"),
   handleDeleteContest,
 );
 

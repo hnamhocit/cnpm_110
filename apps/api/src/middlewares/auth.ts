@@ -1,5 +1,7 @@
 import { createMiddleware } from "hono/factory";
 import { verify } from "hono/jwt";
+import { canGrant, type Permission } from "../services/permission-policy";
+import { AppError } from "../utils/errors";
 
 export type Role = "Admin" | "Organizer" | "Judge" | "Participant";
 
@@ -12,6 +14,8 @@ export type AuthEnv = {
   };
 };
 
+export const UUID_PATTERN = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+
 const roles: Role[] = ["Admin", "Organizer", "Judge", "Participant"];
 
 function isRole(value: unknown): value is Role {
@@ -19,7 +23,7 @@ function isRole(value: unknown): value is Role {
 }
 
 export const createAuthenticator = (
-  hasActiveRole: (userId: string, role: Role) => Promise<boolean>,
+  hasActiveRole: (userId: string, role: Role, tokenVersion: number, sessionId?: string) => Promise<boolean>,
 ) => createMiddleware<AuthEnv>(async (c, next) => {
   const secret = Bun.env.JWT_SECRET;
 
@@ -54,7 +58,14 @@ export const createAuthenticator = (
     return c.json({ error: "Invalid token payload" }, 401);
   }
 
-  if (!(await hasActiveRole(id, role))) {
+  const tokenVersion = payload.tokenVersion ?? 0;
+  const sessionId = payload.sessionId;
+  if (typeof tokenVersion !== "number" || !Number.isSafeInteger(tokenVersion) || tokenVersion < 0 ||
+      (sessionId !== undefined && (typeof sessionId !== "string" || !UUID_PATTERN.test(sessionId)))) {
+    return c.json({ error: "Invalid token payload" }, 401);
+  }
+
+  if (!(await hasActiveRole(id, role, tokenVersion, sessionId))) {
     return c.json({ error: "Account or role is unavailable" }, 401);
   }
 
@@ -62,21 +73,35 @@ export const createAuthenticator = (
   await next();
 });
 
-export const authenticate = createAuthenticator(async (id, role) => {
-  if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)) {
+export const authenticate = createAuthenticator(async (id, role, tokenVersion, sessionId) => {
+  if (!UUID_PATTERN.test(id)) {
     return false;
   }
 
-  const [{ db }, { roles, userRoles, users }, { and, eq }] = await Promise.all([
+  const [{ db }, { refreshTokens, roles, userRoles, users }, { and, eq, exists, gt, isNotNull, isNull, lte, or, sql }] = await Promise.all([
     import("../db"),
     import("../db/schema"),
     import("drizzle-orm"),
   ]);
+  const activeSession = sessionId === undefined ? undefined : exists(
+    db.select({ id: refreshTokens.id }).from(refreshTokens).where(and(
+      eq(refreshTokens.sessionId, sessionId),
+      eq(refreshTokens.userId, id),
+      isNull(refreshTokens.revokedAt),
+      gt(refreshTokens.expiresAt, sql`NOW()`),
+    )),
+  );
   const [account] = await db.select({ id: users.id })
     .from(users)
     .innerJoin(userRoles, eq(userRoles.userId, users.id))
     .innerJoin(roles, eq(roles.id, userRoles.roleId))
-    .where(and(eq(users.id, id), eq(users.isActive, true), eq(roles.name, role)))
+    .where(and(
+      eq(users.id, id), eq(users.isActive, true), eq(roles.name, role),
+      eq(users.tokenVersion, tokenVersion),
+      or(eq(users.verificationRequired, false), isNotNull(users.phoneVerifiedAt)),
+      or(isNull(users.lockedUntil), lte(users.lockedUntil, sql`NOW()`)),
+      activeSession,
+    ))
     .limit(1);
 
   return Boolean(account);
@@ -94,6 +119,27 @@ export function requireRoles(...allowedRoles: Role[]) {
       return c.json({ error: "Forbidden: insufficient permissions" }, 403);
     }
 
+    await next();
+  });
+}
+
+export function requirePermission(permission: Permission) {
+  return createMiddleware<AuthEnv>(async (c, next) => {
+    const user = c.get("user");
+    if (!user) throw AppError.unauthorized();
+    if (!canGrant(user.role, permission)) throw AppError.forbidden();
+
+    const [{ db }, { permissions, rolePermissions, roles }, { and, eq, exists }] = await Promise.all([
+      import("../db"),
+      import("../db/schema"),
+      import("drizzle-orm"),
+    ]);
+    const granted = db.select({ id: permissions.id }).from(rolePermissions)
+      .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+      .where(and(eq(rolePermissions.roleId, roles.id), eq(permissions.name, permission)));
+    const [policy] = await db.select({ configured: roles.permissionsConfigured, granted: exists(granted) })
+      .from(roles).where(eq(roles.name, user.role));
+    if (!policy || (policy.configured && !policy.granted)) throw AppError.forbidden();
     await next();
   });
 }

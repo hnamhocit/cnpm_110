@@ -12,7 +12,7 @@ import {
 } from "../controllers/submission.controller";
 import {
   authenticate,
-  requireRoles,
+  requirePermission,
   type AuthEnv,
 } from "../middlewares/auth";
 import { AppError } from "../utils/errors";
@@ -20,19 +20,19 @@ import { AppError } from "../utils/errors";
 const MiB = 1024 * 1024;
 const route = new Hono<AuthEnv>();
 
-route.get("/my", authenticate, requireRoles("Participant"), handleGetMySubmissions);
+route.get("/my", authenticate, requirePermission("submissions:read_own"), handleGetMySubmissions);
 
 route.get(
   "/",
   authenticate,
-  requireRoles("Organizer"),
+  requirePermission("submissions:list"),
   handleListSubmissions,
 );
 
 route.post(
   "/",
   authenticate,
-  requireRoles("Participant"),
+  requirePermission("submissions:create"),
   bodyLimit({
     maxSize: 121 * MiB,
     onError: () => {
@@ -45,35 +45,35 @@ route.post(
 route.post(
   "/:id/approve",
   authenticate,
-  requireRoles("Organizer"),
+  requirePermission("submissions:moderate"),
   handleApproveSubmission,
 );
 
 route.post(
   "/:id/reject",
   authenticate,
-  requireRoles("Organizer"),
+  requirePermission("submissions:moderate"),
   handleRejectSubmission,
 );
 
 route.post(
   "/:id/moderate",
   authenticate,
-  requireRoles("Organizer"),
+  requirePermission("submissions:moderate"),
   handleModerateSubmission,
 );
 
 route.get(
   "/:id/comparison",
   authenticate,
-  requireRoles("Organizer", "Admin"),
+  requirePermission("submissions:read_ai"),
   handleGetSubmissionComparison,
 );
 
 route.get(
   "/:id/ai-analysis",
   authenticate,
-  requireRoles("Organizer", "Admin"),
+  requirePermission("submissions:read_ai"),
   handleGetSubmissionComparison,
 );
 

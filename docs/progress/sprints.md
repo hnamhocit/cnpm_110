@@ -10,8 +10,8 @@ Dùng cột **Hiện tại** để quản lý từ đây. Cột **Jira** giữ �
 | --- | ---: | ---: |
 | TODO | 37 | 29 |
 | DOING | 1 | 2 |
-| REVIEW | 17 | 31 |
-| DONE | 73 | 66 |
+| REVIEW | 17 | 30 |
+| DONE | 73 | 67 |
 | **Tổng** | **128** | **128** |
 
 ## Sprint 1 · Nền tảng và xác thực
@@ -19,25 +19,36 @@ Dùng cột **Hiện tại** để quản lý từ đây. Cột **Jira** giữ �
 | Mã | Phạm vi | Công việc | Người phụ trách | Jira | Hiện tại | Ghi chú |
 | --- | --- | --- | --- | --- | --- | --- |
 | FPC-7 | Backend | Thiết lập Backend theo lớp và kết nối PostgreSQL | Duong Nguyen | DONE | DONE | — |
-| FPC-8 | Backend | Thiết kế schema Users, Roles và Permissions | Duong Nguyen | DONE | DONE | Có các bảng Users, Roles, Permissions và bảng liên kết. Thiếu số điện thoại xác thực và cơ chế phiên bản token theo Module 01. |
-| FPC-9 | Backend | API Register/Login cấp JWT access token và refresh token | Duong Nguyen | DONE | REVIEW | Đăng ký cấp token ngay, thiếu xác thực định danh theo BR-01. Đăng nhập và refresh hiện kiểm tra tài khoản hoạt động. |
+| FPC-8 | Backend | Thiết kế schema Users, Roles và Permissions | Duong Nguyen | DONE | DONE | Schema có số điện thoại xác thực, challenge OTP/reset, phiên bản token, định danh phiên, hồ sơ, audit tài khoản và cấu hình grant. |
+| FPC-9 | Backend | API Register/Login cấp JWT access token và refresh token | Duong Nguyen | DONE | REVIEW | Backend đăng ký chờ xác thực OTP email rồi SMS, sau đó mới cấp JWT qua login. Integration test dùng bộ gửi giả. Còn nghiệm thu nhà cung cấp thật và nối client. |
 | FPC-11 | Backend | Tích hợp SDK Cloud Storage và thử upload ảnh lớn | Hà Đức Bình | DONE | REVIEW | Có tích hợp R2. Chưa xác minh thử upload lớn. |
-| FPC-12 | Backend | Middleware RBAC cho Admin, Organizer, Judge và Participant | Hà Đức Bình | DONE | REVIEW | Access token nay kiểm tra tài khoản còn hoạt động. Còn thiếu quy trình khóa tài khoản và thu hồi toàn bộ phiên. |
-| FPC-13 | Backend | Unit test và integration test xác thực và refresh token | Hà Đức Bình | DONE | DONE | Có unit test JWT/RBAC và bộ integration test refresh. Chưa thấy ca kiểm tra access token đang dùng khi tài khoản bị khóa. |
+| FPC-12 | Backend | Middleware RBAC cho Admin, Organizer, Judge và Participant | Hà Đức Bình | DONE | DONE | Middleware kiểm tra tài khoản, role, phiên và phiên bản token. Admin có thể chỉnh grant trong bốn role. Đã kiểm thử khóa và mở lại tài khoản không phục hồi token cũ. |
+| FPC-13 | Backend | Unit test và integration test xác thực và refresh token | Hà Đức Bình | DONE | DONE | Integration Auth trên PostgreSQL 16 kiểm thử đăng ký, JWT/refresh, khóa/mở khóa, logout đồng thời với refresh, hồ sơ, đổi/reset mật khẩu và ma trận quyền. |
 | FPC-14 | Web | Thiết lập Next.js, Tailwind CSS và Shadcn UI | Vĩ Nguyễn | DONE | DONE | — |
-| FPC-15 | Web | Giao diện Login và Register cho Admin và Organizer | Vĩ Nguyễn | DONE | DONE | — |
+| FPC-15 | Web | Giao diện Login và Register cho Admin và Organizer | Vĩ Nguyễn | DONE | DONE | Phạm vi màn hiện có. Hợp đồng mới của đăng ký cần số điện thoại và OTP. Tài khoản nội bộ do Admin tạo qua API. |
 | FPC-16 | Web | HTTP client Axios/Fetch và interceptor tự refresh token | Vĩ Nguyễn | DONE | DONE | — |
 | FPC-17 | Web | Layout Portal chung gồm sidebar, header và profile menu | Phạm Tiến Thành Nhân | DONE | DONE | — |
 | FPC-18 | Web | Màn đăng nhập Judge bằng mã mời hoặc email | Phạm Tiến Thành Nhân | DONE | DONE | — |
 | FPC-19 | Web | Router guard kiểm tra quyền theo vai trò | Phạm Tiến Thành Nhân | DONE | DONE | Đã bỏ fallback đọc JWT chưa xác minh. Portal kiểm tra quyền qua Backend. |
 | FPC-20 | Mobile | Thiết lập Flutter và state management | Hoài Bảo Từ | DONE | DONE | — |
-| FPC-21 | Mobile | Màn Splash, Login và Register cho Participant | Hoài Bảo Từ | DONE | DONE | — |
+| FPC-21 | Mobile | Màn Splash, Login và Register cho Participant | Hoài Bảo Từ | DONE | DONE | Đăng ký Mobile cần bổ sung số điện thoại và hai bước OTP trước khi đăng nhập. |
 | FPC-22 | Mobile | Lưu Access/Refresh Token bằng Flutter Secure Storage | Hoài Bảo Từ | DONE | DONE | — |
 | FPC-23 | Mobile | Dio client và interceptor xử lý lỗi, refresh token | Huỳnh Trần Gia Bảo | DONE | DONE | — |
 | FPC-24 | Mobile | UI components chung cho button, input và loading dialog | Huỳnh Trần Gia Bảo | DONE | DONE | — |
-| FPC-25 | Mobile | Bottom navigation và màn hình hồ sơ cá nhân | Huỳnh Trần Gia Bảo | DONE | DONE | — |
+| FPC-25 | Mobile | Bottom navigation và màn hình hồ sơ cá nhân | Huỳnh Trần Gia Bảo | DONE | DONE | Route đọc/sửa hồ sơ và đổi mật khẩu đã mount. Cần kiểm chứng Mobile bắt đăng nhập lại sau khi đổi mật khẩu. |
 | FPC-26 | Lead | Thiết lập GitHub, bảo vệ nhánh main/develop và CI/CD cơ bản | Nam Nguyễn | DONE | DONE | — |
 | FPC-27 | Lead | Viết đặc tả API Swagger/Postman cho Web và Mobile | Nam Nguyễn | DONE | DONE | — |
+
+### Nghiệm thu Module 01
+
+Các đầu việc dưới đây chưa có mã Jira riêng trong bảng phục dựng. Trạng thái áp dụng cho phạm vi trong cột nghiệm thu.
+
+| Phạm vi | Trạng thái | Nghiệm thu |
+| --- | --- | --- |
+| Backend quản trị tài khoản, hồ sơ và mật khẩu | Đã kiểm thử | Admin tạo/liệt kê/khóa/mở tài khoản. Chủ tài khoản sửa hồ sơ, đổi/reset mật khẩu. Token cũ bị từ chối. |
+| Backend ma trận quyền | Đã kiểm thử | Admin chỉnh grant trong bốn role hiện có. Request bị từ chối khi thiếu grant. Phiên thành viên bị thu hồi khi quyền thay đổi. |
+| Tích hợp SMTP và Twilio Verify | REVIEW | Cấu hình SMTP và Verify Service SID `VA…` cùng API key. Xác nhận OTP email, OTP SMS và link reset đến tài khoản thử. |
+| Web/Mobile hoàn thiện xác thực và quản trị | TODO | Nối đăng ký theo hợp đồng mới, OTP/gửi lại, quên/reset mật khẩu và giao diện Admin quản trị tài khoản/role. |
 
 ## Sprint 2 · Cuộc thi và nộp bài
 
@@ -164,7 +175,7 @@ Dùng cột **Hiện tại** để quản lý từ đây. Cột **Jira** giữ �
 
 | Mã | Phạm vi | Công việc | Người phụ trách | Jira | Hiện tại | Ghi chú |
 | --- | --- | --- | --- | --- | --- | --- |
-| FPC-126 | Tài liệu | Module 01 Auth & RBAC | Huỳnh Trần Gia Bảo | DONE | DONE | — |
+| FPC-126 | Tài liệu | Module 01 Auth & RBAC | Huỳnh Trần Gia Bảo | DONE | DONE | Đã đồng bộ tài liệu với Backend và biến môi trường SMTP/Twilio. |
 | FPC-127 | Tài liệu | Module 02 Analog Master Data | Huỳnh Trần Gia Bảo | DONE | DONE | — |
 | FPC-128 | Tài liệu | Module 03 Contest Lifecycle | Duong Nguyen | DONE | DONE | — |
 | FPC-129 | Tài liệu | Module 07 Blind Judging | Duong Nguyen | DONE | DONE | — |

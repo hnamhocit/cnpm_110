@@ -85,7 +85,7 @@ Quy trình xử lý một yêu cầu API:
 
 ### Hành vi các route đang mount
 
-- Bearer token cần thuộc tài khoản còn hoạt động. `GET /api/v1/rbac/manage-contest` chỉ chấp nhận Admin và Organizer. [Module 01](01-auth-and-rbac.md)
+- Bearer token cần thuộc tài khoản hoạt động, phiên còn hiệu lực và đúng phiên bản token. `GET /api/v1/rbac/manage-contest` yêu cầu Admin hoặc Organizer có grant tương ứng. [Module 01](01-auth-and-rbac.md)
 - Organizer chỉ sửa/xóa cuộc thi do mình tạo. Danh sách, kiểm duyệt và báo cáo bài thi cũng giới hạn theo quyền sở hữu cuộc thi, kể cả các alias Organizer. [Module 03](03-contest-lifecycle.md) · [Module 05](05-submission-and-proof.md)
 - Khi nộp bài, cuộc thi phải đang nhận bài. Sai khổ, vượt giới hạn frame hoặc thiếu Lab/quy trình trả 422. Trùng cuộn–frame trả 409. Xem bảng multipart bên dưới.
 - Kiểm duyệt bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. Bài rủi ro AI cao đang bị giữ trả 409 khi duyệt hoặc gỡ cờ. Nhánh REQUEST_PROOF trong route kiểm duyệt vướng ràng buộc trạng thái DB. Route yêu cầu đối chứng độc lập và upload đối chứng vẫn chưa mount.
@@ -320,113 +320,15 @@ Pagination DTO được sử dụng cho các API trả về danh sách dữ li�
 
 #### 4.6.1. Authentication DTO Overview
 
-Authentication DTOs định nghĩa cấu trúc dữ liệu trao đổi giữa Client (Web Next.js, Mobile Flutter) và Backend trong quá trình xác thực người dùng.
-
-Các chức năng bao gồm:
-
-- Register – Đăng ký tài khoản.
-
-- Login – Đăng nhập hệ thống.
-
-- Refresh Token – Cấp lại Access Token.
-
-- Logout – Đăng xuất hệ thống.
-
-Các endpoint hiện được khai báo trong OpenAPI gồm `/auth/register`, `/auth/login`, `/auth/refresh` và `/auth/logout`.
+[Module 01](01-auth-and-rbac.md#4-shared-api-contracts-dùng-chung-cho-web--mobile) mô tả các route đã mount cho xác thực định danh, hồ sơ, quản trị tài khoản và RBAC.
 
 #### 4.6.2. Register Request DTO
 
-**Endpoint:** `POST /api/v1/auth/register`
-
-**Purpose:** Cho phép người dùng tạo tài khoản mới với vai trò Participant.
-
-**Request JSON:**
-
-```json
-
-{
-
-  "fullName": "Nguyen Van A",
-
-  "email": "participant@example.com",
-
-  "password": "SecurePass123!"
-
-}
-
-```
-
-**Field Definitions:**
-
-| Field | Data Type | Required | Validation |
-
-|---|---|---|---|
-
-| `fullName` | String | Yes | Tối đa 100 ký tự |
-
-| `email` | String | Yes | Đúng định dạng email, tối đa 255 ký tự |
-
-| `password` | String | Yes | Từ 8 đến 128 ký tự |
-
-**Validation Rules:**
-
-- Không được bỏ trống các trường bắt buộc.
-
-- Email phải đúng định dạng.
-
-- Email không được trùng với tài khoản đã đăng ký.
-
-- Password phải đáp ứng giới hạn độ dài.
-
-- Không cho phép Client tự cấp quyền Admin hoặc Organizer khi đăng ký thông thường.
+`POST /api/v1/auth/register` nhận `{ fullName, email, phoneNumber, password }`. Số điện thoại chấp nhận dạng E.164 hoặc 10 chữ số Việt Nam và được chuẩn hóa trước khi lưu.
 
 #### 4.6.3. Register Response DTO
 
-**HTTP Status:** `201 Created`
-
-**Proposed Standard Response:**
-
-```json
-
-{
-
-  "code": 201,
-
-  "message": "Registration successful",
-
-  "data": {
-
-    "user": {
-
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-
-      "fullName": "Nguyen Van A",
-
-      "email": "participant@example.com",
-
-      "role": "Participant"
-
-    },
-
-    "accessToken": "example-access-token",
-
-    "refreshToken": "example-refresh-token"
-
-  }
-
-}
-
-```
-
-**Response Rules:**
-
-- Trả về thông tin người dùng đã đăng ký.
-
-- Không trả về password hoặc password hash.
-
-- Access Token được dùng để xác thực các yêu cầu API tiếp theo.
-
-- Cách truyền và lưu Refresh Token phải tuân thủ chính sách bảo mật được nhóm thống nhất.
+`201 Created` trả `data: { user, status: "PENDING_VERIFICATION", deliveryStatus }`. Client xác thực email bằng OTP, rồi xác thực số điện thoại bằng OTP SMS. Sau đó gọi login để nhận access và refresh token. Khi nhà cung cấp gặp lỗi, phản hồi có `deliveryStatus: "RETRY_REQUIRED"`; client có thể gọi `POST /api/v1/auth/resend-verification`.
 
 #### 4.6.4. Login Request DTO
 
@@ -2907,9 +2809,9 @@ Các nội dung cần được nhóm xác nhận trước khi triển khai chín
 Sau khi được phê duyệt, tài liệu cần được đồng bộ với OpenAPI và mã nguồn Backend để đảm bảo các Client sử dụng cùng một hợp đồng API.
 ## 6. Danh mục endpoint
 
-[OpenAPI](../openapi.yaml) liệt kê **38** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **36** thao tác dự kiến đã có method và path. Dùng `x-implementation` để tra trạng thái và [đăng ký Hono](../../apps/api/src/index.ts) để lần tới route thực tế.
+[OpenAPI](../openapi.yaml) liệt kê **51** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **28** thao tác dự kiến đã có method và path. Dùng `x-implementation` để tra trạng thái và [đăng ký Hono](../../apps/api/src/index.ts) để lần tới route thực tế.
 
-Các chức năng còn thiếu method/path trong đặc tả gồm quản lý role và permission, tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, quản lý hạng mục và vòng chấm, sửa metadata hoặc rút bài thi, đọc bảng điểm cá nhân, điều phối lệch điểm và xuất thống kê cuộc thi (UC-28, [Module 11](11-cross-cutting-services.md)). Xem yêu cầu nghiệp vụ tương ứng tại [SRS](../srs.md#22-use-case-catalog-43-ca-sử-dụng-cốt-lõi).
+Các chức năng còn thiếu method/path trong đặc tả gồm tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, quản lý hạng mục và vòng chấm, sửa metadata hoặc rút bài thi, đọc bảng điểm cá nhân, điều phối lệch điểm và xuất thống kê cuộc thi (UC-28, [Module 11](11-cross-cutting-services.md)). Xem yêu cầu nghiệp vụ tương ứng tại [SRS](../srs.md#22-use-case-catalog-43-ca-sử-dụng-cốt-lõi).
 
 Route công khai `GET /api/v1/contests/{id}/results` hiện dùng dữ liệu giải và điểm mẫu. DTO lịch trình của `POST /api/v1/contests` hiện dùng hai mốc `startAt` và `endAt`. Quy tắc công bố kết quả và lịch trình đích được mô tả trong Module 03 và 08.
 

@@ -8,10 +8,11 @@ import { secureHeaders } from "hono/secure-headers";
 import { timing } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
-import { authenticate, requireRoles } from "./middlewares/auth";
 import aiWebhookRoute from "./routes/ai-webhook.route";
 import authRoute from "./routes/auth.route";
 import contestsRoute from "./routes/contests.route";
+import rbacRoute from "./routes/rbac.route";
+import usersRoute from "./routes/users.route";
 import healthRoute from "./routes/health.route";
 import judgeRoute from "./routes/judge.route";
 import submissionRoute from "./routes/submissions.route";
@@ -60,6 +61,7 @@ seed()
 const v1 = new Hono();
 
 v1.route("/auth", authRoute);
+v1.route("/users", usersRoute);
 v1.route("/contests", contestsRoute);
 v1.route("/judge", judgeRoute);
 v1.route("/submissions", submissionRoute);
@@ -67,13 +69,7 @@ v1.route("/organizer/submissions", submissionRoute);
 v1.route("/ai", aiWebhookRoute);
 v1.route("/upload", uploadRoute)
 
-const rbac = new Hono();
-rbac.use("*", authenticate);
-rbac.get("/manage-contest", requireRoles("Admin", "Organizer"), (c) => {
-  return c.ok(null, "Bạn được phép truy cập cổng quản trị");
-});
-
-v1.route("/rbac", rbac);
+v1.route("/rbac", rbacRoute);
 app.route("/api/v1", v1);
 
 // 5. Server & Graceful Shutdown
