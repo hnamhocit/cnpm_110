@@ -1,14 +1,14 @@
-# 📱 Film Contest - Mobile Application
+# 📱 CINEGEN - Mobile Application
 
-Ứng dụng di động đa nền tảng (Android, iOS) cho dự án Film Contest, được xây dựng bằng **[Flutter](https://flutter.dev/)**, sử dụng **[Riverpod](https://riverpod.dev/)** quản lý state và **[GoRouter](https://pub.dev/packages/go_router)** điều hướng.
+Ứng dụng di động đa nền tảng (Android, iOS) cho dự án CINEGEN, được xây dựng bằng **[Flutter](https://flutter.dev/)**, sử dụng **[Riverpod](https://riverpod.dev/)** quản lý state và **[GoRouter](https://pub.dev/packages/go_router)** điều hướng.
 
-Quy chuẩn nghiệp vụ sổ tay cuộn phim (Film Logbook) và chụp ảnh âm bản đối chứng tuân theo **[Master SRS](../../docs/srs.md)** và **[`docs/ai/04-film-logbook.md`](../../docs/ai/04-film-logbook.md)**.
+Xem [SRS](../../docs/srs.md), [đặc tả nộp bài và đối chứng](../../docs/ai/05-submission-and-proof.md) và [độ phủ hiện tại trên Mobile](../../docs/progress/overview.md#độ-phủ-theo-module).
 
 ---
 
 ## 📌 Công nghệ & Thư viện chính
 
-- **SDK**: Flutter (Dart >= 3.13)
+- **SDK**: Flutter theo ràng buộc Dart trong [pubspec.yaml](pubspec.yaml)
 - **State Management**: [flutter_riverpod](https://pub.dev/packages/flutter_riverpod)
 - **Routing**: [go_router](https://pub.dev/packages/go_router)
 - **Bảo mật & Lưu trữ Token**: [flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage)
