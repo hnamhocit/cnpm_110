@@ -5,15 +5,15 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { AuthField } from "@/components/auth/auth-field";
+import { BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { http } from "@/lib/http";
-import { BrandMark } from "@/components/brand-mark";
 
-const fieldLabelClassName = "text-sm font-medium text-slate-700";
+const fieldLabelClassName = "text-xs font-semibold text-foreground";
 
 const fieldInputClassName =
-  "h-12 rounded-[10px] border-slate-300 bg-white px-4 text-[15px] leading-[22px] text-slate-900 placeholder:text-slate-400 focus-visible:border-brand-ring focus-visible:ring-brand-ring/20 md:text-[15px]";
+  "h-11 rounded-xl border-input bg-background px-3.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/20 transition-all";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -72,24 +72,30 @@ export function RegisterForm() {
   }
 
   return (
-    <Card className="w-full gap-0 rounded-[20px] border border-slate-200 bg-white py-0 shadow-[0_2px_8px_0_rgba(15,23,42,0.06),0_24px_64px_-24px_rgba(30,58,138,0.10)] ring-0">
+    <Card className="w-full gap-0 rounded-2xl border border-border bg-card p-7 sm:p-9 shadow-xl shadow-brand-solid/5 ring-0">
       <form
-        className="flex flex-col items-center gap-7 p-10"
+        className="flex flex-col items-center gap-6"
         onSubmit={handleSubmit}
         noValidate
       >
-        <BrandMark size={56} className="shrink-0 rounded-2xl" />
+        <Link
+          href="/"
+          title="Quay lại trang chủ"
+          className="group rounded-2xl p-1 transition-all hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <BrandMark size={56} className="shrink-0 rounded-2xl shadow-sm" />
+        </Link>
 
-        <header className="flex w-full flex-col items-center gap-2 text-center">
-          <h1 className="text-[32px] leading-10 font-semibold tracking-[-0.01em] text-slate-900">
+        <header className="flex w-full flex-col items-center gap-1.5 text-center">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             Tạo tài khoản
           </h1>
-          <p className="text-[15px] leading-[22px] text-slate-500">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Đăng ký để bắt đầu với CINEGEN
           </p>
         </header>
 
-        <div className="flex w-full flex-col gap-5">
+        <div className="flex w-full flex-col gap-4">
           <AuthField
             id="fullName"
             label="Họ và tên"
@@ -136,22 +142,25 @@ export function RegisterForm() {
           />
 
           {error ? (
-            <p role="alert" className="text-sm font-medium text-red-600">
+            <div
+              role="alert"
+              className="rounded-lg border border-destructive/20 bg-destructive/10 p-2.5 text-xs font-medium text-destructive"
+            >
               {error}
-            </p>
+            </div>
           ) : null}
         </div>
 
-        <div className="flex w-full flex-col items-center gap-6">
+        <div className="flex w-full flex-col items-center gap-4">
           <Button
             type="submit"
             disabled={isLoading}
-            className="h-12 w-full rounded-[10px] bg-brand-solid text-base font-semibold text-white shadow-md shadow-brand-solid/25 hover:bg-brand-hover focus-visible:border-brand-ring focus-visible:ring-brand-ring/30 disabled:opacity-60"
+            className="h-11 w-full rounded-xl bg-brand-solid text-sm font-semibold text-white shadow-md shadow-brand-solid/20 hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 transition-all active:scale-[0.99]"
           >
             {isLoading ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
           </Button>
 
-          <p className="text-sm leading-5 text-slate-500">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Đã có tài khoản?{" "}
             <Link
               href="/login"

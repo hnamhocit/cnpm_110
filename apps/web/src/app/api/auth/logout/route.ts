@@ -1,17 +1,42 @@
-import { cookies } from "next/headers";
-import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/auth-cookie-options";
+import { type NextRequest, NextResponse } from "next/server";
 
-export async function POST() {
-  const cookieStore = await cookies();
+import {
+  ACCESS_COOKIE,
+  accessCookieOptions,
+  REFRESH_COOKIE,
+  refreshCookieOptions,
+} from "@/lib/auth-cookie-options";
+import { API_INTERNAL_URL } from "@/lib/server-api";
 
-  cookieStore.delete(ACCESS_COOKIE);
-  cookieStore.delete({
-    name: REFRESH_COOKIE,
-    path: "/api/auth",
+export async function POST(request: NextRequest) {
+  const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value;
+
+  if (refreshToken) {
+    const result = await fetch(`${API_INTERNAL_URL}/api/v1/auth/logout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(5000),
+    }).catch(() => null);
+
+    if (!result?.ok) {
+      return Response.json({ success: false }, { status: 502 });
+    }
+  }
+
+  const response = NextResponse.json({ success: true });
+  response.cookies.set(ACCESS_COOKIE, "", {
+    ...accessCookieOptions(),
+    maxAge: 0,
   });
-  cookieStore.delete(REFRESH_COOKIE);
-  cookieStore.delete("access_token");
-  cookieStore.delete("refresh_token");
+  response.cookies.set(REFRESH_COOKIE, "", {
+    ...refreshCookieOptions(),
+    maxAge: 0,
+  });
 
-  return Response.json({ success: true, message: "Logged out successfully" });
+  // NextResponse.cookies indexes by name, so append the legacy path separately.
+  response.headers.append("Set-Cookie", `${REFRESH_COOKIE}=; Path=/; Max-Age=0`);
+
+  return response;
 }
