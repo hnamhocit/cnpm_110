@@ -720,6 +720,16 @@ export async function moderateSubmission(
   });
 }
 
+function reviewPreviewUrl(path: string) {
+  const url = URL.parse(path);
+  // Local seed previews reference public photos. Uploaded originals use keys.
+  if (Bun.env.NODE_ENV !== "production" && url?.origin === "https://images.unsplash.com" &&
+      url.pathname.startsWith("/photo-") && !url.username && !url.password) {
+    return Promise.resolve(url.href);
+  }
+  return getR2SignedReadUrl(path);
+}
+
 export async function getSubmissionComparison(submissionId: string, actor: ModerationActor) {
   const [row] = await db
     .select({
@@ -787,7 +797,7 @@ export async function getSubmissionComparison(submissionId: string, actor: Moder
         title: orig.title,
         description: orig.description,
         imageOriginalPath: orig.imageOriginalPath,
-        imagePreviewPath: await getR2SignedReadUrl(orig.imagePreviewPath ?? orig.imageOriginalPath),
+        imagePreviewPath: await reviewPreviewUrl(orig.imagePreviewPath ?? orig.imageOriginalPath),
         negativeProofPath: null,
         fileSizeBytes:
           orig.fileSizeBytes != null ? Number(orig.fileSizeBytes) : null,
@@ -822,7 +832,7 @@ export async function getSubmissionComparison(submissionId: string, actor: Moder
   const predictedTags = Array.isArray(ai?.predictedTags) ? ai.predictedTags : [];
 
   const [previewUrl, proofUrl] = await Promise.all([
-    getR2SignedReadUrl(sub.imagePreviewPath ?? sub.imageOriginalPath),
+    reviewPreviewUrl(sub.imagePreviewPath ?? sub.imageOriginalPath),
     sub.negativeProofPath ? getR2SignedReadUrl(sub.negativeProofPath) : null,
   ]);
 

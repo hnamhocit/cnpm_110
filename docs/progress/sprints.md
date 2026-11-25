@@ -147,13 +147,15 @@ Các đầu việc dưới đây chưa có mã Jira riêng trong bảng phục d
 | TODO | M02 Analog Master Data còn phần triển khai danh mục và tra cứu. |
 | Chưa nghiệm thu | UC-06–43. Xem phần còn thiếu và trạng thái theo nền tảng trong [bảng Use Case](use-cases.md). |
 
+Các task đã merge và phần còn thiếu theo UC được đối chiếu trong [bằng chứng kỹ thuật](technical-evidence.md#đối-chiếu-task-sprint-với-pr-và-use-case).
+
 ### Tồn đọng chuyển sang Sprint 5
 
 | Module | UC liên quan | Việc chuyển tiếp |
 | --- | --- | --- |
 | M03 | UC-11–17, UC-34 | Chốt năm mốc và trạng thái. Hoàn thiện sao chép, đăng ký và cấu hình chấm theo vòng. Giữ các phần còn lại của FPC-29, FPC-35–36, FPC-42 và FPC-59–60 theo phạm vi SRS. |
 | M02, M04 | UC-06–08, UC-35–36 | Hoàn thiện danh mục gốc, CRUD cuộn/frame và quyền sở hữu. |
-| M05, M06 | UC-09, UC-18–23, UC-37–40 | Nối bài với đăng ký và cuộn/frame. Hoàn thiện yêu cầu đối chứng có hạn cấu hình, sửa/rút bài, quét theo yêu cầu và xác minh luồng Organizer. Chuyển phần còn thiếu của FPC-32, FPC-49–52 và FPC-65. |
+| M05, M06 | UC-09, UC-18–23, UC-37–40 | Nối bài với đăng ký và cuộn/frame. Hoàn thiện yêu cầu đối chứng có hạn cấu hình, sửa/rút bài, quét theo yêu cầu và xác minh luồng Organizer. Chuyển phần còn thiếu của FPC-32, FPC-49–52 và FPC-65. Trên Web, sửa payload form #160, chuẩn hóa trạng thái #161 và nối modal #163 với API. |
 | M07 | UC-24–25, UC-29–33 | Nối Web với API chấm, kiểm tra khóa phiếu và chốt/chuyển vòng. Chuyển phần tích hợp của FPC-76–77 và FPC-79–81. |
 | M08 | UC-26–27, UC-41–43 | Hoàn thiện công bố theo kết quả vòng cuối và tích hợp kho ảnh/portfolio với dữ liệu thật. |
 | M09–11 | UC-10, UC-28 và hợp đồng/dữ liệu dùng chung | Đồng bộ API và schema theo từng UC, hoàn thiện audit/thông báo và nghiệm thu báo cáo. |
@@ -170,6 +172,8 @@ Các đầu việc dưới đây chưa có mã Jira riêng trong bảng phục d
 ## Sprint 5 · Hoàn thiện module và Use Case
 
 **Trạng thái kế hoạch** · Chờ Project Lead chốt phạm vi, người phụ trách và ngày bắt đầu.
+
+**Nghiệm thu bổ sung sau Sprint 4** · Checklist demo xác nhận PASS cho UC-18, UC-23 và UC-40. M05 đạt 3/8 UC. UC-20 tiếp tục PARTIAL, dữ liệu đối sánh giả lập dùng để kiểm tra giao diện.
 
 - Dùng [thứ tự ưu tiên module](overview.md#thứ-tự-triển-khai) và bảng tồn đọng Sprint 4 để chọn UC theo phụ thuộc. Triển khai M09–11 song song theo nhu cầu của các UC đã chọn.
 - Quản lý từng UC trong [bảng Use Case](use-cases.md). Chốt phần còn thiếu và tiêu chí nghiệm thu từ SRS trước khi đánh dấu DONE.

@@ -197,3 +197,40 @@ Migration sửa schema áp dụng thành công trên PostgreSQL 18 tạm. API ty
 | FPC-135 | Tài liệu | Module 09 Shared API Contracts | Hà Đức Bình | DONE | — |
 | FPC-136 | Backend | Chuẩn hóa tài liệu 06–10 theo mẫu dành cho AI | Hà Đức Bình | DONE | — |
 | FPC-137 | Backend | Bổ sung các phần còn lại của module 01–05 và mục 4–5 của SRS | Nam Nguyễn | DONE | — |
+
+## Đối chiếu task Sprint với PR và Use Case
+
+Rà soát merge commit trên develop, route đã mount và điểm gọi thực tế ở client. Cột task ghi Jira tương ứng theo chức năng. Với #160–165, chưa thấy mã Jira riêng trong tên merge, nên các mã cùng hàng là task liên quan chứ không phải mã đã xác nhận của PR.
+
+| Task Sprint | PR hoặc commit | UC | Phần đã có | Phần còn lại để nghiệm thu |
+| --- | --- | --- | --- | --- |
+| FPC-29, FPC-34–36 | Lịch sử Sprint 2 và route Contest | UC-11–14 | CRUD cơ bản, danh sách, form tạo và UI tiêu chí. | Lưu đầy đủ cấu hình và năm mốc, CRUD hạng mục/tiêu chí và sao chép cuộc thi. |
+| FPC-37–42 | [#40](https://github.com/hnamhocit/cnpm_110/pull/40), [#116](https://github.com/hnamhocit/cnpm_110/pull/116) | UC-34 | Web có thông tin đăng ký, Mobile có danh sách/chi tiết và kiểm tra điều kiện. | Lưu đăng ký theo hạng mục và chấp nhận thể lệ. |
+| FPC-32–33, FPC-43–45 | [#160](https://github.com/hnamhocit/cnpm_110/pull/160), [#46](https://github.com/hnamhocit/cnpm_110/pull/46), [#51](https://github.com/hnamhocit/cnpm_110/pull/51) | UC-37 | Web có form riêng gọi API, Mobile có form metadata và luồng ảnh. Test API nộp bài đã kiểm tra hạn và trùng frame. | Form Web #160 thiếu categoryId, rollId, filmBrand và isoShot, đồng thời gửi cameraModel thay cho cameraBody. API từ chối payload hiện tại. |
+| FPC-62–64, FPC-82–83 | [#110](https://github.com/hnamhocit/cnpm_110/pull/110), [#111](https://github.com/hnamhocit/cnpm_110/pull/111), [#112](https://github.com/hnamhocit/cnpm_110/pull/112), [#144](https://github.com/hnamhocit/cnpm_110/pull/144), [#145](https://github.com/hnamhocit/cnpm_110/pull/145), [#161](https://github.com/hnamhocit/cnpm_110/pull/161), [#164](https://github.com/hnamhocit/cnpm_110/pull/164), [#165](https://github.com/hnamhocit/cnpm_110/pull/165) | UC-40 | Web và Mobile gọi API bài của tôi. Web đã có timeline và modal lý do; Mobile có trạng thái, làm mới và hướng dẫn từ chối. | Web lọc REJECTED trong khi API trả DISQUALIFIED; cần so khớp trạng thái, bỏ nội dung 48 giờ và xác minh luồng trên cả hai client. |
+| FPC-50, FPC-45, FPC-65 | [#162](https://github.com/hnamhocit/cnpm_110/pull/162), [#163](https://github.com/hnamhocit/cnpm_110/pull/163), [#113](https://github.com/hnamhocit/cnpm_110/pull/113) | UC-21, UC-38–39 | Có nhánh yêu cầu đối chứng, modal Web gọi route proof và màn Mobile sửa metadata. | Route proof và metadata chưa mount. Countdown nhận hạn đầu vào nhưng nhãn 48 giờ cần bỏ theo SRS. |
+| FPC-49–58 | [#72](https://github.com/hnamhocit/cnpm_110/pull/72), [#76](https://github.com/hnamhocit/cnpm_110/pull/76), [#87](https://github.com/hnamhocit/cnpm_110/pull/87), [#101](https://github.com/hnamhocit/cnpm_110/pull/101) | UC-09, UC-18–20, UC-22–23 | Route danh sách, kiểm duyệt và đối sánh đã mount. Web gọi API thật. Worker và webhook có phân tích, lưu cờ, pHash và thẻ. | Nghiệm thu thao tác quét thủ công, ảnh/bằng chứng theo quyền và điều kiện đối chứng trước duyệt. |
+| FPC-59–61, FPC-76–77 | [#78](https://github.com/hnamhocit/cnpm_110/pull/78), [#79](https://github.com/hnamhocit/cnpm_110/pull/79), [#80](https://github.com/hnamhocit/cnpm_110/pull/80), [#141](https://github.com/hnamhocit/cnpm_110/pull/141), [#142](https://github.com/hnamhocit/cnpm_110/pull/142) | UC-16, UC-24–25 | Các màn phân công và tiến độ đã merge. Có API bảng điểm. | Lưu phân công và nối tiến độ thật theo vòng; khóa/chuyển vòng theo SRS. |
+| FPC-70–75, FPC-79–81 | Các commit FPC-70–75 và [#147–150](#rà-soát-4-pr-web-của-phạm-tiến-thành-nhân--2026-11-23) | UC-25, UC-29–33 | Test tích hợp Backend xác nhận quyền ảnh ẩn danh, lưu/sửa điểm, chặn khóa thiếu bài và chặn sửa sau khóa. Web có viewer/slider. | Trang Web Judge vẫn dùng dữ liệu mẫu. Luồng theo vòng và kết nối form với dữ liệu thật còn thiếu. |
+| FPC-97, FPC-99–101 | [#133](https://github.com/hnamhocit/cnpm_110/pull/133), [#134](https://github.com/hnamhocit/cnpm_110/pull/134), [#135](https://github.com/hnamhocit/cnpm_110/pull/135), [#136](https://github.com/hnamhocit/cnpm_110/pull/136) | UC-41–43 | Archive/bộ lọc Web đã merge. Mobile đã gọi API kết quả và portfolio. | Web archive và dữ liệu giải Backend còn mẫu. Cần dùng dữ liệu công bố thật. |
+| Báo cáo Sprint 5 | `c4acc83` và ca tích hợp UC-28 | UC-28 | Backend có GET/POST báo cáo, kiểm tra quyền, chỉ gửi số đếm và trả thống kê khi AI lỗi. Web gọi API và xuất JSON. | Ca tích hợp dùng AI giả lập. Chưa có chứng cứ nghiệm thu thao tác xuất trên Web với dịch vụ triển khai. |
+
+## Đối chiếu schema với migration
+
+Baseline [0000_baseline.sql](../../apps/api/drizzle/0000_baseline.sql) có 314 dòng và tạo 20 bảng. Commit `9df2dd9` gộp chuỗi migration cũ thành một baseline và tách khai báo TypeScript thành sáu file schema. Drizzle dùng [index schema](../../apps/api/src/db/schemas/index.ts) làm đầu vào chung. Các file đặc tả Markdown có thể mô tả bảng chưa được khai báo trong schema TypeScript.
+
+Đối chiếu tên bảng cho kết quả 20/20. Chạy Drizzle generate trên bản sao tạm của baseline và snapshot trả `No schema changes, nothing to migrate`. Lượt kiểm tra so sánh schema hiện có với snapshot; chưa đối chiếu PostgreSQL đang triển khai.
+
+| Module | Khoảng trống dữ liệu theo SRS | Ưu tiên |
+| --- | --- | --- |
+| M03 / M07 | `contests` hiện có `start_at` và `end_at`. Cần lịch năm mốc, đăng ký hạng mục và cấu hình/phân công theo vòng. | Làm trước theo UC-11–17 và UC-34. |
+| M02 / M04 / M05 | Cần danh mục dùng chung, bản ghi Film Frame liên kết cuộn và hạn đối chứng do Organizer đặt. | Nối với đăng ký và luồng nộp bài. |
+| M08 | Cần lưu kết quả chính thức từ vòng cuối và dữ liệu cho kho ảnh công khai. | Làm sau khi chốt được vòng chấm. |
+
+Giữ baseline hiện tại. Khi triển khai các thay đổi schema được chốt, sinh migration bổ sung và kiểm thử với dữ liệu cũ trước khi triển khai.
+
+## Nghiệm thu bổ sung trên dữ liệu demo
+
+Checklist PASS do người dùng cung cấp xác nhận UC-18 (hàng đợi, bộ lọc và quyền Organizer), UC-23 (lý do bắt buộc, lưu trạng thái bị loại và audit) và UC-40 (Web/Mobile làm mới trạng thái, hiển thị lý do và phân quyền bài cá nhân). Tổng số UC nghiệm thu toàn luồng là 8/43. Các ghi nhận trước đó trong trang này phản ánh thời điểm rà soát cũ.
+
+UC-20 vẫn PARTIAL. Cờ cảnh báo trên danh sách có thể đến từ trạng thái bài. Seed demo bổ sung kết quả đối sánh có nhãn giả lập cho cả FLAGGED và SUSPICIOUS. Các kết quả này phục vụ trình diễn ảnh, điểm, thẻ và metadata. Nghiệm thu xử lý AI thật và ảnh đối chứng cần bằng chứng riêng.

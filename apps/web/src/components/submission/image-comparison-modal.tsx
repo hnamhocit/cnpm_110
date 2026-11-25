@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "axios";
-import { Loader2, X } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,15 @@ interface ComparisonSubmission {
   imageOriginalPath: string | null;
   imagePreviewPath: string | null;
   negativeProofPath: string | null;
+  filmMetadata?: {
+    filmBrand?: string | null;
+    filmStock?: string | null;
+    cameraBody?: string | null;
+    filmFormat?: string | null;
+    lens?: string | null;
+    isoShot?: number | null;
+    frameNumber?: string | null;
+  } | null;
 }
 
 interface ComparisonData {
@@ -37,6 +46,7 @@ interface ComparisonData {
   } | null;
   aiGeneratedProbability: number | null;
   predictedTags: { tag: string; confidence: number }[];
+  flagReasons: string[];
 }
 
 type ComparisonResponse = {
@@ -46,13 +56,19 @@ type ComparisonResponse = {
 type ApiErrorBody = { message?: string };
 
 function ReviewImage({ src, label }: { src: string | null; label: string }) {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
   return (
     <figure className="space-y-2">
       <figcaption className="text-sm font-semibold">{label}</figcaption>
-      {src ? (
-        <img src={src} alt={label} className="h-64 w-full rounded-md border object-contain" />
+      {src && src !== failedSrc ? (
+        <img
+          src={src}
+          alt={label}
+          className="h-64 w-full rounded-md border object-contain"
+          onError={() => setFailedSrc(src)}
+        />
       ) : (
-        <p className="text-sm text-muted-foreground">Chưa có ảnh.</p>
+        <p className="text-sm text-muted-foreground">{src ? "Không tải được ảnh." : "Chưa có ảnh."}</p>
       )}
     </figure>
   );
@@ -74,6 +90,7 @@ export default function ImageComparisonModal({
       return;
     }
 
+    const controller = new AbortController();
     const fetchComparisonData = async () => {
       setLoading(true);
       setError(null);
@@ -82,9 +99,11 @@ export default function ImageComparisonModal({
         // Axios interceptor tự gắn Authorization Bearer (access token trong memory).
         const response = await http.get<ComparisonResponse>(
           `/api/v1/submissions/${submissionId}/comparison`,
+          { signal: controller.signal },
         );
         setData(response.data.data);
       } catch (err) {
+        if (controller.signal.aborted) return;
         setError(
           axios.isAxiosError<ApiErrorBody>(err)
             ? (err.response?.data?.message ?? "Không thể tải dữ liệu so sánh")
@@ -93,26 +112,29 @@ export default function ImageComparisonModal({
               : "Đã xảy ra lỗi",
         );
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
-    fetchComparisonData();
+    void fetchComparisonData();
+    return () => controller.abort();
   }, [isOpen, submissionId]);
+
+  const metadata = data?.flaggedSubmission.filmMetadata;
+  const filmDetails = metadata ? [
+    ["Phim", [metadata.filmBrand, metadata.filmStock].filter(Boolean).join(" ")],
+    ["Khổ phim", metadata.filmFormat],
+    ["Máy ảnh", metadata.cameraBody],
+    ["Ống kính", metadata.lens],
+    ["ISO chụp", metadata.isoShot],
+    ["Số frame", metadata.frameNumber],
+  ].filter(([, value]) => value != null && value !== "") : [];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Thẩm định bài dự thi</DialogTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-4 right-4"
-            onClick={onClose}
-          >
-            <X className="size-4" />
-          </Button>
         </DialogHeader>
 
         {loading && (
@@ -137,7 +159,12 @@ export default function ImageComparisonModal({
           <>
             <div className="space-y-1 text-sm">
               <p className="font-medium">{data.flaggedSubmission.title}</p>
-              {data.aiGeneratedProbability !== null && (
+              {data.flagReasons.includes("DEMO_FIXTURE") && (
+                <p className="text-muted-foreground">Kết quả AI giả lập dùng cho demo.</p>
+              )}
+              {data.aiGeneratedProbability === null ? (
+                <p className="text-muted-foreground">Chưa có kết quả phân tích AI.</p>
+              ) : (
                 <p>Điểm nghi vấn AI {(data.aiGeneratedProbability * 100).toFixed(1)}%</p>
               )}
               {data.duplicateCheck?.similarityScore != null && (
@@ -147,6 +174,16 @@ export default function ImageComparisonModal({
                 <p>Thẻ gợi ý · {data.predictedTags.map(({ tag }) => tag).join(", ")}</p>
               )}
             </div>
+            {filmDetails.length > 0 && (
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                {filmDetails.map(([label, value]) => (
+                  <div key={label}>
+                    <dt className="text-muted-foreground">{label}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
             <div className="grid gap-4 md:grid-cols-2">
               <ReviewImage src={data.flaggedSubmission.imagePreviewPath} label="Ảnh dự thi" />
               <ReviewImage src={data.flaggedSubmission.negativeProofPath} label="Âm bản hoặc contact sheet" />
