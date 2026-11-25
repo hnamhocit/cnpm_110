@@ -1,19 +1,17 @@
 "use client";
 
+import { ArrowLeft, LogOut, ShieldAlert } from "lucide-react";
 import Link from "next/link";
-import { ShieldAlert, ArrowLeft, LogOut } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 export default function ForbiddenPage() {
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/api/v1/auth/logout", { method: "POST" });
     } catch (e) {
       console.error("Logout failed:", e);
     }
-    // Purge cookies & store
-    // biome-ignore lint/suspicious/noDocumentCookie: cookie purge
-    document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    // BFF đã xoá cookie HttpOnly, chỉ cần xoá state trong memory.
     useAuthStore.getState().clear();
     window.location.href = "/login";
   };
@@ -30,7 +28,7 @@ export default function ForbiddenPage() {
         <h2 className="mt-3 text-2xl font-bold text-white">Không có quyền truy cập (Access Denied)</h2>
 
         <p className="mt-3 text-sm text-gray-300 leading-relaxed">
-          Tài khoản của bạn hiện mang vai trò <span className="font-semibold text-amber-300">Thí sinh (Participant)</span>. 
+          Tài khoản của bạn không thuộc nhóm được phép truy cập. 
           Theo quy định phân quyền hệ thống (RBAC), <span className="font-semibold text-white">Cổng Quản trị (Portal)</span> chỉ dành riêng cho vai trò <span className="font-semibold text-emerald-400">Ban tổ chức (Organizer)</span> và <span className="font-semibold text-blue-400">Quản trị viên (Admin)</span> để quản lý cuộc thi và chấm thi.
         </p>
 

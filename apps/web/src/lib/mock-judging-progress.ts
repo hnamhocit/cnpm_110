@@ -16,6 +16,7 @@ export const MOCK_JUDGING_CONTESTS = [
 
 export const MOCK_JUDGE_PROGRESS: JudgeProgress[] = [
   {
+    contestId: "fpc-2026-national",
     judgeId: "judge-1",
     fullName: "Nguyễn Văn Nghệ",
     email: "nghe.nguyen@analoglab.vn",
@@ -73,6 +74,7 @@ export const MOCK_JUDGE_PROGRESS: JudgeProgress[] = [
     ],
   },
   {
+    contestId: "fpc-2026-national",
     judgeId: "judge-2",
     fullName: "Trần Minh Quân",
     email: "quan.tran@vietnamfilm.org",
@@ -122,6 +124,7 @@ export const MOCK_JUDGE_PROGRESS: JudgeProgress[] = [
     ],
   },
   {
+    contestId: "fpc-2026-national",
     judgeId: "judge-3",
     fullName: "Hoàng Thảo My",
     email: "thaomy.photo@studio.com",
@@ -179,6 +182,7 @@ export const MOCK_JUDGE_PROGRESS: JudgeProgress[] = [
     ],
   },
   {
+    contestId: "fpc-2026-monochrome",
     judgeId: "judge-4",
     fullName: "Đặng Quang Huy",
     email: "huy.dang@visualarts.edu.vn",

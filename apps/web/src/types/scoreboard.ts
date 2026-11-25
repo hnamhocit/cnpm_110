@@ -6,6 +6,7 @@ export type JudgeScore = {
 };
 
 export type ScoreboardEntry = {
+  contestId: string;
   submissionId: string;
   submissionCode: string;
   title: string;

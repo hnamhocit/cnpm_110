@@ -66,10 +66,19 @@ export function getJudgingState(stats: JudgeProgressStats): JudgingState {
 }
 
 export type JudgeProgressFilters = {
+  contestId?: string;
   query?: string;
   category?: string;
   state?: JudgingStateFilter;
 };
+
+export function getContestJudges(
+  judges: JudgeProgress[],
+  contestId: string,
+): JudgeProgress[] {
+  if (!contestId) return judges;
+  return judges.filter((judge) => judge.contestId === contestId);
+}
 
 export function filterJudges(
   judges: JudgeProgress[],
@@ -80,6 +89,9 @@ export function filterJudges(
   const state = filters.state ?? "ALL";
 
   return judges.filter((judge) => {
+    const matchesContest =
+      !filters.contestId || judge.contestId === filters.contestId;
+
     const matchesQuery =
       query.length === 0 ||
       judge.fullName.toLowerCase().includes(query) ||
@@ -92,7 +104,9 @@ export function filterJudges(
     const matchesState =
       state === "ALL" || getJudgingState(getJudgeStats(judge)) === state;
 
-    return matchesQuery && matchesCategory && matchesState;
+    return (
+      matchesContest && matchesQuery && matchesCategory && matchesState
+    );
   });
 }
 

@@ -53,7 +53,11 @@ export function JudgeScoresDialog({ entry, onClose }: JudgeScoresDialogProps) {
 
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
               <div>
-                <p className="text-xs text-gray-500">Điểm chung cuộc (BR-25)</p>
+                <p className="text-xs text-gray-500">
+                  {entry.finalScore === null
+                    ? "Chưa chốt điểm chung cuộc"
+                    : "Điểm chung cuộc (BR-25)"}
+                </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {formatScore(entry.finalScore)}
                   <span className="ml-1 text-xs font-normal text-gray-500">
@@ -74,7 +78,8 @@ export function JudgeScoresDialog({ entry, onClose }: JudgeScoresDialogProps) {
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
                   Chênh lệch điểm vượt 30% thang điểm — cần Ban tổ chức điều
-                  phối trước khi công bố kết quả (BR-14).
+                  phối trước khi công bố kết quả. Bài thi chưa được xếp hạng
+                  (BR-14, BR-25).
                 </span>
               </div>
             )}

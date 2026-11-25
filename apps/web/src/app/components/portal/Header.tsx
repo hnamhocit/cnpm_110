@@ -3,6 +3,7 @@
 import { LogOut, User } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { normalizeRole } from "@/lib/route-access";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 type HeaderProps = {
@@ -27,7 +28,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
     let isMounted = true;
     async function loadUser() {
       try {
-        const res = await fetch("/api/auth/me");
+        const res = await fetch("/api/v1/auth/me");
         if (res.ok) {
           const data = await res.json();
           if (isMounted && data.user) {
@@ -58,7 +59,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   async function handleLogout() {
     try {
       setIsLoggingOut(true);
-      await fetch("/api/auth/logout", {
+      await fetch("/api/v1/auth/logout", {
         method: "POST",
       });
       clearAuth();
@@ -71,15 +72,35 @@ export default function Header({ onMenuClick }: HeaderProps) {
     }
   }
 
-  // Nhận diện vai trò từ token / profile người dùng
-  const role = user?.role || "Organizer";
-  const isOrganizer = role === "Organizer";
-  const roleTitle = isOrganizer ? "Ban tổ chức (Organizer)" : "Quản trị viên (Admin)";
-  const roleSubtitle = isOrganizer
-    ? "Ban tổ chức Cuộc thi"
-    : "Quản trị viên Hệ thống";
-  const initials = isOrganizer ? "BTC" : "AD";
-  const displayName = user?.fullName || (isOrganizer ? "Ban Tổ Chức" : "Quản Trị Viên");
+  const role = normalizeRole(user?.role ?? null) ?? "Organizer";
+  const roleMeta = {
+    Admin: {
+      title: "Quản trị viên (Admin)",
+      subtitle: "Quản trị viên Hệ thống",
+      initials: "AD",
+      fallbackName: "Quản Trị Viên",
+    },
+    Organizer: {
+      title: "Ban tổ chức (Organizer)",
+      subtitle: "Ban tổ chức Cuộc thi",
+      initials: "BTC",
+      fallbackName: "Ban Tổ Chức",
+    },
+    Judge: {
+      title: "Giám khảo (Judge)",
+      subtitle: "Ban Giám khảo",
+      initials: "GK",
+      fallbackName: "Giám Khảo",
+    },
+    Participant: {
+      title: "Thí sinh (Participant)",
+      subtitle: "Thí sinh dự thi",
+      initials: "TS",
+      fallbackName: "Thí Sinh",
+    },
+  }[role];
+  const { title: roleTitle, subtitle: roleSubtitle, initials } = roleMeta;
+  const displayName = user?.fullName || roleMeta.fallbackName;
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">

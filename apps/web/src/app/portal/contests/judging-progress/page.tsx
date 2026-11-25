@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   filterJudges,
+  getContestJudges,
   getJudgeStats,
   getJudgingState,
   JUDGING_STATE_LABELS,
@@ -47,7 +48,8 @@ const STATE_STYLES: Record<JudgingState, string> = {
 function getInitials(fullName: string): string {
   return fullName
     .split(" ")
-    .map((part) => part[0])
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() ?? "")
     .slice(-2)
     .join("");
 }
@@ -66,20 +68,23 @@ export default function JudgingProgressPage() {
   const categorySelectId = useId();
   const stateSelectId = useId();
 
-  const summary = summarizeJudgeProgress(MOCK_JUDGE_PROGRESS);
+  const contestJudges = getContestJudges(
+    MOCK_JUDGE_PROGRESS,
+    selectedContest,
+  );
+  const summary = summarizeJudgeProgress(contestJudges);
   const categories = Array.from(
-    new Set(MOCK_JUDGE_PROGRESS.flatMap((judge) => judge.categories)),
+    new Set(contestJudges.flatMap((judge) => judge.categories)),
   ).sort();
 
-  const judges = filterJudges(MOCK_JUDGE_PROGRESS, {
+  const judges = filterJudges(contestJudges, {
     query: searchTerm,
     category: categoryFilter,
     state: stateFilter,
   });
 
   const selectedJudge =
-    MOCK_JUDGE_PROGRESS.find((judge) => judge.judgeId === selectedJudgeId) ??
-    null;
+    contestJudges.find((judge) => judge.judgeId === selectedJudgeId) ?? null;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -90,10 +95,15 @@ export default function JudgingProgressPage() {
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Quay lại danh sách cuộc thi
         </Link>
-        <span className="flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-1 text-xs font-semibold text-purple-800">
-          <ClipboardCheck className="h-3.5 w-3.5" /> Giám sát tiến độ chấm thi
-          (SCR-ORG-08)
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
+            Dữ liệu mẫu · chờ API FPC-70–75
+          </span>
+          <span className="flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-1 text-xs font-semibold text-purple-800">
+            <ClipboardCheck className="h-3.5 w-3.5" /> Giám sát tiến độ chấm thi
+            (SCR-ORG-08)
+          </span>
+        </div>
       </div>
 
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -117,7 +127,13 @@ export default function JudgingProgressPage() {
           <select
             id={contestSelectId}
             value={selectedContest}
-            onChange={(event) => setSelectedContest(event.target.value)}
+            onChange={(event) => {
+              setSelectedContest(event.target.value);
+              setSearchTerm("");
+              setCategoryFilter("ALL");
+              setStateFilter("ALL");
+              setSelectedJudgeId(null);
+            }}
             className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-1 focus:ring-black focus:outline-none"
           >
             {MOCK_JUDGING_CONTESTS.map((contest) => (
@@ -257,7 +273,7 @@ export default function JudgingProgressPage() {
       <Card>
         <CardHeader className="border-b pb-3">
           <CardTitle className="text-lg">
-            Danh sách Giám khảo ({judges.length}/{MOCK_JUDGE_PROGRESS.length})
+            Danh sách Giám khảo ({judges.length}/{contestJudges.length})
           </CardTitle>
           <CardDescription className="text-xs">
             Nhấn vào một giám khảo để xem chi tiết từng bài thi đã chấm và chưa

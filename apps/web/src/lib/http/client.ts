@@ -24,7 +24,7 @@ let sessionPromise: Promise<string | null> | null = null;
 // Refresh token nằm trong cookie HttpOnly; BFF đổi nó lấy access token mới.
 function refreshSession(): Promise<string | null> {
   if (!sessionPromise) {
-    sessionPromise = fetch("/api/auth/session", {
+    sessionPromise = fetch("/api/v1/auth/session", {
       method: "POST",
       cache: "no-store",
     })

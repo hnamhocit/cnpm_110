@@ -6,6 +6,7 @@ import { type FormEvent, useState } from "react";
 import { AuthField } from "@/components/auth/auth-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { normalizeRole } from "@/lib/route-access";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 export function JudgeLoginForm() {
@@ -48,25 +49,30 @@ export function JudgeLoginForm() {
       }
     }
 
-    // 3. Nếu đăng nhập bằng Invitation Code
+    // 3. Invitation code login chưa có endpoint backend (UC-29 mới ở mức thiết kế).
     if (loginMethod === "invite") {
       const codeRegex = /^JUDGE-\d{4}-[A-Z0-9]{3,}$/i;
       if (!codeRegex.test(input)) {
         setError("Mã thư mời không đúng định dạng (VD: JUDGE-2026-ABC).");
         return;
       }
+      setError(
+        "Đăng nhập bằng mã thư mời chưa được hỗ trợ. Vui lòng dùng email giám khảo.",
+      );
+      return;
     }
 
     setIsLoading(true);
     try {
       // Dùng chung BFF: refreshToken vào cookie HttpOnly, accessToken về memory.
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch("/api/v1/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: input, password }),
       });
       const data = (await response.json().catch(() => ({}))) as {
         accessToken?: string;
+        user?: { role?: string };
         error?: string;
       };
 
@@ -76,16 +82,19 @@ export function JudgeLoginForm() {
         );
       }
 
+      if (normalizeRole(data.user?.role ?? null) !== "Judge") {
+        await fetch("/api/v1/auth/logout", { method: "POST" });
+        useAuthStore.getState().clear();
+        throw new Error("Tài khoản này không có quyền giám khảo.");
+      }
+
       useAuthStore
         .getState()
         .setTokens({ accessToken: data.accessToken, role: "Judge" });
 
-      // Tạo cookie session để Server Components đọc được
-      // biome-ignore lint/suspicious/noDocumentCookie: Required for SSR auth in Next.js App Router
-      document.cookie = `access_token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
-
-      // Chuyển hướng vào không gian chấm thi của Judge
-      router.push("/portal");
+      // Không ghi access_token bằng document.cookie: BFF đã set cookie HttpOnly.
+      // Không gian chấm thi riêng (UC-29..33) chưa được triển khai nên về trang chủ.
+      router.push("/");
       router.refresh();
     } catch (err) {
       setError(

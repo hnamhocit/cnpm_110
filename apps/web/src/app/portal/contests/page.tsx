@@ -39,7 +39,7 @@ export default function OrganizerContestsPage() {
         // RBAC: Organizer chỉ thấy cuộc thi do mình quản lý, Admin xem tất cả
         let url = "/api/v1/contests";
         try {
-          const userRes = await fetch("/api/auth/me");
+          const userRes = await fetch("/api/v1/auth/me");
           if (userRes.ok) {
             const userData = await userRes.json();
             if (userData.user?.role === "Organizer" && userData.user?.id) {

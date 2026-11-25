@@ -2,12 +2,12 @@
 
 import { Aperture } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { AuthField } from "@/components/auth/auth-field";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { canAccessPortal, normalizeRole } from "@/lib/route-access";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 type LoginResponse = {
@@ -24,7 +24,6 @@ const fieldInputClassName =
   "h-12 rounded-[10px] border-slate-300 bg-white px-4 text-[15px] leading-[22px] text-slate-900 placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 md:text-[15px]";
 
 export function LoginForm() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -43,7 +42,7 @@ export function LoginForm() {
 
     try {
       // BFF set cookie HttpOnly (refresh token) và trả access token cho memory.
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch("/api/v1/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), password }),
@@ -57,21 +56,13 @@ export function LoginForm() {
         );
       }
 
-      const userRole = data.user?.role || "Participant";
+      const userRole = normalizeRole(data.user?.role ?? null) ?? "Participant";
       useAuthStore.getState().setTokens({
         accessToken: data.accessToken,
         role: userRole,
       });
 
-      // Tạo cookie session để Server Components đọc được trực tiếp
-      // biome-ignore lint/suspicious/noDocumentCookie: Required for SSR auth in Next.js App Router
-      document.cookie = `access_token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
-
-      if (userRole === "Admin" || userRole === "Organizer") {
-        window.location.href = "/portal";
-      } else {
-        window.location.href = "/";
-      }
+      window.location.href = canAccessPortal(userRole) ? "/portal" : "/";
     } catch (err) {
       setError(
         err instanceof Error

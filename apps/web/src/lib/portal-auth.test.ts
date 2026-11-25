@@ -7,9 +7,10 @@ afterEach(() => {
   mock.restore();
 });
 
-function mockApiResponse(status: number) {
-  // Giả lập fetch mà không gán đè trực tiếp
-  spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status }));
+function mockApiResponse(status: number, body?: unknown) {
+  spyOn(globalThis, "fetch").mockResolvedValue(
+    Response.json(body ?? null, { status }),
+  );
 }
 
 describe("FPC-19 Portal Authentication", () => {
@@ -19,12 +20,20 @@ describe("FPC-19 Portal Authentication", () => {
     expect(result).toBe("login");
   });
 
-  test("200 -> Allow access", async () => {
-    mockApiResponse(200);
+  test("200 + Admin role -> Allow access", async () => {
+    mockApiResponse(200, { data: { user: { role: "Admin" } } });
 
     const result = await checkPortalAccess("test-token");
 
     expect(result).toBe("allow");
+  });
+
+  test("200 + Participant role -> Access Denied", async () => {
+    mockApiResponse(200, { data: { user: { role: "Participant" } } });
+
+    const result = await checkPortalAccess("test-token");
+
+    expect(result).toBe("forbidden");
   });
 
   test("401 -> Redirect to Login", async () => {
@@ -43,11 +52,11 @@ describe("FPC-19 Portal Authentication", () => {
     expect(result).toBe("forbidden");
   });
 
-  test("500 -> Throw an error", async () => {
+  test("500 -> Redirect to Login instead of crashing", async () => {
     mockApiResponse(500);
 
-    await expect(checkPortalAccess("test-token")).rejects.toThrow(
-      "Authentication API error: 500",
-    );
+    const result = await checkPortalAccess("test-token");
+
+    expect(result).toBe("login");
   });
 });

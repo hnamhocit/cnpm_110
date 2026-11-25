@@ -16,6 +16,7 @@ export const MOCK_SCOREBOARD_CONTESTS = [
 
 const MOCK_SCOREBOARD_ENTRIES: ScoreboardEntry[] = [
   {
+    contestId: "fpc-2026-monochrome",
     submissionId: "sub-bw-01",
     submissionCode: "SUB-2026-0015",
     title: "Bóng đổ bên hiên nhà",
@@ -46,6 +47,7 @@ const MOCK_SCOREBOARD_ENTRIES: ScoreboardEntry[] = [
     ],
   },
   {
+    contestId: "fpc-2026-monochrome",
     submissionId: "sub-bw-02",
     submissionCode: "SUB-2026-0028",
     title: "Dấu chân trên cát ướt",
@@ -76,6 +78,7 @@ const MOCK_SCOREBOARD_ENTRIES: ScoreboardEntry[] = [
     ],
   },
   {
+    contestId: "fpc-2026-monochrome",
     submissionId: "sub-bw-03",
     submissionCode: "SUB-2026-0038",
     title: "Hành lang trường cũ",
@@ -106,6 +109,7 @@ const MOCK_SCOREBOARD_ENTRIES: ScoreboardEntry[] = [
     ],
   },
   {
+    contestId: "fpc-2026-monochrome",
     submissionId: "sub-bw-04",
     submissionCode: "SUB-2026-0023",
     title: "Cầu treo bên sông",
@@ -130,6 +134,7 @@ const MOCK_SCOREBOARD_ENTRIES: ScoreboardEntry[] = [
     ],
   },
   {
+    contestId: "fpc-2026-monochrome",
     submissionId: "sub-bw-05",
     submissionCode: "SUB-2026-0047",
     title: "Mái ngói rêu phong",
@@ -148,6 +153,7 @@ const MOCK_SCOREBOARD_ENTRIES: ScoreboardEntry[] = [
     ],
   },
   {
+    contestId: "fpc-2026-national",
     submissionId: "sub-st-01",
     submissionCode: "SUB-2026-0012",
     title: "Sương sớm trên phố cổ",
@@ -178,6 +184,7 @@ const MOCK_SCOREBOARD_ENTRIES: ScoreboardEntry[] = [
     ],
   },
   {
+    contestId: "fpc-2026-national",
     submissionId: "sub-st-02",
     submissionCode: "SUB-2026-0021",
     title: "Nhịp sống chợ đêm",
@@ -208,6 +215,7 @@ const MOCK_SCOREBOARD_ENTRIES: ScoreboardEntry[] = [
     ],
   },
   {
+    contestId: "fpc-2026-national",
     submissionId: "sub-st-03",
     submissionCode: "SUB-2026-0033",
     title: "Mưa chiều Hội An",
@@ -219,6 +227,7 @@ const MOCK_SCOREBOARD_ENTRIES: ScoreboardEntry[] = [
     scores: [],
   },
   {
+    contestId: "fpc-2026-national",
     submissionId: "sub-st-04",
     submissionCode: "SUB-2026-0041",
     title: "Gánh hàng hoa",
@@ -249,6 +258,7 @@ const MOCK_SCOREBOARD_ENTRIES: ScoreboardEntry[] = [
     ],
   },
   {
+    contestId: "fpc-2026-national",
     submissionId: "sub-pt-01",
     submissionCode: "SUB-2026-0026",
     title: "Chân dung bà ngoại",
@@ -279,6 +289,7 @@ const MOCK_SCOREBOARD_ENTRIES: ScoreboardEntry[] = [
     ],
   },
   {
+    contestId: "fpc-2026-national",
     submissionId: "sub-pt-02",
     submissionCode: "SUB-2026-0035",
     title: "Tóc mai trong nắng",
@@ -304,9 +315,15 @@ const MOCK_SCOREBOARD_ENTRIES: ScoreboardEntry[] = [
   },
 ];
 
-export async function fetchMockScoreboard(): Promise<ScoreboardSnapshot> {
+export async function fetchMockScoreboard(
+  contestId?: string,
+): Promise<ScoreboardSnapshot> {
   return {
-    entries: MOCK_SCOREBOARD_ENTRIES,
+    entries: contestId
+      ? MOCK_SCOREBOARD_ENTRIES.filter(
+          (entry) => entry.contestId === contestId,
+        )
+      : MOCK_SCOREBOARD_ENTRIES,
     updatedAt: new Date().toISOString(),
   };
 }

@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { type ReactNode, Suspense } from "react";
 
+import { ACCESS_COOKIE } from "@/lib/auth-cookie-options";
 import { checkPortalAccess } from "@/lib/portal-auth";
 
 type PortalTemplateProps = {
@@ -10,7 +11,7 @@ type PortalTemplateProps = {
 
 async function AuthGuard({ children }: { children: ReactNode }) {
   const cookieStore = await cookies();
-  const accessToken = cookieStore.get("access_token")?.value ?? null;
+  const accessToken = cookieStore.get(ACCESS_COOKIE)?.value ?? null;
 
   const decision = await checkPortalAccess(accessToken);
 

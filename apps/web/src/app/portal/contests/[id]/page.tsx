@@ -118,6 +118,11 @@ export default async function PortalContestOverviewPage({
               <ClipboardCheck className="w-3.5 h-3.5" /> Tiến độ chấm thi
             </Button>
           </Link>
+          <Link href="/portal/contests/scoreboard">
+            <Button variant="outline" size="sm" className="text-xs">
+              <Medal className="w-3.5 h-3.5" /> Bảng điểm
+            </Button>
+          </Link>
         </div>
       </div>
 

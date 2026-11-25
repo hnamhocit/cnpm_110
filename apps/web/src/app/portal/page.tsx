@@ -13,6 +13,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ACCESS_COOKIE } from "@/lib/auth-cookie-options";
 import { formatContestDate } from "@/lib/contest-utils";
 import { API_INTERNAL_URL } from "@/lib/server-api";
 
@@ -29,7 +30,7 @@ type ContestItem = {
 
 export default async function PortalDashboardPage() {
   const cookieStore = await cookies();
-  const token = cookieStore.get("access_token")?.value;
+  const token = cookieStore.get(ACCESS_COOKIE)?.value;
 
   // 1. Fetch real contests
   let contests: ContestItem[] = [];

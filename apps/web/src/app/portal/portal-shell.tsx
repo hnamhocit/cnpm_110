@@ -25,6 +25,11 @@ const menuItems = [
     href: "/portal/contests/judging-progress",
     icon: ClipboardCheck,
   },
+  {
+    label: "Bảng điểm",
+    href: "/portal/contests/scoreboard",
+    icon: Medal,
+  },
   { label: "Reports", href: "/portal/reports", icon: BarChart3 },
 ];
 
@@ -76,7 +81,8 @@ function Sidebar({ onClose }: SidebarProps) {
                 ? pathname === "/portal/contests" ||
                   (pathname.startsWith("/portal/contests/") &&
                     !pathname.startsWith("/portal/contests/judges") &&
-                    !pathname.startsWith("/portal/contests/judging-progress"))
+                    !pathname.startsWith("/portal/contests/judging-progress") &&
+                    !pathname.startsWith("/portal/contests/scoreboard"))
                 : pathname.startsWith(item.href);
 
           return (

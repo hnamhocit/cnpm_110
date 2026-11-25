@@ -1,18 +1,30 @@
-export type Role =
-  | "Admin"
-  | "Organizer"
-  | "Judge"
-  | "Participant"
-  | "Contest Organizer"
-  | "Administrator";
+export type Role = "Admin" | "Organizer" | "Judge" | "Participant";
 
-// Những Role được phép truy cập Portal quản lý.
-export const PORTAL_ALLOWED_ROLES: readonly Role[] = [
+const CANONICAL_ROLES: readonly Role[] = [
   "Admin",
   "Organizer",
-  "Administrator",
-  "Contest Organizer",
+  "Judge",
+  "Participant",
 ];
+
+// Giá trị role cũ từng xuất hiện trong token/dữ liệu seed trước đây.
+const ROLE_ALIASES: Record<string, Role> = {
+  administrator: "Admin",
+  "contest organizer": "Organizer",
+};
+
+export function normalizeRole(role: string | null): Role | null {
+  if (!role) return null;
+
+  const key = role.trim().toLowerCase();
+  const alias = ROLE_ALIASES[key];
+  if (alias) return alias;
+
+  return CANONICAL_ROLES.find((item) => item.toLowerCase() === key) ?? null;
+}
+
+// Portal quản lý dành cho Admin và Organizer; Judge có không gian chấm thi riêng.
+export const PORTAL_ALLOWED_ROLES: readonly Role[] = ["Admin", "Organizer"];
 
 // Kiểm tra một đường dẫn có thuộc Portal không.
 export function isProtectedRoute(pathname: string): boolean {
@@ -21,20 +33,15 @@ export function isProtectedRoute(pathname: string): boolean {
 
 // Kiểm tra người dùng có Role được phép không.
 export function hasRequiredRole(
-  userRole: Role | null,
+  userRole: Role | string | null,
   allowedRoles: readonly Role[],
 ): boolean {
-  if (userRole === null) {
-    return false;
-  }
-
-  const normalizedUserRole = userRole.toLowerCase();
-  const normalizedAllowedRoles = allowedRoles.map((role) => role.toLowerCase());
-  return normalizedAllowedRoles.includes(normalizedUserRole);
+  const normalized = normalizeRole(userRole);
+  return normalized !== null && allowedRoles.includes(normalized);
 }
 
 // Kiểm tra quyền truy cập Portal.
-export function canAccessPortal(userRole: Role | null): boolean {
+export function canAccessPortal(userRole: Role | string | null): boolean {
   return hasRequiredRole(userRole, PORTAL_ALLOWED_ROLES);
 }
 
@@ -42,19 +49,16 @@ export type RouteDecision = "public" | "login" | "allow" | "forbidden";
 
 export function getRouteDecision(
   pathname: string,
-  userRole: Role | null,
+  userRole: Role | string | null,
 ): RouteDecision {
-  // Trang công khai thì không cần kiểm tra quyền
   if (!isProtectedRoute(pathname)) {
     return "public";
   }
 
-  // Chưa đăng nhập
-  if (userRole === null) {
+  if (normalizeRole(userRole) === null) {
     return "login";
   }
 
-  // Đã đăng nhập: kiểm tra Role
   if (!canAccessPortal(userRole)) {
     return "forbidden";
   }

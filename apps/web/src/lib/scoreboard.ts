@@ -20,7 +20,8 @@ function round2(value: number): number {
 
 /**
  * BR-25: điểm chung cuộc = trung bình cộng tổng điểm của TẤT CẢ giám khảo
- * được phân công. Chỉ chốt khi đủ phiếu, làm tròn 2 chữ số thập phân.
+ * được phân công. Chỉ tính khi đủ phiếu, làm tròn 2 chữ số thập phân.
+ * Điểm này chỉ được coi là "chung cuộc" sau khi bài thi không còn cờ BR-14.
  */
 export function computeFinalScore(entry: ScoreboardEntry): number | null {
   if (entry.judgeCount <= 0) return null;
@@ -43,17 +44,26 @@ export function isDiscrepancy(entry: ScoreboardEntry): boolean {
 }
 
 export function getScoreboardStatus(entry: ScoreboardEntry): ScoreboardStatus {
+  // BR-14: gắn cờ ngay khi đã có tối thiểu 2 phiếu và vượt ngưỡng,
+  // kể cả khi vòng chấm chưa đủ phiếu. Ban tổ chức cần xử lý sớm.
+  if (entry.judgeCount > 0 && isDiscrepancy(entry)) return "DISCREPANCY";
+
   if (entry.judgeCount <= 0 || entry.scores.length < entry.judgeCount) {
     return "JUDGING";
   }
-  return isDiscrepancy(entry) ? "DISCREPANCY" : "COMPLETE";
+
+  return "COMPLETE";
 }
 
 function toRankedEntry(entry: ScoreboardEntry): RankedScoreboardEntry {
+  const status = getScoreboardStatus(entry);
+
   return {
     ...entry,
-    finalScore: computeFinalScore(entry),
-    status: getScoreboardStatus(entry),
+    // BR-14/BR-25: bài còn chênh lệch chưa xử lý thì chưa có điểm chung cuộc
+    // và không được xếp hạng. Bài đang chấm cũng chưa có điểm chung cuộc.
+    finalScore: status === "COMPLETE" ? computeFinalScore(entry) : null,
+    status,
     rank: null,
   };
 }
@@ -66,8 +76,8 @@ function compareByScore(
 }
 
 /**
- * Xếp hạng trong từng hạng mục: chỉ bài đã đủ phiếu mới có hạng,
- * bài đang chấm xếp cuối hạng mục theo số phiếu đã nộp.
+ * Xếp hạng trong từng hạng mục: chỉ bài đã đủ phiếu VÀ không còn chênh lệch
+ * (đã chốt) mới có hạng; bài đang chấm hoặc còn cờ lệch điểm xếp cuối.
  */
 export function rankScoreboard(
   entries: ScoreboardEntry[],
@@ -107,6 +117,7 @@ export function rankScoreboard(
       a.categoryName.localeCompare(b.categoryName, "vi") ||
       (a.rank ?? Number.MAX_SAFE_INTEGER) -
         (b.rank ?? Number.MAX_SAFE_INTEGER) ||
+      b.scores.length - a.scores.length ||
       a.title.localeCompare(b.title, "vi"),
   );
 }

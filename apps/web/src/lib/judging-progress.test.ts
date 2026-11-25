@@ -4,6 +4,7 @@ import {
   calculateProgressPercent,
   filterJudgeSubmissions,
   filterJudges,
+  getContestJudges,
   getJudgeStats,
   getJudgingState,
   summarizeJudgeProgress,
@@ -12,6 +13,7 @@ import type { JudgeProgress } from "@/types/judging";
 
 const judges: JudgeProgress[] = [
   {
+    contestId: "contest-a",
     judgeId: "judge-1",
     fullName: "Nguyễn Văn Nghệ",
     email: "nghe.nguyen@analoglab.vn",
@@ -37,6 +39,7 @@ const judges: JudgeProgress[] = [
     ],
   },
   {
+    contestId: "contest-a",
     judgeId: "judge-2",
     fullName: "Trần Minh Quân",
     email: "quan.tran@vietnamfilm.org",
@@ -54,6 +57,7 @@ const judges: JudgeProgress[] = [
     ],
   },
   {
+    contestId: "contest-b",
     judgeId: "judge-3",
     fullName: "Đặng Quang Huy",
     email: "huy.dang@visualarts.edu.vn",
@@ -155,6 +159,27 @@ describe("FPC-56 getJudgingState", () => {
         progressPercent: 0,
       }),
     ).toBe("NOT_STARTED");
+  });
+});
+
+describe("FPC-76 lọc giám khảo theo cuộc thi", () => {
+  test("chỉ trả giám khảo thuộc cuộc thi đang chọn", () => {
+    expect(getContestJudges(judges, "contest-a").map((j) => j.judgeId)).toEqual(
+      ["judge-1", "judge-2"],
+    );
+    expect(getContestJudges(judges, "contest-b").map((j) => j.judgeId)).toEqual(
+      ["judge-3"],
+    );
+  });
+
+  test("không truyền contestId thì giữ nguyên danh sách", () => {
+    expect(getContestJudges(judges, "")).toHaveLength(3);
+  });
+
+  test("filterJudges áp dụng thêm bộ lọc cuộc thi", () => {
+    expect(
+      filterJudges(judges, { contestId: "contest-a" }).map((j) => j.judgeId),
+    ).toEqual(["judge-1", "judge-2"]);
   });
 });
 

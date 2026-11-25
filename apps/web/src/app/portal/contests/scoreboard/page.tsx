@@ -88,7 +88,7 @@ export default function ScoreboardPage() {
 
   const loadScoreboard = useCallback(async () => {
     try {
-      const snapshot = await fetchMockScoreboard();
+      const snapshot = await fetchMockScoreboard(selectedContest);
       setEntries(snapshot.entries);
       setUpdatedAt(snapshot.updatedAt);
       setError(null);
@@ -99,7 +99,7 @@ export default function ScoreboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedContest]);
 
   useEffect(() => {
     void loadScoreboard();
@@ -144,9 +144,14 @@ export default function ScoreboardPage() {
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Quay lại danh sách cuộc thi
         </Link>
-        <span className="flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-800">
-          Bảng điểm tổng hợp (SCR-ORG-09)
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
+            Dữ liệu mẫu · chờ API FPC-70–75
+          </span>
+          <span className="flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-800">
+            Bảng điểm tổng hợp (SCR-ORG-09)
+          </span>
+        </div>
       </div>
 
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -220,7 +225,13 @@ export default function ScoreboardPage() {
         <select
           id={contestSelectId}
           value={selectedContest}
-          onChange={(event) => setSelectedContest(event.target.value)}
+          onChange={(event) => {
+            setSelectedContest(event.target.value);
+            setSearchTerm("");
+            setCategoryFilter("ALL");
+            setStatusFilter("ALL");
+            setSelectedSubmissionId(null);
+          }}
           className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm focus:ring-1 focus:ring-black focus:outline-none"
         >
           {MOCK_SCOREBOARD_CONTESTS.map((contest) => (
@@ -392,8 +403,9 @@ export default function ScoreboardPage() {
             Bảng điểm ({filteredEntries.length}/{rankedEntries.length})
           </CardTitle>
           <CardDescription className="text-xs">
-            Xếp hạng theo từng hạng mục; bài chưa đủ phiếu điểm chưa được xếp
-            hạng.
+            Xếp hạng theo từng hạng mục; bài chưa đủ phiếu hoặc còn chênh lệch
+            điểm chưa xử lý (BR-14) chưa được xếp hạng và chưa có điểm chung
+            cuộc.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">

@@ -55,7 +55,7 @@ export function ContestCtaButton({
     let isMounted = true;
     async function loadUser() {
       try {
-        const res = await fetch("/api/auth/me");
+        const res = await fetch("/api/v1/auth/me");
         if (res.ok) {
           const data = await res.json();
           if (isMounted && data.user) {

@@ -4,6 +4,7 @@ import {
   ACCESS_COOKIE,
   accessCookieOptions,
   REFRESH_COOKIE,
+  REFRESH_COOKIE_PATH,
   refreshCookieOptions,
 } from "./auth-cookie-options";
 
@@ -18,13 +19,14 @@ describe("auth cookie options", () => {
     expect(options.maxAge).toBe(900);
   });
 
-  test("refresh cookie is HttpOnly and scoped to auth routes", () => {
+  test("refresh cookie follows SRS Module 01", () => {
     const options = refreshCookieOptions();
 
-    expect(REFRESH_COOKIE).toBe("refresh_token");
+    expect(REFRESH_COOKIE).toBe("refreshToken");
     expect(options.httpOnly).toBe(true);
-    expect(options.sameSite).toBe("lax");
-    expect(options.path).toBe("/api/auth");
-    expect(options.maxAge).toBe(7 * 24 * 60 * 60);
+    expect(options.sameSite).toBe("strict");
+    expect(options.path).toBe(REFRESH_COOKIE_PATH);
+    expect(options.path).toBe("/api/v1/auth");
+    expect(options.maxAge).toBe(604_800);
   });
 });

@@ -21,7 +21,7 @@ export function Navbar() {
     let isMounted = true;
     async function loadUser() {
       try {
-        const res = await fetch("/api/auth/me");
+        const res = await fetch("/api/v1/auth/me");
         if (res.ok) {
           const data = await res.json();
           if (isMounted && data.user) {
@@ -40,13 +40,11 @@ export function Navbar() {
 
   async function handleLogout() {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/api/v1/auth/logout", { method: "POST" });
     } catch {
       // Ignore
     }
     clearAuth();
-    // biome-ignore lint/suspicious/noDocumentCookie: Clear cookie
-    document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     setUser(null);
     window.location.reload();
   }

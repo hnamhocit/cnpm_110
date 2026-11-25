@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  fetchMockScoreboard,
+  MOCK_SCOREBOARD_CONTESTS,
+} from "@/lib/mock-scoreboard";
+import {
   computeFinalScore,
   filterScoreboard,
   formatScore,
@@ -24,6 +28,7 @@ function entry(
   overrides: Partial<ScoreboardEntry> & { submissionId: string },
 ): ScoreboardEntry {
   return {
+    contestId: "contest-a",
     submissionCode: `SUB-${overrides.submissionId}`,
     title: `Bài thi ${overrides.submissionId}`,
     categoryId: "cat-bw",
@@ -102,6 +107,17 @@ describe("FPC-77 getScoreboardStatus", () => {
     expect(getScoreboardStatus(judgingEntry)).toBe("JUDGING");
     expect(getScoreboardStatus(discrepancyEntry)).toBe("DISCREPANCY");
   });
+
+  test("gắn cờ lệch điểm sớm khi mới có 2 phiếu (BR-14)", () => {
+    expect(
+      getScoreboardStatus(
+        entry({
+          submissionId: "early",
+          scores: [score("j1", 29), score("j2", 18)],
+        }),
+      ),
+    ).toBe("DISCREPANCY");
+  });
 });
 
 describe("FPC-77 rankScoreboard", () => {
@@ -122,8 +138,14 @@ describe("FPC-77 rankScoreboard", () => {
 
     expect(blackAndWhite[0]?.submissionId).toBe("a");
     expect(blackAndWhite[0]?.rank).toBe(1);
-    expect(blackAndWhite[1]?.submissionId).toBe("b");
-    expect(blackAndWhite[1]?.rank).toBe(2);
+  });
+
+  test("bài còn chênh lệch chưa xử lý không được xếp hạng (BR-14/25)", () => {
+    const flagged = ranked.find((item) => item.submissionId === "b");
+
+    expect(flagged?.status).toBe("DISCREPANCY");
+    expect(flagged?.finalScore).toBeNull();
+    expect(flagged?.rank).toBeNull();
   });
 
   test("bài đang chấm không có hạng và xếp cuối hạng mục", () => {
@@ -195,6 +217,28 @@ describe("FPC-77 filterScoreboard", () => {
 
   test("không truyền bộ lọc thì giữ nguyên", () => {
     expect(filterScoreboard(ranked)).toHaveLength(4);
+  });
+});
+
+describe("FPC-77 lọc bảng điểm theo cuộc thi", () => {
+  test("chỉ trả bài thi thuộc cuộc thi đang chọn", async () => {
+    const contestId = MOCK_SCOREBOARD_CONTESTS[0]?.id ?? "";
+    const snapshot = await fetchMockScoreboard(contestId);
+
+    expect(snapshot.entries.length).toBeGreaterThan(0);
+    expect(
+      snapshot.entries.every((entry) => entry.contestId === contestId),
+    ).toBe(true);
+  });
+
+  test("không truyền cuộc thi thì trả toàn bộ dữ liệu mẫu", async () => {
+    const first = await fetchMockScoreboard("fpc-2026-national");
+    const second = await fetchMockScoreboard("fpc-2026-monochrome");
+    const all = await fetchMockScoreboard();
+
+    expect(all.entries.length).toBe(
+      first.entries.length + second.entries.length,
+    );
   });
 });
 

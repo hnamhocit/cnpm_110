@@ -6,6 +6,7 @@ type LoginBody = { email?: unknown; password?: unknown };
 type LoginResponse = {
   accessToken?: string;
   refreshToken?: string;
+  tokens?: { accessToken?: string; refreshToken?: string };
   user?: unknown;
   error?: string;
 };
@@ -32,8 +33,10 @@ export async function POST(request: Request) {
   // biome-ignore lint/suspicious/noExplicitAny: response unwrap
   const rawData = (await response.json().catch(() => ({}))) as any;
   const data = (rawData?.data && typeof rawData.data === "object" ? rawData.data : rawData) as LoginResponse;
-  const accessToken = data?.accessToken ?? rawData?.accessToken;
-  const refreshToken = data?.refreshToken ?? rawData?.refreshToken;
+  const accessToken =
+    data?.tokens?.accessToken ?? data?.accessToken ?? rawData?.accessToken;
+  const refreshToken =
+    data?.tokens?.refreshToken ?? data?.refreshToken ?? rawData?.refreshToken;
   const user = data?.user ?? rawData?.user;
 
   if (!response.ok || !accessToken || !refreshToken) {

@@ -15,6 +15,7 @@ export type JudgeSubmissionProgress = {
 };
 
 export type JudgeProgress = {
+  contestId: string;
   judgeId: string;
   fullName: string;
   email: string;
