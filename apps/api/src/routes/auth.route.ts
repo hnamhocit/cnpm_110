@@ -16,7 +16,6 @@ export function createAuthRoutes(delivery?: IdentityDelivery) {
 
   auth.post("/register", identity.register);
   auth.post("/verify-email", identity.verifyEmail);
-  auth.post("/verify-phone", identity.verifyPhone);
   auth.post("/resend-verification", identity.resendVerification);
   auth.post("/forgot-password", identity.forgotPassword);
   auth.post("/reset-password", identity.resetPassword);

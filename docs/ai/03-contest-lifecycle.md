@@ -1,5 +1,15 @@
 # Module Spec: 03-contest-lifecycle.md
 
+## Phạm vi theo SRS hiện hành
+
+**UC-11–17, UC-34, BR-06/08/15/20/21.** Vòng đời dùng DRAFT, SCHEDULED, OPEN, VERIFYING, IN_JUDGING, RESULTS_PUBLISHED và ARCHIVED. Kiểm tra năm mốc BR-08 và trọng số 100%. Duplicate Contest sao chép cấu hình, thể lệ, hạng mục, tiêu chí, vòng và giải vào DRAFT với lịch mới; chỉ dùng nguồn thuộc quyền Organizer và bỏ qua mọi dữ liệu tham gia, phân công, điểm và kết quả.
+
+Đăng ký yêu cầu hạng mục hợp lệ, đúng thời gian, chấp nhận thể lệ, duy nhất theo Participant/cuộc thi/hạng mục và không xung đột với Organizer hoặc Judge cùng cuộc thi. Organizer tìm kiếm và lọc đăng ký theo cuộc thi, hạng mục và trạng thái nộp. Mỗi bài thi gắn đăng ký hợp lệ. Mỗi hạng mục/vòng có ít nhất một Judge hoạt động. Backend hiện mới có một phần vòng đời và phân công, dùng trạng thái cũ.
+
+## Thiết kế trước lần cập nhật SRS
+
+> Tham chiếu lịch sử để truy vết thiết kế và các hợp đồng cũ. Yêu cầu nghiệp vụ hiện hành nằm trong [SRS](../srs.md) và mục trên.
+
 ## Phạm vi nghiệm thu và trạng thái hiện tại
 
 UC-11–17 và UC-34 bao gồm cả lưu bản nháp wizard, đăng ký tham gia và danh sách đăng ký cho Organizer. Hiện có CRUD cuộc thi và đọc hạng mục. Schema trọng số hỗ trợ 4 chữ số thập phân và giới hạn từng trọng số. Cần luồng lưu bộ tiêu chí kiểm tra tổng đúng 1.0000 theo BR-15. [Schema](../../apps/api/src/db/schema.ts) · [Route](../../apps/api/src/routes/contests.route.ts)

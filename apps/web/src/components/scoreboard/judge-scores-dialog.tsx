@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ShieldAlert } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 
 import { ScoreboardStatusBadge } from "@/components/scoreboard/status-badge";
 import {
@@ -69,22 +69,11 @@ export function JudgeScoresDialog({ entry, onClose }: JudgeScoresDialogProps) {
               </div>
             </div>
 
-            {entry.status === "DISCREPANCY" && (
-              <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>
-                  Chênh lệch điểm vượt 30% thang điểm — cần Ban tổ chức điều
-                  phối trước khi công bố kết quả (BR-14).
-                </span>
-              </div>
-            )}
-
-            {!entry.negativeProofVerified && (
+            {entry.proofRequired && !entry.negativeProofVerified && (
               <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
                 <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
-                  Chưa xác minh ảnh âm bản đối chứng — không đủ điều kiện trao
-                  giải (BR-06).
+                  Bài thi cần xác minh bằng chứng trước khi xét giải (BR-06).
                 </span>
               </div>
             )}

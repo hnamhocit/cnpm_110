@@ -3,7 +3,7 @@ import type { Role } from "../middlewares/auth";
 export const systemRoles = ["Admin", "Organizer", "Judge", "Participant"] as const;
 const signedIn = systemRoles;
 
-// A grant can restrict an existing role; domain scope and actor boundaries still apply.
+// Role permissions are fixed. Services also enforce resource ownership.
 export const permissionRoles = {
   "users:read_all": ["Admin"],
   "users:create_internal": ["Admin"],
@@ -15,6 +15,7 @@ export const permissionRoles = {
   "contests:create": ["Organizer"],
   "contests:update": ["Organizer"],
   "contests:delete": ["Organizer"],
+  "contests:read_analytics": ["Organizer"],
   "judging:read_scoreboard": ["Organizer"],
   "judging:read_assigned": ["Judge"],
   "judging:score": ["Judge"],

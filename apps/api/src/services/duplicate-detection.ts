@@ -1,5 +1,6 @@
 
 import sharp from "sharp";
+import { duplicateDistanceThreshold } from "./ai/ai-thresholds";
 
 const HASH_SIZE = 8;
 const DCT_SIZE = 32;
@@ -73,7 +74,7 @@ export function hammingDistance(
 export function isDuplicate(
   hash1: string,
   hash2: string,
-  threshold = 5,
+  threshold = duplicateDistanceThreshold(),
 ): boolean {
   return hammingDistance(hash1, hash2) <= threshold;
 }
@@ -92,7 +93,7 @@ export interface DuplicateMatch {
 export function findClosestDuplicate(
   currentHash: string,
   candidates: DuplicateCandidate[],
-  threshold = 5,
+  threshold = duplicateDistanceThreshold(),
 ): DuplicateMatch | null {
   let closest: DuplicateMatch | null = null;
 

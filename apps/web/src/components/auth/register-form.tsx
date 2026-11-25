@@ -23,12 +23,56 @@ export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [code, setCode] = useState("");
+  const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function request(action: "register" | "verify-email" | "resend-verification") {
     setError("");
+    if (action === "resend-verification" && (!email.trim() || !password)) {
+      setError("Nhập email và mật khẩu đã dùng khi đăng ký.");
+      return;
+    }
+    setNotice("");
+    setIsLoading(true);
+    try {
+      const identity = { email: email.trim() };
+      if (action === "verify-email") {
+        await http.post("/api/v1/auth/verify-email", { ...identity, code: code.trim() });
+        router.push("/login");
+        return;
+      }
+      const payload = action === "register"
+        ? { ...identity, password, fullName: fullName.trim() }
+        : { ...identity, password };
+      const response = await http.post<{ data: { deliveryStatus: string } }>(
+        `/api/v1/auth/${action}`, payload,
+      );
+      setVerifying(true);
+      setNotice(response.data.data.deliveryStatus === "RETRY_REQUIRED"
+        ? "Chưa gửi được mã. Vui lòng thử gửi lại sau."
+        : "Kiểm tra hộp thư email để lấy mã xác thực.");
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { error?: string; message?: string } } };
+      const data = apiErr.response?.data;
+      setError(data?.message ?? data?.error ?? "Không thể hoàn tất yêu cầu. Vui lòng thử lại.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (verifying) {
+      if (!/^\d{6}$/.test(code.trim())) {
+        setError("Nhập mã xác thực gồm 6 chữ số.");
+        return;
+      }
+      void request("verify-email");
+      return;
+    }
 
     if (!fullName.trim() || !email.trim() || !password || !confirmPassword) {
       setError("Vui lòng điền đầy đủ thông tin.");
@@ -45,30 +89,7 @@ export function RegisterForm() {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      await http.post("/api/v1/auth/register", {
-        fullName: fullName.trim(),
-        email: email.trim(),
-        password,
-      });
-
-      router.push("/login");
-    } catch (err: unknown) {
-      console.error(err);
-      const apiErr = err as {
-        response?: { data?: { error?: string; message?: string } };
-      };
-      const data = apiErr.response?.data;
-      setError(
-        data?.error ??
-          data?.message ??
-          "Đăng ký thất bại. Email có thể đã tồn tại hoặc lỗi kết nối!",
-      );
-    } finally {
-      setIsLoading(false);
-    }
+    void request("register");
   }
 
   return (
@@ -88,58 +109,75 @@ export function RegisterForm() {
 
         <header className="flex w-full flex-col items-center gap-1.5 text-center">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            Tạo tài khoản
+            {verifying ? "Xác thực email" : "Tạo tài khoản"}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Đăng ký để bắt đầu với CINEGEN
+            {verifying ? email.trim() : "Đăng ký để bắt đầu với CINEGEN"}
           </p>
         </header>
 
         <div className="flex w-full flex-col gap-4">
-          <AuthField
-            id="fullName"
-            label="Họ và tên"
-            labelClassName={fieldLabelClassName}
-            className={fieldInputClassName}
-            type="text"
-            autoComplete="name"
-            placeholder="Nguyễn Văn A"
-            value={fullName}
-            onChange={(event) => setFullName(event.target.value)}
-          />
-          <AuthField
-            id="email"
-            label="Email"
-            labelClassName={fieldLabelClassName}
-            className={fieldInputClassName}
-            type="email"
-            autoComplete="email"
-            placeholder="ban@example.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-          <AuthField
-            id="password"
-            label="Mật khẩu"
-            labelClassName={fieldLabelClassName}
-            className={fieldInputClassName}
-            type="password"
-            autoComplete="new-password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-          <AuthField
-            id="confirmPassword"
-            label="Xác nhận mật khẩu"
-            labelClassName={fieldLabelClassName}
-            className={fieldInputClassName}
-            type="password"
-            autoComplete="new-password"
-            placeholder="••••••••"
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-          />
+          {verifying ? (
+            <AuthField
+              id="emailCode"
+              label="Mã xác thực email"
+              labelClassName={fieldLabelClassName}
+              className={fieldInputClassName}
+              autoComplete="one-time-code"
+              inputMode="numeric"
+              maxLength={6}
+              value={code}
+              onChange={(event) => setCode(event.target.value)}
+            />
+          ) : (
+            <>
+                <AuthField
+                  id="fullName"
+                  label="Họ và tên"
+                  labelClassName={fieldLabelClassName}
+                  className={fieldInputClassName}
+                  type="text"
+                  autoComplete="name"
+                  placeholder="Nguyễn Văn A"
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                />
+                <AuthField
+                  id="email"
+                  label="Email"
+                  labelClassName={fieldLabelClassName}
+                  className={fieldInputClassName}
+                  type="email"
+                  autoComplete="email"
+                  placeholder="ban@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+                <AuthField
+                  id="password"
+                  label="Mật khẩu"
+                  labelClassName={fieldLabelClassName}
+                  className={fieldInputClassName}
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+                <AuthField
+                  id="confirmPassword"
+                  label="Xác nhận mật khẩu"
+                  labelClassName={fieldLabelClassName}
+                  className={fieldInputClassName}
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                />
+            </>
+          )}
+          {notice ? <p role="status" className="text-sm">{notice}</p> : null}
 
           {error ? (
             <div
@@ -157,9 +195,12 @@ export function RegisterForm() {
             disabled={isLoading}
             className="h-11 w-full rounded-xl bg-brand-solid text-sm font-semibold text-white shadow-md shadow-brand-solid/20 hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 transition-all active:scale-[0.99]"
           >
-            {isLoading ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
+            {isLoading ? "Đang xử lý..." : verifying ? "Xác thực email" : "Tạo tài khoản"}
           </Button>
 
+          <Button type="button" variant="outline" disabled={isLoading} onClick={() => void request("resend-verification")}>
+            {verifying ? "Gửi lại mã" : "Xác thực tài khoản đã đăng ký"}
+          </Button>
           <p className="text-xs sm:text-sm text-muted-foreground">
             Đã có tài khoản?{" "}
             <Link

@@ -1,8 +1,18 @@
 # Module Spec: 01-auth-and-rbac.md
 
+## Phạm vi theo SRS hiện hành
+
+**UC-01–05, BR-01/02/04.** Participant tự đăng ký bằng email duy nhất và mật khẩu; email phải được xác minh trước khi đăng nhập. Số điện thoại tùy chọn. Admin tạo tài khoản nội bộ hoặc gán một trong bốn vai trò cố định. Giữ JWT access/refresh, logout, reset qua email, khóa tài khoản và kiểm tra quyền tài nguyên.
+
+Backend dùng `POST /auth/register`, `/auth/verify-email`, `/auth/resend-verification`, `/auth/login`, `/auth/logout`, `/auth/forgot-password` và `/auth/reset-password` dưới `/api/v1`. Xác minh email thành công trả `data.status: ACTIVE`. Các tài khoản cũ được miễn xác minh theo cờ hiện có. Web và Mobile có bước nhập/gửi lại mã email. API đọc quyền từ ma trận cố định; bảng grant cũ được giữ để bảo toàn dữ liệu. Web và Mobile yêu cầu khôi phục qua email. Liên kết mở màn đặt lại mật khẩu trên Web.
+
+## Thiết kế trước lần cập nhật SRS
+
+> Tham chiếu lịch sử để truy vết thiết kế và các hợp đồng cũ. Yêu cầu nghiệp vụ hiện hành nằm trong [SRS](../srs.md) và mục trên.
+
 ## Phạm vi nghiệm thu và trạng thái hiện tại
 
-Backend đã đăng ký các API UC-01–05. Migration bổ sung phiên bản đăng nhập, định danh và thách thức xác thực, hồ sơ, audit tài khoản, cấu hình grant và định danh phiên. Nhà cung cấp email/SMS thật và luồng đăng ký trên Web/Mobile cần nghiệm thu riêng. SRS [BR-01](../srs.md#61-danh-mục-quy-tắc-nghiệp-vụ-business-rules-catalog-br-01-đến-br-25) yêu cầu email và số điện thoại đã xác thực. Luồng chọn xác thực email trước và chỉ gửi SMS sau khi email hợp lệ.
+Backend đã đăng ký các API UC-01–05. Migration bổ sung phiên bản đăng nhập, định danh và thách thức xác thực, hồ sơ, audit tài khoản, cấu hình grant và định danh phiên. Nhà cung cấp email/SMS thật và luồng đăng ký trên Web/Mobile cần nghiệm thu riêng. SRS [BR-01](../srs.md#61-business-rules) yêu cầu email và số điện thoại đã xác thực. Luồng chọn xác thực email trước và chỉ gửi SMS sau khi email hợp lệ.
 
 Máy chủ dùng PostgreSQL để kiểm tra phiên và quyền. Tài khoản có từ trước migration vẫn đăng nhập được và có thể bổ sung định danh qua route gửi lại xác thực. Khôi phục mật khẩu chỉ gửi link sau khi email đã xác thực. Kiểm thử thu hồi phiên gồm khóa/mở khóa, logout đồng thời với refresh, đổi/reset mật khẩu và thay đổi quyền role.
 

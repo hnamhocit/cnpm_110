@@ -1,5 +1,13 @@
 # Module Spec: 06 - AI Verification & Automated Screening (Thẩm định & Giám định Trí tuệ Nhân tạo)
 
+## Phạm vi theo SRS hiện hành
+
+**UC-09, UC-19–20, BR-09–11.** Giữ xử lý nền hiện có. Cấu hình và kiểm thử ngưỡng phát hiện ảnh tạo sinh và tương đồng pHash và/hoặc embedding. Hiển thị điểm, ảnh khớp trong phạm vi được cấp quyền, tối đa năm từ khóa và hạng mục gợi ý. Organizer đối chiếu ảnh thi và ảnh bằng chứng cạnh nhau rồi ra quyết định. Heatmap, phân tích grain tổng hợp, giải thích bất thường quang học và đảo âm bản chuyên dụng nằm ngoài phạm vi.
+
+## Thiết kế trước lần cập nhật SRS
+
+> Tham chiếu lịch sử để truy vết thiết kế và các hợp đồng cũ. Yêu cầu nghiệp vụ hiện hành nằm trong [SRS](../srs.md) và mục trên.
+
 ## Phạm vi nghiệm thu và trạng thái hiện tại
 
 UC-09 và UC-19–20 bao gồm cấu hình ngưỡng cho Admin, quét thủ công/hàng loạt và đối sánh cho Organizer. Có worker, webhook, phân loại và pHash. Cần hoàn thiện quét theo yêu cầu, nhánh cosine từ 92%, cảnh báo lệch hạng mục và quy trình giữ bài rủi ro cao cho tới khi đối chứng đã xác minh và BTC gỡ cờ. Hợp đồng cấu hình ngưỡng cần làm rõ cách bảo toàn hành vi bắt buộc của BR-09/10, phạm vi thay đổi và thời điểm hiệu lực.

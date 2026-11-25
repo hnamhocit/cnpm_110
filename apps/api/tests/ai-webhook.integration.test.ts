@@ -7,7 +7,7 @@ import {
   test,
 } from "bun:test";
 import { randomBytes, randomUUID } from "node:crypto";
-import { Hono } from "hono";
+import { createTestApp } from "./helpers/test-app";
 import { pool } from "../src/db";
 import aiWebhook from "../src/routes/ai-webhook.route";
 import { db } from "../src/db/index";
@@ -20,7 +20,7 @@ import {
 } from "../src/db/schema";
 import { eq } from "drizzle-orm";
 
-const app = new Hono();
+const app = createTestApp();
 app.route("/api/v1/ai", aiWebhook);
 
 const TEST_SECRET = "fpc52-local-integration-secret";

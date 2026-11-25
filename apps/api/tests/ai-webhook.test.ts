@@ -1,11 +1,11 @@
 
 import { describe, expect, test, beforeAll, afterAll } from "bun:test";
-import { Hono } from "hono";
+import { createTestApp } from "./helpers/test-app";
 
 const originalSecret = process.env.AI_WEBHOOK_SECRET;
 const testSecret = "fpc52-test-secret-not-for-production";
 
-let app: Hono;
+let app: ReturnType<typeof createTestApp>;
 
 beforeAll(async () => {
   process.env.AI_WEBHOOK_SECRET = testSecret;
@@ -14,7 +14,7 @@ beforeAll(async () => {
     "../src/routes/ai-webhook.route"
   );
 
-  app = new Hono();
+  app = createTestApp();
   app.route("/api/v1/ai", aiWebhook);
 });
 

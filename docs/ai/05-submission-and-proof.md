@@ -1,5 +1,15 @@
 # Module Spec: 05-submission-and-proof.md
 
+## Phạm vi theo SRS hiện hành
+
+**UC-18–23, UC-37–40, BR-05–08/18/19/22–24.** Nộp ảnh JPG/JPEG với cấu hình thể lệ; TIFF tùy chọn. Bài gắn đăng ký và cuộn/frame. Cho sửa hoặc rút trước hạn và trước khi vào chấm; thay ảnh đưa bài về kiểm duyệt.
+
+Organizer đặt hạn đối chứng, kiểm tra âm bản hoặc contact sheet khi thể lệ yêu cầu hoặc cần xác minh, và quyết định thủ công khi quá hạn. Chỉ duyệt bài cần đối chứng sau xác minh. Ghi lý do và audit khi loại/gỡ cờ. Giữ ảnh gốc và bằng chứng riêng tư. Worker AI chỉ tạo cờ cảnh báo.
+
+## Thiết kế trước lần cập nhật SRS
+
+> Tham chiếu lịch sử để truy vết thiết kế và các hợp đồng cũ. Yêu cầu nghiệp vụ hiện hành nằm trong [SRS](../srs.md) và mục trên.
+
 ## Phạm vi nghiệm thu và trạng thái hiện tại
 
 UC-18, UC-21–23 và UC-37–40 bao gồm nộp, kiểm duyệt, đối chứng, sửa/rút và theo dõi. Khi nghiệm thu UC-37, kiểm tra hạng mục, giới hạn bài, liên kết Logbook, ảnh scan, năm trường metadata và thông điệp tác phẩm. Mobile đã có [form thông số chụp FPC-43 và form tráng/scan FPC-44](../../apps/mobile/lib/screens/submission/submission_upload_screen.dart). Còn thiếu liên kết Logbook và tra cứu [danh mục dùng chung](02-analog-master-data.md) trong các form này.

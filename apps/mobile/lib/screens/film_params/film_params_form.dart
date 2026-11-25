@@ -61,7 +61,7 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
     'Khác',
   ];
 
-  /// BR-23: Danh sách khổ phim hỗ trợ quy chuẩn frame
+  /// Danh sách khổ phim hỗ trợ
   static const List<String> _filmFormats = [
     '135 (35mm)',
     '120 (6x4.5)',
@@ -143,47 +143,6 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
     _scannerModelController.dispose();
     _notesController.dispose();
     super.dispose();
-  }
-
-  /// BR-23: Trả về giới hạn số frame tối đa theo từng khổ phim
-  int? _getMaxFrameLimit(String format) {
-    final lower = format.toLowerCase();
-    if (lower.contains('135') || lower.contains('35mm')) {
-      return 39;
-    } else if (lower.contains('6x4.5')) {
-      return 16;
-    } else if (lower.contains('6x6')) {
-      return 12;
-    } else if (lower.contains('6x7')) {
-      return 10;
-    } else if (lower == '120') {
-      return 16;
-    } else if (lower.contains('4x5')) {
-      return 1;
-    }
-    return null;
-  }
-
-  /// BR-22 & BR-23: Validator dynamic cho Frame Number
-  String? _validateFrameNumber(String? value) {
-    final emptyError = Validators.notEmpty(value, field: 'Số frame');
-    if (emptyError != null) {
-      return emptyError;
-    }
-
-    final trimmed = value!.trim();
-    final parsed = int.tryParse(trimmed);
-    final maxLimit = _getMaxFrameLimit(_selectedFormat);
-
-    if (parsed == null || parsed <= 0) {
-      return 'Số frame phải là số nguyên dương';
-    }
-
-    if (maxLimit != null && parsed > maxLimit) {
-      return 'Khổ $_selectedFormat chỉ cho phép tối đa $maxLimit frame (1 - $maxLimit)';
-    }
-
-    return null;
   }
 
   /// BR-22: Validator cho Developing Lab / Process
@@ -367,10 +326,6 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
                   onChanged: (val) {
                     if (val != null) {
                       setState(() => _selectedFormat = val);
-                      // Dynamic validate lại Frame Number khi đổi khổ phim theo BR-23
-                      if (_frameNumberController.text.trim().isNotEmpty) {
-                        _formKey.currentState?.validate();
-                      }
                     }
                   },
                 ),
@@ -450,7 +405,8 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
                   hintText: 'Ví dụ: 12, 24, 36',
                   keyboardType: TextInputType.number,
                   prefixIcon: const Icon(Icons.filter_frames_outlined),
-                  validator: _validateFrameNumber,
+                  validator: (value) =>
+                      Validators.positiveInteger(value, field: 'Số frame'),
                 ),
               ),
             ],

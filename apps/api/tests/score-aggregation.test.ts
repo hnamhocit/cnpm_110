@@ -87,7 +87,7 @@ describe("FPC-73 Score aggregation", () => {
     expect(result.finalScore).toBe(8.43);
   });
 
-  test("Marks DISCREPANCY_CONFLICT when score difference exceeds 30%", () => {
+  test("Averages confirmed scores even with a large difference", () => {
     const result = aggregateScores({
       criteria,
       judges: [
@@ -110,37 +110,7 @@ describe("FPC-73 Score aggregation", () => {
       ],
     });
 
-    expect(result.discrepancy).toBe(5);
-    expect(result.hasDiscrepancy).toBe(true);
-    expect(result.flag).toBe("DISCREPANCY_CONFLICT");
-  });
-
-  test("Does not mark conflict when difference is exactly 30%", () => {
-    const result = aggregateScores({
-      criteria,
-      judges: [
-        {
-          judgeId: "judge-1",
-          criterionScores: [
-            { criterionId: "composition", score: 10 },
-            { criterionId: "lighting", score: 10 },
-            { criterionId: "story", score: 10 },
-          ],
-        },
-        {
-          judgeId: "judge-2",
-          criterionScores: [
-            { criterionId: "composition", score: 7 },
-            { criterionId: "lighting", score: 7 },
-            { criterionId: "story", score: 7 },
-          ],
-        },
-      ],
-    });
-
-    expect(result.discrepancy).toBe(3);
-    expect(result.hasDiscrepancy).toBe(false);
-    expect(result.flag).toBeNull();
+    expect(result.finalScore).toBe(7.5);
   });
 
   test("Rejects criteria weights that do not total 1", () => {

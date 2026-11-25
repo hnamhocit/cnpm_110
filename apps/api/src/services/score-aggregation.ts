@@ -26,15 +26,10 @@ export interface ScoreAggregationResult {
     totalScore: number;
   }[];
   finalScore: number;
-  discrepancy: number;
-  hasDiscrepancy: boolean;
-  flag: "DISCREPANCY_CONFLICT" | null;
 }
 
 const SCORE_SCALE = 100;
 const WEIGHT_SCALE = 10_000;
-// A weighted point is represented in millionths to avoid floating-point ties.
-const WEIGHTED_SCALE = SCORE_SCALE * WEIGHT_SCALE;
 
 function weightedToScore(weighted: number): number {
   return Math.round(weighted / WEIGHT_SCALE) / SCORE_SCALE;
@@ -132,20 +127,6 @@ export function aggregateScores(
 
   const totals = judgeTotals.map((judge) => judge.totalScore);
 
-  const highestScore = Math.max(...totals);
-  const lowestScore = Math.min(...totals);
-
-  const discrepancy = highestScore - lowestScore;
-
-  const maximumTotalScore = criteria.reduce(
-    (sum, criterion) =>
-      sum + Math.round(criterion.maxScore * SCORE_SCALE) *
-      Math.round(criterion.weight * WEIGHT_SCALE),
-    0,
-  );
-
-  const hasDiscrepancy = discrepancy * 10 > maximumTotalScore * 3;
-
   const finalScore = weightedToScore(
     totals.reduce((sum, score) => sum + score, 0) /
       totals.length,
@@ -157,8 +138,5 @@ export function aggregateScores(
       totalScore: weightedToScore(totalScore),
     })),
     finalScore,
-    discrepancy: discrepancy / WEIGHTED_SCALE,
-    hasDiscrepancy,
-    flag: hasDiscrepancy ? "DISCREPANCY_CONFLICT" : null,
   };
 }
