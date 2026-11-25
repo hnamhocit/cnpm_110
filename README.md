@@ -169,4 +169,4 @@ Xem [thứ tự triển khai, độ phủ theo SRS và đối chiếu Jira](docs
 
 ## 🤖 Quy chuẩn AI Coding Assistant
 
-[`AGENTS.md`](AGENTS.md) là chỉ dẫn chung. Các tệp cho [Cursor](.cursor/rules/srs-context.mdc), [Copilot](.github/copilot-instructions.md) và [Claude Code](CLAUDE.md) trỏ về tài liệu này. Các yêu cầu riêng cho Next.js được ghi trong [`apps/web/AGENTS.md`](apps/web/AGENTS.md).
+[`AGENTS.md`](AGENTS.md) là chỉ dẫn chung. Các tệp cho [Cursor](.cursor/rules/srs-context.mdc) và [Claude Code](CLAUDE.md) trỏ về tài liệu này. Các yêu cầu riêng cho Next.js được ghi trong [`apps/web/AGENTS.md`](apps/web/AGENTS.md).

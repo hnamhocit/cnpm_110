@@ -126,7 +126,7 @@ Các đầu việc dưới đây chưa có mã Jira riêng trong bảng phục d
 | FPC-84 | Mobile | Cache ảnh bài thi | Huỳnh Trần Gia Bảo | DONE | Đã merge PR #143. Danh sách và chi tiết bài dùng ảnh cache; có widget test trong repo. Chưa chạy lại trên Flutter trong lượt rà soát này. |
 | FPC-85 | Mobile | Chuyển trang và skeleton loading danh sách ảnh lớn | Huỳnh Trần Gia Bảo | DONE | Đã merge PR #146. Có chuyển cảnh, skeleton danh sách bài và bảng vàng; có test trong repo. Chưa chạy lại trên Flutter trong lượt rà soát này. |
 | FPC-86 | Lead | Review thuật toán tính điểm và kiểm tra xử lý đồng thời | Nam Nguyễn | DONE | Đã review và sửa tại `56c2576`. 15 unit test và 25 ca integration PostgreSQL đạt sau bản sửa. [Kết quả review](overview.md#review-fpc-86) |
-| FPC-87 | Lead | Cập nhật Swagger/Postman cho Judging | Nam Nguyễn | DONE | Năm route Judging đã được cập nhật trong OpenAPI và collection tại `56c2576`. Repo hiện quản lý Postman qua workspace tại `docs/.postman/resources.yaml`. [Hợp đồng](../ai/09-api-contracts.md#61-hợp-đồng-judging) |
+| FPC-87 | Lead | Cập nhật Swagger/Postman cho Judging | Nam Nguyễn | DONE | Năm route Judging đã được cập nhật trong OpenAPI và collection tại `56c2576`. [Hợp đồng](../ai/09-api-contracts.md#61-hợp-đồng-judging) |
 
 ## Sprint 5 · Kết quả, triển lãm và kiểm thử
 
