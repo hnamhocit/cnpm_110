@@ -2,8 +2,9 @@
 
 **Mốc rà soát:** 2026-11-23, mã nguồn trên `develop` tại `6154028`. Bảng dựa trên route, lớp dữ liệu, màn hình và commit hiện có. Các luồng chưa được chạy đầu cuối trong lần rà soát này.
 
-- **Đặc tả:** Có đủ **10/10** tài liệu module. OpenAPI và Postman có **33 cặp method/path đang mount**, gồm các alias, và **36 endpoint dự kiến**. [Danh mục API](../ai/09-api-contracts.md#6-danh-mục-endpoint)
-- **Nghiệp vụ có ít nhất một luồng nối API hoặc xử lý thật trong mã:** Web **4/8** module, Backend **5/8**, Mobile **4/8**. Mẫu số là module 01–08. Module 09–10 được đánh giá riêng vì dùng chung cho nhiều luồng.
+- **Đặc tả:** Có đủ **10/10** tài liệu module. OpenAPI và Postman có **38 cặp method/path đang mount**, gồm các alias, và **36 endpoint dự kiến**. [Danh mục API](../ai/09-api-contracts.md#6-danh-mục-endpoint)
+- **Sprint 4:** Đã tích hợp FPC-70–75 và sửa các lỗi phát hiện trong FPC-86. Năm route Judging đã được đồng bộ với Swagger/Postman qua FPC-87. [Tracker](sprints.md#sprint-4--chấm-thi) · [Hợp đồng Judging](../ai/09-api-contracts.md#61-hợp-đồng-judging)
+- **Nghiệp vụ có ít nhất một luồng nối API hoặc xử lý thật trong mã:** Web **4/8** module, Backend **6/8**, Mobile **4/8**. Mẫu số là module 01–08. Module 09–10 được đánh giá riêng vì dùng chung cho nhiều luồng.
 - **Hoàn tất trọn module theo SRS:** Chưa xác nhận module nào đạt đầy đủ. Các tỷ lệ trên đo độ phủ tối thiểu theo module và không quy đổi thành phần trăm hoàn thành dự án.
 
 ## Độ phủ theo module
@@ -18,7 +19,7 @@
 | [04 Sổ tay cuộn phim](../ai/04-film-logbook.md) | — | Một phần · Có schema cuộn phim | Một phần · Có form thông số phim trong luồng nộp | Thiếu quản lý cuộn phim và frame riêng, tích hợp API và đồng bộ offline. |
 | [05 Nộp bài & đối chứng](../ai/05-submission-and-proof.md) | Có luồng · Nộp ảnh, hàng đợi, kiểm duyệt | Có luồng · Nộp và liệt kê bài, duyệt/loại và yêu cầu đối chứng qua kiểm duyệt | Có luồng · Danh sách bài và giao diện trạng thái, có màn nộp ảnh | Mobile thiếu hạng mục khi mở form nộp từ trang chi tiết. Route upload đối chứng và sửa metadata chưa mount. Chưa lưu hạn đối chứng 48 giờ, chưa có xử lý hết hạn tự động hoặc route rút bài. |
 | [06 Thẩm định AI](../ai/06-ai-verification.md) | Có luồng · Gọi API đối sánh bài | Có luồng · Worker, webhook, phân loại và pHash | — | Chưa thấy API quét lại theo yêu cầu và nhánh tương đồng vector 92% trong mã hiện tại. |
-| [07 Chấm ẩn danh](../ai/07-blind-judging.md) | Một phần · Có Focus Mode, zoom ảnh/metadata và form chấm điểm trên dữ liệu mẫu. Màn phân công, tiến độ và bảng điểm còn thiếu API | — | Một phần · Hiển thị trạng thái bài vào vòng chấm | Thiếu API danh sách bài phân công, DTO ẩn danh cho Judge, ghi/khóa điểm và điều phối lệch điểm. |
+| [07 Chấm ẩn danh](../ai/07-blind-judging.md) | Một phần · Có Focus Mode, zoom ảnh/metadata và form chấm điểm trên dữ liệu mẫu. Màn phân công, tiến độ và bảng điểm còn dùng dữ liệu mẫu | Có luồng · Phân công, ảnh ẩn danh, nộp và khóa điểm, bảng điểm | Một phần · Hiển thị trạng thái bài vào vòng chấm | Còn nối Web với API và triển khai quy trình điều phối lệch điểm. |
 | [08 Kết quả & triển lãm](../ai/08-archive-and-exhibition.md) | Một phần · Triển lãm dùng dữ liệu mẫu | Có luồng · Có route kết quả và portfolio, một số điểm/giải lấy từ mẫu | Có luồng · Gọi API bảng vàng và portfolio | Thiếu công bố kết quả chính thức, dữ liệu điểm/giải từ chấm thi và xuất bản ảnh triển lãm. |
 | [09 Hợp đồng API](../ai/09-api-contracts.md) | Có tích hợp một số API chuẩn | Có envelope và danh mục route | Có tích hợp một số API chuẩn | Một số màn hình còn gọi route dự kiến hoặc phụ thuộc DTO khác hợp đồng đích. |
 | [10 CSDL & lưu trữ](../ai/10-database-and-storage.md) | Tải multipart qua Backend | Có PostgreSQL/Drizzle và lưu R2 hoặc local | Tải multipart qua Backend | Thiếu contract presigned upload/confirm; chưa thấy đầy đủ luồng hai bản ảnh và lưu trữ vector. |
@@ -97,3 +98,20 @@ Một số task Done có bằng chứng đúng phạm vi đang rà. FPC-16 có i
 - Backend: [đăng ký route](../../apps/api/src/index.ts), [contest](../../apps/api/src/services/contest.service.ts), [submission](../../apps/api/src/routes/submissions.route.ts), [AI worker](../../apps/api/src/ai-worker.ts), [schema](../../apps/api/src/db/schema.ts) và [R2](../../apps/api/src/r2.ts).
 - Web: [đăng nhập](../../apps/web/src/components/auth/login-form.tsx), [nộp bài](../../apps/web/src/components/contest/contest-cta-button.tsx), [kiểm duyệt](../../apps/web/src/components/submission/submission-table.tsx), [đối sánh AI](../../apps/web/src/components/submission/image-comparison-modal.tsx), [bảng điểm](../../apps/web/src/app/portal/contests/scoreboard/page.tsx) và [triển lãm](../../apps/web/src/components/archive/archive-client-view.tsx).
 - Mobile: [Auth](../../apps/mobile/lib/core/network/auth_service.dart), [cuộc thi và bảng vàng](../../apps/mobile/lib/core/data/contest_repository.dart), [nộp bài](../../apps/mobile/lib/core/data/submission_repository.dart), [portfolio](../../apps/mobile/lib/core/data/portfolio_repository.dart) và [hồ sơ](../../apps/mobile/lib/screens/profile/edit_profile_screen.dart).
+
+
+## Review FPC-86
+
+Đối chiếu Module 07 và SRS với nhánh `origin/feature/FPC-75-tie-ranking` tại `c73275a`, chứa các thay đổi FPC-70–75. Bun chạy hai bộ unit test tính điểm và xếp hạng với **14 pass, 0 fail**. Sau khi áp dụng migration trên PostgreSQL 18 tạm, bộ Judge và Scoreboard đạt **21 pass, 0 fail**. Bản chạy tạm bỏ phần xóa bản ghi fixture và bổ sung một ca kiểm tra đồng thời.
+
+| Phát hiện | Kết quả |
+| --- | --- |
+| BR-25 · Làm tròn điểm chung cuộc | Hàm làm tròn điểm từng giám khảo trước khi tính trung bình. Đã tái hiện với hai tiêu chí trọng số 0,5 và ba giám khảo có tổng điểm chưa làm tròn là 0, 0,005 và 0,005. Hàm trả 0,01, trong khi trung bình làm tròn một lần cho kết quả 0,00. |
+| BR-14 · Chênh lệch điểm | Phép so sánh ngưỡng dùng điểm đã làm tròn. Bảng điểm bỏ cờ `DISCREPANCY_CONFLICT` do hàm tính ra, nên Organizer chưa thấy cờ từ endpoint này. |
+| BR-16 và UC-32–33 · Khóa ghi điểm | Gửi điểm và khóa phiếu đều giữ khóa `SELECT FOR UPDATE` trên cùng hàng phân công trong transaction. Nếu khóa phiếu commit trước, lần gửi sau đọc thấy `lockedAt` và trả 409. Nhánh chưa kiểm tra trạng thái cuộc thi khi ghi điểm, nên khóa hàng phân công chưa bảo vệ được khi cuộc thi đóng hoặc công bố. |
+| Đồng thời trên PostgreSQL | Hai lần gửi đồng thời dùng chung một phiếu, với nhận xét và điểm cùng một lần ghi. Khi kết nối thứ nhất giữ khóa và ghi `locked_at`, lần gửi từ kết nối thứ hai chờ khóa rồi trả 409 sau khi kết nối thứ nhất commit. Ca gửi giữ khóa trước và ca đóng vòng hoặc công bố đồng thời chưa được chạy. |
+
+
+### Kết quả tích hợp FPC-70–75
+
+Ảnh chấm thi dùng URL chứa mã bài, kiểm tra phân công và bỏ metadata. Ghi điểm và khóa phiếu yêu cầu trạng thái `JUDGING` và dùng khóa hàng cuộc thi để đồng bộ với cập nhật trạng thái. Điểm chung cuộc làm tròn sau khi lấy trung bình, trọng số được lưu với bốn chữ số thập phân, và bảng điểm gắn cờ chênh lệch trước khi công bố. PostgreSQL 18 tạm áp dụng migration thành công và **25 ca integration đạt**. **15 unit test** tính điểm và xếp hạng đạt.

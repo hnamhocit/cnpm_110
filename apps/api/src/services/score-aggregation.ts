@@ -31,8 +31,13 @@ export interface ScoreAggregationResult {
   flag: "DISCREPANCY_CONFLICT" | null;
 }
 
-function roundToTwoDecimals(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
+const SCORE_SCALE = 100;
+const WEIGHT_SCALE = 10_000;
+// A weighted point is represented in millionths to avoid floating-point ties.
+const WEIGHTED_SCALE = SCORE_SCALE * WEIGHT_SCALE;
+
+function weightedToScore(weighted: number): number {
+  return Math.round(weighted / WEIGHT_SCALE) / SCORE_SCALE;
 }
 
 export function aggregateScores(
@@ -55,8 +60,10 @@ export function aggregateScores(
       !criterion.id ||
       !Number.isFinite(criterion.maxScore) ||
       criterion.maxScore <= 0 ||
+      Number(criterion.maxScore.toFixed(2)) !== criterion.maxScore ||
       !Number.isFinite(criterion.weight) ||
-      criterion.weight <= 0
+      criterion.weight <= 0 ||
+      Number(criterion.weight.toFixed(4)) !== criterion.weight
     ) {
       throw new RangeError("Invalid scoring criterion");
     }
@@ -69,11 +76,11 @@ export function aggregateScores(
   }
 
   const totalWeight = criteria.reduce(
-    (sum, criterion) => sum + criterion.weight,
+    (sum, criterion) => sum + Math.round(criterion.weight * WEIGHT_SCALE),
     0,
   );
 
-  if (Math.abs(totalWeight - 1) > 0.000001) {
+  if (totalWeight !== WEIGHT_SCALE) {
     throw new RangeError("Criterion weights must total 1");
   }
 
@@ -106,18 +113,20 @@ export function aggregateScores(
       if (
         !Number.isFinite(item.score) ||
         item.score < 0 ||
-        item.score > criterion.maxScore
+        item.score > criterion.maxScore ||
+        Number(item.score.toFixed(2)) !== item.score
       ) {
         throw new RangeError("Score is outside the allowed range");
       }
 
       submittedIds.add(item.criterionId);
-      totalScore += item.score * criterion.weight;
+      totalScore += Math.round(item.score * SCORE_SCALE) *
+        Math.round(criterion.weight * WEIGHT_SCALE);
     }
 
     return {
       judgeId: judge.judgeId,
-      totalScore: roundToTwoDecimals(totalScore),
+      totalScore,
     };
   });
 
@@ -126,27 +135,29 @@ export function aggregateScores(
   const highestScore = Math.max(...totals);
   const lowestScore = Math.min(...totals);
 
-  const discrepancy = roundToTwoDecimals(
-    highestScore - lowestScore,
-  );
+  const discrepancy = highestScore - lowestScore;
 
   const maximumTotalScore = criteria.reduce(
     (sum, criterion) =>
-      sum + criterion.maxScore * criterion.weight,
+      sum + Math.round(criterion.maxScore * SCORE_SCALE) *
+      Math.round(criterion.weight * WEIGHT_SCALE),
     0,
   );
 
-  const hasDiscrepancy = discrepancy > maximumTotalScore * 0.3;
+  const hasDiscrepancy = discrepancy * 10 > maximumTotalScore * 3;
 
-  const finalScore = roundToTwoDecimals(
+  const finalScore = weightedToScore(
     totals.reduce((sum, score) => sum + score, 0) /
       totals.length,
   );
 
   return {
-    judgeTotals,
+    judgeTotals: judgeTotals.map(({ judgeId, totalScore }) => ({
+      judgeId,
+      totalScore: weightedToScore(totalScore),
+    })),
     finalScore,
-    discrepancy,
+    discrepancy: discrepancy / WEIGHTED_SCALE,
     hasDiscrepancy,
     flag: hasDiscrepancy ? "DISCREPANCY_CONFLICT" : null,
   };

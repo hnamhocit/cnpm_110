@@ -1,8 +1,12 @@
+import path from "node:path";
+import sharp from "sharp";
+import { getR2SignedReadUrl } from "../r2";
 import { AppError } from "../utils/errors";
 import type { Context } from "hono";
 import type { AuthEnv } from "../middlewares/auth";
 import {
     getAssignedSubmissions,
+    getAssignedImageKey,
     submitEvaluation,
     lockJudgeAssignment,
 } from "../services/judge.service";
@@ -143,4 +147,38 @@ export async function handleLockJudgeAssignment(
             ? "Evaluation sheet was already locked"
             : "Evaluation sheet locked successfully",
     );
+}
+
+export async function handleGetAssignedImage(c: Context<AuthEnv>) {
+    const submissionId = c.req.param("submissionId");
+    if (!submissionId || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(submissionId)) {
+        throw AppError.badRequest("Invalid submission ID");
+    }
+
+    const key = await getAssignedImageKey(c.get("user").id, submissionId);
+    const uploadDir = path.resolve("uploads");
+    const filePath = path.resolve(uploadDir, key);
+    if (!filePath.startsWith(uploadDir + path.sep)) {
+        throw AppError.notFound("Assigned image not found");
+    }
+
+    let source: ArrayBuffer;
+    const localFile = Bun.file(filePath);
+    if (await localFile.exists()) {
+        source = await localFile.arrayBuffer();
+    } else {
+        const url = await getR2SignedReadUrl(key);
+        if (!url.startsWith("https://")) throw AppError.notFound("Assigned image not found");
+
+        const image = await fetch(url, { redirect: "error" });
+        if (image.status === 404) throw AppError.notFound("Assigned image not found");
+        if (!image.ok) throw new Error("Assigned image storage request failed");
+        source = await image.arrayBuffer();
+    }
+
+    // Sharp strips source metadata by default. PNG keeps the decoded pixels lossless.
+    const image = await sharp(Buffer.from(source)).autoOrient().png().toBuffer();
+    return new Response(new Uint8Array(image), {
+        headers: { "Content-Type": "image/png", "Cache-Control": "private, no-store" },
+    });
 }

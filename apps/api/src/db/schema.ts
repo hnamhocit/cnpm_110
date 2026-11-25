@@ -154,8 +154,8 @@ export const scoringCriteria = pgTable(
       .notNull()
       .default("10"),
     weight: numeric("weight", {
-      precision: 5,
-      scale: 2,
+      precision: 7,
+      scale: 4,
     })
       .notNull()
       .default("1"),

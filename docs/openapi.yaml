@@ -2195,6 +2195,162 @@ paths:
                           type: integer
       x-implementation: mounted
       operationId: getHealth
+  /api/v1/judge/assignments:
+    get:
+      summary: GET /api/v1/judge/assignments
+      description: Judge. Trả danh sách bài APPROVED thuộc hạng mục được phân công, trả imageUrl được bảo vệ bằng bearer JWT.
+      tags:
+      - Judging
+      x-implementation: mounted
+      operationId: getJudgeAssignments
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Thành công. Xem dữ liệu phản hồi trong Module 09.
+        '401':
+          description: Thiếu hoặc sai token.
+        '403':
+          description: Không đủ quyền.
+  /api/v1/judge/submissions/{submissionId}/evaluation:
+    post:
+      summary: POST /api/v1/judge/submissions/{submissionId}/evaluation
+      description: Judge được phân công. Gửi đủ điểm theo tiêu chí và nhận xét trong trạng thái JUDGING. Phiếu đã khóa hoặc vòng chấm đã đóng trả 409.
+      tags:
+      - Judging
+      x-implementation: mounted
+      operationId: postJudgeEvaluation
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: submissionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scores]
+              properties:
+                comment:
+                  type: string
+                  nullable: true
+                  maxLength: 5000
+                scores:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [criterionId, score]
+                    properties:
+                      criterionId:
+                        type: string
+                        format: uuid
+                      score:
+                        type: number
+                        minimum: 0
+                        multipleOf: 0.01
+      responses:
+        '200':
+          description: Thành công. Xem dữ liệu phản hồi trong Module 09.
+        '401':
+          description: Thiếu hoặc sai token.
+        '403':
+          description: Không đủ quyền.
+        '400':
+          description: Điểm hoặc bài dự thi không hợp lệ.
+        '404':
+          description: Không tìm thấy bài dự thi.
+        '409':
+          description: Phiếu đã khóa.
+  /api/v1/judge/assignments/{assignmentId}/lock:
+    post:
+      summary: POST /api/v1/judge/assignments/{assignmentId}/lock
+      description: Judge sở hữu phân công. Khóa phiếu cá nhân đã chấm đủ bài và tiêu chí trong trạng thái JUDGING. Gọi lại trả trạng thái khóa hiện có.
+      tags:
+      - Judging
+      x-implementation: mounted
+      operationId: postJudgeAssignmentLock
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: assignmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Thành công. Xem dữ liệu phản hồi trong Module 09.
+        '401':
+          description: Thiếu hoặc sai token.
+        '403':
+          description: Không đủ quyền.
+        '409':
+          description: Phiếu chưa hoàn tất hoặc vòng chấm đã đóng.
+  /api/v1/contests/{id}/scoreboard:
+    get:
+      summary: GET /api/v1/contests/{id}/scoreboard
+      description: Admin hoặc Organizer sở hữu cuộc thi. Trả bảng điểm theo hạng mục. Bài thiếu phiếu hoặc có cờ DISCREPANCY_CONFLICT có finalScore và rank bằng null.
+      tags:
+      - Judging
+      x-implementation: mounted
+      operationId: getContestScoreboard
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Thành công. Xem dữ liệu phản hồi trong Module 09.
+        '401':
+          description: Thiếu hoặc sai token.
+        '403':
+          description: Không đủ quyền.
+        '404':
+          description: Không tìm thấy cuộc thi.
+  /api/v1/judge/submissions/{submissionId}/image:
+    get:
+      summary: Ảnh ẩn danh của bài được phân công
+      description: Judge được phân công. Trả ảnh PNG đã loại metadata từ ảnh gốc.
+      tags:
+      - Judging
+      x-implementation: mounted
+      operationId: getJudgeSubmissionImage
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: submissionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Ảnh đã loại metadata.
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Thiếu hoặc sai token.
+        '403':
+          description: Thiếu vai trò Judge.
+        '404':
+          description: Không tìm thấy bài được phân công hoặc ảnh.
 components:
   securitySchemes:
     BearerAuth:

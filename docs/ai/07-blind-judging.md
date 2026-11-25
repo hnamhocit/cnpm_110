@@ -116,6 +116,8 @@ Không tự giả định tên bảng hoặc cấu trúc cột khi chưa có đ�
 
 ## 4. Shared API Contracts (Dùng chung cho Web & Mobile)
 
+Năm route Judging phục vụ danh sách phân công, ảnh ẩn danh, gửi điểm, khóa phiếu và bảng điểm. Xem method, path và DTO trong [Module 09](09-api-contracts.md#61-hợp-đồng-judging).
+
 ### 4.1 API lấy danh sách bài được phân công
 
 - Chỉ trả dữ liệu bài thi mà Giám khảo được phép xem.

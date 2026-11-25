@@ -65,6 +65,16 @@
       "key": "aiWebhookSecret",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "assignmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "criterionId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -1073,6 +1083,116 @@
               ]
             },
             "description": "Bearer token phải hợp lệ và thuộc tài khoản đang hoạt động. Tài khoản không hoạt động trả 401. Vai trò khác Admin hoặc Organizer trả 403."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Judging",
+      "item": [
+        {
+          "name": "GET /api/v1/judge/assignments",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/judge/assignments",
+            "description": "Judge. Trả danh sách bài APPROVED thuộc hạng mục được phân công, bỏ trường định danh thí sinh trong DTO. Xem docs/ai/09-api-contracts.md.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/judge/submissions/{{submissionId}}/evaluation",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/judge/submissions/{{submissionId}}/evaluation",
+            "description": "Judge được phân công. Gửi một điểm cho mỗi tiêu chí trong trạng thái JUDGING. Xem docs/ai/09-api-contracts.md.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"\",\n  \"scores\": [\n    {\n      \"criterionId\": \"{{criterionId}}\",\n      \"score\": 5\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/judge/assignments/{{assignmentId}}/lock",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/judge/assignments/{{assignmentId}}/lock",
+            "description": "Judge sở hữu phân công. Khóa phiếu cá nhân theo hạng mục. Gọi lại trả trạng thái khóa hiện có. Xem docs/ai/09-api-contracts.md.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/contests/{{contestId}}/scoreboard",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/contests/{{contestId}}/scoreboard",
+            "description": "Admin hoặc Organizer sở hữu cuộc thi. Trả bảng điểm theo hạng mục. Bài thiếu phiếu hoàn chỉnh có finalScore và rank bằng null. Xem docs/ai/09-api-contracts.md.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Ảnh ẩn danh của bài được phân công",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/judge/submissions/{{submissionId}}/image",
+            "description": "Judge được phân công. Trả PNG đã loại metadata.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
           }
         }
       ]

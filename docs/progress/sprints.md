@@ -8,10 +8,10 @@ Dùng cột **Hiện tại** để quản lý từ đây. Cột **Jira** giữ �
 
 | Trạng thái | Jira | Hiện tại |
 | --- | ---: | ---: |
-| TODO | 37 | 36 |
-| DOING | 1 | 3 |
+| TODO | 37 | 29 |
+| DOING | 1 | 2 |
 | REVIEW | 17 | 31 |
-| DONE | 73 | 58 |
+| DONE | 73 | 66 |
 | **Tổng** | **128** | **128** |
 
 ## Sprint 1 · Nền tảng và xác thực
@@ -94,12 +94,12 @@ Dùng cột **Hiện tại** để quản lý từ đây. Cột **Jira** giữ �
 
 | Mã | Phạm vi | Công việc | Người phụ trách | Jira | Hiện tại | Ghi chú |
 | --- | --- | --- | --- | --- | --- | --- |
-| FPC-70 | Backend | API danh sách bài được phân công cho giám khảo | Duong Nguyen | TODO | TODO | — |
-| FPC-71 | Backend | API nộp điểm theo tiêu chí | Duong Nguyen | TODO | TODO | — |
-| FPC-72 | Backend | API khóa bảng điểm khi kết thúc vòng | Duong Nguyen | TODO | TODO | — |
-| FPC-73 | Backend | Thuật toán tổng hợp điểm từ nhiều giám khảo | Hà Đức Bình | DOING | DOING | Giữ trạng thái Jira. Theo BR-15/25, dùng trọng số theo tiêu chí rồi lấy trung bình điểm giữa giám khảo. |
-| FPC-74 | Backend | API bảng xếp hạng theo điểm | Hà Đức Bình | TODO | TODO | — |
-| FPC-75 | Backend | Xử lý đồng điểm | Hà Đức Bình | TODO | TODO | — |
+| FPC-70 | Backend | API danh sách bài được phân công cho giám khảo | Duong Nguyen | TODO | DONE | Ảnh tải bằng URL ẩn danh có kiểm tra phân công. |
+| FPC-71 | Backend | API nộp điểm theo tiêu chí | Duong Nguyen | TODO | DONE | Chỉ ghi khi JUDGING và gửi đủ tiêu chí. |
+| FPC-72 | Backend | API khóa bảng điểm khi kết thúc vòng | Duong Nguyen | TODO | DONE | Chỉ khóa phiếu đã chấm đủ bài. |
+| FPC-73 | Backend | Thuật toán tổng hợp điểm từ nhiều giám khảo | Hà Đức Bình | DOING | DONE | Làm tròn sau khi tính trung bình và dùng trọng số bốn chữ số. |
+| FPC-74 | Backend | API bảng xếp hạng theo điểm | Hà Đức Bình | TODO | DONE | Bảng điểm có cờ lệch điểm và chặn công bố khi còn cờ. |
+| FPC-75 | Backend | Xử lý đồng điểm | Hà Đức Bình | TODO | DONE | Đồng điểm dùng hạng 1, 1, 3 riêng mỗi hạng mục. |
 | FPC-76 | Web | Màn theo dõi tiến độ chấm của từng giám khảo | Vĩ Nguyễn | REVIEW | REVIEW | Có màn theo dõi với dữ liệu mẫu. Commit `0d5b809` trên develop. |
 | FPC-77 | Web | Bảng điểm tổng hợp cập nhật cho Organizer | Vĩ Nguyễn | REVIEW | REVIEW | Có bảng điểm với dữ liệu mẫu. Commit `940d758` trên develop. |
 | FPC-78 | Web | Nhắc giám khảo sắp trễ hạn qua email | Vĩ Nguyễn | TODO | TODO | — |
@@ -110,8 +110,8 @@ Dùng cột **Hiện tại** để quản lý từ đây. Cột **Jira** giữ �
 | FPC-83 | Mobile | Hiển thị trạng thái đang trong vòng chấm | Dương Nguyễn | REVIEW | REVIEW | Commit `f5eec7e` trên develop. Cần xác nhận nghiệm thu. |
 | FPC-84 | Mobile | Cache ảnh bài thi | Huỳnh Trần Gia Bảo | REVIEW | REVIEW | Commit `260dd1f` trên develop. Cần xác nhận nghiệm thu. |
 | FPC-85 | Mobile | Chuyển trang và skeleton loading danh sách ảnh lớn | Huỳnh Trần Gia Bảo | REVIEW | REVIEW | Commit `a628e31` trên develop. Cần xác nhận nghiệm thu. |
-| FPC-86 | Lead | Review thuật toán tính điểm và kiểm tra xử lý đồng thời | Nam Nguyễn | TODO | TODO | — |
-| FPC-87 | Lead | Cập nhật Swagger/Postman cho Judging | Nam Nguyễn | TODO | TODO | — |
+| FPC-86 | Lead | Review thuật toán tính điểm và kiểm tra xử lý đồng thời | Nam Nguyễn | TODO | DONE | Đã review và chạy 15 unit test, 25 ca integration PostgreSQL sau khi sửa. [Kết quả review](overview.md#review-fpc-86) |
+| FPC-87 | Lead | Cập nhật Swagger/Postman cho Judging | Nam Nguyễn | TODO | DONE | Đã cập nhật năm route Judging đã đăng ký trong Swagger/Postman. [Hợp đồng](../ai/09-api-contracts.md#61-hợp-đồng-judging) |
 
 ## Sprint 5 · Kết quả, triển lãm và kiểm thử
 

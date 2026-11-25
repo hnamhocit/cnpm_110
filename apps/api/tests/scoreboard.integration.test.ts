@@ -416,6 +416,36 @@ describe("FPC-74: GET /api/v1/contests/:id/scoreboard", () => {
 
     expect(scores).toEqual([7, 9]);
 });
+    test("Exposes unresolved discrepancies and blocks publishing", async () => {
+        const token = await createToken(testData.organizerId, "Organizer");
+        const { rows } = await pool.query(
+            `SELECT s.id, s.score FROM evaluation_scores s JOIN evaluations e ON e.id = s.evaluation_id
+             WHERE e.submission_id = $1 AND e.judge_id = $2`,
+            [testData.submissionId, testData.judge2Id],
+        );
+        await pool.query("UPDATE evaluation_scores SET score = 0 WHERE id = ANY($1::uuid[])",
+            [rows.map((row) => row.id)]);
+        try {
+            const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+            const url = `/api/v1/contests/${testData.contestId}`;
+            const response = await app.request(`${url}/scoreboard`, { headers });
+            expect(response.status).toBe(200);
+            const { data } = await response.json();
+            const entry = data.entries.find((item: { submissionId: string }) => item.submissionId === testData.submissionId);
+            expect(entry.discrepancyFlag).toBe("DISCREPANCY_CONFLICT");
+            expect(entry.finalScore).toBeNull();
+            expect(entry.rank).toBeNull();
+            const publish = await app.request(url, {
+                method: "PUT", headers, body: JSON.stringify({ status: "PUBLISHED" }),
+            });
+            expect(publish.status).toBe(409);
+        } finally {
+            for (const row of rows) {
+                await pool.query("UPDATE evaluation_scores SET score = $1 WHERE id = $2", [row.score, row.id]);
+            }
+        }
+    });
+
     test("Organizer can view their own contest scoreboard", async () => {
         const token = await createToken(
             testData.organizerId,

@@ -2,6 +2,7 @@
 import { Hono } from "hono";
 import {
   handleGetAssignedSubmissions,
+  handleGetAssignedImage,
   handleSubmitEvaluation,
   handleLockJudgeAssignment,
 } from "../controllers/judge.controller";
@@ -18,6 +19,12 @@ judge.get(
   authenticate,
   requireRoles("Judge"),
   handleGetAssignedSubmissions,
+);
+judge.get(
+  "/submissions/:submissionId/image",
+  authenticate,
+  requireRoles("Judge"),
+  handleGetAssignedImage,
 );
 judge.post(
   "/submissions/:submissionId/evaluation",

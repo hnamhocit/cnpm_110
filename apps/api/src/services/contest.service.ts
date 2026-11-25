@@ -361,6 +361,13 @@ export async function updateContest(
       throw AppError.badRequest("Cannot publish contest before end date");
     }
 
+    if (["published", "completed"].includes(status.toLowerCase())) {
+      const scoreboard = await getContestScoreboard(id, actor, tx);
+      if (scoreboard.entries.some((entry) => entry.discrepancyFlag)) {
+        throw AppError.conflict("Resolve scoring discrepancies before publishing");
+      }
+    }
+
     const [updated] = await tx
       .update(contests)
       .set({
@@ -404,9 +411,10 @@ export async function softDeleteContest(id: string, actor: AuthEnv["Variables"][
 export async function getContestScoreboard(
   contestId: string,
   actor: AuthEnv["Variables"]["user"],
+  executor: Pick<typeof db, "select"> = db,
 ) {
   // 1. Verify contest exists.
-  const [contest] = await db
+  const [contest] = await executor
     .select({
       id: contests.id,
       createdBy: contests.createdBy,
@@ -433,7 +441,7 @@ export async function getContestScoreboard(
   }
 
   // 3. Get approved submissions.
-  const approvedSubmissions = await db
+  const approvedSubmissions = await executor
     .select({
       id: submissions.id,
       title: submissions.title,
@@ -459,7 +467,7 @@ export async function getContestScoreboard(
   ];
 
   // 4. Get category names.
-  const categoryRows = await db
+  const categoryRows = await executor
     .select({
       id: categories.id,
       name: categories.name,
@@ -472,7 +480,7 @@ export async function getContestScoreboard(
   );
 
   // 5. Get active judges assigned to this contest.
-  const assignments = await db
+  const assignments = await executor
     .select({
       categoryId: contestJudges.categoryId,
       judgeId: contestJudges.judgeId,
@@ -496,7 +504,7 @@ export async function getContestScoreboard(
   }
 
   // 6. Get scoring criteria.
-  const criteriaRows = await db
+  const criteriaRows = await executor
     .select({
       id: scoringCriteria.id,
       categoryId: scoringCriteria.categoryId,
@@ -532,7 +540,7 @@ export async function getContestScoreboard(
   // 7. Get evaluation scores and judge information.
   const submissionIds = approvedSubmissions.map((item) => item.id);
 
-  const evaluationRows = await db
+  const evaluationRows = await executor
     .select({
       submissionId: evaluations.submissionId,
       judgeId: evaluations.judgeId,
@@ -630,6 +638,7 @@ export async function getContestScoreboard(
       submittedAt: string;
     }[] = [];
     let finalScore: number | null = null;
+    let discrepancyFlag: "DISCREPANCY_CONFLICT" | null = null;
     if (criteria.length > 0 && completeJudges.length > 0) {
       const aggregation = aggregateScores({
         criteria,
@@ -638,7 +647,9 @@ export async function getContestScoreboard(
           criterionScores: judge.criterionScores,
         })),
       });
+      discrepancyFlag = aggregation.flag;
       if (
+        !discrepancyFlag &&
         assignedJudgeIds.length > 0 &&
         completeJudges.length === assignedJudgeIds.length
       ) {
@@ -677,6 +688,7 @@ export async function getContestScoreboard(
       scoreScale,
       negativeProofVerified: false,
       finalScore,
+      discrepancyFlag,
       scores,
     };
   });

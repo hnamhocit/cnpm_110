@@ -7,6 +7,8 @@ import {
     test,
 } from "bun:test";
 import { sign } from "hono/jwt";
+import { unlink } from "node:fs/promises";
+import sharp from "sharp";
 import { pool } from "../src/db";
 import { createTestApp } from "./helpers/test-app";
 
@@ -54,7 +56,7 @@ async function createTestData() {
     await pool.query(
         `INSERT INTO contests (id, name, status, created_by)
      VALUES ($1, $2, $3, $4)`,
-        [contestId, "FPC70 Test Contest", "ongoing", judgeId],
+        [contestId, "FPC70 Test Contest", "JUDGING", judgeId],
     );
 
     await pool.query(
@@ -119,7 +121,7 @@ async function createTestData() {
             assignedCategoryId,
             participantId,
             "FPC70 Assigned Submission",
-            "test/assigned.jpg",
+            `submissions/${participantId}/assigned.jpg`,
             otherSubmissionId,
             otherCategoryId,
             "FPC70 Other Category Submission",
@@ -246,6 +248,63 @@ describe("FPC-70/FPC-71: Judge APIs", () => {
         );
     });
 
+    test("Assigned judge gets image pixels without source metadata", async () => {
+        const token = await createToken(testData.judgeId, "Judge");
+        const file = `uploads/submissions/${testData.participantId}/assigned.jpg`;
+        const image = await sharp({ create: { width: 2, height: 2, channels: 3, background: "red" } })
+            .withExif({ IFD0: { Artist: testData.participantId } }).jpeg().toBuffer();
+        await Bun.write(file, image);
+        try {
+            const response = await app.request(
+                `/api/v1/judge/submissions/${testData.assignedSubmissionId}/image`,
+                { headers: { Authorization: `Bearer ${token}` } },
+            );
+            expect(response.status).toBe(200);
+            expect(response.headers.get("Content-Type")).toBe("image/png");
+            const metadata = await sharp(Buffer.from(await response.arrayBuffer())).metadata();
+            expect(metadata.width).toBe(2);
+            expect(metadata.exif).toBeUndefined();
+        } finally {
+            await unlink(file);
+        }
+    });
+
+    test("Unassigned judges cannot fetch the anonymous image", async () => {
+        const token = await createToken(testData.otherJudgeId, "Judge");
+        const response = await app.request(
+            `/api/v1/judge/submissions/${testData.assignedSubmissionId}/image`,
+            { headers: { Authorization: `Bearer ${token}` } },
+        );
+        expect(response.status).toBe(404);
+    });
+
+    test("Refuses to lock an incomplete sheet", async () => {
+        const token = await createToken(testData.judgeId, "Judge");
+        const response = await app.request(
+            `/api/v1/judge/assignments/${testData.assignmentId}/lock`,
+            { method: "POST", headers: { Authorization: `Bearer ${token}` } },
+        );
+        expect(response.status).toBe(409);
+    });
+
+    test("Refuses to write scores after publication", async () => {
+        const token = await createToken(testData.judgeId, "Judge");
+        await pool.query("UPDATE contests SET status = 'PUBLISHED' WHERE id = $1", [testData.contestId]);
+        try {
+            const response = await app.request(
+                `/api/v1/judge/submissions/${testData.assignedSubmissionId}/evaluation`,
+                {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ scores: [{ criterionId: testData.assignedCriterionId, score: 5 }] }),
+                },
+            );
+            expect(response.status).toBe(409);
+        } finally {
+            await pool.query("UPDATE contests SET status = 'JUDGING' WHERE id = $1", [testData.contestId]);
+        }
+    });
+
     test("Participant cannot access judge assignments", async () => {
         const token = await createToken(
             testData.participantId,
@@ -289,7 +348,7 @@ describe("FPC-70/FPC-71: Judge APIs", () => {
                 scores: [
                     {
                         criterionId: testData.assignedCriterionId,
-                        score: 8.5,
+                        score: 0.29,
                     },
                 ],
             }),

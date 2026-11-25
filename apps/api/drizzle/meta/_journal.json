@@ -78,6 +78,13 @@
       "when": 1795564499690,
       "tag": "0010_bent_madelyne_pryor",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795590289871,
+      "tag": "0011_daily_captain_stacy",
+      "breakpoints": true
     }
   ]
 }

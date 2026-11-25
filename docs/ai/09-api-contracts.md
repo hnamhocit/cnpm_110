@@ -2907,8 +2907,23 @@ Các nội dung cần được nhóm xác nhận trước khi triển khai chín
 Sau khi được phê duyệt, tài liệu cần được đồng bộ với OpenAPI và mã nguồn Backend để đảm bảo các Client sử dụng cùng một hợp đồng API.
 ## 6. Danh mục endpoint
 
-[OpenAPI](../openapi.yaml) và [Postman Film Contest](../film-contest.postman_collection.json) cùng liệt kê **33** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **36** endpoint dự kiến đã có method và path trong các module. OpenAPI ghi trạng thái qua `x-implementation`. Các mục trong thư mục Postman `Planned` dùng để tra cứu đường dẫn và module chứa DTO.
+[OpenAPI](../openapi.yaml) và [Postman Film Contest](../film-contest.postman_collection.json) cùng liệt kê **38** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **36** endpoint dự kiến đã có method và path. OpenAPI ghi trạng thái qua `x-implementation`. Các mục trong thư mục Postman `Planned` dùng để tra cứu đường dẫn và module chứa DTO.
 
-Các chức năng còn thiếu method/path trong đặc tả gồm quản lý role và permission, tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, quản lý hạng mục và vòng chấm, sửa hoặc rút bài thi, bảng điểm cá nhân và điều phối lệch điểm. Xem yêu cầu nghiệp vụ tương ứng tại [SRS](../srs.md#22-use-case-catalog-43-ca-sử-dụng-cốt-lõi).
+Các chức năng còn thiếu method/path trong đặc tả gồm quản lý role và permission, tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, quản lý hạng mục và vòng chấm, sửa hoặc rút bài thi, đọc bảng điểm cá nhân và điều phối lệch điểm. Xem yêu cầu nghiệp vụ tương ứng tại [SRS](../srs.md#22-use-case-catalog-43-ca-sử-dụng-cốt-lõi).
 
 Route công khai `GET /api/v1/contests/{id}/results` hiện dùng dữ liệu giải và điểm mẫu. DTO lịch trình của `POST /api/v1/contests` hiện dùng hai mốc `startAt` và `endAt`. Quy tắc công bố kết quả và lịch trình đích được mô tả trong Module 03 và 08.
+
+
+### 6.1. Hợp đồng Judging
+
+Năm route dưới đây được đăng ký trong Hono và có trong nhóm Judging của Postman. Tất cả yêu cầu bearer JWT. Các phản hồi JSON thành công đặt dữ liệu trong `data`.
+
+| Method và path | Quyền và đầu vào | Dữ liệu phản hồi |
+| --- | --- | --- |
+| `GET /api/v1/judge/assignments` | Judge, theo phân công đang hoạt động | `items`, `total`. Mỗi bài có `assignmentId`, `contestId`, `contestName`, `categoryId`, `categoryName`, `submissionId`, `title`, `description`, `imageUrl`, `width`, `height`, `submittedAt`, `status`. |
+| `GET /api/v1/judge/submissions/{submissionId}/image` | Judge được phân công. Dùng bearer JWT khi tải `imageUrl`. | `image/png` đã loại metadata. |
+| `POST /api/v1/judge/submissions/{submissionId}/evaluation` | Judge được phân công. Body có `scores: [{criterionId, score}]` và `comment` tùy chọn, tối đa 5.000 ký tự. Mỗi điểm nằm trong thang của tiêu chí. Gửi đủ một điểm cho mỗi tiêu chí khi cuộc thi ở trạng thái `JUDGING`. Phiếu đã khóa hoặc vòng chấm đã đóng trả `409`. | `evaluationId`, `submissionId`, `comment`, `scores`. |
+| `POST /api/v1/judge/assignments/{assignmentId}/lock` | Judge sở hữu phân công, không cần body. Phiếu phải chấm đủ bài và tiêu chí để khóa | `assignmentId`, `lockedAt`, `alreadyLocked`. Gọi lại giữ nguyên thời điểm khóa. |
+| `GET /api/v1/contests/{id}/scoreboard` | Admin hoặc Organizer sở hữu cuộc thi | `entries`, `updatedAt`. Mỗi mục có `submissionId`, `submissionCode`, `title`, `categoryId`, `categoryName`, `judgeCount`, `scoreScale`, `negativeProofVerified`, `finalScore`, `rank`, `discrepancyFlag`, `scores`. Mỗi mục trong `scores` có `judgeId`, `judgeName`, `totalScore`, `submittedAt`. |
+
+Bảng điểm xếp hạng riêng từng hạng mục. Đồng điểm dùng cùng hạng và bỏ qua các vị trí tương ứng, ví dụ 1, 1, 3. Bài thiếu phiếu hoàn chỉnh hoặc có cờ `DISCREPANCY_CONFLICT` có `finalScore` và `rank` bằng `null`. Còn cờ chênh lệch thì cập nhật trạng thái công bố trả `409`. Trường `negativeProofVerified` vẫn có giá trị `false` trong khi chờ tích hợp quy trình xác minh âm bản.

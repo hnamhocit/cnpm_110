@@ -207,3 +207,14 @@ describe("FPC-73 Score aggregation", () => {
     ).toThrow("At least one judge is required");
   });
 });
+
+
+test("rounds the average after combining unrounded judge totals", () => {
+    const criteria = ["a", "b"].map((id) => ({ id, maxScore: 10, weight: 0.5 }));
+    const judges = [0, 0.01, 0.01].map((score, index) => ({
+        judgeId: String(index),
+        criterionScores: [{ criterionId: "a", score }, { criterionId: "b", score: 0 }],
+    }));
+
+    expect(aggregateScores({ criteria, judges }).finalScore).toBe(0);
+});
