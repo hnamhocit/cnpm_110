@@ -18,13 +18,14 @@ import {
   aiAnalysisJobs,
   categories,
   contests,
+  contestJudges,
   filmMetadata,
   submissionAiAnalyses,
   submissionModerationLogs,
   submissions,
   users,
 } from "../db/schema";
-import { deleteFromR2, uploadToR2 } from "../r2";
+import { deleteFromR2, getR2SignedReadUrl, uploadToR2 } from "../r2";
 import { AppError } from "../utils/errors";
 import {
   ImageValidationError,
@@ -223,8 +224,6 @@ export async function listAllSubmissions(query: ListAllSubmissionsQuery) {
           ai.duplicateSimilarityScore != null
             ? Number(ai.duplicateSimilarityScore)
             : null,
-        filmGrainScore:
-          ai.filmGrainScore != null ? Number(ai.filmGrainScore) : null,
         predictedTags: ai.predictedTags,
         flagReasons: ai.flagReasons,
       }
@@ -342,6 +341,7 @@ export async function createSubmission(input: CreateSubmissionInput) {
   const [contest] = await db
     .select({
       id: contests.id,
+      createdBy: contests.createdBy,
       startAt: contests.startAt,
       endAt: contests.endAt,
       status: contests.status,
@@ -365,6 +365,19 @@ export async function createSubmission(input: CreateSubmissionInput) {
   }
   if (contest.endAt && now >= contest.endAt) {
     throw AppError.badRequest("Submission deadline has passed");
+  }
+
+  const [assignment] = await db.select({ id: contestJudges.id })
+    .from(contestJudges)
+    .where(and(
+      eq(contestJudges.contestId, contestId),
+      eq(contestJudges.judgeId, participantId),
+      eq(contestJudges.isActive, true),
+    ))
+    .limit(1);
+
+  if (contest.createdBy === participantId || assignment) {
+    throw AppError.forbidden("A contest organizer or assigned judge cannot submit to the same contest");
   }
 
   const id = crypto.randomUUID();
@@ -479,7 +492,7 @@ export async function createSubmission(input: CreateSubmissionInput) {
 type ModerationActor = AuthEnv["Variables"]["user"];
 
 function requireMutableContest(contest: typeof contests.$inferSelect, actor: ModerationActor) {
-  if (contest.isDeleted || (actor.role === "Organizer" && contest.createdBy !== actor.id)) {
+  if (contest.isDeleted || actor.role !== "Organizer" || contest.createdBy !== actor.id) {
     throw AppError.notFound("Submission not found");
   }
 
@@ -488,18 +501,22 @@ function requireMutableContest(contest: typeof contests.$inferSelect, actor: Mod
   }
 }
 
-async function requireClearedAiRisk(
+async function verifyApprovalReason(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   submission: { id: string; status: string },
+  reason: string,
 ) {
   const [analysis] = await tx.select({ flagged: submissionAiAnalyses.isAiFlagged })
     .from(submissionAiAnalyses)
     .where(eq(submissionAiAnalyses.submissionId, submission.id))
     .limit(1);
 
-  if (analysis?.flagged || ["FLAGGED", "AI_FLAGGED_HIGH_RISK"].includes(submission.status)) {
-    throw AppError.conflict("High-risk submissions require verified negative proof");
+  const flagged = analysis?.flagged ||
+    ["FLAGGED", "AI_FLAGGED_HIGH_RISK", "SUSPICIOUS"].includes(submission.status);
+  if (flagged && !reason) {
+    throw new AppError("A reason is required to approve a flagged submission", 422);
   }
+  return flagged === true;
 }
 
 export async function approveSubmission(
@@ -528,10 +545,8 @@ export async function approveSubmission(
       throw AppError.conflict("Submission has already been processed");
     }
 
-    await requireClearedAiRisk(tx, submission);
-
-    const approvalReason =
-      reason?.trim() || "Approved for judging by organizer";
+    const approvalReason = reason?.trim() ?? "";
+    const flagged = await verifyApprovalReason(tx, submission, approvalReason);
 
     const [updated] = await tx
       .update(submissions)
@@ -559,8 +574,8 @@ export async function approveSubmission(
     await tx.insert(submissionModerationLogs).values({
       submissionId,
       moderatorId: actor.id,
-      action: "APPROVE_FOR_JUDGING",
-      reason: approvalReason,
+      action: flagged ? "OVERRIDE_AI_FLAG" : "APPROVE_FOR_JUDGING",
+      reason: approvalReason || "Approved for judging by organizer",
       previousStatus: submission.status,
       newStatus: "APPROVED",
     });
@@ -658,11 +673,12 @@ export async function moderateSubmission(
     }
     requireMutableContest(submission.contest, actor);
 
+    let loggedAction = action;
     let newStatus = submission.status;
     let rejectionReason: string | undefined;
 
     if (action === "APPROVE_FOR_JUDGING" || action === "OVERRIDE_AI_FLAG") {
-      await requireClearedAiRisk(tx, submission);
+      if (await verifyApprovalReason(tx, submission, reasonText)) loggedAction = "OVERRIDE_AI_FLAG";
       newStatus = "APPROVED";
       rejectionReason = undefined;
     } else if (action === "DISQUALIFY") {
@@ -694,7 +710,7 @@ export async function moderateSubmission(
     await tx.insert(submissionModerationLogs).values({
       submissionId,
       moderatorId: actor.id,
-      action,
+      action: loggedAction,
       reason: reasonText || "Action performed by organizer",
       previousStatus: submission.status,
       newStatus,
@@ -745,8 +761,6 @@ export async function getSubmissionComparison(submissionId: string, actor: Moder
     similarityScore != null
       ? Math.round(64 * (1 - similarityScore))
       : null;
-  const filmGrainScore =
-    ai?.filmGrainScore != null ? Number(ai.filmGrainScore) : null;
 
   let originalSubmission = null;
   if (duplicateSuspectId) {
@@ -773,8 +787,8 @@ export async function getSubmissionComparison(submissionId: string, actor: Moder
         title: orig.title,
         description: orig.description,
         imageOriginalPath: orig.imageOriginalPath,
-        imagePreviewPath: orig.imagePreviewPath,
-        negativeProofPath: orig.negativeProofPath,
+        imagePreviewPath: await getR2SignedReadUrl(orig.imagePreviewPath ?? orig.imageOriginalPath),
+        negativeProofPath: null,
         fileSizeBytes:
           orig.fileSizeBytes != null ? Number(orig.fileSizeBytes) : null,
         width: orig.width,
@@ -793,11 +807,6 @@ export async function getSubmissionComparison(submissionId: string, actor: Moder
       : [];
 
   if (flagReasons.length === 0) {
-    if (aiProb !== null && aiProb >= 0.75) {
-      flagReasons.push(
-        `AI-Generated probability exceeds 75% threshold (${(aiProb * 100).toFixed(2)}%)`,
-      );
-    }
     if (duplicateSuspectId) {
       flagReasons.push(
         "Near-duplicate found",
@@ -812,6 +821,11 @@ export async function getSubmissionComparison(submissionId: string, actor: Moder
 
   const predictedTags = Array.isArray(ai?.predictedTags) ? ai.predictedTags : [];
 
+  const [previewUrl, proofUrl] = await Promise.all([
+    getR2SignedReadUrl(sub.imagePreviewPath ?? sub.imageOriginalPath),
+    sub.negativeProofPath ? getR2SignedReadUrl(sub.negativeProofPath) : null,
+  ]);
+
   return {
     submissionId: sub.id,
     status: sub.status,
@@ -821,14 +835,8 @@ export async function getSubmissionComparison(submissionId: string, actor: Moder
     duplicateCheck: {
       isSuspect: duplicateSuspectId != null,
       suspectSubmissionId: originalSubmission?.id ?? null,
-      hammingDistance,
-      similarityScore,
-    },
-    grainAnalysis: {
-      filmGrainScore,
-      assessment:
-        filmGrainScore === null ? null
-          : filmGrainScore < 0.4 ? "WEAK_ANALOG_TEXTURE" : "NATURAL_ANALOG_GRAIN",
+      hammingDistance: originalSubmission ? hammingDistance : null,
+      similarityScore: originalSubmission ? similarityScore : null,
     },
     predictedTags,
     flagReasons,
@@ -841,8 +849,8 @@ export async function getSubmissionComparison(submissionId: string, actor: Moder
       description: sub.description,
       rejectionReason: sub.rejectionReason,
       imageOriginalPath: sub.imageOriginalPath,
-      imagePreviewPath: sub.imagePreviewPath,
-      negativeProofPath: sub.negativeProofPath,
+      imagePreviewPath: previewUrl,
+      negativeProofPath: proofUrl,
       fileSizeBytes:
         sub.fileSizeBytes != null ? Number(sub.fileSizeBytes) : null,
       width: sub.width,

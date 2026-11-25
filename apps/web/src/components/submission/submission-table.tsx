@@ -34,6 +34,10 @@ import { http } from "@/lib/http/client";
 import { filterSubmissions } from "@/lib/submission-utils";
 import type { Submission, SubmissionStatus } from "@/types/submission";
 
+function needsApprovalReason(submission: Submission) {
+  return submission.isAiFlagged || submission.status === "SUSPICIOUS";
+}
+
 type ModerateAction = "APPROVE_FOR_JUDGING" | "DISQUALIFY";
 
 type ModerationErrorBody = { message?: string };
@@ -108,7 +112,7 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
   );
   const [isBulkLoading, setIsBulkLoading] = useState(false);
   const [rowLoadingId, setRowLoadingId] = useState<string | null>(null);
-  const [rejectReason, setRejectReason] = useState("");
+  const [moderationReason, setModerationReason] = useState("");
 
   useEffect(() => {
     async function fetchSubmissions() {
@@ -170,7 +174,7 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
 
     const action: ModerateAction =
       status === "APPROVED" ? "APPROVE_FOR_JUDGING" : "DISQUALIFY";
-    const reason = status === "DISQUALIFIED" ? rejectReason.trim() : undefined;
+    const reason = moderationReason.trim();
     const verb = status === "APPROVED" ? "duyệt" : "từ chối";
 
     setIsBulkLoading(true);
@@ -211,7 +215,7 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
       setIsBulkLoading(false);
       setPendingStatus(null);
       setPendingIds([]);
-      setRejectReason("");
+      setModerationReason("");
     }
   };
 
@@ -230,8 +234,8 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
     }
   };
 
-  const isRejectReasonInvalid =
-    pendingStatus === "DISQUALIFIED" && rejectReason.trim().length < 10;
+  const requiresReason = pendingStatus === "DISQUALIFIED" ||
+    submissions.some((item) => pendingIds.includes(item.id) && needsApprovalReason(item));
 
   return (
     <div className="space-y-4">
@@ -342,27 +346,22 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
                     {formatContestDate(submission.submittedAt)}
                   </TableCell>
                   <TableCell>
-                    {submission.isAiFlagged ? (
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      {needsApprovalReason(submission) && (
                         <Badge className="bg-red-500 text-white">
                           <AlertTriangle className="size-3.5" />
                           Cảnh báo AI
                         </Badge>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openComparison(submission.id)}
-                        >
-                          <Eye className="size-4" />
-                          So sánh
-                        </Button>
-                      </div>
-                    ) : (
-                      <Badge className="bg-green-600 text-white">
-                        <Check className="size-3.5" />
-                        Hợp lệ
-                      </Badge>
-                    )}
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openComparison(submission.id)}
+                      >
+                        <Eye className="size-4" />
+                        Thẩm định
+                      </Button>
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     {submission.status === "APPROVED" ? (
@@ -378,7 +377,13 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
                         <Button
                           size="sm"
                           disabled={rowLoadingId === submission.id}
-                          onClick={() => approveSingle(submission.id)}
+                          onClick={() => {
+                            if (needsApprovalReason(submission)) {
+                              openModerationDialog([submission.id], "APPROVED");
+                            } else {
+                              void approveSingle(submission.id);
+                            }
+                          }}
                         >
                           <Check />
                           Duyệt
@@ -419,7 +424,7 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
           if (!open) {
             setPendingStatus(null);
             setPendingIds([]);
-            setRejectReason("");
+            setModerationReason("");
           }
         }}
       >
@@ -435,23 +440,23 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
               {pendingIds.length} bài thi đã chọn?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {pendingStatus === "DISQUALIFIED" ? (
+          {requiresReason ? (
             <div className="space-y-2">
-              <Label htmlFor="bulk-reject-reason">
-                Lý do từ chối <span className="text-red-500">*</span>
+              <Label htmlFor="moderation-reason">
+                {pendingStatus === "DISQUALIFIED" ? "Lý do loại bài" : "Lý do gỡ cờ"} <span className="text-red-500">*</span>
               </Label>
               <textarea
-                id="bulk-reject-reason"
+                id="moderation-reason"
                 rows={3}
                 minLength={10}
                 maxLength={1000}
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Nêu rõ lý do loại bài thi (tối thiểu 10 ký tự, tối đa 1000 ký tự)..."
-                value={rejectReason}
-                onChange={(event) => setRejectReason(event.target.value)}
+                placeholder="Nhập lý do quyết định (10–1000 ký tự)"
+                value={moderationReason}
+                onChange={(event) => setModerationReason(event.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Bắt buộc theo BR-18 — hiện tại {rejectReason.trim().length}/10
+                Bắt buộc theo BR-18 — hiện tại {moderationReason.trim().length}/10
                 ký tự tối thiểu.
               </p>
             </div>
@@ -459,7 +464,7 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
           <AlertDialogFooter>
             <AlertDialogCancel>Hủy</AlertDialogCancel>
             <AlertDialogAction
-              disabled={isBulkLoading || isRejectReasonInvalid}
+              disabled={isBulkLoading || (requiresReason && moderationReason.trim().length < 10)}
               onClick={() => {
                 if (pendingStatus) applyModeration(pendingIds, pendingStatus);
               }}

@@ -1,5 +1,20 @@
 # Module Spec: 02-analog-master-data.md
 
+## Phạm vi theo SRS hiện hành
+
+**UC-06–08, BR-02/03/22.** Quản lý Film Stock, Camera, Lens và Film Lab cơ bản. Lab lưu tên, địa điểm, dịch vụ, thiết bị scan và trạng thái hoạt động. Vô hiệu hóa bản ghi ngừng dùng để giữ metadata lịch sử. Participant có danh mục tra cứu khi ghi nhật ký phim và nộp bài. Trạng thái Verified Partner Lab không thuộc phạm vi.
+
+## Thiết kế trước lần cập nhật SRS
+
+> Tham chiếu lịch sử để truy vết thiết kế và các hợp đồng cũ. Yêu cầu nghiệp vụ hiện hành nằm trong [SRS](../srs.md) và mục trên.
+
+## Phạm vi nghiệm thu và trạng thái hiện tại
+
+UC-06–08 cần CRUD quản trị và tra cứu danh mục cho Logbook/nộp bài. Hiện chưa có màn quản trị Web. [Hono](../../apps/api/src/index.ts) chưa mount các route danh mục; [OpenAPI](../openapi.yaml) ghi hợp đồng này ở trạng thái `planned`. Nghiệm thu tổ hợp tên phim, hãng và ISO duy nhất, xóa mềm vẫn giữ tham chiếu cũ, bản ghi vô hiệu hóa không xuất hiện trong danh sách chọn mới và Lab hỗ trợ trạng thái đối tác xác minh.
+
+Mobile đã có [form thông số chụp FPC-43 và form tráng/scan FPC-44 trong luồng nộp bài](../../apps/mobile/lib/screens/submission/submission_upload_screen.dart). Các form nhận giá trị nhập tay hoặc dùng danh sách có sẵn trong app. Tích hợp tra cứu danh mục tập trung cho hai form vẫn đang chờ API Module 02.
+
+
 > **Module Name**: Analog Photography Master Data Management (Danh mục dữ liệu dùng chung Hệ thống Nhiếp ảnh Phim)  
 > **Status**: DRAFT / READY FOR CODE GENERATION  
 > **Version**: 1.0.0  

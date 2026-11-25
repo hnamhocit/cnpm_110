@@ -11,7 +11,7 @@ export function ContestCard({ contest }: ContestCardProps) {
   const isOngoing = contest.status === "ongoing";
 
   return (
-    <div className="group relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/10">
+    <div className="group relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand-ring hover:shadow-lg hover:shadow-brand-ring/10">
       <div>
         {/* Status Badge & Category */}
         <div className="flex items-center justify-between gap-2 mb-4">
@@ -21,20 +21,20 @@ export function ContestCard({ contest }: ContestCardProps) {
               Đang diễn ra
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 border border-blue-200">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-2.5 py-1 text-xs font-semibold text-brand-hover border border-brand-glow">
               <Clock className="h-3 w-3" />
               Sắp diễn ra
             </span>
           )}
 
           <span className="inline-flex items-center gap-1 text-[11px] font-mono text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
-            <Film className="h-3 w-3 text-blue-600" />
+            <Film className="h-3 w-3 text-brand-solid" />
             {contest.category ?? "Film 35mm / 120"}
           </span>
         </div>
 
         {/* Contest Name */}
-        <h3 className="text-xl font-bold tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1">
+        <h3 className="text-xl font-bold tracking-tight text-slate-900 group-hover:text-brand-solid transition-colors line-clamp-1">
           {contest.name}
         </h3>
 
@@ -60,7 +60,7 @@ export function ContestCard({ contest }: ContestCardProps) {
         <div className="flex items-center justify-between gap-3">
           <Link
             href={`/contests/${contest.id}`}
-            className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-50 px-4 py-2.5 text-xs font-semibold text-blue-700 border border-blue-200/80 hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+            className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-soft px-4 py-2.5 text-xs font-semibold text-brand-hover border border-brand-glow/80 hover:bg-brand-solid hover:text-white transition-all shadow-sm"
           >
             <span>Xem chi tiết &amp; Nộp ảnh</span>
             <ChevronRight className="h-3.5 w-3.5" />

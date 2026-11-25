@@ -1,11 +1,11 @@
 import { Hono } from "hono";
-import { AuthEnv } from "../middlewares/auth";
+import { authenticate, requirePermission, type AuthEnv } from "../middlewares/auth";
 import { AppError } from "../utils/errors";
 import { uploadToR2 } from "../r2";
 
 const upload = new Hono<AuthEnv>();
 
-upload.post("/", async (c) => {
+upload.post("/", authenticate, requirePermission("storage:upload"), async (c) => {
   const body = await c.req.parseBody();
   const file = body["file"];
 

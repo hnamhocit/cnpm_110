@@ -5,6 +5,7 @@ import {
   getContestById,
   getContestCategories,
   getContestResults,
+  getContestScoreboard,
   listContests,
   softDeleteContest,
   updateContest,
@@ -116,7 +117,16 @@ export async function handleGetContestResults(c: Context) {
   const data = await getContestResults(id);
   return c.ok(data, "Published results retrieved successfully");
 }
+export async function handleGetContestScoreboard(
+  c: Context<AuthEnv>,
+) {
+  const { id } = c.req.param();
+  const user = c.get("user");
 
+  const data = await getContestScoreboard(id, user);
+
+  return c.ok(data, "Scoreboard retrieved successfully");
+}
 export async function handleCreateContest(c: Context<AuthEnv>) {
   const body = await parseJsonBody<{
     name?: unknown;

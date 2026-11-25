@@ -18,6 +18,7 @@ const TEST_SECRET = "bug28-integration-test-secret-at-least-32-characters";
 mock.module("../src/r2", () => ({
     uploadToR2: async (_file: File, key: string) => key,
     deleteFromR2: async (_key: string) => { },
+    getR2SignedReadUrl: async (key: string) => `/uploads/${key}`,
 }));
 
 const { default: submissionRoute } = await import("../src/routes/submissions.route");
@@ -56,6 +57,7 @@ async function makeTestImage() {
 
 async function createTestData() {
     const participantId = crypto.randomUUID();
+    const organizerId = crypto.randomUUID();
     const contestId = crypto.randomUUID();
     const categoryId = crypto.randomUUID();
 
@@ -70,6 +72,13 @@ async function createTestData() {
         ],
     );
 
+    await pool.query("INSERT INTO roles(name) VALUES ('Participant') ON CONFLICT (name) DO NOTHING");
+    await pool.query("INSERT INTO user_roles(user_id, role_id) SELECT $1, id FROM roles WHERE name = 'Participant'", [participantId]);
+    await pool.query(
+        "INSERT INTO users (id, full_name, email, password_hash) VALUES ($1, 'Test Organizer', $2, 'test')",
+        [organizerId, `bug28-${organizerId}@example.com`],
+    );
+
     await pool.query(
         `INSERT INTO contests
      (id, name, start_at, end_at, status, created_by)
@@ -80,7 +89,7 @@ async function createTestData() {
             new Date(Date.now() - 24 * 60 * 60 * 1000),
             new Date(Date.now() + 24 * 60 * 60 * 1000),
             "ongoing",
-            participantId,
+            organizerId,
         ],
     );
 
@@ -90,10 +99,10 @@ async function createTestData() {
         [categoryId, contestId, "Bug 28 Test Category"],
     );
 
-    return { participantId, contestId, categoryId };
+    return { participantId, organizerId, contestId, categoryId };
 }
 
-async function cleanupTestData(contestId: string, participantId: string) {
+async function cleanupTestData(contestId: string, participantId: string, organizerId: string) {
     await pool.query(
         `DELETE FROM film_metadata
      WHERE submission_id IN (
@@ -104,7 +113,7 @@ async function cleanupTestData(contestId: string, participantId: string) {
     await pool.query("DELETE FROM submissions WHERE contest_id = $1", [contestId]);
     await pool.query("DELETE FROM categories WHERE contest_id = $1", [contestId]);
     await pool.query("DELETE FROM contests WHERE id = $1", [contestId]);
-    await pool.query("DELETE FROM users WHERE id = $1", [participantId]);
+    await pool.query("DELETE FROM users WHERE id = ANY($1::uuid[])", [[participantId, organizerId]]);
 }
 
 async function submitTestImage(
@@ -121,10 +130,11 @@ async function submitTestImage(
     form.set("title", "Bug 28 Test Submission");
     form.set("filmBrand", "Kodak");
     form.set("filmStock", "Portra 400");
-    form.set("filmFormat", "35mm");
+    form.set("filmFormat", "135");
     form.set("isoRated", "400");
     form.set("isoShot", "400");
     form.set("cameraBody", "Canon AE-1");
+    form.set("devLabName", "Test lab");
     form.set("rollId", rollId);
     form.set("frameNumber", frameNumber);
     form.set("image", await makeTestImage());
@@ -178,7 +188,7 @@ describe("Bug 28: Submission integration tests", () => {
     });
 
     test("BR-08: Rejects submissions after deadline", async () => {
-        const { participantId, contestId, categoryId } = await createTestData();
+        const { participantId, organizerId, contestId, categoryId } = await createTestData();
 
         try {
             await pool.query("UPDATE contests SET end_at = $1 WHERE id = $2", [
@@ -197,36 +207,50 @@ describe("Bug 28: Submission integration tests", () => {
             const body = await response.json();
             expect(body.message).toBe("Submission deadline has passed");
         } finally {
-            await cleanupTestData(contestId, participantId);
+            await cleanupTestData(contestId, participantId, organizerId);
         }
     });
 
-    test("BR-05: Rejects duplicate film roll and frame", async () => {
-        const { participantId, contestId, categoryId } = await createTestData();
+    test("BR-21: A contest owner cannot submit as Participant", async () => {
+        const { participantId, organizerId, contestId, categoryId } = await createTestData();
+        try {
+            await pool.query("UPDATE contests SET created_by = $1 WHERE id = $2", [participantId, contestId]);
+            const response = await submitTestImage(participantId, contestId, categoryId);
+            expect(response.status).toBe(403);
+        } finally {
+            await cleanupTestData(contestId, participantId, organizerId);
+        }
+    });
+
+    test("BR-05/23: Accepts frame 40 and rejects duplicate entries across categories", async () => {
+        const { participantId, organizerId, contestId, categoryId } = await createTestData();
 
         try {
+            const secondCategoryId = crypto.randomUUID();
+            await pool.query("INSERT INTO categories (id, contest_id, name) VALUES ($1, $2, $3)",
+                [secondCategoryId, contestId, "Second category"]);
             const firstResponse = await submitTestImage(
                 participantId,
                 contestId,
                 categoryId,
                 "ROLL-001",
-                "01",
+                "40",
             );
             expect(firstResponse.status).toBe(201);
 
             const secondResponse = await submitTestImage(
                 participantId,
                 contestId,
-                categoryId,
+                secondCategoryId,
                 "ROLL-001",
-                "01",
+                "040",
             );
             expect(secondResponse.status).toBe(409);
 
             const body = await secondResponse.json();
             expect(body.error ?? body.message).toBeTruthy();
         } finally {
-            await cleanupTestData(contestId, participantId);
+            await cleanupTestData(contestId, participantId, organizerId);
         }
     });
 });

@@ -1,104 +1,97 @@
-import { ArrowRight, Award, Film, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden border-b border-slate-200/80 bg-gradient-to-b from-[#f4f7ff] via-white to-[#f4f7ff] py-20 lg:py-28">
-      {/* Background Soft Glow effects - matches auth layout */}
+    <section className="relative flex min-h-[calc(100svh-4rem)] flex-col justify-between overflow-hidden bg-brand-ink text-white">
+      {/* Full-bleed Editorial Film Background */}
+      <Image
+        src="/images/hero-film.jpg"
+        alt="Máy ảnh phim 35mm cổ điển và cuộn âm bản"
+        fill
+        priority
+        className="object-cover object-center"
+      />
+
+      {/* Directional Editorial Scrim for Crisp Readability */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-[180px] -left-[140px] size-[520px] rounded-full bg-blue-200/40 blur-[100px]"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-brand-ink/92 via-brand-ink/75 to-brand-ink/35"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-[120px] -bottom-[160px] size-[480px] rounded-full bg-blue-200/35 blur-[100px]"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-brand-ink/90 via-transparent to-brand-ink/30"
       />
 
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-xs font-semibold text-blue-700 shadow-sm mb-8 animate-fade-in">
-          <Film className="h-3.5 w-3.5 text-blue-600" />
-          <span>Nền tảng Cuộc thi Nhiếp ảnh Phim 2026</span>
-          <span className="text-blue-300">•</span>
-          <span className="flex items-center gap-1 text-blue-600">
-            <Sparkles className="h-3 w-3 text-blue-600" /> AI Verified
-          </span>
-        </div>
-
-        {/* Heading */}
-        <h1 className="mx-auto max-w-4xl text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.15]">
-          Tôn vinh Khoảnh khắc &amp; Bản sắc Nghệ thuật{" "}
-          <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 bg-clip-text text-transparent">
-            Nhiếp ảnh Phim
-          </span>
-        </h1>
-
-        {/* Subtitle */}
-        <p className="mx-auto mt-6 max-w-2xl text-base sm:text-lg text-slate-600 leading-relaxed">
-          Nền tảng thi đua nhiếp ảnh phim kết hợp trí tuệ nhân tạo. Quản lý minh
-          bạch, tự động phát hiện ảnh giả lập AI hoặc trùng lặp, đảm bảo sân
-          chơi thuần khiết dành riêng cho các tín đồ Film Photography.
+      {/* Main Content Container - Aligned to max-w-7xl */}
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+        <p className="mb-5 font-mono text-xs font-medium uppercase tracking-[0.22em] text-white/70">
+          CINEGEN — Analog Photography Platform
         </p>
 
-        {/* CTA Buttons */}
-        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <a
-            href="#ongoing-contests"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-semibold text-white hover:bg-blue-700 transition-all shadow-md shadow-blue-600/30 active:scale-95"
+        <h1 className="max-w-3xl font-heading text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl lg:leading-[1.08]">
+          Tôn vinh khoảnh khắc &amp; bản sắc nghệ thuật{" "}
+          <span className="text-brand-glow">nhiếp ảnh phim.</span>
+        </h1>
+
+        <p className="mt-6 max-w-xl text-base leading-relaxed text-white/80 sm:text-lg">
+          Sân chơi dành riêng cho cộng đồng chụp phim 35mm, 120 và Large Format.
+          Minh bạch từ khâu kiểm định âm bản đến chấm thi ẩn danh độc lập.
+        </p>
+
+        <div className="mt-10 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+          <Button
+            size="lg"
+            asChild
+            className="h-12 rounded-full bg-brand-solid px-7 text-sm font-semibold text-white shadow-lg shadow-black/25 transition-all hover:bg-brand-hover active:scale-[0.98]"
           >
-            <span>Khám phá các cuộc thi đang mở</span>
-            <ArrowRight className="h-4 w-4" />
-          </a>
-          <Link
-            href="/register"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-6 py-3.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all shadow-sm"
+            <a href="#ongoing-contests">
+              <span>Khám phá cuộc thi</span>
+              <ArrowRight className="ml-1.5 size-4" />
+            </a>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="lg"
+            asChild
+            className="h-12 rounded-full border-white/25 bg-white/10 px-6 text-sm font-medium text-white backdrop-blur-md transition-all hover:border-white/40 hover:bg-white/20 hover:text-white"
           >
-            Tạo tài khoản thí sinh
-          </Link>
+            <Link href="/register">Tạo tài khoản thí sinh</Link>
+          </Button>
         </div>
+      </div>
 
-        {/* Highlights / Trust Badges */}
-        <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto pt-10 border-t border-slate-200">
-          <div className="flex items-center justify-center sm:justify-start gap-3 p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm">
-            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
-              <Film className="h-5 w-5" />
-            </div>
-            <div className="text-left">
-              <div className="text-sm font-semibold text-slate-900">
-                35mm &amp; 120 Film
-              </div>
-              <div className="text-xs text-slate-500">
-                Đa dạng thể loại &amp; format
-              </div>
-            </div>
+      {/* Bottom Editorial Specs Strip - Aligned to max-w-7xl */}
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-6 border-t border-white/15 pt-7 sm:grid-cols-3">
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-wider text-white/55">
+              01 / Định dạng
+            </p>
+            <p className="mt-1 font-heading text-sm font-semibold text-white">
+              35mm, 120 Medium &amp; 4×5
+            </p>
           </div>
 
-          <div className="flex items-center justify-center sm:justify-start gap-3 p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm">
-            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div className="text-left">
-              <div className="text-sm font-semibold text-slate-900">
-                AI Kiểm định thông minh
-              </div>
-              <div className="text-xs text-slate-500">
-                Phát hiện ảnh trùng &amp; AI-gen
-              </div>
-            </div>
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-wider text-white/55">
+              02 / Xác thực
+            </p>
+            <p className="mt-1 font-heading text-sm font-semibold text-white">
+              Đối chiếu âm bản &amp; kiểm định AI
+            </p>
           </div>
 
-          <div className="flex items-center justify-center sm:justify-start gap-3 p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm">
-            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
-              <Award className="h-5 w-5" />
-            </div>
-            <div className="text-left">
-              <div className="text-sm font-semibold text-slate-900">
-                Giám khảo Chuyên nghiệp
-              </div>
-              <div className="text-xs text-slate-500">
-                Hệ thống chấm điểm chuẩn mực
-              </div>
-            </div>
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-wider text-white/55">
+              03 / Giám khảo
+            </p>
+            <p className="mt-1 font-heading text-sm font-semibold text-white">
+              Chấm thi ẩn danh kép (Double-Blind)
+            </p>
           </div>
         </div>
       </div>

@@ -25,6 +25,20 @@ describe("FPC-54 AI Detection", () => {
     expect(result.isAiFlagged).toBe(true);
   });
 
+  test("Uses the configured flag threshold and rejects invalid settings", () => {
+    const previous = Bun.env.AI_GENERATED_FLAG_THRESHOLD;
+    try {
+      Bun.env.AI_GENERATED_FLAG_THRESHOLD = "0.9";
+      expect(classifyAiDetection(0.75).isAiFlagged).toBe(false);
+      expect(classifyAiDetection(0.9).isAiFlagged).toBe(true);
+      Bun.env.AI_GENERATED_FLAG_THRESHOLD = "1.1";
+      expect(() => classifyAiDetection(0.9)).toThrow("Invalid AI_GENERATED_FLAG_THRESHOLD");
+    } finally {
+      if (previous === undefined) delete Bun.env.AI_GENERATED_FLAG_THRESHOLD;
+      else Bun.env.AI_GENERATED_FLAG_THRESHOLD = previous;
+    }
+  });
+
   test("Invalid probability is rejected", () => {
     expect(() => classifyAiDetection(-0.1)).toThrow();
     expect(() => classifyAiDetection(1.2)).toThrow();

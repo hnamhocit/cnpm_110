@@ -1,3 +1,0 @@
-# GitHub Copilot repository instructions
-
-Follow the repository instructions in [`AGENTS.md`](../AGENTS.md). Before proposing or changing code, a schema, or an API, read the [SRS](../docs/srs.md) and the modules listed in `AGENTS.md` for the task. Apply the workspace instructions for files in that workspace.

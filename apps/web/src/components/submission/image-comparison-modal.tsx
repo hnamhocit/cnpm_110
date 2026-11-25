@@ -26,15 +26,17 @@ interface ComparisonSubmission {
   authorName?: string | null;
   imageOriginalPath: string | null;
   imagePreviewPath: string | null;
+  negativeProofPath: string | null;
 }
 
 interface ComparisonData {
   flaggedSubmission: ComparisonSubmission;
   originalSubmission: ComparisonSubmission | null;
   duplicateCheck: {
-    hammingDistance: number | null;
+    similarityScore: number | null;
   } | null;
   aiGeneratedProbability: number | null;
+  predictedTags: { tag: string; confidence: number }[];
 }
 
 type ComparisonResponse = {
@@ -43,9 +45,18 @@ type ComparisonResponse = {
 
 type ApiErrorBody = { message?: string };
 
-// Backend mới trả storage key, chưa có presigned URL → key không load được trong <img>.
-const imageSrc = (path: string | null, fallback: string) =>
-  path && /^(https?:\/\/|\/)/.test(path) ? path : fallback;
+function ReviewImage({ src, label }: { src: string | null; label: string }) {
+  return (
+    <figure className="space-y-2">
+      <figcaption className="text-sm font-semibold">{label}</figcaption>
+      {src ? (
+        <img src={src} alt={label} className="h-64 w-full rounded-md border object-contain" />
+      ) : (
+        <p className="text-sm text-muted-foreground">Chưa có ảnh.</p>
+      )}
+    </figure>
+  );
+}
 
 export default function ImageComparisonModal({
   isOpen,
@@ -72,7 +83,7 @@ export default function ImageComparisonModal({
         const response = await http.get<ComparisonResponse>(
           `/api/v1/submissions/${submissionId}/comparison`,
         );
-        setData((response.data as any)?.data ?? response.data ?? null);
+        setData(response.data.data);
       } catch (err) {
         setError(
           axios.isAxiosError<ApiErrorBody>(err)
@@ -91,9 +102,9 @@ export default function ImageComparisonModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl">
+      <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>So sánh bài dự thi nghi ngờ trùng lặp</DialogTitle>
+          <DialogTitle>Thẩm định bài dự thi</DialogTitle>
           <Button
             variant="ghost"
             size="icon"
@@ -124,116 +135,24 @@ export default function ImageComparisonModal({
 
         {!loading && !error && data && (
           <>
-            {data.originalSubmission ? (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-sm">Bài dự thi gốc</h3>
-                  <div className="space-y-2 rounded-md border p-3">
-                    <p className="text-xs text-muted-foreground">
-                      Mã: {data.originalSubmission.id}
-                    </p>
-                    <p className="text-sm font-medium">
-                      {data.originalSubmission.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {data.originalSubmission.authorName ?? "Thí sinh ẩn danh"}
-                    </p>
-                  </div>
-                  <img
-                    src={imageSrc(
-                      data.originalSubmission.imagePreviewPath,
-                      "https://placehold.co/600x400?text=Anh+Goc",
-                    )}
-                    onError={(event) => {
-                      event.currentTarget.onerror = null;
-                      event.currentTarget.src =
-                        "https://placehold.co/600x400?text=Anh+Goc";
-                    }}
-                    alt={data.originalSubmission.title}
-                    className="h-[400px] w-full rounded-md border object-contain"
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-sm">
-                    Bài dự thi bị nghi ngờ
-                  </h3>
-                  <div className="space-y-2 rounded-md border bg-red-50 p-3">
-                    <p className="text-xs text-muted-foreground">
-                      Mã: {data.flaggedSubmission.id}
-                    </p>
-                    <p className="text-sm font-medium">
-                      {data.flaggedSubmission.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {data.flaggedSubmission.authorName ?? "Thí sinh ẩn danh"}
-                    </p>
-                    {data.duplicateCheck && (
-                      <p className="text-xs font-medium text-red-600">
-                        Độ tương đồng: {data.duplicateCheck.hammingDistance}
-                      </p>
-                    )}
-                    {data.aiGeneratedProbability !== null && (
-                      <p className="text-xs font-medium text-orange-600">
-                        AI: {(data.aiGeneratedProbability * 100).toFixed(1)}%
-                      </p>
-                    )}
-                  </div>
-                  <img
-                    src={imageSrc(
-                      data.flaggedSubmission.imagePreviewPath,
-                      "https://placehold.co/600x400?text=Anh+Nghi+Ngo",
-                    )}
-                    onError={(event) => {
-                      event.currentTarget.onerror = null;
-                      event.currentTarget.src =
-                        "https://placehold.co/600x400?text=Anh+Nghi+Ngo";
-                    }}
-                    alt={data.flaggedSubmission.title}
-                    className="h-[400px] w-full rounded-md border object-contain"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-sm">
-                    Bài dự thi bị nghi ngờ
-                  </h3>
-                  <div className="space-y-2 rounded-md border bg-yellow-50 p-3">
-                    <p className="text-xs text-muted-foreground">
-                      Mã: {data.flaggedSubmission.id}
-                    </p>
-                    <p className="text-sm font-medium">
-                      {data.flaggedSubmission.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {data.flaggedSubmission.authorName ?? "Thí sinh ẩn danh"}
-                    </p>
-                    {data.aiGeneratedProbability !== null && (
-                      <p className="text-xs font-medium text-orange-600">
-                        AI: {(data.aiGeneratedProbability * 100).toFixed(1)}%
-                      </p>
-                    )}
-                  </div>
-                  <img
-                    src={imageSrc(
-                      data.flaggedSubmission.imagePreviewPath,
-                      "https://placehold.co/600x400?text=Anh+Nghi+Ngo",
-                    )}
-                    onError={(event) => {
-                      event.currentTarget.onerror = null;
-                      event.currentTarget.src =
-                        "https://placehold.co/600x400?text=Anh+Nghi+Ngo";
-                    }}
-                    alt={data.flaggedSubmission.title}
-                    className="mx-auto h-[400px] max-w-2xl rounded-md border object-contain"
-                  />
-                </div>
-                <p className="text-center text-sm text-muted-foreground">
-                  Không tìm thấy bài dự thi trùng lặp
-                </p>
-              </div>
+            <div className="space-y-1 text-sm">
+              <p className="font-medium">{data.flaggedSubmission.title}</p>
+              {data.aiGeneratedProbability !== null && (
+                <p>Điểm nghi vấn AI {(data.aiGeneratedProbability * 100).toFixed(1)}%</p>
+              )}
+              {data.duplicateCheck?.similarityScore != null && (
+                <p>Độ tương đồng {(data.duplicateCheck.similarityScore * 100).toFixed(1)}%</p>
+              )}
+              {data.predictedTags.length > 0 && (
+                <p>Thẻ gợi ý · {data.predictedTags.map(({ tag }) => tag).join(", ")}</p>
+              )}
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <ReviewImage src={data.flaggedSubmission.imagePreviewPath} label="Ảnh dự thi" />
+              <ReviewImage src={data.flaggedSubmission.negativeProofPath} label="Âm bản hoặc contact sheet" />
+            </div>
+            {data.originalSubmission && (
+              <ReviewImage src={data.originalSubmission.imagePreviewPath} label={`Ảnh tương tự · ${data.originalSubmission.title}`} />
             )}
 
             <div className="flex justify-end">

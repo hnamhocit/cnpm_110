@@ -283,6 +283,7 @@ async function seedPublishedContest(
 
 export async function seed() {
   const roleMap = await seedRoles();
+  if (Bun.env.NODE_ENV === "production") return;
   const userIdsByRole = await seedUsers(roleMap);
 
   const organizerUserId = userIdsByRole.get("Organizer");

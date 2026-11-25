@@ -1,5 +1,22 @@
 # Module Spec: 10 - Database Schema & Cloud Storage (Cơ sở Dữ liệu & Lưu trữ Đám mây)
 
+## Phạm vi theo SRS hiện hành
+
+**BR-03/05/16/17/23, CR-04/07.** Dùng PostgreSQL/Drizzle, transaction và kiểm soát truy cập đồng thời. Giữ dữ liệu nghiệp vụ lịch sử; ưu tiên migration bổ sung và backfill. Ảnh gốc/bằng chứng trong vùng bảo mật với URL có thời hạn, ảnh xem trước tối ưu được cấp riêng cho nội dung công khai. Hàng đợi AI hiện dùng PostgreSQL. pgvector tùy phương án đối sánh.
+
+## Thiết kế trước lần cập nhật SRS
+
+> Tham chiếu lịch sử để truy vết thiết kế và các hợp đồng cũ. Yêu cầu nghiệp vụ hiện hành nằm trong [SRS](../srs.md) và mục trên.
+
+Các bảng Drizzle hiện tại được chia theo module và xuất từ [schemas/index.ts](../../apps/api/src/db/schemas/index.ts). [Hướng dẫn database](../../apps/api/README-DATABASE.md) mô tả baseline duy nhất và cách chuyển tiếp từ lịch sử cũ.
+
+## Phạm vi nghiệm thu và trạng thái hiện tại
+
+Hiện có upload multipart qua Backend, lưu R2 hoặc local. Luồng presigned upload/confirm trực tiếp là thiết kế đích của SRS §5.1.2. Đối chiếu [route upload](../../apps/api/src/routes/upload.route.ts), [R2](../../apps/api/src/r2.ts) và [schema](../../apps/api/src/db/schema.ts) trước khi tích hợp. Áp dụng cho ảnh scan và đối chứng ở Module 05, vector ở Module 06 và hai bản ảnh triển lãm ở Module 08.
+
+Nghiệm thu quyền upload/confirm theo chủ tệp, truy cập riêng tư cho scan gốc và ảnh âm bản, bản preview/thumbnail công khai theo quyền xuất bản, và lỗi khi URL hết hạn hoặc xác nhận lại. Đo tải 200 người dùng upload đồng thời theo SRS §5.2.4.
+
+
 ## 1. Domain Entities & Database Mapping
 
 Hệ thống sử dụng cơ sở dữ liệu quan hệ **PostgreSQL 16+** kết hợp tiện ích mở rộng **`pgvector`** để quản lý vector nhúng và tìm kiếm tương đồng hình ảnh.

@@ -381,7 +381,7 @@ class _SubmissionUploadScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Tác phẩm "${result.title}" đã được tải lên hệ thống Film Contest.',
+                  'Tác phẩm "${result.title}" đã được tải lên hệ thống CINEGEN.',
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 12),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/cinegen_theme.dart';
 import '../../core/components/custom_button.dart';
 import '../../core/components/custom_input_field.dart';
 import '../../core/providers/auth_provider.dart';
@@ -53,6 +54,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _requestPasswordReset() async {
+    final email = _emailController.text.trim();
+    final validationError = Validators.email(email);
+    if (validationError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(validationError)),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(authProvider.notifier).requestPasswordReset(email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nếu email đã xác minh, hãy kiểm tra hộp thư để đặt lại mật khẩu.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -69,11 +99,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(
-                      Icons.photo_camera_outlined,
-                      size: 64,
-                      color: theme.colorScheme.primary,
-                    ),
+                    const Center(child: CinegenMark(size: 72)),
                     const SizedBox(height: 16),
                     Text(
                       'Đăng nhập',
@@ -104,6 +130,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       height: 48,
                       isLoading: _isLoading,
                       onPressed: _submit,
+                    ),
+                    TextButton(
+                      onPressed: _isLoading ? null : _requestPasswordReset,
+                      child: const Text('Quên mật khẩu?'),
                     ),
                     const SizedBox(height: 16),
                     Row(

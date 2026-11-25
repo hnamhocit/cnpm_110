@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Chào mừng bạn đến với Film Contest.',
+          'Chào mừng bạn đến với CINEGEN.',
           style: theme.textTheme.bodyLarge,
         ),
         const SizedBox(height: 24),

@@ -11,40 +11,16 @@ This block is written and re-added by `turbo` before repository-scoped commands 
 
 ---
 
-# FilmContest-AI repository instructions
+# CINEGEN repository instructions
 
 Before writing or proposing code, schemas, or API changes, read the master SRS and the modules relevant to the task. Apply any workspace-specific `AGENTS.md` as well.
 
-- [`docs/srs.md`](docs/srs.md) governs business requirements and message codes. Modules 01–10 in [`docs/ai/`](docs/ai/) describe the technical design.
-- For API work, read [Module 09](docs/ai/09-api-contracts.md) and check [OpenAPI](docs/openapi.yaml) and the Hono route registrations. `x-implementation: mounted` identifies registered routes. `planned` identifies module contracts awaiting a route. Registration alone does not establish SRS compliance.
-- If requirements or contracts conflict, identify the difference and use the governing document for the task. Missing business rules, routes, or DTOs need an explicit decision before implementation.
+- The [SRS](docs/srs.md) governs business requirements and message codes. Use its [module index](docs/srs.md#4-module-specifications-mapping-chỉ-mục-ánh-xạ-module-chi-tiết) to find the relevant technical design and map each change to the applicable UC and BR.
+- Apply the SRS business rules before implementation, especially soft deletion, session revocation, blind judging, criteria weights, result immutability, proof deadlines, and film frame limits.
+- For API work, check [Module 09](docs/ai/09-api-contracts.md), [OpenAPI](docs/openapi.yaml), and [Hono route registrations](apps/api/src/index.ts). OpenAPI marks registered operations as `mounted` and pending contracts as `planned`. Verify implementation against the relevant SRS rules.
+- When requirements or contracts disagree, identify the difference and follow the governing document. Missing business rules, routes, or DTOs need an explicit decision before implementation.
 
-## 1. Domain & Business Rules Mapping (SSOT)
-
-Always map your task to the Single Source of Truth before coding:
-- **Master SRS**: [`docs/srs.md`](docs/srs.md) (Actors, Use Cases UC-01 to UC-43, Business Rules BR-01 to BR-25, App Messages MSG001 to MSG028)
-- **Module 01 (Auth & RBAC)**: [`docs/ai/01-auth-and-rbac.md`](docs/ai/01-auth-and-rbac.md) (JWT, Refresh Token Rotation, RBAC Matrix, Brute-force lockout)
-- **Module 02 (Analog Master Data)**: [`docs/ai/02-analog-master-data.md`](docs/ai/02-analog-master-data.md) (Film Stocks, Cameras, Lenses, Labs, Soft delete)
-- **Module 03 (Contest Lifecycle)**: [`docs/ai/03-contest-lifecycle.md`](docs/ai/03-contest-lifecycle.md) (Timeline order BR-08, 100% weight validation BR-15, Quorum BR-20, Conflict of Interest BR-21, 6-state machine)
-- **Module 04 (Film Logbook)**: [`docs/ai/04-film-logbook.md`](docs/ai/04-film-logbook.md) (Film rolls, Frame logs, Physical frame limits BR-23, Push/Pull ISO, Offline sync)
-- **Module 05 (Submission & Proof)**: [`docs/ai/05-submission-and-proof.md`](docs/ai/05-submission-and-proof.md) (Photo technical standards BR-07, Duplicate check BR-05, Mandatory 48h proof countdown BR-19, Mandatory reason BR-18, 5 metadata fields BR-22)
-- **Module 06 (AI Verification)**: [`docs/ai/06-ai-verification.md`](docs/ai/06-ai-verification.md) (AI-generated flag P_AI >= 75% BR-09, pHash Hamming ≤ 5 or cosine similarity ≥ 92% (BR-10), pgvector)
-- **Module 07 (Blind Judging)**: [`docs/ai/07-blind-judging.md`](docs/ai/07-blind-judging.md) (Double-blind DTO stripping BR-12, Judge independence BR-13, Score discrepancy alert > 30% BR-14, Score average BR-25)
-- **Module 08 (Archive & Exhibition)**: [`docs/ai/08-archive-and-exhibition.md`](docs/ai/08-archive-and-exhibition.md) (Result immutability BR-16, Dual digital asset storage BR-17)
-- **Module 09 (Shared API Contracts)**: [`docs/ai/09-api-contracts.md`](docs/ai/09-api-contracts.md) (Standard response envelopes, DTOs, Zod schemas)
-- **Module 10 (Database & Storage)**: [`docs/ai/10-database-and-storage.md`](docs/ai/10-database-and-storage.md) (PostgreSQL 16+, pgvector, digital_assets, S3/R2 presigned URLs)
-
-## 2. Inviolable Core Constraints
-
-- **Session Revocation (BR-04)**: Revoke active Access Tokens and Refresh Tokens immediately when an account is locked.
-- **Double-Blind Protection (BR-12)**: NEVER return participant personal identity (`fullName`, `email`, `avatarUrl`, `userId`) in any endpoint called by the `JUDGE` role. Strip identity at the backend DTO/serialization layer.
-- **Physical Film Limits (BR-23)**: Frame numbers MUST NOT exceed physical limits: Format `135` (max 39), `120_645` (max 16), `120_66` (max 12), `120_67` (max 10), `4x5` (max 1).
-- **Negative Proof 48h Countdown (BR-19)**: When proof is requested, participant has exactly 48 hours to upload. Overdue submissions automatically transition to `DISQUALIFIED_NO_PROOF`.
-- **Criteria Weights (BR-15)**: Sum of criterion weights per category must equal exactly 100% ($1.0000$).
-- **Result Immutability (BR-16)**: Once a contest transitions to `PUBLISHED`, all scores, awards, and submissions are read-only.
-- **Soft Delete Only (BR-03)**: Never perform hard `DELETE` queries on core domain entities. Update `is_deleted = TRUE` instead.
-
-## 3. Monorepo & Tooling Rules
+## Monorepo & Tooling Rules
 
 - **Package Manager**: Use `bun` exclusively (`bun install`, `bun dev`, `bun run build`). NEVER use `npm`, `yarn`, or `pnpm`.
 - **Workspaces**:

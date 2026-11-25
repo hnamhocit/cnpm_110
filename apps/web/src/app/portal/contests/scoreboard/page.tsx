@@ -1,13 +1,10 @@
 "use client";
 
 import {
-  AlertTriangle,
   ArrowLeft,
   CheckCircle2,
   Clock,
   Layers,
-  Pause,
-  Play,
   RefreshCw,
   Search,
   ShieldAlert,
@@ -46,8 +43,6 @@ import type {
   ScoreboardStatus,
 } from "@/types/scoreboard";
 
-const POLL_INTERVAL_MS = 10_000;
-
 const RANK_STYLES: Record<number, string> = {
   1: "bg-amber-100 text-amber-800",
   2: "bg-slate-200 text-slate-700",
@@ -66,7 +61,6 @@ function formatUpdatedAt(isoDate: string | null): string {
 export default function ScoreboardPage() {
   const [entries, setEntries] = useState<ScoreboardEntry[]>([]);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
-  const [isLive, setIsLive] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,7 +88,7 @@ export default function ScoreboardPage() {
       setError(null);
     } catch {
       setError(
-        "Không thể tải bảng điểm. Hệ thống sẽ thử lại ở lần cập nhật sau.",
+        "Không thể tải bảng điểm. Vui lòng thử lại.",
       );
     } finally {
       setIsLoading(false);
@@ -104,14 +98,6 @@ export default function ScoreboardPage() {
   useEffect(() => {
     void loadScoreboard();
   }, [loadScoreboard]);
-
-  useEffect(() => {
-    if (!isLive) return;
-    const timer = setInterval(() => {
-      void loadScoreboard();
-    }, POLL_INTERVAL_MS);
-    return () => clearInterval(timer);
-  }, [isLive, loadScoreboard]);
 
   const summary = summarizeScoreboard(entries);
   const rankedEntries = rankScoreboard(entries);
@@ -155,50 +141,12 @@ export default function ScoreboardPage() {
             Bảng điểm tổng hợp
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Điểm chung cuộc của từng bài thi, cập nhật trực tiếp khi giám khảo
-            nộp phiếu.
+            Điểm chung cuộc của từng bài thi trong dữ liệu minh họa.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium">
-            <span className="relative flex h-2 w-2">
-              <span
-                className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                  isLive ? "animate-ping bg-emerald-400" : "bg-gray-400"
-                }`}
-              />
-              <span
-                className={`relative inline-flex h-2 w-2 rounded-full ${
-                  isLive ? "bg-emerald-500" : "bg-gray-400"
-                }`}
-              />
-            </span>
-            <span className={isLive ? "text-emerald-700" : "text-gray-500"}>
-              {isLive ? "Trực tiếp" : "Tạm dừng"}
-            </span>
-            <span className="text-gray-400">
-              · {formatUpdatedAt(updatedAt)}
-            </span>
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs"
-            onClick={() => setIsLive((value) => !value)}
-          >
-            {isLive ? (
-              <>
-                <Pause className="h-3.5 w-3.5" /> Tạm dừng
-              </>
-            ) : (
-              <>
-                <Play className="h-3.5 w-3.5" /> Tiếp tục
-              </>
-            )}
-          </Button>
-
+          <span className="text-xs text-gray-500">Cập nhật {formatUpdatedAt(updatedAt)}</span>
           <Button
             variant="outline"
             size="sm"
@@ -229,12 +177,9 @@ export default function ScoreboardPage() {
             </option>
           ))}
         </select>
-        <span className="text-gray-400">
-          · Tự động làm mới mỗi {POLL_INTERVAL_MS / 1000} giây
-        </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         <Card className="border-gray-200">
           <CardContent className="flex items-center gap-3 p-4">
             <div className="rounded-xl bg-blue-50 p-3 text-blue-600">
@@ -277,29 +222,13 @@ export default function ScoreboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200">
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="rounded-xl bg-rose-50 p-3 text-rose-600">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500">
-                Lệch điểm &gt; 30%
-              </p>
-              <p className="text-2xl font-bold text-rose-700">
-                {summary.discrepancy}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {summary.missingProof > 0 && (
         <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
-            {summary.missingProof} bài thi chưa xác minh ảnh âm bản — không đủ
-            điều kiện trao giải (BR-06).
+            {summary.missingProof} bài thi cần xác minh bằng chứng trước khi xét giải (BR-06).
           </span>
         </div>
       )}
@@ -457,7 +386,7 @@ export default function ScoreboardPage() {
                           <div className="min-w-0">
                             <p className="flex items-center gap-1.5 truncate font-semibold text-gray-900">
                               {entry.title}
-                              {!entry.negativeProofVerified && (
+                              {entry.proofRequired && !entry.negativeProofVerified && (
                                 <ShieldAlert
                                   className="h-3.5 w-3.5 shrink-0 text-amber-500"
                                   aria-label="Chưa xác minh ảnh âm bản"

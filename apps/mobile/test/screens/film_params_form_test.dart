@@ -160,7 +160,7 @@ void main() {
       // Enter Frame Number
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Số Frame (Frame #)'),
-        '24',
+        '40',
       );
 
       await tester.tap(find.text('Lưu thông số phim'));
@@ -170,7 +170,7 @@ void main() {
       expect(submitted!.cameraBody, 'Olympus OM-1');
       expect(submitted!.lens, 'Zuiko 50mm f/1.8');
       expect(submitted!.filmStock, 'Gold 200');
-      expect(submitted!.frameNumber, '24');
+      expect(submitted!.frameNumber, '40');
       expect(submitted!.filmBrand, 'Kodak');
       expect(submitted!.isoRated, 400);
       expect(submitted!.isoShot, 400);

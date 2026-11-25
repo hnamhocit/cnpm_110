@@ -70,20 +70,20 @@ export function OngoingContests() {
   return (
     <section
       id="ongoing-contests"
-      className="py-20 bg-white text-slate-900 border-b border-slate-200"
+      className="py-20 bg-background text-foreground border-b border-border"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div>
-            <div className="inline-flex items-center gap-2 text-xs font-semibold text-blue-600 uppercase tracking-wider mb-2">
+            <div className="inline-flex items-center gap-2 text-xs font-semibold text-brand-solid uppercase tracking-wider mb-2">
               <Film className="h-4 w-4" />
               <span>Sân chơi Nhiếp ảnh Phim</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
+            <h2 className="font-heading text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
               Cuộc thi đang diễn ra
             </h2>
-            <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-2xl">
+            <p className="mt-2 text-sm sm:text-base text-muted-foreground max-w-2xl">
               Danh sách các cuộc thi ảnh phim đang mở nhận bài dự thi hoặc mới
               công bố. Hãy chọn cuộc thi phù hợp và nộp tác phẩm của bạn!
             </p>
@@ -101,30 +101,29 @@ export function OngoingContests() {
           </div>
         )}
 
-        {/* Search & Filter Bar */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 mb-10 shadow-sm">
+        {/* Flat Search & Filter Bar */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 mb-10">
           {/* Search Input */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <div className="relative flex-1 max-w-xl">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm cuộc thi theo tên, thể loại phim (35mm, 120, B&W)..."
-              className="w-full rounded-xl bg-white pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 border border-slate-300 focus:border-blue-500 focus:outline-none transition-colors shadow-sm"
+              className="h-10 w-full rounded-xl border border-border bg-background pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 transition-all"
             />
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-            <SlidersHorizontal className="h-4 w-4 text-slate-400 shrink-0 hidden sm:block" />
+          {/* Flat Segmented Filter Tabs */}
+          <div className="inline-flex items-center rounded-xl bg-muted p-1 gap-1 self-start md:self-auto overflow-x-auto">
             <button
               type="button"
               onClick={() => setStatusFilter("ongoing")}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
                 statusFilter === "ongoing"
-                  ? "bg-emerald-600 text-white shadow-sm"
-                  : "bg-white text-slate-600 hover:text-slate-900 border border-slate-300"
+                  ? "bg-background text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Đang diễn ra (
@@ -133,10 +132,10 @@ export function OngoingContests() {
             <button
               type="button"
               onClick={() => setStatusFilter("published")}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
                 statusFilter === "published"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-white text-slate-600 hover:text-slate-900 border border-slate-300"
+                  ? "bg-background text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Sắp công bố (
@@ -145,10 +144,10 @@ export function OngoingContests() {
             <button
               type="button"
               onClick={() => setStatusFilter("all")}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
                 statusFilter === "all"
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "bg-white text-slate-600 hover:text-slate-900 border border-slate-300"
+                  ? "bg-background text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Tất cả ({contests.length})
@@ -159,7 +158,7 @@ export function OngoingContests() {
         {/* Loading State */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-24 text-slate-500 space-y-3">
-            <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-brand-solid border-t-transparent rounded-full animate-spin" />
             <p className="text-sm">Đang tải danh sách cuộc thi từ máy chủ...</p>
           </div>
         )}
@@ -200,10 +199,10 @@ export function OngoingContests() {
         )}
 
         {/* Bottom Banner */}
-        <div className="mt-16 p-8 rounded-3xl bg-gradient-to-r from-blue-50 via-indigo-50/50 to-white border border-blue-200 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+        <div className="mt-16 p-8 rounded-3xl bg-gradient-to-r from-brand-soft via-indigo-50/50 to-white border border-brand-glow flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
           <div className="space-y-1 text-center md:text-left">
             <h3 className="text-lg font-bold text-slate-900 flex items-center justify-center md:justify-start gap-2">
-              <Trophy className="h-5 w-5 text-blue-600" />
+              <Trophy className="h-5 w-5 text-brand-solid" />
               Bạn là Đơn vị / Câu lạc bộ muốn tổ chức cuộc thi ảnh phim?
             </h3>
             <p className="text-sm text-slate-600">
@@ -213,7 +212,7 @@ export function OngoingContests() {
           </div>
           <a
             href="/login"
-            className="shrink-0 px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-md shadow-blue-600/30 transition-all"
+            className="shrink-0 px-6 py-3 rounded-2xl bg-brand-solid hover:bg-brand-hover text-white text-sm font-semibold shadow-md shadow-brand-solid/30 transition-all"
           >
             Đăng ký làm Ban Tổ chức
           </a>

@@ -1,352 +1,83 @@
-# Software Requirements Specification (SRS) - AI-First Master Specification
+# Software Requirements Specification (SRS) — CINEGEN
 
-> **Project Name**: AI-powered Film Photography Contest Management Platform (**FilmContest-AI**)  
-> **Document Code**: SRS-FC-2026-V1  
-> **Status**: Đặc tả nghiệp vụ đối chiếu với bản SRS Word<br>
-> **Target Audience**: AI Agents / Autonomous Coding Engines, Fullstack Architects, QA Automation Engineers  
-> **Standard**: AI-First Spec (Explicit schemas, deterministic business logic, exhaustive error codes, Zero visual image ambiguity, 100% structured Markdown & Mermaid)
+Bản Markdown đồng bộ theo [SRS PDF đã cập nhật](SRS_Film_Photography_Contest_Platform_Full.pdf). Xem PDF mục 3 để đối chiếu sơ đồ và mô tả màn hình chi tiết.
 
----
+## 1. Product Overview
 
-## 1. Product Overview (Tổng quan sản phẩm)
+- Web phục vụ Administrator, Contest Organizer, Judge, Participant và khách tham quan. Mobile phục vụ Participant, gồm sổ tay cuộn phim và theo dõi cuộc thi.
+- Năm luồng chính gồm cấu hình cuộc thi, nộp bài và metadata, thẩm định bài thi, chấm điểm và công bố kết quả/kho lưu trữ số.
+- AI chạy bất đồng bộ để phát hiện ảnh nghi trùng/tương tự, cảnh báo ảnh tạo sinh, gợi ý hạng mục/từ khóa và hỗ trợ phân tích số liệu cuộc thi. Contest Organizer quyết định duyệt hoặc loại bài.
+- PostgreSQL, lưu trữ đối tượng đám mây và email hỗ trợ các luồng nghiệp vụ. Redis, pgvector, Docker và push notification tùy phương án triển khai.
 
-Nền tảng Quản lý Cuộc thi Nhiếp ảnh Phim tích hợp Trí tuệ Nhân tạo (**FilmContest-AI**) là hệ thống Web và Mobile toàn diện được thiết kế nhằm số hóa, chuẩn hóa và tối ưu hóa toàn bộ quy trình vận hành các cuộc thi nhiếp ảnh phim (Analog Photography), từ lập kế hoạch, đăng ký, nộp bài kèm siêu dữ liệu cuộn phim, thẩm định bằng AI, chấm thi ẩn danh đến lưu trữ triển lãm số.
+## 2. User Requirements
 
-### 1.1. Operational Environment (Môi trường vận hành)
+### 2.1. Vai trò và quyền
 
-*   **Web Application**: Ứng dụng Web đa nền tảng (Chrome, Edge, Safari, Firefox) xây dựng trên Next.js (React), tối ưu cho Ban tổ chức (Contest Organizer), Giám khảo chuyên môn (Judge), Quản trị viên (Administrator), Thí sinh (Participant) và Khách công chúng (Public Visitor). Mặc định kích hoạt Dark Mode tại không gian chấm thi và triển lãm nhằm bảo toàn cảm nhận màu sắc và sắc độ tương phản quang học của ảnh phim.
-*   **Mobile Application**: Ứng dụng Mobile trên nền Flutter (hỗ trợ iOS và Android), tối ưu hóa thao tác ghi chép nhật ký cuộn phim ngoài hiện trường (Film Roll & Frame Logbook), hoạt động ngoại tuyến (Offline-First Cache) và chụp tải ảnh dải phim âm bản (Negative Strip Proof).
-*   **Connectivity**: Yêu cầu kết nối mạng băng thông ổn định để tải ảnh scan chất lượng cao (định dạng JPG/TIFF dung lượng tối đa 25MB) và đồng bộ kết quả chấm điểm thời gian thực.
-*   **Infrastructure**: Triển khai trên hạ tầng đám mây container hóa qua Docker, cơ sở dữ liệu quan hệ **PostgreSQL 16+** tích hợp extension **`pgvector`** (lưu trữ vector nhúng thị giác CLIP/ResNet), **Redis** (hàng đợi xử lý tác vụ bất đồng bộ AI Worker) và **Cloud Object Storage** (Cloudflare R2 / AWS S3) sử dụng cơ chế Presigned URLs.
+| Tác nhân | Phạm vi |
+| --- | --- |
+| Administrator | Quản trị tài khoản, gán vai trò cố định, danh mục phim và thiết bị, ngưỡng AI và nhật ký kiểm toán. |
+| Contest Organizer | Quản lý cuộc thi thuộc quyền, đăng ký, kiểm duyệt, phân công, chốt vòng chấm, công bố, triển lãm và thống kê. |
+| Judge | Chấm độc lập và ẩn danh cho hạng mục/vòng được giao. |
+| Participant | Tự đăng ký tài khoản, đăng ký hạng mục, quản lý Film Roll/Frame, nộp bài và xem lịch sử/kết quả cá nhân. |
+| Public Visitor | Xem nội dung công khai. |
 
-### 1.2. Anticipated Users (Đối tượng người dùng dự kiến)
+### 2.2. Use Case Catalog
 
-| Nhóm người dùng | Vai trò (System Role) | Mô tả trách nhiệm chính |
-| :--- | :--- | :--- |
-| **Quản trị viên** | `ADMIN` | Cấu hình tham số hệ thống, quản lý tài khoản người dùng, phân quyền RBAC, duy trì Master Data (Film Stock, Camera, Lens, Film Lab), giám sát Audit Logs và cài đặt ngưỡng AI. |
-| **Ban tổ chức** | `ORGANIZER` | Khởi tạo cuộc thi (4-Step Wizard), cấu hình hạng mục, tiêu chí chấm và giải thưởng, phân công giám khảo, kiểm duyệt bài thi dựa trên cảnh báo AI, yêu cầu đối chứng âm bản, điều phối lệch điểm và công bố kết quả. |
-| **Giám khảo** | `JUDGE` | Đánh giá tác phẩm trong không gian chấm thi ẩn danh tuyệt đối (Double-Blind), xem ảnh phóng đại kiểm tra hạt phim (Film Grain), chấm điểm theo trọng số tiêu chí, viết nhận xét chuyên môn và khóa bảng điểm. |
-| **Thí sinh** | `PARTICIPANT` | Quản lý hồ sơ nghệ thuật cá nhân, ghi nhật ký cuộn phim và khung hình (Logbook), nộp ảnh scan dự thi kèm siêu dữ liệu, tải ảnh âm bản đối chứng khi có yêu cầu và theo dõi trạng thái bài thi. |
-| **Khách tham quan**| `PUBLIC_VISITOR` | Khám phá phòng triển lãm trực tuyến, lọc tác phẩm theo loại phim/máy ảnh/năm tổ chức, xem tác phẩm đạt giải có đóng dấu bản quyền. |
+| ID | Use Case | Actors | Mô tả |
+| --- | --- | --- | --- |
+| UC-01 | Register / Login / Logout | All Actors | Cho phép Participant tự đăng ký bằng email duy nhất và mật khẩu, xác minh email; các vai trò nội bộ do Admin cấp. Đăng nhập nhận JWT và đăng xuất an toàn. |
+| UC-02 | Recover Password | All Actors | Cho phép người dùng đặt lại mật khẩu thông qua liên kết xác thực gửi qua email. |
+| UC-03 | View & Update Profile | All Actors | Hiển thị và cho phép cập nhật thông tin hồ sơ cá nhân, ảnh đại diện và mật khẩu. |
+| UC-04 | Manage User Accounts | Admin | Quản lý vòng đời tài khoản người dùng (tạo mới, xem chi tiết, khóa/mở khóa tài khoản). |
+| UC-05 | Manage Roles & Permissions | Admin | Gán một trong bốn vai trò hệ thống cố định và áp dụng quyền RBAC tương ứng; không yêu cầu tạo vai trò hoặc permission động. |
+| UC-06 | Manage Film Stock Catalog | Admin | Quản lý danh mục các loại phim chuẩn (Hãng phim, Tên film stock, ISO danh định, Loại phim màu/đen trắng/dương bản). |
+| UC-07 | Manage Camera & Lens Catalog | Admin | Quản lý danh mục thiết bị thân máy ảnh phim (Camera Bodies) và ống kính (Lenses). |
+| UC-08 | Manage Film Lab Directory | Admin | Quản lý danh sách các phòng Lab tráng và quét phim để chuẩn hóa metadata. |
+| UC-09 | Configure AI Thresholds | Admin được kiểm thử; không giao diện tinh chỉnh chuyên sâu. | Quản lý ngưỡng cảnh báo AI và độ tương đồng ảnh theo cấu hình yêu cầu mô hình |
+| UC-10 | View System Audit Logs | Admin | Tra cứu lịch sử thao tác nhạy cảm trên toàn hệ thống (Ai làm gì, khi nào, giá trị cũ/mới). |
+| UC-11 | Create / Duplicate Contest | Organizer | Tạo cuộc thi mới hoặc sao chép cấu hình cuộc thi thuộc quyền quản lý làm template (hạng mục, tiêu chí, vòng chấm, thể lệ, giải thưởng); không sao chép đăng ký, bài thi, điểm hay kết quả. |
+| UC-12 | Update Contest Configuration | Organizer | Chỉnh sửa thông tin cuộc thi, điều chỉnh thời hạn nộp bài hoặc quy định khi cuộc thi chưa đóng. |
+| UC-13 | Manage Contest Categories | Organizer | Thêm, sửa, xóa hoặc kích hoạt/vô hiệu hóa các bảng thi/hạng mục (VD: Đường phố 35mm, Chân dung Medium Format). |
+| UC-14 | Configure Judging Criteria | Organizer | Thiết lập các tiêu chí chấm điểm và tỷ trọng phần trăm (Weights) cho từng hạng mục thi. |
+| UC-15 | Manage Judging Rounds | Organizer | Cấu hình một hoặc nhiều vòng chấm (ví dụ sơ khảo và chung khảo), số bài đi tiếp và thời hạn từng vòng. |
+| UC-16 | Assign Judges to Categories | Organizer | Phân công giám khảo phụ trách chấm điểm cho từng hạng mục và vòng thi cụ thể. |
+| UC-17 | View Participant Registrations | Organizer | Xem, tìm kiếm và lọc danh sách thí sinh đã đăng ký theo cuộc thi, hạng mục và trạng thái nộp bài. |
+| UC-18 | View Submission Queue | Organizer | Xem danh sách toàn bộ tác phẩm dự thi kèm trạng thái kiểm duyệt và nhãn cảnh báo từ AI. |
+| UC-19 | Trigger AI Verification Scan | Organizer | Kích hoạt quét AI hàng loạt hoặc từng bài để kiểm tra trùng lặp, phát hiện ảnh AI và tự động gán thẻ. |
+| UC-20 | Review AI Flagged Submissions | Organizer | Kiểm tra bài thi bị gắn cờ, đối chiếu ảnh tương tự và điểm rủi ro AI; kết luận do Organizer đưa ra. |
+| UC-21 | Request Negative / Contact Sheet Proof | Organizer | Yêu cầu thí sinh bổ sung ảnh âm bản hoặc contact sheet nếu thể lệ yêu cầu hoặc cần xác minh. |
+| UC-22 | Verify & Approve Submission | Organizer | Phê duyệt bài thi hợp lệ (đạt chuẩn kỹ thuật và xác thực) để đưa vào danh sách chấm của giám khảo. |
+| UC-23 | Disqualify / Reject Submission | Organizer | Loại bỏ bài thi vi phạm quy chế (ảnh số giả phim, ảnh AI, đạo nhái) kèm lý do bắt buộc. |
+| UC-24 | Monitor Judging Progress | Organizer | Theo dõi số lượng bài được giao, số bài đã chấm và trạng thái xác nhận điểm của từng giám khảo theo vòng. |
+| UC-25 | Finalize Judging Round | Organizer | Khóa vòng chấm sau khi hoàn tất đánh giá; tổng hợp điểm và chọn bài đủ điều kiện vào vòng tiếp theo theo cấu hình. |
+| UC-26 | Approve & Publish Results | Organizer | Chốt bảng xếp hạng cuối cùng, gán giải thưởng và công bố kết quả chính thức của cuộc thi. |
+| UC-27 | Manage Digital Archive & Exhibition | Organizer | Chọn lọc các tác phẩm đạt giải và xuất sắc đưa vào Kho lưu trữ số và phòng triển lãm trực tuyến. |
+| UC-28 | Export Contest Analytics Report | Organizer | Xem thống kê cuộc thi, xuất báo cáo và tạo nhận xét phân tích bằng AI từ dữ liệu tổng hợp. |
+| UC-29 | View Assigned Submissions | Judge | Xem danh sách các tác phẩm được phân công chấm trong chế độ ẩn danh tác giả (Blind Mode). |
+| UC-30 | Inspect High-Res Image & Film Metadata | Judge | Phóng to kiểm tra chi tiết hạt phim (grain), dải sắc độ và xem thông số kỹ thuật chụp/tráng/scan của bức ảnh. |
+| UC-31 | Score & Comment on Submission | Judge | Chấm điểm theo từng tiêu chí thành phần trên thanh trượt và nhập nhận xét chuyên môn cho tác phẩm. |
+| UC-32 | Update Evaluation Score | Judge | Chỉnh sửa lại điểm số và nhận xét của các bài đã chấm khi vòng chấm chưa bị khóa. |
+| UC-33 | Lock & Confirm Final Evaluations | Judge | Xác nhận hoàn tất và khóa bảng điểm cá nhân cho vòng thi được giao. |
+| UC-34 | Browse & Register for Contests | Participant | Tìm kiếm cuộc thi đang mở, xem thể lệ chi tiết và đăng ký tham gia hạng mục. |
+| UC-35 | Manage Film Roll Log | Participant | Tạo và quản lý nhật ký các cuộn phim cá nhân (Tên phim, khổ phim, ISO, máy sử dụng, ngày lắp phim, lab tráng). |
+| UC-36 | Manage Frame Metadata | Participant | Ghi chép thông số từng khung hình: số frame, ống kính, địa điểm và thông số phơi sáng nếu có. |
+| UC-37 | Submit Film Photograph | Participant | Nộp bài dự thi (Tải ảnh scan + Liên kết hoặc nhập thông số kỹ thuật phim/máy/lab + Tuyên ngôn tác phẩm). |
+| UC-38 | Upload Negative / Contact Sheet Proof | Participant | Tải ảnh chụp dải phim âm bản hoặc contact sheet để hỗ trợ đối chiếu tác phẩm. |
+| UC-39 | Edit / Withdraw Submission | Participant | Cập nhật thông tin hoặc rút lại bài dự thi khi vẫn còn trong thời hạn nhận bài. |
+| UC-40 | Track Submission Status | Participant | Theo dõi trạng thái bài thi và cập nhật khi mở hoặc làm mới trang. |
+| UC-41 | View Contest Results & Judge Feedback | Participant | Xem kết quả chung cuộc, điểm số trung bình và nhận xét từ hội đồng giám khảo cho bài thi của mình. |
+| UC-42 | Manage Personal Film Portfolio | Participant | Xem portfolio cá nhân được tổng hợp từ lịch sử tác phẩm đã nộp và kết quả cuộc thi. |
+| UC-43 | Explore Digital Archive & Gallery | All Actors | Tham quan kho lưu trữ tác phẩm đạt giải, lọc tác phẩm theo loại phim (VD: Kodak Portra, Ilford HP5), máy ảnh hoặc năm thi. |
 
-### 1.3. Constraints & Assumptions (Ràng buộc & Giả định)
+## 3. System Functional Architecture & Screen Flows
 
-*   **Ràng buộc vật lý Ảnh Phim**: Mọi bài thi hợp lệ bắt buộc phải khai báo siêu dữ liệu vật lý gồm 5 thông số tối thiểu: Hãng & Loại phim (Film Stock), Khổ phim (Format), Thân máy (Camera Body), Số thứ tự khung hình (Frame Number), và Phòng Lab tráng/Quy trình tráng (BR-22). Các bài lọt vào Chung kết hoặc xét Giải bắt buộc phải có ảnh chụp dải phim âm bản gốc (Negative Strip) hoặc Contact Sheet đã được duyệt hợp lệ (BR-06).
-*   **Phạm vi Trí tuệ Nhân tạo (AI Scope)**: AI đóng vai trò công cụ thẩm định sơ bộ tự động (phát hiện ảnh trùng lặp qua pHash/Hamming distance, phát hiện ảnh tạo sinh bởi AI qua mạng nơ-ron phân loại xác suất $P_{AI}$, tự động gán nhãn thị giác). AI không có quyền tự ý loại bài thi; mọi quyết định loại bài thi thuộc thẩm quyền của Ban tổ chức sau khi đối chiếu thủ công âm bản và phải lưu lý do vào Audit Log (BR-18).
-*   **Bảo mật Chấm thi Ẩn danh kép (Double-Blind Judging)**: Giám khảo tuyệt đối không được tiếp cận bất kỳ thông tin định danh nào của thí sinh (Tên, Email, Ảnh đại diện, Nickname) ở cả tầng Giao diện lẫn tầng DTO Backend API (BR-12). Các giám khảo chấm độc lập, không xem được điểm và lời bình của nhau cho đến khi vòng chấm kết thúc (BR-13).
-
-### 1.4. Dependencies (Phụ thuộc hệ thống)
-
-*   Dịch vụ Lưu trữ Đám mây (Cloudflare R2 / AWS S3) hỗ trợ Presigned URLs.
-*   Dịch vụ AI Worker tính toán Perceptual Hash (pHash) 64-bit và mô hình thị giác phân tích xác suất ảnh AI.
-*   Dịch vụ Thông báo (SMTP Email Gateway / Firebase Cloud Messaging FCM).
-
----
-
-## 2. User Requirements (Yêu cầu người dùng)
-
-### 2.1. System Actors & Authorization Matrix
-
-```mermaid
-classDiagram
-    class UserAccount {
-        +UUID id
-        +String email
-        +String fullName
-        +Role role
-        +Boolean isActive
-        +login()
-        +logout()
-        +recoverPassword()
-    }
-    class Administrator {
-        +manageUsers()
-        +manageMasterData()
-        +configureAI()
-        +viewAuditLogs()
-    }
-    class ContestOrganizer {
-        +createContest()
-        +manageCategories()
-        +assignJudges()
-        +reviewSubmissions()
-        +publishResults()
-    }
-    class Judge {
-        +viewBlindWorkspace()
-        +inspectGrain()
-        +scoreSubmission()
-        +lockScorecard()
-    }
-    class Participant {
-        +manageFilmLogbook()
-        +submitEntry()
-        +uploadNegativeProof()
-        +viewFeedback()
-    }
-
-    UserAccount <|-- Administrator
-    UserAccount <|-- ContestOrganizer
-    UserAccount <|-- Judge
-    UserAccount <|-- Participant
-```
-
-### 2.2. Use Case Catalog (43 Ca sử dụng cốt lõi)
-
-Danh mục trong [SRS Word](SRS_Film_Photography_Contest_Platform_Full.docx) liệt kê 43 ca sử dụng, từ UC-01 đến UC-43. Thứ tự năm mốc tại BR-08 áp dụng cho wizard tạo cuộc thi.
-
-| ID | Tên Use Case | Tác nhân chính (Actors) | Mô tả chi tiết nghiệp vụ |
-| :--- | :--- | :--- | :--- |
-| **UC-01** | Login / Logout | All Actors | Xác thực thông tin đăng nhập, cấp phát JWT token cặp (Access/Refresh Token), thu hồi token khi đăng xuất. |
-| **UC-02** | Recover Password | All Actors | Gửi liên kết xác thực đặt lại mật khẩu bảo mật qua Email đã xác minh. |
-| **UC-03** | View & Update Profile | All Actors | Xem và chỉnh sửa thông tin cá nhân, ảnh đại diện, tiểu sử nghệ thuật và mật khẩu. |
-| **UC-04** | Manage User Accounts | Admin | Tạo tài khoản nội bộ, tìm kiếm, khóa/mở khóa tài khoản người dùng theo BR-04. |
-| **UC-05** | Manage Roles & Permissions | Admin | Thiết lập vai trò hệ thống và ma trận phân quyền chi tiết (RBAC). |
-| **UC-06** | Manage Film Stock Catalog | Admin | Thêm mới, tra cứu, chỉnh sửa và vô hiệu hóa danh mục loại phim (Film Stocks). |
-| **UC-07** | Manage Camera & Lens Catalog| Admin | Quản lý danh mục thiết bị thân máy ảnh phim và ống kính quang học. |
-| **UC-08** | Manage Film Lab Directory | Admin | Quản lý danh bạ phòng Lab tráng & quét phim, đánh dấu đối tác xác minh (Verified Lab). |
-| **UC-09** | Configure AI Thresholds | Admin | Thiết lập ngưỡng cảnh báo ảnh AI ($P_{AI} \ge 0.75$) và ngưỡng khoảng cách pHash trùng lặp. |
-| **UC-10** | View System Audit Logs | Admin | Tra cứu nhật ký vết kiểm toán toàn hệ thống (User ID, IP, Action, Old/New Values, Reason). |
-| **UC-11** | Create Contest | Organizer | Khởi tạo cuộc thi ảnh phim mới thông qua 4-Step Wizard. |
-| **UC-12** | Update Contest Configuration | Organizer | Chỉnh sửa thông số, điều lệ cuộc thi trước khi cổng nhận bài đóng (BR-08). |
-| **UC-13** | Manage Contest Categories | Organizer | Định nghĩa các bảng thi, giới hạn số bài nộp và cấu hình yêu cầu âm bản (BR-06). |
-| **UC-14** | Configure Judging Criteria | Organizer | Thiết lập bộ tiêu chí chấm điểm và chuẩn hóa tổng trọng số bằng đúng 100% (BR-15). |
-| **UC-15** | Manage Judging Rounds | Organizer | Cấu hình vòng chấm (Sơ loại, Bán kết, Chung kết) và số lượng tác phẩm đi tiếp. |
-| **UC-16** | Assign Judges to Categories | Organizer | Phân công tối thiểu 3 giám khảo/hạng mục (BR-20) kèm kiểm tra xung đột lợi ích (BR-21). |
-| **UC-17** | View Participant Registrations| Organizer | Xem danh sách thí sinh đã đăng ký và theo dõi số lượng bài nộp. |
-| **UC-18** | View Submission Queue | Organizer | Theo dõi danh sách bài nộp, lọc theo mức độ rủi ro AI (Clean, Warning, High Risk). |
-| **UC-19** | Trigger AI Verification Scan | Organizer | Kích hoạt quét AI thủ công hoặc chạy hàng loạt qua Redis Worker Queue. |
-| **UC-20** | Review AI Flagged Submissions | Organizer | Đối sánh trực quan ảnh trùng lặp (side-by-side) hoặc xem bản đồ nhiệt nghi vấn AI tạo sinh. |
-| **UC-21** | Request Negative Proof | Organizer | Gửi yêu cầu bắt buộc nộp ảnh dải âm bản trong thời hạn 48 giờ (BR-19). |
-| **UC-22** | Verify & Approve Submission | Organizer | Phê duyệt bài thi đạt chuẩn để chuyển sang danh sách chấm thi chính thức. |
-| **UC-23** | Disqualify / Reject Submission| Organizer | Loại bài thi vi phạm quy chế kèm lý do bắt buộc và ghi vết vào Audit Log (BR-18). |
-| **UC-24** | Monitor Judging Progress | Organizer | Giám sát tiến độ chấm điểm của từng giám khảo theo thời gian thực. |
-| **UC-25** | Resolve Score Discrepancy | Organizer | Điều phối và giải quyết xung đột khi độ lệch điểm vượt quá 30% (BR-14). |
-| **UC-26** | Approve & Publish Results | Organizer | Khóa bất biến bảng điểm (BR-16), gắn cơ cấu giải thưởng và công bố kết quả. |
-| **UC-27** | Manage Digital Archive | Organizer | Xuất bản tác phẩm vào Kho lưu trữ số và Triển lãm trực tuyến (BR-17). |
-| **UC-28** | Export Contest Analytics | Organizer | Xuất báo cáo thống kê xu hướng phim, máy ảnh, phòng Lab và tỷ lệ cảnh báo AI. |
-| **UC-29** | View Assigned Submissions | Judge | Xem danh sách tác phẩm được giao chấm trong không gian ẩn danh hoàn toàn (BR-12). |
-| **UC-30** | Inspect High-Res & Grain | Judge | Soi chi tiết cấu trúc hạt phim (100%-200%) và đọc siêu dữ liệu kỹ thuật analog. |
-| **UC-31** | Score & Comment on Submission | Judge | Chấm điểm theo thang điểm thành phần và ghi nhận xét độc lập (BR-13). |
-| **UC-32** | Update Evaluation Score | Judge | Điều chỉnh lại điểm số khi vòng chấm chưa bị đóng/khóa. |
-| **UC-33** | Lock & Confirm Scorecard | Judge | Xác nhận hoàn thành chấm và khóa bảng điểm cá nhân của vòng thi. |
-| **UC-34** | Browse & Register Contests | Participant | Tra cứu thông tin cuộc thi đang mở nhận bài và đăng ký tham gia. |
-| **UC-35** | Manage Film Roll Log | Participant | Tạo và quản lý sổ tay các cuộn phim cá nhân (Mã cuộn, Loại phim, ISO, Thân máy). |
-| **UC-36** | Manage Frame Metadata | Participant | Ghi chép thông số từng khung hình (Khẩu độ, Tốc độ, Ống kính, Địa điểm chụp). |
-| **UC-37** | Submit Film Photograph | Participant | Nộp ảnh scan kỹ thuật số, liên kết thông số Logbook và thông điệp tác phẩm (BR-07). |
-| **UC-38** | Upload Negative Proof | Participant | Tải ảnh chụp dải phim âm bản gốc có viền rebate edge đối chứng (BR-06, BR-19). |
-| **UC-39** | Edit / Withdraw Submission | Participant | Cập nhật hoặc rút bài thi khi còn trong thời hạn nộp bài (BR-08, BR-24). |
-| **UC-40** | Track Submission Status | Participant | Theo dõi trạng thái thẩm định bài thi theo thời gian thực. |
-| **UC-41** | View Results & Feedback | Participant | Xem thứ hạng chung cuộc, bảng điểm chi tiết và lời bình từ giám khảo. |
-| **UC-42** | Manage Personal Portfolio | Participant | Lưu trữ và trưng bày bộ sưu tập tác phẩm ảnh phim cá nhân đã dự thi. |
-| **UC-43** | Explore Digital Archive | Participant, Public Visitor | Khám phá phòng triển lãm công chúng, tìm kiếm và lọc tác phẩm theo loại phim/thiết bị. |
-
-Các điều kiện chi tiết sau áp dụng cho các luồng tương ứng trong mục 3.2 của bản Word:
-
-- **UC-06–08:** Tổ hợp tên phim, hãng và ISO phải duy nhất. Bản ghi danh mục đã được tham chiếu vẫn được giữ khi xóa mềm.
-- **UC-11–15:** Wizard lưu bản nháp sau khi nhập thông tin và lịch trình, cấu hình hạng mục, tiêu chí chấm và cơ cấu giải. Giới hạn bài nộp và thời điểm cần âm bản được cấu hình theo hạng mục.
-- **UC-21, UC-37–39:** Luồng nộp bài đi từ chọn hạng mục và tải ảnh scan, đến khai báo siêu dữ liệu, rồi nhập thông điệp tác phẩm và đính kèm âm bản khi bắt buộc. BTC có thể yêu cầu ảnh âm bản hoặc Contact Sheet bổ sung theo BR-19.
-- **UC-29–33:** Phiếu chấm cá nhân ghi điểm từng tiêu chí và nhận xét. Giám khảo có thể sửa trước khi khóa phiếu. Backend trả ảnh, mã bài, tiêu đề, thông điệp tác phẩm và thông số kỹ thuật phù hợp với BR-12.
-- **UC-25–27:** Trước khi công bố, BTC xử lý toàn bộ cờ lệch điểm, kiểm tra các giám khảo đã khóa bảng điểm và xác minh âm bản hoặc Contact Sheet của bài vào chung kết hoặc xét giải. Khi đưa tác phẩm vào triển lãm, hệ thống sinh bản hiển thị có watermark và lưu bản gốc riêng theo BR-17.
-
-### 2.3. Use Case Diagrams (Chuyển đổi hình ảnh sang Mermaid)
-
-#### 1. Administrator & System Governance Use Cases
-```mermaid
-flowchart LR
-    Admin((Quản trị viên))
-    Admin --> UC01["UC-01: Đăng nhập / Đăng xuất"]
-    Admin --> UC04["UC-04: Quản lý Tài khoản"]
-    Admin --> UC05["UC-05: Quản lý Vai trò & Phân quyền"]
-    Admin --> UC06["UC-06: Quản lý Danh mục Loại phim"]
-    Admin --> UC07["UC-07: Quản lý Máy ảnh & Ống kính"]
-    Admin --> UC08["UC-08: Quản lý Danh bạ Phòng Lab"]
-    Admin --> UC09["UC-09: Cấu hình Ngưỡng AI"]
-    Admin --> UC10["UC-10: Tra cứu Nhật ký Kiểm toán"]
-```
-
-#### 2. Contest Organizer Management Use Cases
-```mermaid
-flowchart LR
-    Organizer((Ban tổ chức))
-    Organizer --> UC11["UC-11: Khởi tạo Cuộc thi (4-Step Wizard)"]
-    Organizer --> UC13["UC-13: Quản lý Hạng mục & Yêu cầu Âm bản"]
-    Organizer --> UC14["UC-14: Cấu hình Tiêu chí Chấm điểm"]
-    Organizer --> UC16["UC-16: Phân công Giám khảo & Check Xung đột"]
-    Organizer --> UC18["UC-18: Hàng đợi Kiểm duyệt Bài thi"]
-    Organizer --> UC20["UC-20: Thẩm định Cảnh báo Trùng/AI"]
-    Organizer --> UC21["UC-21: Yêu cầu Đối chứng Âm bản (Hạn 48h)"]
-    Organizer --> UC22["UC-22: Phê duyệt / Loại Bài thi"]
-    Organizer --> UC25["UC-25: Điều phối Lệch điểm Giám khảo"]
-    Organizer --> UC26["UC-26: Khóa Bảng điểm & Công bố Kết quả"]
-    Organizer --> UC27["UC-27: Xuất bản Kho Triển lãm Số"]
-```
-
-#### 3. Judge Blind Evaluation Use Cases
-```mermaid
-flowchart LR
-    Judge((Giám khảo))
-    Judge --> UC29["UC-29: Không gian Chấm thi Ẩn danh (Double-Blind)"]
-    Judge --> UC30["UC-30: Soi Hạt Phim (100%-200%) & Siêu dữ liệu"]
-    Judge --> UC31["UC-31: Chấm điểm Tiêu chí & Nhận xét Độc lập"]
-    Judge --> UC32["UC-32: Điều chỉnh Điểm trước hạn"]
-    Judge --> UC33["UC-33: Xác nhận & Khóa Bảng điểm Cá nhân"]
-```
-
-#### 4. Participant Film Workflow Use Cases
-```mermaid
-flowchart LR
-    Participant((Thí sinh))
-    Participant --> UC34["UC-34: Khám phá & Đăng ký Cuộc thi"]
-    Participant --> UC35["UC-35: Quản lý Sổ tay Cuộn phim (Film Rolls)"]
-    Participant --> UC36["UC-36: Ghi chép Siêu dữ liệu Khung hình (Frames)"]
-    Participant --> UC37["UC-37: Nộp Tác phẩm kèm Siêu dữ liệu Analog"]
-    Participant --> UC38["UC-38: Tải Bằng chứng Âm bản (Negative Strip)"]
-    Participant --> UC39["UC-39: Chỉnh sửa / Rút bài thi trước Deadline"]
-    Participant --> UC40["UC-40: Theo dõi Trạng thái Bài thi Thời gian thực"]
-    Participant --> UC41["UC-41: Xem Bảng điểm & Lời bình Giám khảo"]
-```
-
----
-
-## 3. System Functional Architecture & Screen Flows (Đặc tả Chức năng & Luồng Màn hình dạng Chữ)
-
-### 3.1. Administrator Screen Flow & Descriptions
-
-#### Luồng Chuyển màn hình Quản trị viên (Admin Screen Navigation)
-```mermaid
-stateDiagram-v2
-    [*] --> Login
-    Login --> AdminDashboard: Xác thực thành công (Role ADMIN)
-    AdminDashboard --> UserAccountList: Quản lý Người dùng
-    UserAccountList --> CreateUpdateUser: Thêm/Sửa Tài khoản
-    AdminDashboard --> RolePermissionList: Phân quyền RBAC
-    AdminDashboard --> FilmStockCatalog: Danh mục Phim
-    AdminDashboard --> CameraLensCatalog: Danh mục Thiết bị
-    AdminDashboard --> FilmLabDirectory: Danh bạ Lab
-    AdminDashboard --> AIEngineSettings: Cài đặt Ngưỡng AI
-    AdminDashboard --> SystemAuditLogs: Lịch sử Kiểm toán
-```
-
-#### Bảng Mô tả Màn hình Quản trị viên
-| Mã màn hình | Tên màn hình | Chức năng chi tiết |
-| :--- | :--- | :--- |
-| **SCR-ADM-01** | Admin Dashboard | Hiển thị thẻ thống kê KPI: Tổng tài khoản, cuộc thi đang chạy, tác phẩm lưu trữ, trạng thái hàng đợi AI Worker. |
-| **SCR-ADM-02** | User Account List | Danh sách người dùng hệ thống kèm bộ lọc Vai trò, Trạng thái (Active/Locked), tìm kiếm theo Email/Tên. |
-| **SCR-ADM-03** | Create/Update User Form | Form tạo tài khoản nội bộ (Admin/Organizer) hoặc cập nhật trạng thái người dùng. |
-| **SCR-ADM-04** | Role & Permission Matrix | Bảng ma trận trực quan gán quyền theo Resource-Action cho 4 vai trò. |
-| **SCR-ADM-05** | Master Data: Film Stocks | Bảng dữ liệu loại phim (Hãng, Tên, ISO danh định, Quy trình tráng, Khổ hỗ trợ) kèm thao tác CRUD. |
-| **SCR-ADM-06** | Master Data: Cameras & Lenses | Bảng quản lý thân máy và ống kính chuẩn phục vụ autocomplete khi nộp bài. |
-| **SCR-ADM-07** | Master Data: Film Labs | Danh bạ phòng Lab tráng/scan kèm địa chỉ, dịch vụ tráng và cờ đối tác tin cậy (Verified Partner). |
-| **SCR-ADM-08** | AI Engine Settings | Cấu hình ngưỡng xác suất ảnh AI ($P_{AI}$ Alert) và khoảng cách Hamming phát hiện ảnh trùng lặp. |
-| **SCR-ADM-09** | System Audit Logs | Bảng tra cứu lịch sử thay đổi nhạy cảm (User, Action, Entity, Old Value, New Value, Reason). |
-
-### 3.2. Contest Organizer Screen Flow & Descriptions
-
-#### Luồng Chuyển màn hình Ban tổ chức (Organizer Screen Navigation)
-```mermaid
-stateDiagram-v2
-    [*] --> Login
-    Login --> OrganizerDashboard: Xác thực thành công (Role ORGANIZER)
-    OrganizerDashboard --> ContestList: Danh sách Cuộc thi
-    ContestList --> CreateContestWizard: Khởi tạo Cuộc thi (4 Bước)
-    CreateContestWizard --> ContestList: Hoàn tất
-    ContestList --> SubmissionQueue: Hàng đợi Kiểm duyệt
-    SubmissionQueue --> AIVerificationReport: Đối sánh Cảnh báo AI
-    SubmissionQueue --> SubmissionReviewDetail: Duyệt Âm bản / Yêu cầu Đối chứng
-    ContestList --> JudgeAssignment: Phân công Giám khảo
-    ContestList --> JudgingProgressDiscrepancy: Giám sát Điểm & Lệch điểm
-    ContestList --> LeaderboardAwardApproval: Khóa Bảng điểm & Công bố Kết quả
-    ContestList --> ArchiveExhibitionManager: Xuất bản Triển lãm Số
-    ContestList --> ContestAnalyticsReport: Báo cáo Thống kê
-```
-
-#### Bảng Mô tả Màn hình Ban tổ chức
-| Mã màn hình | Tên màn hình | Chức năng chi tiết |
-| :--- | :--- | :--- |
-| **SCR-ORG-01** | Organizer Dashboard | Bảng điều khiển tiến độ: Số thí sinh đăng ký, bài thi đã nộp, bài bị gắn cờ AI, tiến độ chấm thi. |
-| **SCR-ORG-02** | Contest List | Bảng quản lý các cuộc thi (Draft, Open, Verifying, Judging, Published, Archived) kèm bộ lọc trạng thái. |
-| **SCR-ORG-03** | Create Contest Wizard | Quy trình 4 bước: (1) Thông tin chung & Lịch trình -> (2) Hạng mục & Giới hạn nộp -> (3) Tiêu chí & Trọng số -> (4) Cơ cấu Giải thưởng. |
-| **SCR-ORG-04** | Submission Queue | Hàng đợi bài nộp kèm lọc trạng thái (Submitted, AI Verified, Proof Requested, Approved, Disqualified). |
-| **SCR-ORG-05** | AI Verification Report | Màn hình đối chiếu trực quan 2 ảnh nghi vấn trùng lặp hoặc bản đồ nhiệt xác suất ảnh AI. |
-| **SCR-ORG-06** | Submission Review Detail | Soi chi tiết ảnh scan và dải phim âm bản đối chứng, thực hiện phê duyệt hoặc yêu cầu bổ sung âm bản (Hạn 48h). |
-| **SCR-ORG-07** | Judge Assignment | Phân công tối thiểu 3 giám khảo vào từng hạng mục, chặn phân công nếu có xung đột lợi ích (BR-21). |
-| **SCR-ORG-08** | Judging Progress & Variance | Theo dõi % bài đã chấm và danh sách các bài có độ lệch điểm > 30% cần họp điều phối (BR-14). |
-| **SCR-ORG-09** | Leaderboard & Publish | Bảng xếp hạng tự động, kiểm tra điều kiện âm bản trước khi trao giải (BR-06) và chốt khóa bất biến (BR-16). |
-| **SCR-ORG-10** | Archive & Exhibition Mgr | Chọn lọc tác phẩm xuất sắc đưa vào phòng triển lãm và cấp watermark số bản quyền (BR-17). |
-
-### 3.3. Judge Screen Flow & Descriptions
-
-#### Luồng Chuyển màn hình Giám khảo (Judge Screen Navigation)
-```mermaid
-stateDiagram-v2
-    [*] --> Login
-    Login --> JudgeDashboard: Xác thực thành công (Role JUDGE)
-    JudgeDashboard --> BlindJudgingGallery: Không gian Chấm Ẩn danh
-    BlindJudgingGallery --> LightboxWorkspace: Bàn Chấm Màu Chuẩn Nền Tối
-    LightboxWorkspace --> BlindJudgingGallery: Lưu điểm & Chuyển bài
-    BlindJudgingGallery --> EvaluationSummary: Bảng Tổng hợp Điểm Cá nhân
-    EvaluationSummary --> [*]: Khóa Bảng điểm Vòng thi
-```
-
-#### Bảng Mô tả Màn hình Giám khảo
-| Mã màn hình | Tên màn hình | Chức năng chi tiết |
-| :--- | :--- | :--- |
-| **SCR-JDG-01** | Judge Dashboard | Hiển thị các cuộc thi và vòng chấm được phân công, hạn chót chấm bài và số lượng bài đã/chưa hoàn thành. |
-| **SCR-JDG-02** | Blind Judging Gallery | Lưới hiển thị các bài thi ở chế độ ẩn danh tuyệt đối (chỉ hiện mã bài thi và ảnh scan thu nhỏ). |
-| **SCR-JDG-03** | Lightbox Evaluation Workspace | Không gian chấm thi nền tối (#121212), tích hợp zoom 100%-200% soi hạt phim, thanh trượt điểm tiêu chí và ô nhận xét. |
-| **SCR-JDG-04** | Evaluation Summary | Bảng đối chiếu toàn bộ điểm số của giám khảo, hỗ trợ sắp xếp theo điểm và nút bấm xác nhận Khóa bảng điểm. |
-
-### 3.4. Participant Screen Flow & Descriptions
-
-#### Luồng Chuyển màn hình Thí sinh (Participant Web & Mobile Navigation)
-```mermaid
-stateDiagram-v2
-    [*] --> Login
-    Login --> ParticipantDashboard: Xác thực thành công (Role PARTICIPANT)
-    ParticipantDashboard --> ContestDiscovery: Khám phá Cuộc thi
-    ContestDiscovery --> SubmitPhotographWizard: Nộp Bài Thi (3 Bước)
-    ParticipantDashboard --> MyFilmRolls: Sổ tay Cuộn phim (Logbook)
-    MyFilmRolls --> RollFrameDetails: Chi tiết Khung hình (Frame Log)
-    RollFrameDetails --> LogFrameDrawer: Ghi nhận Khung hình mới
-    ParticipantDashboard --> MySubmissionsList: Danh sách Bài thi của Tôi
-    MySubmissionsList --> UploadNegativeProof: Tải Bằng chứng Âm bản (Đồng hồ 48h)
-    ParticipantDashboard --> ContestResultsFeedback: Kết quả & Nhận xét Giám khảo
-    ParticipantDashboard --> PersonalPortfolio: Bộ sưu tập Tác phẩm Phim
-```
-
-#### Bảng Mô tả Màn hình Thí sinh
-| Mã màn hình | Tên màn hình | Chức năng chi tiết |
-| :--- | :--- | :--- |
-| **SCR-PAR-01** | Participant Dashboard | Tổng quan bài thi đang nộp, thông báo yêu cầu âm bản và cuộc thi sắp đóng cổng. |
-| **SCR-PAR-02** | Contest Discovery | Danh sách cuộc thi mở nhận bài, thể lệ chi tiết và cơ cấu giải thưởng. |
-| **SCR-PAR-03** | My Film Rolls | Sổ tay cá nhân lưu trữ cuộn phim (Tên phim, Khổ, ISO, Máy ảnh, Lab tráng). |
-| **SCR-PAR-04** | Roll Frame Details | Quản lý từng khung hình (Frame 01 đến 36/16), khẩu độ, tốc độ, ống kính. |
-| **SCR-PAR-05** | Submit Photo Wizard | Giao diện nộp bài 3 bước: Tải ảnh scan -> Chọn thông số từ Logbook -> Tuyên ngôn & Đính kèm âm bản. |
-| **SCR-PAR-06** | My Submissions List | Bảng theo dõi trạng thái bài thi thời gian thực kèm huy hiệu trạng thái. |
-| **SCR-PAR-07** | Upload Negative Proof | Giao diện tải 1-3 ảnh chụp dải phim âm bản kèm đồng hồ đếm ngược 48 giờ (BR-19). |
-| **SCR-PAR-08** | Results & Feedback | Xem thứ hạng, bảng điểm chi tiết từng tiêu chí và nhận xét chuyên môn từ hội đồng chấm. |
-| **SCR-PAR-09** | Personal Portfolio | Trang trưng bày hồ sơ nghệ thuật ảnh phim cá nhân. |
-
-### 3.5. Screen Authorization Matrix (Ma trận Phân quyền Màn hình)
-
-| Nhóm chức năng / Màn hình | Admin | Organizer | Judge | Participant | Public Visitor |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Đăng nhập / Đăng xuất / Quên mật khẩu** | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **Quản trị Tài khoản & Phân quyền RBAC** | C-R-U-D | R | Không | Không | Không |
-| **Quản lý Master Data (Film, Camera, Lab)** | C-R-U-D | R | R | R | Không |
-| **Khởi tạo & Cấu hình Cuộc thi** | R | C-R-U-D | Không | R | R |
-| **Phân công Giám khảo** | Không | C-R-U-D | Không | Không | Không |
-| **Quản lý Sổ tay Cuộn phim (Logbook)** | Không | Không | Không | C-R-U-D (Sở hữu) | Không |
-| **Nộp bài thi & Đính kèm Âm bản** | Không | Không | Không | C-R-U-D (Theo hạn) | Không |
-| **Kiểm duyệt Bài thi & Thẩm định AI** | R | C-R-U-A | Không | Không | Không |
-| **Không gian Chấm thi Ẩn danh (Double-Blind)** | Không | Không | R-U-Lock | Không | Không |
-| **Khóa Bảng điểm & Công bố Kết quả** | R | C-R-U-A | Không | R | R |
-| **Kho Lưu trữ Số & Phòng Triển lãm** | R | C-R-U-A | R | R | R |
-
-*(Ký hiệu: C = Create, R = Read, U = Update, D = Delete, A = Approve/Verify, Lock = Confirm & Lock)*
-
----
+- **Tài khoản và quản trị** (UC-01–10). Participant tự đăng ký bằng email duy nhất và xác minh email. Administrator tạo hoặc gán vai trò nội bộ, khóa/mở khóa tài khoản và quản lý Film Stock, Camera, Lens, Film Lab, ngưỡng AI và AuditLog.
+- **Cấu hình và đăng ký** (UC-11–17, UC-34). Organizer cấu hình năm mốc BR-08, thể lệ, hạng mục, số bài, đối chứng, tiêu chí, vòng chấm và giải. Sao chép cấu hình thuộc quyền tạo cuộc thi DRAFT với lịch mới. Đăng ký yêu cầu hạng mục hợp lệ, chấp nhận thể lệ, đúng thời gian, không trùng và không xung đột vai trò. Organizer tìm kiếm và lọc đăng ký theo hạng mục/trạng thái nộp.
+- **Vòng đời**. DRAFT → SCHEDULED → OPEN → VERIFYING → IN_JUDGING → RESULTS_PUBLISHED → ARCHIVED. Cuộc thi đã đến mốc mở có thể chuyển từ DRAFT sang OPEN khi xuất bản.
+- **Logbook và nộp bài** (UC-35–40). Liên kết đăng ký với cuộn và frame thuộc quyền, giữ metadata BR-22, kiểm tra BR-05/06/07/08/23/24. Thay đổi ảnh đưa bài về kiểm duyệt. Theo dõi qua tải hoặc làm mới dữ liệu.
+- **Thẩm định** (UC-18–23, UC-38). Organizer xem điểm AI, điểm tương đồng, ảnh khớp theo quyền, thẻ gợi ý và ảnh bài thi/bằng chứng cạnh nhau. Organizer đặt hạn bổ sung và xử lý thủ công khi quá hạn. Bài cần đối chứng phải được xác minh theo BR-06.
+- **Chấm ẩn danh** (UC-14–16, UC-24–25, UC-29–33). Dùng trình xem ảnh có zoom và metadata kỹ thuật. Tổng hợp điểm đã xác nhận, khóa vòng và chọn bài đi tiếp theo cấu hình. Kết quả dùng điểm vòng cuối; xử lý đồng điểm theo thể lệ và lưu lý do.
+- **Kết quả và phân tích** (UC-26–28, UC-41–43). Công bố khi đã chốt điểm và hoàn tất điều kiện đối chứng. Lưu riêng ảnh gốc và công khai ảnh xem trước tối ưu. Portfolio tổng hợp từ lịch sử bài thi và kết quả. Báo cáo cơ bản lấy số liệu tổng hợp từ cơ sở dữ liệu, có thể xuất và vẫn truy cập khi AI lỗi. AI chỉ nhận số liệu tổng hợp không chứa thông tin định danh.
 
 ## 4. Module Specifications Mapping (Chỉ mục Ánh xạ Module Chi tiết)
 
@@ -358,122 +89,94 @@ Các module dưới đây mô tả thiết kế kỹ thuật. Khi có khác bi�
 4.  [`docs/ai/04-film-logbook.md`](ai/04-film-logbook.md): Sổ tay Quản lý Cuộn phim (Film Rolls) & Siêu dữ liệu Khung hình (Frame Logging).
 5.  [`docs/ai/05-submission-and-proof.md`](ai/05-submission-and-proof.md): Quy trình Nộp bài thi, Đối chứng Bằng chứng Âm bản & Kiểm duyệt Ban tổ chức.
 6.  [`docs/ai/06-ai-verification.md`](ai/06-ai-verification.md): Thẩm định Trí tuệ Nhân tạo (Phát hiện Trùng lặp pHash, Xác suất Ảnh AI tạo sinh & Gán thẻ).
-7.  [`docs/ai/07-blind-judging.md`](ai/07-blind-judging.md): Không gian Chấm thi Ẩn danh kép (Double-Blind), Chấm điểm Tiêu chí & Điều phối Lệch điểm.
-8.  [`docs/ai/08-archive-and-exhibition.md`](ai/08-archive-and-exhibition.md): Kho Lưu trữ Di sản Số, Bảo vệ Tác quyền, Đóng dấu Bản quyền & Phòng Triển lãm.
+7.  [`docs/ai/07-blind-judging.md`](ai/07-blind-judging.md): Không gian Chấm thi Ẩn danh kép (Double-Blind), Chấm điểm Tiêu chí & Chốt và chuyển vòng chấm.
+8.  [`docs/ai/08-archive-and-exhibition.md`](ai/08-archive-and-exhibition.md): Kho Lưu trữ Di sản Số, Bảo vệ Tác quyền, Ảnh xem trước công khai & Phòng Triển lãm.
 9.  [`docs/ai/09-api-contracts.md`](ai/09-api-contracts.md): Chuẩn hóa Data Transfer Objects (DTO) và Hợp đồng API dùng chung đa nền tảng.
-10. [`docs/ai/10-database-and-storage.md`](ai/10-database-and-storage.md): Lược đồ PostgreSQL, Cấu hình pgvector & Quản lý Tệp Lưu trữ Đám mây S3/R2.
+10. [`docs/ai/10-database-and-storage.md`](ai/10-database-and-storage.md): Lược đồ PostgreSQL, Lưu trữ dữ liệu AI & Quản lý Tệp Lưu trữ Đám mây S3/R2.
+11. [`docs/ai/11-cross-cutting-services.md`](ai/11-cross-cutting-services.md): Đặc tả bổ sung cho Nhật ký Kiểm toán, Thông báo và Báo cáo (UC-10, UC-28, CR-04, §5).
 
 ---
 
-## 5. Non-Functional Requirements (Yêu cầu Phi chức năng)
+## 5. Non-Functional Requirements
 
-### 5.1. External Interfaces (Giao diện Kết nối Ngoài)
+- Kiến trúc modular và AI worker bất đồng bộ. Tài liệu hóa REST API bằng OpenAPI. Email và thông báo trong ứng dụng phục vụ các sự kiện nghiệp vụ.
+- JWT access/refresh token, RBAC, kiểm tra quyền tài nguyên, DTO Judge ẩn danh. Ảnh gốc và bằng chứng lưu riêng tư, dùng liên kết có thời hạn.
+- Transaction, kiểm soát ghi đồng thời, xử lý lỗi, phục hồi tác vụ AI và audit. Hỗ trợ nhiều cuộc thi và nhiều giám khảo thao tác song song.
+- API nghiệp vụ thông thường có mục tiêu dưới 500 ms trong điều kiện kiểm thử được ghi nhận, ngoài thao tác tải ảnh và xử lý AI.
 
-*   **5.1.1 User Interface Standards**:
-    *   **Dark Mode Chuẩn hóa**: Toàn bộ không gian chấm thi (Lightbox Workspace) và Phòng triển lãm trực tuyến mặc định áp dụng Dark Mode nền xám đen trung tính (`#121212`) nhằm loại bỏ hiện tượng sai lệch sắc độ và tương phản quang học khi giám khảo soi ảnh.
-    *   **Phím tắt Chấm thi Nhanh**: Workspace giám khảo hỗ trợ phím mũi tên `←` / `→` để duyệt bài, phím `Z` phóng to 100%-200% soi hạt phim, và phím số `0-9` để nhập điểm nhanh.
-*   **5.1.2 Software Interfaces & Cloud Storage**:
-    *   **Cloud Object Storage**: Tương thích S3 API (Cloudflare R2 / AWS S3) thông qua Presigned URLs tải lên trực tiếp từ Client, tách biệt vùng lưu trữ riêng tư (Private Bucket cho ảnh scan gốc và ảnh âm bản) và vùng công khai (Public CDN cho thumbnail và ảnh preview có watermark).
-    *   **AI Engine Asynchronous Queue**: Giao tiếp bất đồng bộ qua Redis Queue; Worker xử lý tính pHash 64-bit, trích xuất vector CLIP 512 chiều và dự đoán xác suất AI ($P_{AI}$).
-    *   **Notification Gateway**: Tích hợp SMTP Email Gateway và Firebase Cloud Messaging (FCM) thông báo tức thời.
+## 6. Requirement Appendix
 
-### 5.2. Quality Attributes (Thuộc tính Chất lượng Hệ thống)
+### 6.1. Business Rules
 
-*   **5.2.1 Maintainability (Khả năng bảo trì)**:
-    *   Kiến trúc Modular Monolith cho Core API, phân tách rõ ràng Application Layer, Domain Service Layer và Infrastructure Layer.
-    *   Toàn bộ API được kiểm soát chặt chẽ bằng OpenAPI / Swagger schema và Zod Validation.
-*   **5.2.2 Usability (Tính khả dụng)**:
-    *   Mobile App tối ưu hóa thao tác 1 chạm khi ghi chép thông số cuộn phim ngoài hiện trường; hỗ trợ hoạt động offline và tự động đồng bộ khi có Internet.
-*   **5.2.3 Reliability & Fault Tolerance (Độ tin cậy)**:
-    *   Đảm bảo độ sẵn sàng (Availability) đạt tối thiểu **99.9%**, đặc biệt trong 24 giờ trước thời điểm đóng cổng nhận bài thi (Submission Deadline).
-    *   Bảo vệ giao dịch bằng Database Transactions và khóa lạc quan (Optimistic Locking) tại các nghiệp vụ chốt điểm số, khóa bảng điểm và công bố giải thưởng.
-*   **5.2.4 Performance (Hiệu năng)**:
-    *   Thời gian phản hồi API nghiệp vụ đọc/ghi < 500ms đối với 95% request. Trang giao diện tải dưới 3 giây.
-    *   Tiến trình quét thẩm định AI hoàn tất trong vòng dưới 10 giây trên Background Worker mà không làm nghẽn luồng thao tác của người dùng.
-    *   Hỗ trợ tối thiểu 200 người dùng tải ảnh độ phân giải cao đồng thời trong giờ cao điểm đóng cổng cuộc thi.
-*   **5.2.5 Security & Blind Guard (Bảo mật)**:
-    *   Xác thực bằng Access Token JWT (thời hạn 15 phút) kết hợp Refresh Token (thời hạn 7 ngày, cơ chế Token Rotation).
-    *   **Bộ lọc Ẩn danh (Blind Guard Filter)**: Tầng Middleware và DTO Serialization tự động loại bỏ mọi trường định danh (`fullName`, `email`, `avatarUrl`, `userId`) khi phản hồi request từ vai trò Giám khảo (`JUDGE`).
+| ID | Quy tắc |
+| --- | --- |
+| BR-01 | Mỗi người dùng có tài khoản định danh bằng email duy nhất đã xác minh. Số điện thoại tùy chọn, không yêu cầu SMS OTP. |
+| BR-02 | Người dùng chỉ được phép truy cập các màn hình, menu và API tương ứng với Role và Permission đã được cấp phát. |
+| BR-03 | Dữ liệu quan trọng (Cuộc thi, Bài dự thi, Danh mục Film Stock, Lịch sử chấm điểm) không bao giờ bị xóa vật lý khỏi cơ sở dữ liệu mà chỉ chuyển trạng thái sang Inactive hoặc Archived (Soft Delete). |
+| BR-04 | Tất cả vai trò dùng JWT. Tài khoản bị khóa không được truy cập API bảo vệ; không yêu cầu quản lý giới hạn thiết bị. |
+| BR-05 | Trong cùng một cuộc thi, một thí sinh không được phép nộp hai tác phẩm có trùng đồng thời cả Mã cuộn phim (FilmRollId) và Số thứ tự khung hình (FrameNumber). |
+| BR-06 | Negative Proof hoặc Contact Sheet là tùy chọn, trừ khi thể lệ cuộc thi hoặc Organizer yêu cầu. Bài có yêu cầu bằng chứng phải được Organizer xác minh trước khi duyệt hoặc công bố giải theo thể lệ. |
+| BR-07 | Tệp ảnh dự thi hỗ trợ JPG/JPEG; TIFF tùy chọn. Giới hạn mặc định 25 MB và cạnh ngắn tối thiểu 2000 px, áp dụng theo cấu hình thể lệ. Không chấp nhận dấu hiệu định danh tác giả nếu cuộc thi chấm ẩn danh. |
+| BR-08 | Mốc thời gian của cuộc thi phải tuân thủ nghiêm ngặt thứ tự: Registration Start < Submission Deadline < Judging Start < Judging End < Result Publication. Khi quá Submission Deadline, hệ thống tự động khóa mọi thao tác nộp mới hoặc chỉnh sửa bài thi. |
+| BR-09 | Mô-đun phát hiện ảnh AI gắn cờ AI_FLAGGED khi điểm nghi vấn vượt ngưỡng đã cấu hình và kiểm thử. Organizer xem xét thủ công trước khi duyệt hoặc loại; AI không tự kết luận nguồn gốc ảnh. |
+| BR-10 | pHash và/hoặc độ tương đồng vector được dùng để gắn cờ ảnh nghi trùng khi vượt ngưỡng đã cấu hình và kiểm thử. Lưu liên kết ảnh nghi trùng để Organizer đối chiếu theo quyền. |
+| BR-11 | AI gợi ý tối đa 5 từ khóa và hạng mục phù hợp. Organizer có thể điều chỉnh; không tự động loại bài vì sai hạng mục. |
+| BR-12 | Blind Judging: Trong giai đoạn chấm, API và giao diện dành cho Judge không cung cấp tên, email, ảnh đại diện, ID tài khoản hay dữ liệu nhận dạng thí sinh. |
+| BR-13 | Tính độc lập của Giám khảo: Một giám khảo không được phép xem điểm số hoặc nhận xét của các giám khảo khác đối với cùng một tác phẩm cho đến khi vòng chấm chính thức khép lại. |
+| BR-14 | Khóa vòng chấm: Chỉ khóa khi tất cả đánh giá bắt buộc của vòng đã được xác nhận. Organizer chọn bài đi tiếp theo thứ hạng và số lượng cấu hình; không yêu cầu quy trình phúc khảo độ lệch điểm. |
+| BR-15 | Tổng trọng số (Weights) của tất cả các tiêu chí chấm điểm trong một hạng mục bắt buộc phải bằng đúng 100% (1.0). Điểm của một giám khảo cho bài thi được tính bằng tổng tích số giữa điểm từng tiêu chí và trọng số tương ứng. |
+| BR-16 | Tính bất biến của kết quả: Khi cuộc thi chuyển RESULTS_PUBLISHED, điểm, thứ hạng và giải thưởng chính thức được khóa; không cho sửa qua quy trình thông thường. |
+| BR-17 | Mọi tác phẩm đưa vào Kho lưu trữ số (Digital Archive) phải được lưu thành 2 bản: Bản gốc độ phân giải cao lưu ở vùng bảo mật (Private Bucket) và Bản hiển thị công khai đã được nén tối ưu kèm thông tin bản quyền cuộc thi. |
+| BR-18 | Mọi quyết định loại bài hoặc gỡ cờ AI phải nhập lý do và ghi AuditLog. |
+| BR-19 | Organizer quy định thời hạn bổ sung bằng chứng; nếu quá hạn, Organizer xem xét và quyết định thủ công theo thể lệ, không tự động loại. |
+| BR-20 | Mỗi hạng mục/vòng chấm phải có ít nhất một giám khảo được phân công và hoạt động; Organizer cấu hình số lượng phù hợp. |
+| BR-21 | Xung đột lợi ích (Conflict of Interest): Một người dùng đã được gán vai trò Judge hoặc Organizer trong một cuộc thi thì bị hệ thống chặn không cho phép đăng ký làm Participant (nộp bài thi) trong chính cuộc thi đó. |
+| BR-22 | Bài thi khai báo Film Stock, Film Format, ISO, Camera Body, Lens, Frame Number, Developing Lab hoặc Home Development, thông số scan và địa điểm chụp. Cho phép giá trị không rõ/không áp dụng đối với Lens, thông số scan và địa điểm khi thể lệ cho phép. Bài thi liên kết một Film Roll và Frame. |
+| BR-23 | Frame Number là số nguyên dương, duy nhất trong cùng Film Roll; không áp đặt giới hạn vật lý cố định theo khổ phim. |
+| BR-24 | Thí sinh chỉ được phép chỉnh sửa thông số hoặc rút bài dự thi khi cuộc thi vẫn đang trong thời hạn nhận bài (Current Time < Submission Deadline) và bài thi chưa chuyển sang trạng thái đang chấm. |
+| BR-25 | Điểm mỗi vòng là trung bình cộng điểm có trọng số của các giám khảo được phân công chấm bài ở vòng đó; kết quả cuối dùng điểm vòng cuối, làm tròn 2 chữ số thập phân. Nếu đồng điểm, Organizer xác nhận thứ hạng theo thể lệ và ghi lý do. |
 
----
+### 6.2. Common Requirements
 
-## 6. Requirement Appendix (Phụ lục Yêu cầu Hệ thống)
+| ID | Requirement | Mô tả |
+| --- | --- | --- |
+| CR-01 | Data Validation | Toàn bộ các trường bắt buộc (đánh dấu *) trên biểu mẫu Web và Mobile phải được kiểm tra hợp lệ ở cả Client-side và Server-side trước khi xử lý. |
+| CR-02 | Data Format Validation | Chuẩn hóa email; số điện thoại nếu có phải hợp lệ; lưu thời gian nhất quán và hiển thị theo múi giờ cuộc thi. Mã tự sinh CON-YYYY-XX, SUB-YYYY-XXXX. |
+| CR-03 | Authorization & Blind Guard | API và route được bảo vệ phải kiểm tra JWT, RBAC và quyền trên tài nguyên; loại bỏ dữ liệu định danh trong luồng Judge. Đăng ký, đăng nhập, quên mật khẩu và nội dung công khai không yêu cầu JWT. |
+| CR-04 | Audit Logging | Mọi thao tác Tạo, Cập nhật, Duyệt, Loại bài, Chốt giải trên các thực thể cốt lõi (Contest, Submission, AIVerificationLog, JudgeEvaluation, Award) đều phải lưu vết vào bảng AuditLog (User ID, Timestamp, Action, Old Value, New Value, Reason). |
+| CR-05 | Unique Code Generation | Hệ thống tự động sinh mã định danh duy nhất, dễ đọc cho Cuộc thi (CON-...), Bài dự thi (SUB-...), và Cuộn phim (ROLL-...). |
+| CR-06 | Error Handling | Hiển thị thông báo lỗi thân thiện, rõ ràng cho người dùng theo danh mục mã thông báo chuẩn, tuyệt đối không trả raw stack trace ra giao diện. |
+| CR-07 | Concurrency Control | Sử dụng cơ chế khóa lạc quan (Optimistic Locking / Versioning) khi nhiều Ban tổ chức cùng duyệt một bài thi hoặc khi tính toán tổng hợp bảng xếp hạng. |
 
-### 6.1. Danh mục Quy tắc Nghiệp vụ (Business Rules Catalog: BR-01 đến BR-25)
+### 6.3. Application Messages
 
-| Mã BR | Tên Quy tắc | Định nghĩa Chi tiết & Công thức Ràng buộc |
-| :--- | :--- | :--- |
-| **BR-01** | Unique User Identity | Mỗi người dùng chỉ sở hữu một tài khoản định danh duy nhất qua Email và Số điện thoại đã xác thực. |
-| **BR-02** | Role-Based Access Control | Người dùng chỉ được truy cập API và màn hình phù hợp với Role và Permission đã cấp phát. |
-| **BR-03** | Soft Delete Only | Dữ liệu cốt lõi (Cuộc thi, Bài dự thi, Danh mục Film Stock, Cuộn phim, Điểm số) tuyệt đối không xóa cứng khỏi CSDL, chỉ cập nhật cờ `is_deleted = TRUE` hoặc `deleted_at`. |
-| **BR-04** | Session & Token Revocation | Khi tài khoản bị khóa (`is_active = FALSE`), toàn bộ Access Token và Refresh Token hiện hành lập tức bị thu hồi hiệu lực. |
-| **BR-05** | Duplicate Frame Prevention | Trong cùng một cuộc thi, một thí sinh không được nộp hai bài trùng cặp `(film_roll_id, frame_number)`. |
-| **BR-06** | Mandatory Proof for Awards | Tác phẩm lọt Chung kết hoặc đạt Giải bắt buộc phải có ảnh dải phim âm bản gốc (Negative Proof) hoặc Contact Sheet được duyệt hợp lệ trước khi công bố giải. |
-| **BR-07** | Photo Submission Standards | File ảnh scan phải là JPG/JPEG hoặc TIFF, dung lượng tối đa 25MB, cạnh ngắn $\ge$ 2000px, không chứa chữ ký bản quyền (Watermark) trên ảnh. |
-| **BR-08** | Contest Timeline Order | Mốc thời gian bắt buộc: $T_{reg\_start} < T_{sub\_deadline} < T_{judge\_start} < T_{judge\_deadline} < T_{publish}$. Quá $T_{sub\_deadline}$ hệ thống tự động khóa nộp và sửa bài. |
-| **BR-09** | AI-Generated Risk Threshold | Nếu xác suất ảnh AI $P_{AI} \ge 0.75$ (75%), bài thi chuyển sang `AI_FLAGGED_HIGH_RISK` và bị giữ lại, không chuyển cho giám khảo cho đến khi BTC xác minh âm bản và gỡ cờ thủ công. |
-| **BR-10** | Perceptual Duplicate Flag | Nếu khoảng cách Hamming của pHash giữa 2 bài thi $\le 5$ (hoặc tương đồng vector $\ge 92\%$), hệ thống tự động gắn cờ `DUPLICATE_SUSPECT` và liên kết 2 bài thi. |
-| **BR-11** | Automated Vision Tagging | AI tự động gợi ý tối đa 5 thẻ chủ đề (Auto-tags) và cảnh báo nếu nội dung lệch hoàn toàn so với hạng mục đăng ký. |
-| **BR-12** | Double-Blind Judging | Giám khảo tuyệt đối không được tiếp cận bất kỳ thông tin nhận diện nào của thí sinh trong suốt quá trình chấm thi. Loại bỏ thông tin tại Backend DTO. |
-| **BR-13** | Judge Independence | Giám khảo chấm độc lập, không xem được điểm và lời bình của giám khảo khác cho đến khi vòng chấm kết thúc. |
-| **BR-14** | Score Discrepancy Alert | Nếu $\frac{S_{max} - S_{min}}{S_{scale}} > 30\%$, hệ thống gắn cờ `DISCREPANCY_CONFLICT` và yêu cầu Ban tổ chức điều phối trước khi chốt kết quả. |
-| **BR-15** | Normalized Criterion Weights| Tổng trọng số tiêu chí chấm của một hạng mục phải bằng đúng 100%: $\sum_{i=1}^n w_i = 1.0000$. Điểm giám khảo: $S_{judge} = \sum_{i=1}^n (s_i \times w_i)$. |
-| **BR-16** | Result Immutability | Sau khi cuộc thi chuyển sang trạng thái `PUBLISHED`, toàn bộ điểm số, giải thưởng và thông tin bài thi đạt giải bị khóa bất biến vĩnh viễn (Read-Only). |
-| **BR-17** | Dual Digital Asset Storage | Tác phẩm lưu trữ triển lãm phải có 2 bản: Bản gốc phân giải cao lưu trong Private Bucket và Bản hiển thị nén có đóng dấu watermark bản quyền. |
-| **BR-18** | Mandatory Reason Audit Log | Mọi quyết định Loại bài thi (Disqualify), Gỡ cờ AI (Override AI Flag) hoặc Chỉnh sửa điểm bắt buộc phải nhập lý do cụ thể và ghi vết vào bảng AuditLog. |
-| **BR-19** | 48-Hour Proof Countdown | Khi BTC gửi yêu cầu âm bản (`PROOF_REQUESTED`), thí sinh có 48 giờ để tải lên. Quá hạn, hệ thống tự động chuyển bài thi sang `DISQUALIFIED_NO_PROOF`. |
-| **BR-20** | Minimum Judge Quorum | Mỗi hạng mục bắt buộc phải phân công tối thiểu 3 giám khảo hoạt động trước khi có thể mở vòng chấm (`JUDGING`). |
-| **BR-21** | Conflict of Interest Guard | Người dùng đã được gán vai trò Judge hoặc Organizer trong một cuộc thi bị hệ thống chặn không cho phép đăng ký hoặc nộp bài thi vào chính cuộc thi đó. |
-| **BR-22** | Minimum Analog Metadata | Mỗi bài thi bắt buộc khai báo tối thiểu 5 thông số: Film Stock, Khổ phim (Format), Máy ảnh (Camera), Số thứ tự khung hình (Frame No), và Phòng Lab/Quy trình tráng. |
-| **BR-23** | Physical Frame Limits | Số khung hình không được vượt quá giới hạn vật lý: Khổ 135 (tối đa 39), Khổ 120 (6x4.5: tối đa 16; 6x6: tối đa 12; 6x7: tối đa 10), khổ 4x5 (tối đa 1 theo quy ước dự án). |
-| **BR-24** | Submission Modification Lock| Thí sinh chỉ được sửa thông số hoặc rút bài khi còn trong hạn nộp bài ($T < T_{sub\_deadline}$) và bài thi chưa chuyển sang trạng thái chấm. |
-| **BR-25** | Final Score Averaging | Điểm chung cuộc của bài thi là trung bình cộng điểm của tất cả giám khảo được phân công: $S_{final} = \frac{1}{M}\sum_{k=1}^M S_{judge\_k}$, làm tròn 2 chữ số thập phân. |
-
-### 6.2. Common Requirements (Yêu cầu Chung: CR-01 đến CR-07)
-
-| Mã CR | Tên yêu cầu chung | Chi tiết triển khai kỹ thuật |
-| :--- | :--- | :--- |
-| **CR-01** | Data Validation | Kiểm tra hợp lệ dữ liệu toàn diện ở cả Client-side (Zod / Formik) và Server-side (Hono API). |
-| **CR-02** | Format Standardization | Email chuẩn RFC 5322; Số điện thoại chuẩn E.164 hoặc 10 số VN; Ngày giờ ISO 8601 UTC; Mã định danh tự sinh chuẩn hóa (`CON-YYYY-XX`, `SUB-YYYY-XXXX`, `ROLL-YYYY-XXXX`). |
-| **CR-03** | Authorization & Blind Guard | Mọi route cần xác thực phải kiểm tra JWT và RBAC; Tự động kích hoạt bộ lọc loại bỏ thông tin thí sinh đối với vai trò Giám khảo. |
-| **CR-04** | Comprehensive Audit Logging | Mọi thao tác Tạo, Sửa, Duyệt, Loại, Chốt điểm trên thực thể nhạy cảm đều lưu vào bảng `audit_logs`. |
-| **CR-05** | Unique Code Generation | Tự động sinh mã định danh duy nhất, dễ đọc theo định dạng chuẩn hóa, chống trùng lặp qua Sequence / UUID hashing. |
-| **CR-06** | Standard Error Handling | Trả về thông báo lỗi thân thiện theo mã chuẩn hóa, tuyệt đối không làm lộ Stack Trace ra ngoài môi trường Production. |
-| **CR-07** | Concurrency Control | Áp dụng cơ chế Khóa lạc quan (Optimistic Locking qua trường `version` INT) khi cập nhật bài thi hoặc tổng hợp bảng xếp hạng. |
-
-### 6.3. Danh mục Mã Thông báo Ứng dụng (Application Messages Catalog: MSG001 đến MSG028)
-
-| Mã MSG | Loại thông báo | Ngữ cảnh xuất hiện | Nội dung chi tiết thông báo |
-| :--- | :--- | :--- | :--- |
-| **MSG001** | Inline | Search / Filter Empty | Không tìm thấy kết quả phù hợp. / No matching records found. |
-| **MSG002** | Inline (Red) | Form Validation | Trường {field_name} là bắt buộc. / The {field_name} field is required. |
-| **MSG003** | Toast (Success) | Authentication | Đăng nhập thành công. Chào mừng {username}! |
-| **MSG004** | Inline (Red) | Authentication | Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại. |
-| **MSG005** | Toast (Error) | Permission Denial | Bạn không có quyền thực hiện thao tác này. / Access denied. |
-| **MSG006** | Toast (Success) | Contest Setup | Khởi tạo cuộc thi "{contest_name}" thành công. |
-| **MSG007** | Inline (Red) | Criteria Validation | Tổng tỷ trọng các tiêu chí chấm điểm phải bằng đúng 100% (Hiện tại: {current_weight}%). |
-| **MSG008** | Inline (Red) | Timeline Validation | Lịch trình không hợp lệ: Thời hạn nộp bài phải diễn ra trước thời gian chấm thi. |
-| **MSG009** | Toast (Success) | Film Roll Log | Đã lưu thông tin cuộn phim "{roll_code}" vào sổ tay cá nhân. |
-| **MSG010** | Inline (Red) | Frame Limit (BR-23) | Số thứ tự khung hình ({frame_no}) vượt quá giới hạn vật lý của khổ phim {format}. |
-| **MSG011** | Toast (Error) | File Standard (BR-07) | Tệp ảnh tải lên vượt quá dung lượng tối đa 25MB hoặc độ phân giải thấp hơn 2000px. |
-| **MSG012** | Toast (Error) | Duplicate Frame (BR-05)| Khung hình số {frame_no} thuộc cuộn phim này đã được nộp trong cuộc thi. |
-| **MSG013** | Toast (Error) | Submission Limit | Bạn đã đạt giới hạn tối đa {max_entries} bài dự thi cho hạng mục này. |
-| **MSG014** | Toast (Error) | Deadline Passed (BR-08)| Cổng nhận bài cho cuộc thi này đã chính thức đóng. |
-| **MSG015** | Toast (Success) | Submission Success | Nộp tác phẩm thành công! Mã bài dự thi của bạn là {submission_code}. |
-| **MSG016** | Toast (Warning) | AI Risk Alert (BR-09) | Cảnh báo AI: Phát hiện xác suất ảnh tạo sinh AI cao ({ai_prob}%). Bài thi đã được chuyển sang hàng đợi kiểm tra âm bản. |
-| **MSG017** | Toast (Warning) | Duplicate Suspect (BR-10)| Cảnh báo trùng lặp: Tác phẩm có độ tương đồng {similarity}% với bài dự thi {target_code}. |
-| **MSG018** | Toast (Info) | Proof Request (BR-19) | Đã gửi yêu cầu bổ sung ảnh chụp phim âm bản cho thí sinh (Hạn chót: 48 giờ). |
-| **MSG019** | Toast (Success) | Proof Upload Success | Tải lên ảnh chụp dải phim âm bản đối chứng thành công. |
-| **MSG020** | Toast (Success) | Submission Approved | Đã phê duyệt tác phẩm {submission_code} vào danh sách chấm thi chính thức. |
-| **MSG021** | Toast (Error) | Reason Required (BR-18)| Vui lòng nhập lý do cụ thể trước khi loại (Disqualify) tác phẩm dự thi. |
-| **MSG022** | Toast (Error) | Conflict (BR-21) | Không thể phân công: Tài khoản này có bài dự thi trong cùng cuộc thi (Xung đột lợi ích). |
-| **MSG023** | Toast (Success) | Judging Evaluation | Đã lưu điểm chấm và nhận xét cho tác phẩm {submission_code}. |
-| **MSG024** | Toast (Warning) | Variance Alert (BR-14) | Phát hiện độ lệch điểm vượt quá 30% giữa các giám khảo tại tác phẩm {submission_code}. |
-| **MSG025** | Toast (Success) | Scorecard Locked | Bạn đã xác nhận và khóa bảng điểm thành công cho vòng thi này. |
-| **MSG026** | Toast (Error) | Missing Proof (BR-06) | Không thể công bố giải: Tác phẩm {submission_code} trong nhóm đạt giải chưa được xác minh ảnh âm bản. |
-| **MSG027** | Toast (Success) | Contest Published | Công bố kết quả cuộc thi thành công! Toàn bộ bảng điểm đã được khóa bất biến. |
-| **MSG028** | Toast (Success) | Archive Published | Đã xuất bản tác phẩm vào Kho lưu trữ số và Phòng triển lãm trực tuyến. |
-
----
-
-*Hết tài liệu SRS Tổng thể (Master AI-First Specification). Toàn bộ hình ảnh đã được chuyển đổi thành cấu trúc Văn bản, Bảng Markdown và Mermaid Diagrams chuẩn hóa.*
+| Mã | Loại | Ngữ cảnh | Nội dung |
+| --- | --- | --- | --- |
+| MSG001 | Inline | Search Empty | Không tìm thấy kết quả phù hợp. / No matching records found. |
+| MSG002 | Inline (Red) | Form Validation | Trường {field_name} là bắt buộc. / The {field_name} field is required. |
+| MSG003 | Toast (Success) | Auth | Đăng nhập thành công. Chào mừng {username}! |
+| MSG004 | Inline (Red) | Auth | Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại. |
+| MSG005 | Toast (Error) | Permission | Bạn không có quyền thực hiện thao tác này. / Access denied. |
+| MSG006 | Toast (Success) | Contest Setup | Khởi tạo cuộc thi "{contest_name}" thành công. |
+| MSG007 | Inline (Red) | Criteria Validation | Tổng tỷ trọng các tiêu chí chấm điểm phải bằng đúng 100% (Hiện tại: {current_weight}%). |
+| MSG008 | Inline (Red) | Timeline Validation | Thời hạn nộp bài phải diễn ra trước thời gian bắt đầu chấm thi. |
+| MSG009 | Toast (Success) | Film Roll Log | Đã lưu thông tin cuộn phim "{roll_code}" vào sổ tay cá nhân. |
+| MSG010 | Inline (Red) | Frame Validation | Số thứ tự khung hình phải là số nguyên dương và chưa tồn tại trong cuộn phim. |
+| MSG011 | Toast (Error) | File Upload | Tệp ảnh không đáp ứng giới hạn dung lượng, độ phân giải hoặc định dạng của cuộc thi. |
+| MSG012 | Toast (Error) | Duplicate Frame | Khung hình số {frame_no} thuộc cuộn phim này đã được nộp trong cuộc thi. |
+| MSG013 | Toast (Error) | Submission Limit | Bạn đã đạt giới hạn tối đa {max_entries} bài dự thi cho hạng mục này. |
+| MSG014 | Toast (Error) | Deadline Passed | Cổng nhận bài cho cuộc thi này đã chính thức đóng. |
+| MSG015 | Toast (Success) | Submission | Nộp tác phẩm thành công! Mã bài dự thi của bạn là {submission_code}. |
+| MSG016 | Toast (Warning) | AI Verification | Cảnh báo AI: Bài thi có điểm nghi vấn {ai_prob}% và cần Ban tổ chức xem xét. |
+| MSG017 | Toast (Warning) | AI Similarity | Cảnh báo trùng lặp: Tác phẩm có độ tương đồng {similarity}% với bài dự thi {target_code}. |
+| MSG018 | Toast (Info) | Proof Request | Đã gửi yêu cầu bổ sung bằng chứng cho thí sinh (Hạn chót: {proof_deadline}). |
+| MSG019 | Toast (Success) | Proof Upload | Tải lên ảnh chụp dải phim âm bản đối chứng thành công. |
+| MSG020 | Toast (Success) | Moderation | Đã phê duyệt tác phẩm {submission_code} vào danh sách chấm thi chính thức. |
+| MSG021 | Toast (Error) | Moderation | Vui lòng nhập lý do cụ thể trước khi loại (Disqualify) tác phẩm dự thi. |
+| MSG022 | Toast (Error) | Conflict of Interest | Không thể phân công giám khảo này vì tài khoản đang có bài dự thi trong cùng cuộc thi. |
+| MSG023 | Toast (Success) | Judging | Đã lưu điểm chấm và nhận xét cho tác phẩm {submission_code}. |
+| MSG024 | Toast (Warning) | Judging Round Finalization | Chưa thể khóa vòng chấm vì còn đánh giá bắt buộc chưa được xác nhận. |
+| MSG025 | Toast (Success) | Judging Lock | Bạn đã xác nhận và khóa bảng điểm thành công cho vòng thi này. |
+| MSG026 | Toast (Error) | Publish Validation | Không thể công bố: Tác phẩm {submission_code} còn thiếu xác minh bằng chứng theo thể lệ. |
+| MSG027 | Toast (Success) | Result Publish | Công bố kết quả cuộc thi thành công! Toàn bộ bảng điểm đã được khóa bất biến. |
+| MSG028 | Toast (Success) | Digital Archive | Đã xuất bản tác phẩm vào Kho lưu trữ số và Phòng triển lãm trực tuyến. |

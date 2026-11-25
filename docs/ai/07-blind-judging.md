@@ -1,5 +1,20 @@
 ﻿# Module Spec: 07 - Blind Judging (Chấm thi ẩn danh)
 
+## Phạm vi theo SRS hiện hành
+
+**UC-14–16, UC-24–25, UC-29–33, BR-12–16/20/21/25.** Phân công Judge theo hạng mục/vòng, tối thiểu một Judge hoạt động và kiểm tra xung đột. DTO chấm thi ẩn tác giả; Judge chấm độc lập bằng tiêu chí có tổng trọng số 100%, trình xem ảnh có zoom và metadata.
+
+Organizer chốt vòng sau khi toàn bộ phiếu bắt buộc được xác nhận. Khóa vòng, xếp theo trung bình điểm trọng số và chọn danh sách đi tiếp theo giới hạn cấu hình. Điểm vòng cuối làm tròn hai chữ số để xếp hạng; đồng điểm xử lý theo thể lệ kèm lý do. Luồng chốt và chuyển vòng thay cho quy trình lệch điểm.
+
+## Thiết kế trước lần cập nhật SRS
+
+> Tham chiếu lịch sử để truy vết thiết kế và các hợp đồng cũ. Yêu cầu nghiệp vụ hiện hành nằm trong [SRS](../srs.md) và mục trên.
+
+## Phạm vi nghiệm thu và trạng thái hiện tại
+
+UC-24–25 và UC-29–33 cần tiến độ thật, điều phối lệch điểm và chấm/khóa phiếu qua API. Backend có năm thao tác Judging. Web còn cần nối luồng phân công và lưu phiếu thật. Nghiệm thu từ phân công đủ điều kiện ở [Module 03](03-contest-lifecycle.md) và bài đã duyệt ở [Module 05](05-submission-and-proof.md), qua kiểm tra DTO/ảnh ẩn danh, truy cập ngoài phân công, chỉnh điểm có lý do và audit, khóa phiếu, tính trung bình và xử lý lệch điểm. Số điểm/lời bình của giám khảo khác phải được giữ kín cho đến khi kết thúc vòng.
+
+
 ## 1. Domain Entities & Database Mapping
 
 Module Blind Judging liên quan đến các nhóm dữ liệu:
@@ -71,11 +86,10 @@ Không tự giả định tên bảng hoặc cấu trúc cột khi chưa có đ�
   - Vòng chấm phải đóng trước khi Giám khảo được xem điểm và nhận xét của Giám khảo khác.
   - Mọi chênh lệch điểm được gắn cờ theo BR-14 phải được xử lý trước khi xác nhận kết quả cuối cùng.
 
-- **BR-15, BR-18 và UC-32–33:** Tổng trọng số mỗi hạng mục bằng đúng 1.0000. Điểm của mỗi giám khảo là tổng điểm từng tiêu chí nhân trọng số. Giám khảo được sửa phiếu trước khi khóa và xác nhận hoàn tất phiếu cá nhân. Điều chỉnh điểm khi phúc khảo yêu cầu lý do và AuditLog.
+- **BR-15, BR-18 và UC-32–33:** Tổng trọng số mỗi hạng mục bằng đúng 1.0000. Điểm của mỗi giám khảo là tổng điểm từng tiêu chí nhân trọng số. Giám khảo được sửa phiếu trước khi khóa và xác nhận hoàn tất phiếu cá nhân. Mọi chỉnh sửa điểm yêu cầu lý do và AuditLog.
 
 ### 2.2 Nội dung cần xác nhận với nhóm
 
-- Thao tác nào được coi là khóa phiếu chấm điểm của một Giám khảo?
 - Thao tác mở lại phiếu đã khóa, nếu được nhóm xác định, cần có hợp đồng riêng.
 - Ban tổ chức và Trưởng ban giám khảo điều phối theo BR-14. Quyền thao tác chi tiết và DTO điều phối còn cần xác định.
 
@@ -116,24 +130,23 @@ Không tự giả định tên bảng hoặc cấu trúc cột khi chưa có đ�
 
 ## 4. Shared API Contracts (Dùng chung cho Web & Mobile)
 
+Năm route Judging phục vụ danh sách phân công, ảnh ẩn danh, gửi điểm, khóa phiếu và bảng điểm. Xem method, path và DTO trong [Module 09](09-api-contracts.md#61-hợp-đồng-judging).
+
 ### 4.1 API lấy danh sách bài được phân công
 
 - Chỉ trả dữ liệu bài thi mà Giám khảo được phép xem.
 - Không trả thông tin nhận dạng thí sinh.
-- Tên endpoint, phương thức HTTP và JSON response cần xác nhận với API contract chính thức.
 
 ### 4.2 API nộp điểm và nhận xét
 
 - Chỉ cho phép Giám khảo được phân công gửi điểm và nhận xét theo quy định của vòng chấm.
 - Không làm lộ điểm hoặc nhận xét của Giám khảo khác.
-- Cần xác nhận endpoint, cấu trúc request và điều kiện khóa phiếu chấm.
 
 ### 4.3 API tổng hợp kết quả và phát hiện chênh lệch
 
 - Tính điểm trung bình và làm tròn hai chữ số thập phân.
 - Kiểm tra ngưỡng chênh lệch theo BR-14.
 - Không xác nhận kết quả cuối cùng khi còn chênh lệch chưa được xử lý.
-- Cần xác nhận quyền gọi API và định dạng response.
 
 ---
 

@@ -165,7 +165,7 @@ export function ContestCtaButton({
       <div className="space-y-3">
         <a
           href="#registration-guide"
-          className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-600/30 transition-all"
+          className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-brand-solid hover:bg-brand-hover text-white font-bold text-sm shadow-md shadow-brand-solid/30 transition-all"
         >
           <Upload className="h-4 w-4" />
           <span>Xem hướng dẫn nộp bài</span>
@@ -193,7 +193,7 @@ export function ContestCtaButton({
         </div>
         <Link
           href={`/portal/contests/${contestId}`}
-          className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-600/30 transition-all"
+          className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-brand-solid hover:bg-brand-hover text-white font-bold text-sm shadow-md shadow-brand-solid/30 transition-all"
         >
           <span>Vào Quản trị Cuộc thi</span>
         </Link>
@@ -212,7 +212,7 @@ export function ContestCtaButton({
             setSuccess(false);
             setError(null);
           }}
-          className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-600/30 transition-all active:scale-95"
+          className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-brand-solid hover:bg-brand-hover text-white font-bold text-sm shadow-md shadow-brand-solid/30 transition-all active:scale-95"
         >
           <Camera className="h-4 w-4" />
           <span>Nộp bài dự thi ngay (Web)</span>
@@ -249,7 +249,7 @@ export function ContestCtaButton({
                   Nộp bài thi thành công!
                 </h3>
                 <p className="text-sm text-slate-600 max-w-md mx-auto">
-                  Tác phẩm <span className="font-semibold text-slate-900">"{title}"</span> đã được tiếp nhận. Hệ thống đang tiến hành thẩm định hạt phim (Grain) và quét AI pHash tự động theo chuẩn SRS BR-09.
+                  Tác phẩm <span className="font-semibold text-slate-900">"{title}"</span> đã được tiếp nhận. Hệ thống kiểm tra ảnh tạo sinh và ảnh tương tự để hỗ trợ Ban tổ chức thẩm định.
                 </p>
                 <div className="pt-4 flex justify-center gap-3">
                   <button
@@ -258,7 +258,7 @@ export function ContestCtaButton({
                       setIsModalOpen(false);
                       window.location.reload();
                     }}
-                    className="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition"
+                    className="px-6 py-2.5 rounded-xl bg-brand-solid text-white font-semibold text-sm hover:bg-brand-hover transition"
                   >
                     Hoàn tất
                   </button>
@@ -431,7 +431,7 @@ export function ContestCtaButton({
                   <button
                     type="submit"
                     disabled={loading}
-                    className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/30 transition disabled:opacity-50"
+                    className="px-6 py-2.5 rounded-xl bg-brand-solid hover:bg-brand-hover text-white text-xs font-bold shadow-md shadow-brand-solid/30 transition disabled:opacity-50"
                   >
                     {loading ? "Đang tải lên & thẩm định..." : "Nộp bài dự thi ngay"}
                   </button>

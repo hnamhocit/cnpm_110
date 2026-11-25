@@ -3,7 +3,7 @@ info:
   title: Film Contest API Specification
   description: Danh mục REST API của Film Contest. x-implementation đánh dấu route đang mount (mounted) hoặc hợp
     đồng module chưa có route (planned). Route đang mount có thể còn lệch nghiệp vụ SRS.
-    Route dùng BearerAuth kiểm tra chữ ký, hạn JWT và trạng thái hoạt động của tài khoản.
+    Route dùng BearerAuth kiểm tra chữ ký, hạn JWT, phiên bản, phiên và trạng thái hoạt động của tài khoản.
   version: 1.0.0
 servers:
 - url: http://localhost:8080
@@ -91,16 +91,25 @@ paths:
       operationId: postAiWebhook
   /api/v1/auth/forgot-password:
     post:
-      summary: POST /api/v1/auth/forgot-password
-      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
-        Hono.
+      summary: "Yêu cầu đặt lại mật khẩu"
+      description: "Phản hồi chung cho mọi email hợp lệ. Chỉ tài khoản đang hoạt động có email đã xác thực nhận link."
       tags:
-      - Planned · 01
-      x-implementation: planned
-      responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
+      - Authentication
+      x-implementation: mounted
       operationId: postAuthForgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type": "object", "properties": {"email": {"type": "string", "format": "email", "maxLength": 255}}, "required": ["email"]}
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema: {"$ref": "#/components/schemas/SuccessEnvelope"}
+        '400':
+          $ref: '#/components/responses/BadRequest'
   /api/v1/auth/login:
     post:
       summary: Đăng nhập hệ thống
@@ -229,6 +238,7 @@ paths:
   /api/v1/auth/portfolio:
     get:
       summary: Portfolio của tài khoản hiện tại
+      description: Chỉ Participant được đọc portfolio của mình.
       tags:
       - Auth
       responses:
@@ -316,37 +326,120 @@ paths:
       operationId: postAuthRefresh
   /api/v1/auth/register:
     post:
-      summary: Đăng ký tài khoản mới (Participant)
+      summary: "Đăng ký Participant"
+      description: "Tạo tài khoản chờ xác thực và gửi OTP qua email. Xác thực email rồi số điện thoại trước khi đăng nhập."
       tags:
       - Authentication
+      x-implementation: mounted
+      operationId: postAuthRegister
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              required:
-              - fullName
-              - email
-              - password
-              properties:
-                fullName:
-                  type: string
-                  maxLength: 100
-                  example: Nguyễn Văn A
-                email:
-                  type: string
-                  format: email
-                  maxLength: 255
-                  example: participant@example.com
-                password:
-                  type: string
-                  minLength: 8
-                  maxLength: 128
-                  example: SecurePass123!
+            schema: {"type": "object", "properties": {"fullName": {"type": "string", "minLength": 2, "maxLength": 100}, "email": {"type": "string", "format": "email", "maxLength": 255}, "phoneNumber": {"type": "string", "description": "E.164 hoặc số Việt Nam 10 chữ số", "maxLength": 16}, "password": {"type": "string", "format": "password", "minLength": 8, "maxLength": 128}}, "required": ["fullName", "email", "password"]}
       responses:
         '201':
-          description: Đăng ký thành công
+          description: Thành công
+          content:
+            application/json:
+              schema: {"allOf": [{"$ref": "#/components/schemas/SuccessEnvelope"}, {"type": "object", "properties": {"data": {"type": "object", "properties": {"user": {"$ref": "#/components/schemas/UserResponse"}, "status": {"type": "string", "enum": ["PENDING_VERIFICATION"]}, "deliveryStatus": {"type": "string", "enum": ["ACCEPTED", "RETRY_REQUIRED"]}}}}}]}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Không thực hiện được thao tác
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '503':
+          description: Không thực hiện được thao tác
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /api/v1/auth/reset-password:
+    post:
+      summary: "Đặt lại mật khẩu"
+      description: "Token nhận qua email dùng một lần trong 15 phút. Thu hồi toàn bộ phiên khi thành công."
+      tags:
+      - Authentication
+      x-implementation: mounted
+      operationId: postAuthResetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type": "object", "properties": {"token": {"type": "string", "minLength": 43, "maxLength": 43}, "newPassword": {"type": "string", "format": "password", "minLength": 8, "maxLength": 128}, "confirmPassword": {"type": "string", "format": "password", "minLength": 8, "maxLength": 128}}, "required": ["token", "newPassword", "confirmPassword"]}
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema: {"$ref": "#/components/schemas/SuccessEnvelope"}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/auth/verify-email:
+    post:
+      summary: "Xác thực email"
+      description: "Xác thực mã email và kích hoạt tài khoản."
+      tags:
+      - Authentication
+      x-implementation: mounted
+      operationId: postAuthVerifyEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type": "object", "properties": {"email": {"type": "string", "format": "email", "maxLength": 255}, "code": {"type": "string", "pattern": "^[0-9]{6}$"}}, "required": ["email", "code"]}
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema: {"allOf": [{"$ref": "#/components/schemas/SuccessEnvelope"}, {"type": "object", "properties": {"data": {"type": "object", "properties": {"status": {"type": "string", "enum": ["ACTIVE"]}}}}}]}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/auth/resend-verification:
+    post:
+      summary: "Gửi lại mã xác thực email"
+      description: "Yêu cầu mật khẩu tài khoản và áp dụng thời gian chờ giữa các lần gửi."
+      tags:
+      - Authentication
+      x-implementation: mounted
+      operationId: postAuthResendVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type": "object", "properties": {"email": {"type": "string", "format": "email", "maxLength": 255}, "password": {"type": "string", "format": "password", "minLength": 8, "maxLength": 128}}, "required": ["email", "password"]}
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema: {"allOf": [{"$ref": "#/components/schemas/SuccessEnvelope"}, {"type": "object", "properties": {"data": {"type": "object", "properties": {"deliveryStatus": {"type": "string", "enum": ["ACCEPTED", "RETRY_REQUIRED"]}}}}}]}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Không thực hiện được thao tác
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /api/v1/contests/{id}/analytics:
+    get:
+      summary: Báo cáo cuộc thi UC-28
+      description: Đọc thống kê tổng hợp từ PostgreSQL.
+      operationId: getContestAnalytics
+      x-implementation: mounted
+      tags: [Contests]
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Số liệu tổng hợp và nhận xét
           content:
             application/json:
               schema:
@@ -354,40 +447,83 @@ paths:
                 - $ref: '#/components/schemas/SuccessEnvelope'
                 - type: object
                   properties:
-                    code:
-                      type: integer
-                      example: 201
                     data:
                       type: object
                       properties:
-                        user:
-                          $ref: '#/components/schemas/UserResponse'
-                        accessToken:
-                          type: string
-                        refreshToken:
-                          type: string
+                        contest:
+                          type: object
+                          properties:
+                            id: { type: string, format: uuid }
+                            name: { type: string }
+                        totals:
+                          $ref: '#/components/schemas/ContestAnalyticsCounts'
+                        categories:
+                          type: array
+                          items:
+                            allOf:
+                            - $ref: '#/components/schemas/ContestAnalyticsCounts'
+                            - type: object
+                              properties:
+                                name: { type: string }
+                        report: { type: string, nullable: true }
         '400':
           $ref: '#/components/responses/BadRequest'
-        '409':
-          description: Email đã được đăng ký
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Cuộc thi không tồn tại hoặc ngoài phạm vi quản lý
+    post:
+      summary: Báo cáo cuộc thi UC-28
+      description: Tạo nhận xét AI từ số liệu tổng hợp. Khi AI lỗi, nhận xét là null và số liệu vẫn được trả.
+      operationId: generateContestAnalytics
+      x-implementation: mounted
+      tags: [Contests]
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Số liệu tổng hợp và nhận xét
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-      x-implementation: mounted
-      operationId: postAuthRegister
-  /api/v1/auth/reset-password:
-    post:
-      summary: POST /api/v1/auth/reset-password
-      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
-        Hono.
-      tags:
-      - Planned · 01
-      x-implementation: planned
-      responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
-      operationId: postAuthResetPassword
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        contest:
+                          type: object
+                          properties:
+                            id: { type: string, format: uuid }
+                            name: { type: string }
+                        totals:
+                          $ref: '#/components/schemas/ContestAnalyticsCounts'
+                        categories:
+                          type: array
+                          items:
+                            allOf:
+                            - $ref: '#/components/schemas/ContestAnalyticsCounts'
+                            - type: object
+                              properties:
+                                name: { type: string }
+                        report: { type: string, nullable: true }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Cuộc thi không tồn tại hoặc ngoài phạm vi quản lý
   /api/v1/contests:
     get:
       summary: Lấy danh sách cuộc thi đang mở
@@ -553,7 +689,7 @@ paths:
       operationId: getContestsById
     put:
       summary: Cập nhật cuộc thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
       tags:
       - Contests
       security:
@@ -1015,7 +1151,7 @@ paths:
   /api/v1/organizer/submissions:
     get:
       summary: Hàng đợi kiểm duyệt bài dự thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo.
       tags:
       - Submissions
       responses:
@@ -1143,6 +1279,7 @@ paths:
   /api/v1/organizer/submissions/my:
     get:
       summary: Bài dự thi của tôi
+      description: Chỉ Participant được đọc bài của mình qua alias.
       tags:
       - Submissions
       responses:
@@ -1223,7 +1360,7 @@ paths:
   /api/v1/organizer/submissions/{id}/approve:
     post:
       summary: Duyệt bài thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài rủi ro AI cao đang bị giữ hoặc bài đã duyệt trả 409. Bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Bài đã duyệt trả 409. Duyệt bài bị gắn cờ phải kèm lý do. Bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
       tags:
       - Submissions
       responses:
@@ -1318,7 +1455,7 @@ paths:
   /api/v1/organizer/submissions/{id}/moderate:
     post:
       summary: Kiểm duyệt bài thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF hiện chỉ đổi trạng thái và ghi log, chưa tạo hạn 48 giờ.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. Duyệt bài bị gắn cờ hoặc gỡ cờ cần lý do. REQUEST_PROOF hiện chưa lưu được PROOF_REQUESTED do ràng buộc trạng thái DB.
       tags:
       - Submissions
       responses:
@@ -1389,7 +1526,7 @@ paths:
   /api/v1/organizer/submissions/{id}/reject:
     post:
       summary: Loại bài thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài đã bị loại trả 409. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Bài đã bị loại trả 409. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
       tags:
       - Submissions
       responses:
@@ -1451,6 +1588,26 @@ paths:
           type: string
           format: uuid
       operationId: postOrganizerSubmissionsByIdReject
+  /api/v1/rbac/roles:
+    get:
+      summary: "Xem ma trận quyền"
+      description: "Chỉ Admin. Trả ma trận quyền cố định của bốn vai trò."
+      tags:
+      - Authentication
+      x-implementation: mounted
+      operationId: getRbacRoles
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema: {"allOf": [{"$ref": "#/components/schemas/SuccessEnvelope"}, {"type": "object", "properties": {"data": {"type": "array", "items": {"type": "object", "properties": {"role": {"type": "string"}, "availablePermissions": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}, "permissions": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}}}}}}]}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /api/v1/rbac/manage-contest:
     get:
       summary: API yêu cầu quyền Admin hoặc Organizer
@@ -1529,7 +1686,7 @@ paths:
   /api/v1/submissions:
     get:
       summary: Hàng đợi kiểm duyệt bài dự thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo.
       tags:
       - Submissions
       responses:
@@ -1657,6 +1814,7 @@ paths:
   /api/v1/submissions/my:
     get:
       summary: Bài dự thi của tôi
+      description: Chỉ Participant được đọc bài của mình.
       tags:
       - Submissions
       responses:
@@ -1768,7 +1926,7 @@ paths:
   /api/v1/submissions/{id}/approve:
     post:
       summary: Duyệt bài thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài rủi ro AI cao đang bị giữ hoặc bài đã duyệt trả 409. Bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Bài đã duyệt trả 409. Duyệt bài bị gắn cờ phải kèm lý do. Bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
       tags:
       - Submissions
       responses:
@@ -1863,7 +2021,7 @@ paths:
   /api/v1/submissions/{id}/moderate:
     post:
       summary: Kiểm duyệt bài thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF hiện chỉ đổi trạng thái và ghi log, chưa tạo hạn 48 giờ.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. Duyệt bài bị gắn cờ hoặc gỡ cờ cần lý do. REQUEST_PROOF hiện chưa lưu được PROOF_REQUESTED do ràng buộc trạng thái DB.
       tags:
       - Submissions
       responses:
@@ -1953,7 +2111,7 @@ paths:
   /api/v1/submissions/{id}/reject:
     post:
       summary: Loại bài thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Admin có thể thao tác trên mọi cuộc thi. Bài ngoài phạm vi trả 404. Bài đã bị loại trả 409. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Bài đã bị loại trả 409. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
       tags:
       - Submissions
       responses:
@@ -2037,8 +2195,11 @@ paths:
   /api/v1/upload:
     post:
       summary: Upload ảnh lên Cloudflare R2
+      description: Yêu cầu Bearer JWT của tài khoản hoạt động.
       tags:
       - Storage
+      security:
+      - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -2074,6 +2235,8 @@ paths:
                         size:
                           type: integer
                           example: 2048576
+        '401':
+          description: Thiếu token hoặc tài khoản hay vai trò không còn hiệu lực.
         '400':
           description: File không hợp lệ hoặc sai định dạng
           content:
@@ -2090,82 +2253,181 @@ paths:
       operationId: postUpload
   /api/v1/users:
     get:
-      summary: GET /api/v1/users
-      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
-        Hono.
+      summary: "Liệt kê tài khoản"
+      description: "Admin có quyền users:read_all."
       tags:
-      - Planned · 01
-      x-implementation: planned
-      responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
+      - Authentication
+      x-implementation: mounted
       operationId: getUsers
-    post:
-      summary: POST /api/v1/users
-      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
-        Hono.
-      tags:
-      - Planned · 01
-      x-implementation: planned
+      security:
+      - BearerAuth: []
+      parameters:
+      - {"name": "page", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "default": 1}}
+      - {"name": "limit", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 20}}
+      - {"name": "role", "in": "query", "required": false, "schema": {"type": "string", "enum": ["ADMIN", "ORGANIZER", "JUDGE", "PARTICIPANT"]}}
+      - {"name": "status", "in": "query", "required": false, "schema": {"type": "string", "enum": ["ACTIVE", "LOCKED", "BANNED", "PENDING_VERIFICATION"]}}
+      - {"name": "search", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 255}}
       responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema: {"allOf": [{"$ref": "#/components/schemas/SuccessEnvelope"}, {"type": "object", "properties": {"data": {"type": "object", "properties": {"items": {"type": "array", "items": {"type": "object", "properties": {"id": {"type": "string", "format": "uuid"}, "fullName": {"type": "string"}, "email": {"type": "string", "format": "email", "maxLength": 255}, "phoneNumber": {"type": "string", "nullable": true}, "role": {"type": "object", "nullable": true, "properties": {"code": {"type": "string", "enum": ["ADMIN", "ORGANIZER", "JUDGE", "PARTICIPANT"]}, "name": {"type": "string"}}}, "status": {"type": "string", "enum": ["ACTIVE", "LOCKED", "BANNED", "PENDING_VERIFICATION"]}, "tokenVersion": {"type": "integer"}, "lastLoginAt": {"type": "string", "format": "date-time", "nullable": true}, "createdAt": {"type": "string", "format": "date-time"}}}}, "page": {"type": "integer"}, "limit": {"type": "integer"}, "totalRecords": {"type": "integer"}, "totalPages": {"type": "integer"}}}}}]}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      summary: "Tạo tài khoản nội bộ"
+      description: "Admin có quyền users:create_internal. Tài khoản phải xác thực email và điện thoại trước khi đăng nhập."
+      tags:
+      - Authentication
+      x-implementation: mounted
       operationId: postUsers
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type": "object", "properties": {"fullName": {"type": "string", "minLength": 2, "maxLength": 100}, "email": {"type": "string", "format": "email", "maxLength": 255}, "phoneNumber": {"type": "string", "description": "E.164 hoặc số Việt Nam 10 chữ số", "maxLength": 16}, "role": {"type": "string", "enum": ["ADMIN", "ORGANIZER", "JUDGE"]}, "temporaryPassword": {"type": "string", "format": "password", "minLength": 8, "maxLength": 128}}, "required": ["fullName", "email", "role", "temporaryPassword"]}
+      responses:
+        '201':
+          description: Thành công
+          content:
+            application/json:
+              schema: {"allOf": [{"$ref": "#/components/schemas/SuccessEnvelope"}, {"type": "object", "properties": {"data": {"type": "object", "properties": {"id": {"type": "string", "format": "uuid"}, "fullName": {"type": "string"}, "email": {"type": "string", "format": "email", "maxLength": 255}, "role": {"type": "string"}, "createdAt": {"type": "string", "format": "date-time"}, "status": {"type": "string", "enum": ["PENDING_VERIFICATION"]}, "deliveryStatus": {"type": "string", "enum": ["ACCEPTED", "RETRY_REQUIRED"]}}}}}]}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Không thực hiện được thao tác
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '503':
+          description: Không thực hiện được thao tác
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
   /api/v1/users/me:
     get:
-      summary: GET /api/v1/users/me
-      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
-        Hono.
+      summary: "Xem hồ sơ của mình"
+      description: "Cùng DTO với GET /api/v1/auth/me."
       tags:
-      - Planned · 01
-      x-implementation: planned
-      responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
+      - Authentication
+      x-implementation: mounted
       operationId: getUsersMe
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema: {"allOf": [{"$ref": "#/components/schemas/SuccessEnvelope"}, {"type": "object", "properties": {"data": {"type": "object", "properties": {"user": {"$ref": "#/components/schemas/UserResponse"}}}}}]}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /api/v1/users/me/password:
     patch:
-      summary: PATCH /api/v1/users/me/password
-      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
-        Hono.
+      summary: "Đổi mật khẩu"
+      description: "Thu hồi toàn bộ phiên khi đổi thành công."
       tags:
-      - Planned · 01
-      x-implementation: planned
-      responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
+      - Authentication
+      x-implementation: mounted
       operationId: patchUsersMePassword
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type": "object", "properties": {"currentPassword": {"type": "string", "format": "password", "maxLength": 128}, "newPassword": {"type": "string", "format": "password", "minLength": 8, "maxLength": 128}}, "required": ["currentPassword", "newPassword"]}
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema: {"$ref": "#/components/schemas/SuccessEnvelope"}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /api/v1/users/me/profile:
     put:
-      summary: PUT /api/v1/users/me/profile
-      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
-        Hono.
+      summary: "Cập nhật hồ sơ cá nhân"
+      description: "Chỉ cập nhật các trường gửi lên."
       tags:
-      - Planned · 01
-      x-implementation: planned
-      responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
+      - Authentication
+      x-implementation: mounted
       operationId: putUsersMeProfile
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type": "object", "properties": {"fullName": {"type": "string", "minLength": 1, "maxLength": 100}, "avatarUrl": {"type": "string", "format": "uri", "nullable": true}, "displayName": {"type": "string", "maxLength": 100}, "bio": {"type": "string", "maxLength": 1000}, "experienceLevel": {"type": "string", "enum": ["NOVICE", "AMATEUR", "ENTHUSIAST", "PROFESSIONAL"]}, "primaryFilmFormat": {"type": "string", "enum": ["35MM", "120_MEDIUM_FORMAT", "LARGE_FORMAT", "MULTIPLE"]}, "favoriteFilmStocks": {"type": "array", "items": {"type": "string", "maxLength": 100}, "maxItems": 10}, "portfolioWebsite": {"type": "string", "maxLength": 255}, "instagramHandle": {"type": "string", "maxLength": 100}, "addressCity": {"type": "string", "maxLength": 100}}}
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema: {"allOf": [{"$ref": "#/components/schemas/SuccessEnvelope"}, {"type": "object", "properties": {"data": {"type": "object", "properties": {"updatedAt": {"type": "string", "format": "date-time"}}}}}]}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /api/v1/users/{id}/status:
     patch:
-      summary: PATCH /api/v1/users/{id}/status
-      description: Hợp đồng dự kiến trong [01-auth-and-rbac.md](ai/01-auth-and-rbac.md). Route chưa được đăng ký trong
-        Hono.
+      summary: "Khóa, mở khóa hoặc cấm tài khoản"
+      description: "Admin có quyền users:lock_unlock. Khi khóa hoặc cấm, tất cả phiên bị thu hồi ngay. Không được tự khóa; tài khoản bị cấm không thể mở lại."
       tags:
-      - Planned · 01
-      x-implementation: planned
-      responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+      - Authentication
+      x-implementation: mounted
       operationId: patchUsersByIdStatus
+      security:
+      - BearerAuth: []
+      parameters:
+      - {"name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type": "object", "properties": {"status": {"type": "string", "enum": ["ACTIVE", "LOCKED", "BANNED"]}, "reason": {"type": "string", "minLength": 10, "maxLength": 500}}, "required": ["status", "reason"]}
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema: {"allOf": [{"$ref": "#/components/schemas/SuccessEnvelope"}, {"type": "object", "properties": {"data": {"type": "object", "properties": {"userId": {"type": "string", "format": "uuid"}, "previousStatus": {"type": "string", "enum": ["ACTIVE", "LOCKED", "BANNED", "PENDING_VERIFICATION"]}, "currentStatus": {"type": "string", "enum": ["ACTIVE", "LOCKED", "BANNED", "PENDING_VERIFICATION"]}, "tokenVersion": {"type": "integer"}, "revokedSessionsCount": {"type": "integer"}, "updatedAt": {"type": "string", "format": "date-time"}}}}}]}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Không thực hiện được thao tác
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '409':
+          description: Không thực hiện được thao tác
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
   /health:
     get:
       summary: Trạng thái API và kết nối cơ sở dữ liệu
@@ -2195,6 +2457,162 @@ paths:
                           type: integer
       x-implementation: mounted
       operationId: getHealth
+  /api/v1/judge/assignments:
+    get:
+      summary: GET /api/v1/judge/assignments
+      description: Judge. Trả danh sách bài APPROVED thuộc hạng mục được phân công, trả imageUrl được bảo vệ bằng bearer JWT.
+      tags:
+      - Judging
+      x-implementation: mounted
+      operationId: getJudgeAssignments
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Thành công. Xem dữ liệu phản hồi trong Module 09.
+        '401':
+          description: Thiếu hoặc sai token.
+        '403':
+          description: Không đủ quyền.
+  /api/v1/judge/submissions/{submissionId}/evaluation:
+    post:
+      summary: POST /api/v1/judge/submissions/{submissionId}/evaluation
+      description: Judge được phân công. Gửi đủ điểm theo tiêu chí và nhận xét trong trạng thái JUDGING. Phiếu đã khóa hoặc vòng chấm đã đóng trả 409.
+      tags:
+      - Judging
+      x-implementation: mounted
+      operationId: postJudgeEvaluation
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: submissionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scores]
+              properties:
+                comment:
+                  type: string
+                  nullable: true
+                  maxLength: 5000
+                scores:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [criterionId, score]
+                    properties:
+                      criterionId:
+                        type: string
+                        format: uuid
+                      score:
+                        type: number
+                        minimum: 0
+                        multipleOf: 0.01
+      responses:
+        '200':
+          description: Thành công. Xem dữ liệu phản hồi trong Module 09.
+        '401':
+          description: Thiếu hoặc sai token.
+        '403':
+          description: Không đủ quyền.
+        '400':
+          description: Điểm hoặc bài dự thi không hợp lệ.
+        '404':
+          description: Không tìm thấy bài dự thi.
+        '409':
+          description: Phiếu đã khóa.
+  /api/v1/judge/assignments/{assignmentId}/lock:
+    post:
+      summary: POST /api/v1/judge/assignments/{assignmentId}/lock
+      description: Judge sở hữu phân công. Khóa phiếu cá nhân đã chấm đủ bài và tiêu chí trong trạng thái JUDGING. Gọi lại trả trạng thái khóa hiện có.
+      tags:
+      - Judging
+      x-implementation: mounted
+      operationId: postJudgeAssignmentLock
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: assignmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Thành công. Xem dữ liệu phản hồi trong Module 09.
+        '401':
+          description: Thiếu hoặc sai token.
+        '403':
+          description: Không đủ quyền.
+        '409':
+          description: Phiếu chưa hoàn tất hoặc vòng chấm đã đóng.
+  /api/v1/contests/{id}/scoreboard:
+    get:
+      summary: GET /api/v1/contests/{id}/scoreboard
+      description: Chỉ Organizer sở hữu cuộc thi được xem bảng điểm theo hạng mục. Bài thiếu phiếu có finalScore và rank bằng null.
+      tags:
+      - Judging
+      x-implementation: mounted
+      operationId: getContestScoreboard
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Thành công. Xem dữ liệu phản hồi trong Module 09.
+        '401':
+          description: Thiếu hoặc sai token.
+        '403':
+          description: Không đủ quyền.
+        '404':
+          description: Không tìm thấy cuộc thi.
+  /api/v1/judge/submissions/{submissionId}/image:
+    get:
+      summary: Ảnh ẩn danh của bài được phân công
+      description: Judge được phân công. Trả ảnh PNG đã loại metadata từ ảnh gốc.
+      tags:
+      - Judging
+      x-implementation: mounted
+      operationId: getJudgeSubmissionImage
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: submissionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Ảnh đã loại metadata.
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Thiếu hoặc sai token.
+        '403':
+          description: Thiếu vai trò Judge.
+        '404':
+          description: Không tìm thấy bài được phân công hoặc ảnh.
 components:
   securitySchemes:
     BearerAuth:
@@ -2206,6 +2624,14 @@ components:
       in: header
       name: X-Webhook-Secret
   schemas:
+    ContestAnalyticsCounts:
+      type: object
+      properties:
+        submissions: { type: integer, minimum: 0 }
+        aiWarnings: { type: integer, minimum: 0 }
+        byStatus:
+          type: object
+          additionalProperties: { type: integer, minimum: 0 }
     Contest:
       type: object
       properties:
@@ -2380,15 +2806,6 @@ components:
             similarityScore:
               type: number
               nullable: true
-        grainAnalysis:
-          type: object
-          properties:
-            filmGrainScore:
-              type: number
-              nullable: true
-            assessment:
-              type: string
-              nullable: true
         predictedTags:
           type: array
           items:
@@ -2455,6 +2872,23 @@ components:
         createdAt:
           type: string
           format: date-time
+        avatarUrl:
+          type: string
+          nullable: true
+        phoneNumber:
+          type: string
+          nullable: true
+        emailVerifiedAt:
+          type: string
+          format: date-time
+          nullable: true
+        phoneVerifiedAt:
+          type: string
+          format: date-time
+          nullable: true
+        profile:
+          type: object
+          additionalProperties: true
     ErrorResponse:
       type: object
       required:

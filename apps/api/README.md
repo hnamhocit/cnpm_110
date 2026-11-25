@@ -1,6 +1,6 @@
-# 🚀 Film Contest - Backend API
+# 🚀 CINEGEN - Backend API
 
-Dịch vụ Backend RESTful API cho dự án Film Contest, được xây dựng bằng **[Hono](https://hono.dev/)** chạy native trên **[Bun](https://bun.sh/)** runtime, sử dụng **[Drizzle ORM](https://orm.drizzle.team/)** và **PostgreSQL**.
+Dịch vụ Backend RESTful API cho dự án CINEGEN, được xây dựng bằng **[Hono](https://hono.dev/)** chạy native trên **[Bun](https://bun.sh/)** runtime, sử dụng **[Drizzle ORM](https://orm.drizzle.team/)** và **PostgreSQL**.
 
 Mọi nghiệp vụ, DTO, phân quyền và ràng buộc dữ liệu tuân thủ nghiêm ngặt **[Master SRS](../../docs/srs.md)** và hợp đồng API tại **[`docs/ai/09-api-contracts.md`](../../docs/ai/09-api-contracts.md)**.
 
@@ -68,33 +68,10 @@ API Server lắng nghe tại cổng: **[http://localhost:8080](http://localhost:
 
 ---
 
-## 📡 Danh sách Endpoints chính
+## Tài liệu API
 
-### Xác thực (Auth)
-
-- `POST /auth/register`: Đăng ký tài khoản Participant mới
-- `POST /auth/login`: Đăng nhập, nhận Access Token (15 phút) & Refresh Token (7 ngày)
-- `POST /auth/refresh`: Cấp mới Access Token bằng Refresh Token (Token Rotation)
-- `POST /auth/logout`: Thu hồi Refresh Token
-
-### Upload & Lưu trữ
-
-- `POST /upload`: Upload file ảnh (JPEG, PNG, WebP tối đa 50MB) lên Cloudflare R2
-
-### Phân quyền (RBAC)
-
-- `GET /rbac/admin`: Yêu cầu quyền `Admin`
-- `GET /rbac/organizer`: Yêu cầu quyền `Organizer`
-- `GET /rbac/judge`: Yêu cầu quyền `Judge`
-- `GET /rbac/participant`: Yêu cầu quyền `Participant`
-- `GET /rbac/manage-contest`: Cho phép quyền `Admin` hoặc `Organizer`
-
----
-
-## 📖 Tài liệu đặc tả API (API Specification)
-
-- **OpenAPI 3.0 (Swagger)**: [`docs/openapi.yaml`](../../docs/openapi.yaml) (Có thể mở bằng Swagger Editor hoặc Swagger UI).
-- **Postman Collection**: [`docs/film-contest.postman_collection.json`](../../docs/film-contest.postman_collection.json) (Import trực tiếp vào Postman để test toàn bộ luồng Auth, Refresh Token, Upload và RBAC với kịch bản tự động lưu token).
+- [Danh mục endpoint và trạng thái triển khai](../../docs/ai/09-api-contracts.md#6-danh-mục-endpoint)
+- [OpenAPI](../../docs/openapi.yaml) để mở trong Swagger hoặc import vào Postman
 
 ---
 
@@ -104,8 +81,17 @@ API Server lắng nghe tại cổng: **[http://localhost:8080](http://localhost:
 | :---------------------------------- | :--------------------------------------------------- |
 | `bun --filter api dev`              | Chạy API dev server với Hot Reload (`--hot`)         |
 | `bun --filter api check-types`      | Kiểm tra lỗi type TypeScript (`tsc --noEmit`)        |
-| `bun --filter api test`             | Chạy bộ Unit Tests cho Auth & Middleware             |
-| `bun --filter api test:integration` | Chạy Integration Tests (yêu cầu database `fpc_test`) |
+| `bun --filter api test`             | Chạy unit test cho Auth, kiểm tra ảnh và kết quả             |
+| `bun --filter api test:integration` | Chạy integration test Auth trên PostgreSQL |
 | `bun --filter api db:generate`      | Sinh file SQL migration mới từ schema                |
 | `bun --filter api db:migrate`       | Áp dụng migration vào PostgreSQL                     |
 | `bun --filter api db:seed`          | Nạp dữ liệu vai trò ban đầu                          |
+
+## Xác thực định danh và khôi phục mật khẩu
+
+Áp dụng migration trước khi chạy API. Với môi trường triển khai, đặt `NODE_ENV=production` để chỉ seed role hệ thống khi khởi động.
+
+- Email dùng Nodemailer với `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` và địa chỉ gửi `SMTP_FROM`. Cổng 465 dùng TLS ngay khi kết nối. Cổng khác yêu cầu STARTTLS. [Nodemailer SMTP](https://nodemailer.com/smtp)
+- `PASSWORD_RESET_URL` là URL HTTPS của màn đặt lại mật khẩu. Backend thêm tham số `token` vào link. Màn client gửi token, mật khẩu mới và xác nhận đến `POST /api/v1/auth/reset-password`.
+
+Đăng ký tạo tài khoản chờ xác thực. Client xác thực mã email rồi đăng nhập. Số điện thoại là tùy chọn. Xem [Module 01](../../docs/ai/01-auth-and-rbac.md#4-shared-api-contracts-dùng-chung-cho-web--mobile). Integration test inject bộ gửi giả và cần PostgreSQL test có migration. Dùng `bun --filter api test:integration` với `DATABASE_URL` và `TEST_DB_NAME` trỏ vào database test.

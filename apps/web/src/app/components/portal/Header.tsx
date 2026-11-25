@@ -1,9 +1,20 @@
 "use client";
 
-import { LogOut, User } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { ChevronDown, Globe, LogOut, Menu, User } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { logout } from "@/lib/logout";
 
 type HeaderProps = {
   onMenuClick: () => void;
@@ -18,8 +29,6 @@ type CurrentUser = {
 
 export default function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
-  const router = useRouter();
-  const clearAuth = useAuthStore((state) => state.clear);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [user, setUser] = useState<CurrentUser | null>(null);
 
@@ -58,14 +67,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
   async function handleLogout() {
     try {
       setIsLoggingOut(true);
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      });
-      clearAuth();
-      router.push("/login");
-      router.refresh();
-    } catch {
-      router.push("/login");
+      if (await logout()) {
+        window.location.replace("/login");
+      }
     } finally {
       setIsLoggingOut(false);
     }
@@ -74,91 +78,127 @@ export default function Header({ onMenuClick }: HeaderProps) {
   // Nhận diện vai trò từ token / profile người dùng
   const role = user?.role || "Organizer";
   const isOrganizer = role === "Organizer";
-  const roleTitle = isOrganizer ? "Ban tổ chức (Organizer)" : "Quản trị viên (Admin)";
+  const roleTitle = isOrganizer
+    ? "Ban tổ chức (Organizer)"
+    : "Quản trị viên (Admin)";
   const roleSubtitle = isOrganizer
     ? "Ban tổ chức Cuộc thi"
     : "Quản trị viên Hệ thống";
   const initials = isOrganizer ? "BTC" : "AD";
-  const displayName = user?.fullName || (isOrganizer ? "Ban Tổ Chức" : "Quản Trị Viên");
+  const displayName =
+    user?.fullName || (isOrganizer ? "Ban Tổ Chức" : "Quản Trị Viên");
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/95 backdrop-blur-md px-4 py-3 sm:px-6 lg:px-8">
       {/* LEFT SIDE */}
       <div className="flex min-w-0 items-center gap-3">
         {/* MOBILE MENU BUTTON */}
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={onMenuClick}
           aria-label="Mở menu điều hướng"
-          className="flex h-10 w-10 shrink-0 flex-col items-center justify-center gap-1 rounded-lg text-slate-700 hover:bg-slate-100 md:hidden"
+          className="md:hidden text-muted-foreground hover:text-foreground"
         >
-          <span className="h-0.5 w-5 bg-current" />
-          <span className="h-0.5 w-5 bg-current" />
-          <span className="h-0.5 w-5 bg-current" />
-        </button>
+          <Menu className="size-5" />
+        </Button>
 
         {/* PAGE TITLE */}
         <div className="min-w-0">
-          <p className="truncate text-xs text-slate-500 font-medium">
-            Film Contest / {pageName}
+          <p className="truncate text-xs text-muted-foreground font-medium">
+            CINEGEN / {pageName}
           </p>
 
-          <h2 className="truncate text-sm font-bold text-slate-900 sm:text-base">
+          <h2 className="truncate text-sm font-bold text-foreground sm:text-base">
             Portal Workspace
           </h2>
         </div>
       </div>
 
-      {/* RIGHT SIDE - PROFILE MENU */}
-      <details className="relative shrink-0">
-        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl p-1.5 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-blue-500 [&::-webkit-details-marker]:hidden">
-          <span className="hidden text-sm font-medium text-slate-700 sm:block">
-            {roleTitle}
-          </span>
+      {/* RIGHT SIDE - ACTIONS & PROFILE */}
+      <div className="flex items-center gap-2.5">
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="hidden sm:inline-flex rounded-full text-xs text-muted-foreground hover:text-foreground gap-1.5"
+        >
+          <Link href="/">
+            <Globe className="size-3.5" />
+            <span>Về trang chủ</span>
+          </Link>
+        </Button>
 
-          {/* AVATAR */}
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-sm shadow-blue-600/30">
-            {initials}
-          </span>
-
-          <span className="hidden text-xs text-slate-400 sm:block">▼</span>
-        </summary>
-
-        {/* PROFILE DROPDOWN */}
-        <div className="absolute right-0 top-full z-40 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-3 text-slate-900 shadow-xl">
-          <div className="border-b border-slate-100 pb-3">
-            <p className="font-semibold text-slate-900">{displayName}</p>
-            <p className="mt-0.5 text-xs text-blue-600 font-medium">
-              {roleSubtitle}
-            </p>
-            {user?.email && (
-              <p className="mt-0.5 text-xs text-slate-400 truncate">
-                {user.email}
-              </p>
-            )}
-          </div>
-
-          <div className="mt-2 space-y-1">
+        {/* PROFILE MENU DROPDOWN */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors text-left"
+              className="group flex cursor-pointer items-center gap-2.5 rounded-full border border-border/80 bg-background/80 py-1 pl-2 pr-2.5 shadow-2xs transition-all hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
             >
-              <User className="h-4 w-4 text-slate-400" />
-              <span>Hồ sơ cá nhân</span>
-            </button>
+              <span className="hidden text-xs font-medium text-foreground/90 sm:block">
+                {roleTitle}
+              </span>
 
-            <button
-              type="button"
+              <Avatar className="size-8 ring-1 ring-border">
+                <AvatarFallback className="bg-brand-solid text-white text-xs font-bold shadow-xs">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+
+              <ChevronDown className="size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            </button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent align="end" className="w-64 p-1.5">
+            <div className="border-b border-border px-2.5 py-2">
+              <div className="flex items-center gap-1.5">
+                <p className="truncate text-xs font-semibold text-foreground">
+                  {displayName}
+                </p>
+                <Badge variant="brand" className="h-4 px-1 text-[9px]">
+                  {role}
+                </Badge>
+              </div>
+              <p className="mt-0.5 text-[11px] font-medium text-brand-solid">
+                {roleSubtitle}
+              </p>
+              {user?.email && (
+                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                  {user.email}
+                </p>
+              )}
+            </div>
+
+            <div className="py-1">
+              <DropdownMenuItem asChild>
+                <Link href="/" className="flex items-center gap-2">
+                  <Globe className="size-4 text-muted-foreground" />
+                  <span>Về trang chủ CINEGEN</span>
+                </Link>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem className="flex items-center gap-2">
+                <User className="size-4 text-muted-foreground" />
+                <span>Hồ sơ cá nhân</span>
+              </DropdownMenuItem>
+            </div>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem
+              variant="destructive"
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors text-left disabled:opacity-50"
+              className="flex items-center gap-2 cursor-pointer"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="size-4" />
               <span>{isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}</span>
-            </button>
-          </div>
-        </div>
-      </details>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </header>
   );
 }

@@ -1,9 +1,20 @@
 "use client";
 
-import { Camera, LogOut, Menu, Shield, User, X } from "lucide-react";
+import { ChevronDown, Layers, LogOut, Menu, Shield, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { BrandMark } from "@/components/brand-mark";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { logout } from "@/lib/logout";
 
 type CurrentUser = {
   id?: string;
@@ -15,7 +26,6 @@ type CurrentUser = {
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<CurrentUser | null>(null);
-  const clearAuth = useAuthStore((state) => state.clear);
 
   useEffect(() => {
     let isMounted = true;
@@ -39,198 +49,281 @@ export function Navbar() {
   }, []);
 
   async function handleLogout() {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch {
-      // Ignore
+    if (await logout()) {
+      window.location.reload();
     }
-    clearAuth();
-    // biome-ignore lint/suspicious/noDocumentCookie: Clear cookie
-    document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    setUser(null);
-    window.location.reload();
   }
 
   const isManagementRole = user?.role === "Admin" || user?.role === "Organizer";
+  const userInitial = (user?.fullName || user?.email || "U")
+    .trim()
+    .charAt(0)
+    .toUpperCase();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
-      <div className="flex h-16 w-full items-center justify-between px-6 lg:px-12">
+    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-brand-ink/90 text-white backdrop-blur-md">
+      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-600/25 group-hover:scale-105 transition-transform">
-            <Camera className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2">
-              FILM CONTEST
-            </span>
-            <p className="text-[11px] text-slate-500 font-mono">
-              Film Photography Platform
-            </p>
-          </div>
+        <Link
+          href="/"
+          className="flex items-center gap-2.5 transition-opacity hover:opacity-90"
+        >
+          <BrandMark className="rounded-xl" />
+          <span className="font-heading text-lg font-bold tracking-tight text-white">
+            CINEGEN
+          </span>
         </Link>
 
         {/* Desktop Nav Links */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
+        <nav className="hidden md:flex items-center gap-7 text-sm font-medium">
           <Link
             href="/#ongoing-contests"
-            className="text-slate-600 hover:text-blue-600 transition-colors"
+            className="text-white/70 hover:text-white transition-colors"
           >
-            Cuộc thi đang diễn ra
+            Cuộc thi
           </Link>
           <Link
             href="/archive"
-            className="text-slate-600 hover:text-blue-600 transition-colors"
+            className="text-white/70 hover:text-white transition-colors"
           >
-            Triển lãm số (Archive)
+            Triển lãm số
           </Link>
           <Link
             href="/#ai-features"
-            className="text-slate-600 hover:text-blue-600 transition-colors"
+            className="text-white/70 hover:text-white transition-colors"
           >
             Tính năng AI
           </Link>
           <Link
             href="/#how-it-works"
-            className="text-slate-600 hover:text-blue-600 transition-colors"
+            className="text-white/70 hover:text-white transition-colors"
           >
-            Thể lệ tham gia
+            Thể lệ
           </Link>
         </nav>
 
-        {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex items-center gap-3">
+        {/* Desktop Auth Controls */}
+        <div className="hidden md:flex items-center gap-2">
           {user ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {isManagementRole && (
-                <Link
-                  href="/portal"
-                  className="flex items-center gap-1.5 rounded-xl bg-blue-50 border border-blue-200 px-3.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  className="h-8 rounded-full border-white/20 bg-white/10 px-3 text-xs font-medium text-white hover:bg-white/20 hover:text-white transition-all"
                 >
-                  <Shield className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Vào Cổng Quản Trị</span>
-                </Link>
+                  <Link href="/portal">
+                    <Shield className="size-3.5 text-brand-glow" />
+                    <span>Portal</span>
+                  </Link>
+                </Button>
               )}
-              <div className="flex items-center gap-2 text-xs text-slate-700 font-medium bg-slate-100 px-3 py-1.5 rounded-lg">
-                <User className="w-3.5 h-3.5 text-slate-500" />
-                <span className="max-w-[120px] truncate">{user.fullName || user.email}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-600 text-white font-bold">{user.role}</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 font-medium px-2 py-1.5 transition-colors cursor-pointer"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>Đăng xuất</span>
-              </button>
+
+              {/* Compact User Dropdown Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="group flex items-center gap-2 rounded-full border border-white/15 bg-white/10 py-1 pl-1 pr-2.5 text-xs font-medium text-white transition-all hover:border-white/30 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 cursor-pointer"
+                  >
+                    <Avatar className="size-6.5 ring-1 ring-white/20">
+                      <AvatarFallback className="bg-brand-solid text-white text-[11px] font-bold">
+                        {userInitial}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="max-w-[96px] truncate font-medium text-white/90">
+                      {user.fullName || user.email}
+                    </span>
+                    <ChevronDown className="size-3.5 text-white/60 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                  </button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent align="end" className="w-60 p-1.5">
+                  <div className="flex items-center gap-2.5 px-2.5 py-2">
+                    <Avatar className="size-8 ring-1 ring-border">
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                        {userInitial}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col min-w-0">
+                      <p className="truncate text-xs font-semibold text-foreground">
+                        {user.fullName || "Người dùng"}
+                      </p>
+                      <p className="truncate text-[11px] text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+
+                  <DropdownMenuSeparator />
+
+                  {isManagementRole && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/portal" className="flex items-center gap-2">
+                        <Shield className="size-4 text-brand-solid" />
+                        <span>Cổng Quản Trị (Portal)</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
+                  <DropdownMenuItem asChild>
+                    <Link href="/archive" className="flex items-center gap-2">
+                      <Layers className="size-4 text-muted-foreground" />
+                      <span>Triển lãm số (Archive)</span>
+                    </Link>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <LogOut className="size-4" />
+                    <span>Đăng xuất</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ) : (
-            <>
-              <Link
-                href="/login"
-                className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors"
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                asChild
+                className="rounded-full px-4 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-white"
               >
-                Đăng nhập
-              </Link>
-              <Link
-                href="/register"
-                className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-blue-600/25 hover:bg-blue-700 active:scale-95 transition-all"
+                <Link href="/login">Đăng nhập</Link>
+              </Button>
+              <Button
+                size="sm"
+                asChild
+                className="rounded-full bg-brand-solid hover:bg-brand-hover text-white px-5 text-xs font-semibold shadow-sm transition-all active:scale-95"
               >
-                Đăng ký
-              </Link>
-            </>
+                <Link href="/register">Đăng ký</Link>
+              </Button>
+            </div>
           )}
         </div>
 
         {/* Mobile Menu Button */}
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon-sm"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden inline-flex items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100 focus:outline-none"
+          className="md:hidden text-white hover:bg-white/10"
           aria-label="Toggle mobile menu"
         >
           {mobileMenuOpen ? (
-            <X className="h-6 w-6" />
+            <X className="size-5" />
           ) : (
-            <Menu className="h-6 w-6" />
+            <Menu className="size-5" />
           )}
-        </button>
+        </Button>
       </div>
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-slate-200 bg-white px-6 pt-3 pb-6 space-y-3">
+        <div className="md:hidden border-b border-border bg-background px-6 pt-3 pb-6 space-y-3">
           <Link
             href="/#ongoing-contests"
             onClick={() => setMobileMenuOpen(false)}
-            className="block rounded-md px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-50"
+            className="block rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
           >
             Cuộc thi đang diễn ra
           </Link>
           <Link
             href="/archive"
             onClick={() => setMobileMenuOpen(false)}
-            className="block rounded-md px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-50"
+            className="block rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
           >
             Triển lãm số (Archive)
           </Link>
           <Link
             href="/#ai-features"
             onClick={() => setMobileMenuOpen(false)}
-            className="block rounded-md px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-50"
+            className="block rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
           >
             Tính năng AI
           </Link>
           <Link
             href="/#how-it-works"
             onClick={() => setMobileMenuOpen(false)}
-            className="block rounded-md px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-50"
+            className="block rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
           >
             Thể lệ tham gia
           </Link>
-          <div className="pt-3 border-t border-slate-200 flex flex-col gap-2">
+
+          <div className="pt-3 border-t border-border flex flex-col gap-2">
             {user ? (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-sm text-slate-700 font-medium">
-                  <User className="w-4 h-4 text-slate-500" />
-                  <span>{user.fullName || user.email} ({user.role})</span>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2.5 rounded-lg border border-border p-2.5 bg-muted/30">
+                  <Avatar className="size-8 ring-1 ring-border">
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                      {userInitial}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate text-xs font-semibold text-foreground">
+                        {user.fullName || user.email}
+                      </span>
+                      <Badge variant="brand" className="h-4 px-1 text-[9px]">
+                        {user.role}
+                      </Badge>
+                    </div>
+                    {user.email && (
+                      <span className="truncate text-[11px] text-muted-foreground">
+                        {user.email}
+                      </span>
+                    )}
+                  </div>
                 </div>
+
                 {isManagementRole && (
-                  <Link
-                    href="/portal"
+                  <Button
+                    variant="outline"
+                    asChild
+                    className="w-full justify-center border-brand-glow bg-brand-soft text-brand-solid font-semibold text-xs"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center rounded-xl bg-blue-50 border border-blue-200 py-2.5 text-sm font-semibold text-blue-700"
                   >
-                    Vào Cổng Quản Trị (Portal)
-                  </Link>
+                    <Link href="/portal">
+                      <Shield className="size-3.5 mr-1.5 text-brand-solid" />
+                      <span>Vào Cổng Quản Trị</span>
+                    </Link>
+                  </Button>
                 )}
-                <button
-                  type="button"
+
+                <Button
+                  variant="destructive"
                   onClick={handleLogout}
-                  className="w-full text-center rounded-xl border border-red-200 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50"
+                  className="w-full justify-center text-xs"
                 >
-                  Đăng xuất
-                </button>
+                  <LogOut className="size-3.5 mr-1.5" />
+                  <span>Đăng xuất</span>
+                </Button>
               </div>
             ) : (
-              <>
-                <Link
-                  href="/login"
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  asChild
+                  className="w-full justify-center text-xs"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center rounded-xl border border-slate-300 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
-                  Đăng nhập
-                </Link>
-                <Link
-                  href="/register"
+                  <Link href="/login">Đăng nhập</Link>
+                </Button>
+                <Button
+                  asChild
+                  className="w-full justify-center bg-brand-solid text-white hover:bg-brand-hover text-xs font-semibold"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-600/25 hover:bg-blue-700"
                 >
-                  Đăng ký
-                </Link>
-              </>
+                  <Link href="/register">Đăng ký</Link>
+                </Button>
+              </div>
             )}
           </div>
         </div>

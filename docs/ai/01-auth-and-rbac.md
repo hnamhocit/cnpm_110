@@ -1,14 +1,24 @@
 # Module Spec: 01-auth-and-rbac.md
 
-> **Module Name**: Authentication & Role-Based Access Control (Xác thực & Phân quyền Người dùng)  
-> **Status**: READY FOR CODE GENERATION  
-> **Version**: 1.0.0  
-> **Target Audience**: AI Coding Assistants (Cursor, Copilot), Backend Engineers, Frontend/Mobile Engineers  
-> **Standard**: AI-First Spec (Explicit schemas, deterministic business logic, exhaustive error codes, Zero ambiguity)
+## Phạm vi theo SRS hiện hành
 
----
+**UC-01–05, BR-01/02/04.** Participant tự đăng ký bằng email duy nhất và mật khẩu; email phải được xác minh trước khi đăng nhập. Số điện thoại tùy chọn. Admin tạo tài khoản nội bộ hoặc gán một trong bốn vai trò cố định. Giữ JWT access/refresh, logout, reset qua email, khóa tài khoản và kiểm tra quyền tài nguyên.
+
+Backend dùng `POST /auth/register`, `/auth/verify-email`, `/auth/resend-verification`, `/auth/login`, `/auth/logout`, `/auth/forgot-password` và `/auth/reset-password` dưới `/api/v1`. Xác minh email thành công trả `data.status: ACTIVE`. Các tài khoản cũ được miễn xác minh theo cờ hiện có. Web và Mobile có bước nhập/gửi lại mã email. API đọc quyền từ ma trận cố định; bảng grant cũ được giữ để bảo toàn dữ liệu. Web và Mobile yêu cầu khôi phục qua email. Liên kết mở màn đặt lại mật khẩu trên Web.
+
+## Thiết kế trước lần cập nhật SRS
+
+> Tham chiếu lịch sử để truy vết thiết kế và các hợp đồng cũ. Yêu cầu nghiệp vụ hiện hành nằm trong [SRS](../srs.md) và mục trên.
+
+## Phạm vi nghiệm thu và trạng thái hiện tại
+
+Backend đã đăng ký các API UC-01–05. Migration bổ sung phiên bản đăng nhập, định danh và thách thức xác thực, hồ sơ, audit tài khoản, cấu hình grant và định danh phiên. Nhà cung cấp email/SMS thật và luồng đăng ký trên Web/Mobile cần nghiệm thu riêng. SRS [BR-01](../srs.md#61-business-rules) yêu cầu email và số điện thoại đã xác thực. Luồng chọn xác thực email trước và chỉ gửi SMS sau khi email hợp lệ.
+
+Máy chủ dùng PostgreSQL để kiểm tra phiên và quyền. Tài khoản có từ trước migration vẫn đăng nhập được và có thể bổ sung định danh qua route gửi lại xác thực. Khôi phục mật khẩu chỉ gửi link sau khi email đã xác thực. Kiểm thử thu hồi phiên gồm khóa/mở khóa, logout đồng thời với refresh, đổi/reset mật khẩu và thay đổi quyền role.
 
 ## 1. Domain Entities & Database Mapping
+
+Các bảng trong mục này mô tả mô hình thiết kế. Mã hiện dùng `users` cho tài khoản, `users.profile` cho thông tin hồ sơ, `user_roles` cho vai trò, `account_challenges` cho mã xác thực và `account_audit_logs` cho vết quản trị. Đối chiếu với [schema Drizzle](../../apps/api/src/db/schema.ts).
 
 Hệ thống cơ sở dữ liệu sử dụng **PostgreSQL 16+** (hỗ trợ native `UUIDv7` hoặc extension `pgcrypto`/`uuid-ossp`). Toàn bộ khóa chính (PK) được định dạng `UUID` nhằm đảm bảo tính phân tán và bảo mật ID. Thời gian được lưu trữ theo chuẩn `TIMESTAMPTZ` (UTC). Quy ước đặt tên bảng và cột theo chuẩn `snake_case`.
 
@@ -153,17 +163,15 @@ Hệ thống xác thực và phân quyền RBAC kế thừa và tuân thủ ch�
 - **BR-02 (Nguyên tắc Phân quyền RBAC)**: Người dùng chỉ được phép truy cập màn hình, menu và API tương ứng với Vai trò (`Role`) và Đặc quyền (`Permission`) đã được cấp phát. Tầng API Gateway / Backend Middleware bắt buộc kiểm tra phân quyền độc lập trên từng endpoint.
 - **BR-03 (Bảo toàn dữ liệu - Soft Delete)**: Dữ liệu quan trọng (bao gồm tài khoản người dùng, nhật ký cuộn phim, lịch sử chấm điểm) không bao giờ bị xóa vật lý (`DELETE`) khỏi cơ sở dữ liệu mà chỉ chuyển trạng thái sang `LOCKED`, `BANNED` hoặc cập nhật trường `deleted_at`.
 - **BR-04 (Thu hồi phiên tức thì khi khóa tài khoản)**: Phiên đăng nhập của Giám khảo, Quản trị viên và toàn bộ người dùng được bảo vệ bằng JWT. Khi một tài khoản bị khóa (`LOCKED`), cấm (`BANNED`), đổi mật khẩu hoặc điều chỉnh quyền:
-  1. Trường `accounts.token_version` tự động tăng lên 1 đơn vị.
-  2. Toàn bộ `refresh_tokens` thuộc tài khoản bị cập nhật `revoked_at = NOW()`.
-  3. Giá trị `token_version` mới được đồng bộ tức thì lên Redis Cache.
-  4. Middleware xác thực JWT sẽ đối chiếu `token_version` trong Payload của Access Token với giá trị lưu trên Redis. Nếu không khớp, từ chối ngay lập tức với mã lỗi `AUTH_TOKEN_REVOKED`, buộc chấm dứt phiên làm việc trên toàn bộ thiết bị ngay trong vòng < 1 giây mà không cần đợi token 15 phút hết hạn.
+  1. Tăng `users.token_version` và thu hồi refresh token hoạt động trong cùng transaction PostgreSQL.
+  2. Middleware đối chiếu phiên bản JWT, phiên còn hiệu lực và trạng thái tài khoản với PostgreSQL. Request mới dùng token cũ bị từ chối ngay sau khi transaction commit.
 - **BR-21 (Kiểm soát Xung đột lợi ích - Conflict of Interest)**: Một tài khoản đã được phân công vai trò `JUDGE` hoặc `ORGANIZER` trong một cuộc thi cụ thể sẽ bị hệ thống chặn tự động không cho phép đăng ký làm `PARTICIPANT` (nộp bài dự thi) trong chính cuộc thi đó.
 
 ---
 
 ### 2.2 Bảng Ma trận Phân quyền (RBAC Permission Matrix)
 
-Chi tiết quyền hạn giữa 4 Actor đối với toàn bộ các tài nguyên và hành động trong hệ thống FilmContest-AI:
+Ma trận bên dưới mô tả quyền đích theo SRS. Danh mục chỉnh được qua API áp dụng cho các route đã có trong [permission policy](../../apps/api/src/services/permission-policy.ts). Quyền luôn bị giới hạn bởi Actor và phạm vi tài nguyên.
 
 | Tài nguyên (Resource) | Quyền hạn (Permission Code) | Admin | Organizer | Judge | Participant | Điều kiện ràng buộc & Ghi chú |
 | :--- | :--- | :---: | :---: | :---: | :---: | :--- |
@@ -208,51 +216,23 @@ Chi tiết quyền hạn giữa 4 Actor đối với toàn bộ các tài nguyê
   - Tối thiểu 1 chữ cái viết thường (`a-z`).
   - Tối thiểu 1 chữ số (`0-9`).
   - Tối thiểu 1 ký tự đặc biệt (`!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`).
-- **Ràng buộc an toàn**: Không được chứa chuỗi tên người dùng hoặc tiền tố email; không nằm trong danh sách 1.000 mật khẩu phổ biến nhất.
+- **Ràng buộc an toàn**. Khi tạo tài khoản, mật khẩu không được chứa tiền tố email dài từ ba ký tự. Kiểm tra danh sách mật khẩu phổ biến và chuỗi tên người dùng vẫn là phần tăng cường chưa triển khai.
 
 #### 2. Chuẩn hóa Email & Số điện thoại
-- **Email**: Chuẩn RFC 5322. Tự động `trim()` khoảng trắng và chuyển toàn bộ sang chữ thường (`lowercase`) trước khi kiểm tra hoặc lưu Database.
-  - *Regex chuẩn*: `^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$`
-- **Số điện thoại**: Bắt buộc là số điện thoại di động Việt Nam (10 chữ số, chuẩn đầu số mạng Viettel, VinaPhone, MobiFone, Vietnamobile: `03, 05, 07, 08, 09` hoặc tiền tố quốc tế `+84`).
-  - *Regex chuẩn*: `^(?:\+84|0)(?:3[2-9]|5[6|8|9]|7[0|6-9]|8[1-9]|9[0-9])[0-9]{7}$`
+
+- Email được cắt khoảng trắng, chuyển chữ thường rồi kiểm tra định dạng.
+- Số điện thoại chấp nhận E.164 hoặc dạng nội địa Việt Nam 10 chữ số. Backend chuẩn hóa sang E.164 và giữ duy nhất số đã xác thực.
 
 #### 3. Quy chuẩn Token JWT (JSON Web Token)
-- **Thuật toán chữ ký**: `RS256` (Khuyến nghị Enterprise: Private Key lưu trong Vault/KMS để ký tại Auth Service, Public Key cấp cho các Service khác xác thực chữ ký offline) hoặc `HS256` với khóa bí mật tối thiểu 256-bit.
-- **Access Token Specification**:
-  - **Thời hạn sống (TTL)**: 15 phút (900 giây).
-  - **Cấu trúc Payload chuẩn**:
-    ```json
-    {
-      "sub": "b2c3d4e5-f6a7-48b9-bc01-23456789abcd",
-      "email": "le.minh.tri@filmcontest.vn",
-      "role": "ORGANIZER",
-      "permissions": [
-        "contests:create_update",
-        "submissions:moderate_all",
-        "evaluations:discrepancy"
-      ],
-      "token_version": 1,
-      "iss": "filmcontest-ai-auth",
-      "aud": "filmcontest-ai-api",
-      "iat": 1730048400,
-      "exp": 1730049300,
-      "jti": "d5f3e9a1-7c8b-4a2e-9d1f-8e4a2c1b9f0d"
-    }
-    ```
-- **Refresh Token Specification**:
-  - **Thời hạn sống (TTL)**: 7 ngày (604,800 giây).
-  - **Định dạng**: Chuỗi Cryptographic Random Opaque String (64 bytes hex-encoded, entropy cao).
-  - **Lưu trữ**: Chỉ lưu mã băm `SHA-256(token)` trong bảng `refresh_tokens`.
-  - **Lưu trữ phía Client**:
-    - Web Browser: Lưu trong Cookie an toàn (`HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth; Max-Age=604800`).
-    - Mobile App: Lưu trong Storage mã hóa phần cứng (`Flutter Secure Storage` - iOS Keychain / Android EncryptedSharedPreferences).
-  - **Token Rotation & Anti-Reuse**: Mỗi lần gọi `/api/v1/auth/refresh`, Refresh Token cũ lập tức bị thu hồi (`revoked_at = NOW()`) và một cặp token mới được cấp phát. Nếu phát hiện một Refresh Token đã bị thu hồi được gửi lên, hệ thống kích hoạt cơ chế báo động "Token Reuse Attack", lập tức thu hồi toàn bộ các Refresh Token của tài khoản đó và vô hiệu hóa phiên ngay lập tức.
+
+- Access token dùng HS256, hiệu lực 15 phút. Payload có `id`, `role`, `tokenVersion`, `sessionId`, `iat` và `exp`. Quyền hiện hành được đọc từ Backend.
+- Refresh token là chuỗi ngẫu nhiên 48 byte dạng base64url, hiệu lực 7 ngày. Backend lưu SHA-256. Refresh thu hồi token đã dùng và cấp cặp mới trong cùng phiên. Dùng lại token đã thu hồi trả HTTP 401.
+- JWT trước migration thiếu phiên bản được đọc như phiên bản 0 cho đến khi hết hạn hoặc tài khoản bị thu hồi phiên.
+- Client lưu token trong vùng lưu trữ phù hợp, ví dụ Flutter Secure Storage trên thiết bị.
 
 #### 4. Quy tắc Chặn Đăng nhập vét cạn (Brute-force Lockout)
-- Nếu nhập sai mật khẩu 5 lần liên tiếp:
-  - `accounts.failed_login_attempts = 5`.
-  - `accounts.locked_until = NOW() + INTERVAL '15 minutes'`.
-  - Từ chối mọi yêu cầu đăng nhập từ tài khoản này trong 15 phút với mã lỗi `AUTH_ACCOUNT_TEMPORARILY_LOCKED`.
+
+Sau 5 lần nhập sai liên tiếp, Backend khóa đăng nhập 15 phút và thu hồi phiên. API dùng chung thông báo HTTP 401 cho các trường hợp đăng nhập bị từ chối. Đăng nhập thành công, mở khóa hoặc đặt lại mật khẩu xóa bộ đếm tương ứng.
 
 ---
 
@@ -263,10 +243,9 @@ Chi tiết quyền hạn giữa 4 Actor đối với toàn bộ các tài nguyê
 ```mermaid
 stateDiagram-v2
     [*] --> PENDING_VERIFICATION: Đăng ký tài khoản (Participant)
-    [*] --> ACTIVE: Admin tạo trực tiếp (Organizer / Judge / Admin)
+    [*] --> PENDING_VERIFICATION: Admin tạo tài khoản nội bộ
     
-    PENDING_VERIFICATION --> ACTIVE: Xác thực Email thành công (OTP / Verification Link)
-    PENDING_VERIFICATION --> [*]: Quá hạn 72h không kích hoạt (Tự động dọn dẹp)
+    PENDING_VERIFICATION --> ACTIVE: Xác thực OTP email rồi OTP SMS
     
     ACTIVE --> SUSPENDED_TEMP: Nhập sai mật khẩu liên tiếp >= 5 lần
     SUSPENDED_TEMP --> ACTIVE: Hết thời gian phạt 15 phút HOẶC Đặt lại mật khẩu thành công
@@ -287,602 +266,45 @@ stateDiagram-v2
 | Current State | Event / Trigger Action | Next State | Allowed Actor | Guard Condition (Điều kiện tiên quyết) | Side Effects (Xử lý hệ thống & Hiệu ứng phụ) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `[*]` (None) | `REGISTER_SUBMIT` | `PENDING_VERIFICATION` | Guest (Public) | Email & SĐT chưa tồn tại (BR-01). Mật khẩu đạt Password Policy. | Tạo bản ghi `accounts` và `participant_profiles`. Sinh mã xác thực OTP gửi qua email. |
-| `[*]` (None) | `ADMIN_CREATE_USER` | `ACTIVE` | Administrator | Actor có quyền `users:create_internal`. Role được gán hợp lệ (`ORGANIZER`, `JUDGE`, `ADMIN`). | Tạo tài khoản, sinh mật khẩu tạm thời ngẫu nhiên, gửi email kích hoạt tài khoản kèm hướng dẫn đổi mật khẩu. |
-| `PENDING_VERIFICATION` | `VERIFY_EMAIL_SUCCESS` | `ACTIVE` | Guest / Participant | Mã OTP khớp, chưa quá hạn 15 phút và tài khoản chưa bị xóa. | Cập nhật `email_verified_at = NOW()`. Cho phép đăng nhập vào hệ thống. |
-| `ACTIVE` | `LOGIN_FAILED_5_TIMES` | `SUSPENDED_TEMP` | System (Automated) | `failed_login_attempts >= 5`. | Đặt `locked_until = NOW() + 15m`. Gửi email cảnh báo bảo mật tới chủ tài khoản. |
+| `[*]` (None) | `ADMIN_CREATE_USER` | `PENDING_VERIFICATION` | Administrator | Actor có quyền `users:create_internal`. Role được gán hợp lệ (`ORGANIZER`, `JUDGE`, `ADMIN`). | Admin nhập mật khẩu tạm thời. Backend tạo tài khoản và gửi OTP email xác thực. |
+| `PENDING_VERIFICATION` | Xác thực email rồi điện thoại | `ACTIVE` | Chủ tài khoản | Mỗi OTP khớp, còn hạn và chưa dùng. | Ghi thời điểm xác thực theo kênh. Cho phép đăng nhập sau OTP điện thoại. |
+| `ACTIVE` | `LOGIN_FAILED_5_TIMES` | `SUSPENDED_TEMP` | System (Automated) | `failed_login_attempts >= 5`. | Đặt `locked_until` trong 15 phút và thu hồi phiên. |
 | `SUSPENDED_TEMP` | `LOCKOUT_EXPIRED` | `ACTIVE` | System (Automated) | `NOW() > accounts.locked_until`. | Reset `failed_login_attempts = 0`, `locked_until = NULL`. |
 | `SUSPENDED_TEMP` | `RESET_PASSWORD_SUCCESS`| `ACTIVE` | Guest / Owner | Xác minh liên kết khôi phục mật khẩu thành công qua email. | Cập nhật mật khẩu mới, tăng `token_version` + 1, thu hồi các phiên cũ. |
-| `ACTIVE` | `ADMIN_LOCK_ACCOUNT` | `LOCKED` | Administrator | Actor có quyền `users:lock_unlock`. Không được tự khóa chính mình. Lý do khóa bắt buộc nhập >= 10 ký tự. | Tăng `token_version` + 1. Đặt `revoked_at = NOW()` cho toàn bộ refresh token. Đẩy cờ Redis Blacklist để hủy tức thì mọi phiên làm việc hiện hành (BR-04). Ghi AuditLog. |
+| `ACTIVE` | `ADMIN_LOCK_ACCOUNT` | `LOCKED` | Administrator | Actor có quyền `users:lock_unlock`. Không được tự khóa chính mình. Lý do khóa bắt buộc nhập >= 10 ký tự. | Tăng `token_version` + 1. Đặt `revoked_at = NOW()` cho toàn bộ refresh token. Middleware đọc trạng thái phiên và phiên bản token trong PostgreSQL (BR-04). Ghi AuditLog. |
 | `LOCKED` | `ADMIN_UNLOCK_ACCOUNT` | `ACTIVE` | Administrator | Actor có quyền `users:lock_unlock`. Bắt buộc nhập lý do mở khóa. | Chuyển `status = 'ACTIVE'`, reset `failed_login_attempts = 0`. Ghi AuditLog. |
-| `ACTIVE` hoặc `LOCKED` | `ADMIN_BAN_ACCOUNT` | `BANNED` | Administrator | Actor có quyền `users:lock_unlock`. Bắt buộc có biên bản xử lý vi phạm nghiêm trọng (Ảnh AI / Đạo nhái). | Khóa vĩnh viễn, tăng `token_version` + 1, hủy toàn bộ token, gỡ quyền tham gia các cuộc thi đang mở. Ghi AuditLog. |
+| `ACTIVE` hoặc `LOCKED` | `ADMIN_BAN_ACCOUNT` | `BANNED` | Administrator | Actor có quyền `users:lock_unlock`. Bắt buộc có biên bản xử lý vi phạm nghiêm trọng (Ảnh AI / Đạo nhái). | Khóa vĩnh viễn, tăng `token_version` + 1, hủy toàn bộ token. Ghi AuditLog. |
 
 ---
 
 ## 4. Shared API Contracts (Dùng chung cho Web & Mobile)
 
-### Hành vi Backend đang triển khai
+Các route dưới đây đã được đăng ký. Request JSON dùng `Content-Type: application/json`. Phản hồi dùng envelope `{ code, message, data }`. Các route riêng tư dùng Bearer access token. Xem schema trong [OpenAPI](../openapi.yaml).
 
-- Middleware của các route có Bearer token kiểm tra chữ ký HS256, hạn JWT, ID người dùng và vai trò. Sau đó đọc `users.is_active`. Tài khoản bị khóa hoặc không còn tồn tại nhận HTTP 401.
-- `GET /api/v1/rbac/manage-contest` trả 200 cho Admin hoặc Organizer đang hoạt động, 403 cho vai trò khác. Portal Web dùng kết quả Backend để quyết định truy cập.
-- Refresh từ chối tài khoản không hoạt động và xoay vòng refresh token khi thành công. Quy trình khóa tài khoản, thu hồi toàn bộ phiên và phiên bản token theo BR-04 vẫn là thiết kế cần hoàn thiện. Role trên access token lấy từ token đã ký.
+| Method và path dưới `/api/v1` | Đầu vào và điều kiện | Dữ liệu trả về |
+| --- | --- | --- |
+| `POST /auth/register` | Public. `fullName`, `email`, `phoneNumber`, `password`. Backend gán Participant. | `201`, `{ user, status: "PENDING_VERIFICATION", deliveryStatus }`. |
+| `POST /auth/verify-email` | Public. `email`, `code` sáu chữ số. Xác thực email rồi mới gửi SMS. | `200`, `{ status: "PENDING_VERIFICATION", deliveryStatus }`. |
+| `POST /auth/verify-phone` | Public. `email`, `code` sáu chữ số. Yêu cầu email đã xác thực. | `200`, `{ status: "ACTIVE" }`. Client gọi login để lấy phiên. |
+| `POST /auth/resend-verification` | Public. `email` và `password`. Có thể gửi `phoneNumber` nếu điện thoại chưa xác thực, kể cả khi bổ sung định danh cho tài khoản cũ. Gửi lại kênh đang chờ. | `200`, `{ deliveryStatus }`. |
+| `POST /auth/login` | Public. `email`, `password`. Tài khoản mới phải xác thực đủ hai kênh. | `200`, `{ user, accessToken, refreshToken }`. |
+| `POST /auth/refresh` | Public. `refreshToken` hiện hành. Refresh token dùng một lần. | `200`, `{ accessToken, refreshToken }`. |
+| `POST /auth/logout` | Public. `refreshToken` của phiên cần đăng xuất. Có thể gọi lại. | `200`, `data: null`. Phiên tương ứng bị thu hồi. |
+| `POST /auth/forgot-password` | Public. `email`. Tài khoản hoạt động có email đã xác thực mới nhận link. | `200` với cùng nội dung cho mọi email hợp lệ. |
+| `POST /auth/reset-password` | Public. `token`, `newPassword`, `confirmPassword`. Token một lần trong 15 phút. | `200`, `data: null`. Sau khi reset, đăng nhập lại. |
+| `GET /auth/me`, `GET /users/me` | Bearer, quyền `users:read_own_profile`. Hai đường dẫn dùng chung handler. | `200`, `{ user }` gồm thông tin tài khoản, ảnh đại diện, định danh đã xác thực và `profile`. |
+| `PUT /users/me/profile` | Bearer, quyền `users:update_own_profile`. Nhận các trường cập nhật gồm `fullName`, `avatarUrl`, `displayName`, `bio`, `experienceLevel`, `primaryFilmFormat`, `favoriteFilmStocks`, `portfolioWebsite`, `instagramHandle`, `addressCity`. | `200`, `{ updatedAt }`. Dùng GET /me để đọc hồ sơ mới. |
+| `PATCH /users/me/password` | Bearer, quyền `users:change_password`. `currentPassword`, `newPassword`. | `200`, `data: null`. Thu hồi toàn bộ phiên, gồm phiên hiện tại. |
+| `GET /users` | Admin có quyền `users:read_all`. Lọc theo `search`, `role`, `status`; phân trang `page`, `limit`. | `200`, `{ items, page, limit, totalRecords, totalPages }`. |
+| `POST /users` | Admin có quyền `users:create_internal`. `fullName`, `email`, `phoneNumber`, `role` (ADMIN/ORGANIZER/JUDGE), `temporaryPassword`. | `201`, thông tin tài khoản, `status: "PENDING_VERIFICATION"` và `deliveryStatus`. Gửi mã kích hoạt qua email. |
+| `PATCH /users/{id}/status` | Admin có quyền `users:lock_unlock`. `status` ACTIVE/LOCKED/BANNED và `reason` 10–500 ký tự. | `200`, các trạng thái trước/sau, phiên bản token, số phiên bị thu hồi và giờ cập nhật. |
+| `GET /rbac/roles` | Admin. | Bốn role, mỗi mục gồm `role`, `availablePermissions`, `permissions`. |
+| `PUT /rbac/roles/{role}/permissions` | Admin. `{ permissions: string[] }` thay danh sách grant của role. Chỉ nhận quyền trong `availablePermissions`. | `200`, `{ role, permissions }`. Ghi vết và thu hồi phiên của thành viên role khi quyền thay đổi. |
 
-
-Quy chuẩn kỹ thuật toàn hệ thống FilmContest-AI:
-- **Base URL**: `https://api.filmcontest.vn/api/v1`
-- **Content-Type**: `application/json; charset=utf-8`
-- **Chuẩn Envelope thành công**:
-  ```json
-  {
-    "success": true,
-    "data": { ... },
-    "meta": { "timestamp": "2026-10-27T16:00:00.000Z" }
-  }
-  ```
-- **Chuẩn Envelope thất bại**:
-  ```json
-  {
-    "success": false,
-    "error": {
-      "code": "ERROR_CODE_STRING",
-      "message": "Human readable Vietnamese message",
-      "details": []
-    }
-  }
-  ```
-
----
-
-### 4.1 Đăng ký tài khoản Thí sinh (Register Participant)
-- **Endpoint**: `POST /api/v1/auth/register`
-- **Quyền truy cập**: Public (Không cần Token)
-- **Header Requirements**:
-  ```http
-  Content-Type: application/json
-  X-Client-Platform: web | mobile
-  ```
-
-#### Request Payload:
-```json
-{
-  "email": "nguyen.van.an@example.com",
-  "password": "SecurePassword@2026",
-  "fullName": "Nguyễn Văn An",
-  "phoneNumber": "0912345678",
-  "primaryFilmFormat": "35MM"
-}
-```
-
-#### Validation Schema (Zod Rule):
-```typescript
-import { z } from 'zod';
-
-export const RegisterRequestSchema = z.object({
-  email: z.string().trim().email("Email không đúng định dạng RFC 5322").max(255),
-  password: z.string()
-    .min(8, "Mật khẩu tối thiểu 8 ký tự")
-    .max(128, "Mật khẩu tối đa 128 ký tự")
-    .regex(/[A-Z]/, "Bắt buộc có ít nhất 1 chữ cái in hoa")
-    .regex(/[a-z]/, "Bắt buộc có ít nhất 1 chữ cái in thường")
-    .regex(/[0-9]/, "Bắt buộc có ít nhất 1 chữ số")
-    .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, "Bắt buộc có ít nhất 1 ký tự đặc biệt"),
-  fullName: z.string().trim().min(2, "Họ và tên tối thiểu 2 ký tự").max(150),
-  phoneNumber: z.string().trim().regex(/^(?:\+84|0)(?:3[2-9]|5[6|8|9]|7[0|6-9]|8[1-9]|9[0-9])[0-9]{7}$/, "Số điện thoại di động Việt Nam không hợp lệ"),
-  primaryFilmFormat: z.enum(["35MM", "120_MEDIUM_FORMAT", "LARGE_FORMAT", "MULTIPLE"]).optional().default("35MM")
-});
-```
-
-#### Response Payload (201 Created):
-```json
-{
-  "success": true,
-  "data": {
-    "accountId": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
-    "email": "nguyen.van.an@example.com",
-    "fullName": "Nguyễn Văn An",
-    "status": "PENDING_VERIFICATION",
-    "message": "Đăng ký thành công. Vui lòng kiểm tra hộp thư email để kích hoạt tài khoản trong vòng 72 giờ."
-  }
-}
-```
-
----
-
-### 4.2 Đăng nhập hệ thống (Authenticate User)
-- **Endpoint**: `POST /api/v1/auth/login`
-- **Quyền truy cập**: Public
-- **Header Requirements**:
-  ```http
-  Content-Type: application/json
-  X-Device-Fingerprint: "fp_a1b2c3d4e5f6..."
-  X-Client-Platform: web | mobile
-  ```
-
-#### Request Payload:
-```json
-{
-  "email": "le.minh.tri@filmcontest.vn",
-  "password": "OrganizerPassword@2026",
-  "rememberMe": true
-}
-```
-
-#### Validation Schema (Zod Rule):
-```typescript
-export const LoginRequestSchema = z.object({
-  email: z.string().trim().email("Email không hợp lệ").max(255),
-  password: z.string().min(1, "Vui lòng nhập mật khẩu").max(128),
-  rememberMe: z.boolean().optional().default(false)
-});
-```
-
-#### Response Payload (200 OK):
-> **Ghi chú bảo mật**: Trên Web Client, server đồng thời gửi Header: `Set-Cookie: refreshToken=d7a8f9b0...; HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth; Max-Age=604800`. Trên Mobile Client, trường `refreshToken` trong body sẽ được lưu vào Secure Storage.
-
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "id": "b2c3d4e5-f6a7-48b9-bc01-23456789abcd",
-      "email": "le.minh.tri@filmcontest.vn",
-      "role": "ORGANIZER",
-      "status": "ACTIVE",
-      "fullName": "Lê Minh Trí",
-      "avatarUrl": "https://cdn.filmcontest.vn/avatars/user_tri.webp",
-      "permissions": [
-        "contests:create_update",
-        "submissions:moderate_all",
-        "evaluations:discrepancy",
-        "ai:view_scan_reports"
-      ]
-    },
-    "tokens": {
-      "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiMmMzZDRlNS1mNmE3LTQ4YjktYmMwMS0yMzQ1Njc4OWFiY2QiLCJyb2xlIjoiT1JHQU5JWkVSIiwiZXhwIjoxNzMwMDQ5MzAwfQ...",
-      "tokenType": "Bearer",
-      "expiresIn": 900,
-      "refreshToken": "d7a8f9b0c1e234567890abcdef1234567890abcdef1234567890abcdef123456"
-    }
-  }
-}
-```
-
----
-
-### 4.3 Làm mới Access Token (Refresh Token)
-- **Endpoint**: `POST /api/v1/auth/refresh`
-- **Quyền truy cập**: Public (Xác thực bằng Refresh Token)
-- **Header Requirements**:
-  ```http
-  Content-Type: application/json
-  X-Device-Fingerprint: "fp_a1b2c3d4e5f6..."
-  Cookie: refreshToken=d7a8f9b0c1e23456... (Web Client tự động gửi)
-  ```
-
-#### Request Payload (Mobile truyền trong Body, Web ưu tiên đọc từ Cookie):
-```json
-{
-  "refreshToken": "d7a8f9b0c1e234567890abcdef1234567890abcdef1234567890abcdef123456"
-}
-```
-
-#### Response Payload (200 OK):
-```json
-{
-  "success": true,
-  "data": {
-    "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiMmMzZDRlNS...",
-    "tokenType": "Bearer",
-    "expiresIn": 900,
-    "refreshToken": "e8b9c0d1e2f345678901bcdefa2345678901bcdefa2345678901bcdefa234567"
-  }
-}
-```
-
----
-
-### 4.4 Đăng xuất hệ thống (Logout)
-- **Endpoint**: `POST /api/v1/auth/logout`
-- **Quyền truy cập**: Authenticated (`All Actors`)
-- **Header Requirements**:
-  ```http
-  Authorization: Bearer <accessToken>
-  Content-Type: application/json
-  ```
-
-#### Request Payload:
-```json
-{
-  "allDevices": false
-}
-```
-
-#### Response Payload (200 OK):
-```json
-{
-  "success": true,
-  "data": {
-    "message": "Đăng xuất thành công. Phiên làm việc đã được thu hồi an toàn."
-  }
-}
-```
-
----
-
-### 4.5 Yêu cầu Khôi phục Mật khẩu (Forgot Password)
-- **Endpoint**: `POST /api/v1/auth/forgot-password`
-- **Quyền truy cập**: Public
-
-#### Request Payload:
-```json
-{
-  "email": "nguyen.van.an@example.com"
-}
-```
-
-#### Response Payload (200 OK):
-> **Bảo vệ phòng chống dò quét tài khoản (User Enumeration Defense)**: Luôn trả về thông báo 200 thành công dù email có tồn tại trong hệ thống hay không.
-```json
-{
-  "success": true,
-  "data": {
-    "message": "Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu đã được gửi đến hộp thư của bạn."
-  }
-}
-```
-
----
-
-### 4.6 Đặt lại Mật khẩu qua Token (Reset Password)
-- **Endpoint**: `POST /api/v1/auth/reset-password`
-- **Quyền truy cập**: Public (Xác thực bằng Token gửi qua Email)
-
-#### Request Payload:
-```json
-{
-  "token": "reset_tok_8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c",
-  "newPassword": "NewSecurePassword@2026",
-  "confirmPassword": "NewSecurePassword@2026"
-}
-```
-
-#### Validation Schema (Zod Rule):
-```typescript
-export const ResetPasswordRequestSchema = z.object({
-  token: z.string().min(1, "Mã xác thực không được để trống"),
-  newPassword: z.string()
-    .min(8, "Mật khẩu tối thiểu 8 ký tự")
-    .max(128, "Mật khẩu tối đa 128 ký tự")
-    .regex(/[A-Z]/, "Ít nhất 1 chữ hoa")
-    .regex(/[a-z]/, "Ít nhất 1 chữ thường")
-    .regex(/[0-9]/, "Ít nhất 1 chữ số")
-    .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, "Ít nhất 1 ký tự đặc biệt"),
-  confirmPassword: z.string()
-}).refine(data => data.newPassword === data.confirmPassword, {
-  message: "Xác nhận mật khẩu mới không trùng khớp",
-  path: ["confirmPassword"]
-});
-```
-
-#### Response Payload (200 OK):
-```json
-{
-  "success": true,
-  "data": {
-    "message": "Đặt lại mật khẩu thành công. Toàn bộ phiên đăng nhập cũ đã được thu hồi. Vui lòng đăng nhập lại."
-  }
-}
-```
-
----
-
-### 4.7 Lấy thông tin Hồ sơ người dùng hiện tại (Get Current User Profile)
-- **Endpoint**: `GET /api/v1/users/me`
-- **Quyền truy cập**: Authenticated (`All Actors`)
-- **Header Requirements**:
-  ```http
-  Authorization: Bearer <accessToken>
-  ```
-
-#### Response Payload (200 OK):
-```json
-{
-  "success": true,
-  "data": {
-    "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
-    "email": "nguyen.van.an@example.com",
-    "phoneNumber": "0912345678",
-    "role": "PARTICIPANT",
-    "status": "ACTIVE",
-    "createdAt": "2026-03-15T08:30:00.000Z",
-    "profile": {
-      "fullName": "Nguyễn Văn An",
-      "displayName": "An Nguyen Film",
-      "avatarUrl": "https://cdn.filmcontest.vn/avatars/an_nguyen.webp",
-      "bio": "Nhiếp ảnh gia phim đường phố Sài Gòn. Đam mê chụp đen trắng và tự tráng phim tại nhà.",
-      "experienceLevel": "ENTHUSIAST",
-      "primaryFilmFormat": "35MM",
-      "favoriteFilmStocks": ["Kodak Tri-X 400", "Ilford HP5 Plus", "Fujifilm Superia 400"],
-      "portfolioWebsite": "https://annguyenfilm.vn",
-      "instagramHandle": "@annguyen.analog",
-      "addressCountry": "Vietnam",
-      "addressCity": "Hồ Chí Minh"
-    }
-  }
-}
-```
-
----
-
-### 4.8 Cập nhật Hồ sơ Thí sinh (Update Participant Profile)
-- **Endpoint**: `PUT /api/v1/users/me/profile`
-- **Quyền truy cập**: Authenticated (`PARTICIPANT` hoặc tài khoản sở hữu)
-- **Header Requirements**:
-  ```http
-  Authorization: Bearer <accessToken>
-  Content-Type: application/json
-  ```
-
-#### Request Payload:
-```json
-{
-  "displayName": "An Nguyen Street Photography",
-  "bio": "Chuyên ghi lại khoảnh khắc đời thường qua lăng kính Leica M3 và ống kính Summicron 50mm.",
-  "experienceLevel": "PROFESSIONAL",
-  "primaryFilmFormat": "35MM",
-  "favoriteFilmStocks": ["Kodak Tri-X 400", "Kodak Portra 800"],
-  "portfolioWebsite": "https://annguyenstreet.com",
-  "instagramHandle": "@annguyen.leica",
-  "addressCity": "Hồ Chí Minh"
-}
-```
-
-#### Validation Schema (Zod Rule):
-```typescript
-export const UpdateProfileSchema = z.object({
-  displayName: z.string().trim().max(100).optional(),
-  bio: z.string().max(1000).optional(),
-  experienceLevel: z.enum(["NOVICE", "AMATEUR", "ENTHUSIAST", "PROFESSIONAL"]).optional(),
-  primaryFilmFormat: z.enum(["35MM", "120_MEDIUM_FORMAT", "LARGE_FORMAT", "MULTIPLE"]).optional(),
-  favoriteFilmStocks: z.array(z.string().max(100)).max(10).optional(),
-  portfolioWebsite: z.string().url("Đường dẫn portfolio không hợp lệ").max(255).optional().or(z.literal('')),
-  instagramHandle: z.string().trim().max(100).optional().or(z.literal('')),
-  addressCity: z.string().trim().max(100).optional()
-});
-```
-
-#### Response Payload (200 OK):
-```json
-{
-  "success": true,
-  "data": {
-    "message": "Cập nhật hồ sơ cá nhân thành công.",
-    "updatedAt": "2026-04-10T14:20:00.000Z"
-  }
-}
-```
-
----
-
-### 4.9 Đổi Mật khẩu Cá nhân (Change Password)
-- **Endpoint**: `PATCH /api/v1/users/me/password`
-- **Quyền truy cập**: Authenticated (`All Actors`)
-- **Header Requirements**:
-  ```http
-  Authorization: Bearer <accessToken>
-  Content-Type: application/json
-  ```
-
-#### Request Payload:
-```json
-{
-  "currentPassword": "OldPassword@2025",
-  "newPassword": "BrandNewPassword@2026"
-}
-```
-
-#### Validation Schema (Zod Rule):
-```typescript
-export const ChangePasswordSchema = z.object({
-  currentPassword: z.string().min(1, "Vui lòng nhập mật khẩu hiện tại"),
-  newPassword: z.string()
-    .min(8, "Mật khẩu mới tối thiểu 8 ký tự")
-    .max(128, "Mật khẩu mới tối đa 128 ký tự")
-    .regex(/[A-Z]/, "Bắt buộc có ít nhất 1 chữ hoa")
-    .regex(/[a-z]/, "Bắt buộc có ít nhất 1 chữ thường")
-    .regex(/[0-9]/, "Bắt buộc có ít nhất 1 chữ số")
-    .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, "Bắt buộc có ít nhất 1 ký tự đặc biệt")
-}).refine(data => data.currentPassword !== data.newPassword, {
-  message: "Mật khẩu mới không được trùng với mật khẩu hiện tại",
-  path: ["newPassword"]
-});
-```
-
-#### Response Payload (200 OK):
-```json
-{
-  "success": true,
-  "data": {
-    "message": "Đổi mật khẩu thành công. Các phiên đăng nhập trên thiết bị khác đã được thu hồi."
-  }
-}
-```
-
----
-
-### 4.10 Danh sách Người dùng Toàn hệ thống (Admin List Users)
-- **Endpoint**: `GET /api/v1/users`
-- **Quyền truy cập**: Authenticated (`ADMIN` - permission `users:read_all`)
-- **Header Requirements**:
-  ```http
-  Authorization: Bearer <accessToken>
-  ```
-- **Query Parameters**:
-  - `page` (number, default: 1)
-  - `limit` (number, default: 20, max: 100)
-  - `role` (string: `ADMIN`, `ORGANIZER`, `JUDGE`, `PARTICIPANT`)
-  - `status` (string: `ACTIVE`, `PENDING_VERIFICATION`, `LOCKED`, `BANNED`)
-  - `search` (string: email hoặc họ tên)
-
-#### Response Payload (200 OK):
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "b2c3d4e5-f6a7-48b9-bc01-23456789abcd",
-      "email": "le.minh.tri@filmcontest.vn",
-      "phoneNumber": "0987654321",
-      "role": {
-        "code": "ORGANIZER",
-        "name": "Ban tổ chức"
-      },
-      "status": "ACTIVE",
-      "tokenVersion": 1,
-      "lastLoginAt": "2026-10-27T08:15:00.000Z",
-      "createdAt": "2026-01-10T09:00:00.000Z"
-    }
-  ],
-  "meta": {
-    "page": 1,
-    "limit": 20,
-    "totalRecords": 145,
-    "totalPages": 8
-  }
-}
-```
-
----
-
-### 4.11 Quản trị viên Tạo Tài khoản Nội bộ (Admin Create Internal User)
-- **Endpoint**: `POST /api/v1/users`
-- **Quyền truy cập**: Authenticated (`ADMIN` - permission `users:create_internal`)
-- **Header Requirements**:
-  ```http
-  Authorization: Bearer <accessToken>
-  Content-Type: application/json
-  ```
-
-#### Request Payload:
-```json
-{
-  "email": "tran.thi.giang@judges-film.vn",
-  "fullName": "Trần Thị Giang",
-  "phoneNumber": "0908112233",
-  "role": "JUDGE",
-  "temporaryPassword": "InitJudgeTempPass@2026"
-}
-```
-
-#### Validation Schema (Zod Rule):
-```typescript
-export const CreateInternalUserSchema = z.object({
-  email: z.string().trim().email("Email không hợp lệ").max(255),
-  fullName: z.string().trim().min(2, "Họ tên tối thiểu 2 ký tự").max(150),
-  phoneNumber: z.string().trim().regex(/^(?:\+84|0)(?:3[2-9]|5[6|8|9]|7[0|6-9]|8[1-9]|9[0-9])[0-9]{7}$/, "Số điện thoại không hợp lệ"),
-  role: z.enum(["ADMIN", "ORGANIZER", "JUDGE"], {
-    errorMap: () => ({ message: "Chỉ được tạo tài khoản nội bộ ADMIN, ORGANIZER hoặc JUDGE" })
-  }),
-  temporaryPassword: z.string().min(8, "Mật khẩu tạm thời tối thiểu 8 ký tự")
-});
-```
-
-#### Response Payload (201 Created):
-```json
-{
-  "success": true,
-  "data": {
-    "id": "e4f5a6b7-c8d9-40e1-a234-567890bcdefa",
-    "email": "tran.thi.giang@judges-film.vn",
-    "role": "JUDGE",
-    "status": "ACTIVE",
-    "createdAt": "2026-10-27T16:30:00.000Z",
-    "message": "Đã khởi tạo tài khoản Giám khảo thành công và gửi thông tin đăng nhập qua email."
-  }
-}
-```
-
----
-
-### 4.12 Quản trị viên Khóa / Mở khóa Tài khoản (Admin Lock/Unlock Account)
-- **Endpoint**: `PATCH /api/v1/users/{id}/status`
-- **Quyền truy cập**: Authenticated (`ADMIN` - permission `users:lock_unlock`)
-- **Header Requirements**:
-  ```http
-  Authorization: Bearer <accessToken>
-  Content-Type: application/json
-  ```
-
-#### Request Payload:
-```json
-{
-  "status": "LOCKED",
-  "reason": "Phát hiện dấu hiệu nộp ảnh kỹ thuật số giả lập màu phim và cố tình làm sai lệch siêu dữ liệu (Vi phạm quy chế cuộc thi)."
-}
-```
-
-#### Validation Schema (Zod Rule):
-```typescript
-export const UpdateUserStatusSchema = z.object({
-  status: z.enum(["ACTIVE", "LOCKED", "BANNED"], {
-    errorMap: () => ({ message: "Trạng thái chỉ có thể là ACTIVE, LOCKED hoặc BANNED" })
-  }),
-  reason: z.string().trim().min(10, "Lý do thay đổi trạng thái bắt buộc nhập tối thiểu 10 ký tự").max(500)
-});
-```
-
-#### Response Payload (200 OK):
-```json
-{
-  "success": true,
-  "data": {
-    "userId": "c3d4e5f6-a7b8-49c0-bd12-34567890cdef",
-    "previousStatus": "ACTIVE",
-    "currentStatus": "LOCKED",
-    "tokenVersion": 2,
-    "revokedSessionsCount": 3,
-    "updatedAt": "2026-04-10T15:00:00.000Z",
-    "message": "Đã khóa tài khoản thành công. Toàn bộ 3 phiên làm việc và Token liên quan đã bị thu hồi hiệu lực ngay lập tức."
-  }
-}
-```
-
----
-
-### 4.13 Danh mục Mã lỗi Chuẩn Hóa (Standard Error Codes Table)
-
-| HTTP Status | Error Code | Client Message (Mô tả giao diện) | Context / Nguyên nhân |
-| :---: | :--- | :--- | :--- |
-| `400` | `VALIDATION_FAILED` | Dữ liệu đầu vào không hợp lệ. Vui lòng kiểm tra lại. | Lỗi validate schema (Zod/Joi) trên các trường form |
-| `400` | `AUTH_PASSWORD_POLICY_VIOLATION` | Mật khẩu không đáp ứng tiêu chuẩn an toàn quy định. | Mật khẩu thiếu chữ hoa, số hoặc ký tự đặc biệt |
-| `401` | `AUTH_INVALID_CREDENTIALS` | Email hoặc mật khẩu không chính xác. | Khớp MSG004 trong SRS |
-| `401` | `AUTH_TOKEN_EXPIRED` | Phiên đăng nhập đã hết hạn. Vui lòng làm mới hoặc đăng nhập lại. | Access Token đã quá hạn 15m |
-| `401` | `AUTH_TOKEN_INVALID` | Token xác thực không hợp lệ hoặc chữ ký sai. | Chữ ký JWT không khớp Secret/Public Key |
-| `401` | `AUTH_TOKEN_REVOKED` | Phiên làm việc đã bị thu hồi do tài khoản thay đổi bảo mật. | Token version trong JWT < Token version trong Database/Redis (BR-04) |
-| `401` | `AUTH_REFRESH_TOKEN_REUSED` | Cảnh báo bảo mật: Phiên làm việc bị phát hiện sử dụng trái phép. | Phát hiện Token Reuse Attack trong quy trình Refresh Token |
-| `403` | `AUTH_PERMISSION_DENIED` | Bạn không có quyền thực hiện thao tác này. | Khớp MSG005 trong SRS (Thiếu permission cần thiết) |
-| `403` | `AUTH_ACCOUNT_LOCKED` | Tài khoản của bạn hiện đang bị khóa bởi Quản trị viên. | Trạng thái tài khoản là `LOCKED` |
-| `403` | `AUTH_ACCOUNT_BANNED` | Tài khoản này đã bị cấm vĩnh viễn do vi phạm điều khoản. | Trạng thái tài khoản là `BANNED` |
-| `403` | `AUTH_ACCOUNT_PENDING` | Tài khoản chưa kích hoạt email. Vui lòng kiểm tra hộp thư. | Trạng thái `PENDING_VERIFICATION` |
-| `404` | `USER_NOT_FOUND` | Người dùng không tồn tại hoặc đã bị xóa. | ID tài khoản không tồn tại hoặc `deleted_at IS NOT NULL` |
-| `409` | `AUTH_EMAIL_ALREADY_EXISTS` | Địa chỉ email này đã được sử dụng bởi một tài khoản khác. | Vi phạm ràng buộc duy nhất BR-01 |
-| `409` | `AUTH_PHONE_ALREADY_EXISTS` | Số điện thoại này đã được gắn với một tài khoản khác. | Vi phạm duy nhất số điện thoại |
-| `423` | `AUTH_ACCOUNT_TEMPORARILY_LOCKED` | Đăng nhập sai quá 5 lần. Vui lòng thử lại sau 15 phút. | Kích hoạt Brute-force protection lockout |
-| `429` | `RATE_LIMIT_EXCEEDED` | Bạn đã gửi quá nhiều yêu cầu. Vui lòng chờ trong giây lát. | Vượt ngưỡng tần suất gọi API (VD: > 10 requests/phút cho Auth) |
-| `500` | `INTERNAL_SERVER_ERROR` | Đã xảy ra lỗi hệ thống. Vui lòng liên hệ quản trị viên. | Lỗi không mong muốn tại server |
-
-#### Cấu trúc Error Response JSON chuẩn:
-```json
-{
-  "success": false,
-  "error": {
-    "code": "AUTH_INVALID_CREDENTIALS",
-    "message": "Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.",
-    "details": []
-  }
-}
-```
-
----
+- `deliveryStatus` là `ACCEPTED` khi nhà cung cấp nhận yêu cầu gửi, hoặc `RETRY_REQUIRED` khi cần gửi lại. Backend lưu tiến độ xác thực qua lỗi nhà cung cấp.
+- Đăng ký và tài khoản nội bộ yêu cầu mật khẩu từ 8 đến 128 ký tự với chữ hoa, chữ thường, chữ số và ký tự đặc biệt. Số điện thoại lưu dạng E.164. OTP email hiệu lực 15 phút và chỉ lưu dạng băm có khóa. OTP SMS do Twilio Verify gửi và kiểm tra, với thời hạn kiểm tra tối đa 10 phút ở Backend. Mỗi yêu cầu hỗ trợ tối đa 5 lần thử, gửi lại cách nhau ít nhất 60 giây.
+- `400` áp dụng cho đầu vào sai hoặc mã không hợp lệ, `401` cho phiên không hợp lệ, `403` cho thiếu quyền và `409` cho xung đột định danh/trạng thái. Backend giữ thông điệp đăng nhập thất bại chung.
+- `GET /auth/portfolio` phục vụ bộ sưu tập bài thi của Participant trong [Module 08](08-archive-and-exhibition.md).
 
 ## 5. UI/UX Functional Requirements
 
@@ -896,7 +318,7 @@ sequenceDiagram
     participant App as Web / Mobile UI
     participant Gateway as API Gateway / Auth Controller
     participant Service as AuthService & DB
-    participant Cache as Redis Session
+    participant Session as PostgreSQL
 
     User->>App: Nhập Email, Password & bấm "Đăng nhập"
     App->>App: Client Validation (Email regex, Password length)
@@ -910,12 +332,11 @@ sequenceDiagram
             Service->>Service: Tăng failed_login_attempts (+1)
             Service-->>App: HTTP 401 (AUTH_INVALID_CREDENTIALS)
             App-->>User: Toast đỏ "Email hoặc mật khẩu không chính xác." (MSG004)
-        else Tài khoản bị khóa (LOCKED)
-            Service-->>App: HTTP 403 (AUTH_ACCOUNT_LOCKED)
-            App-->>User: Modal cảnh báo "Tài khoản của bạn đã bị khóa."
+        else Tài khoản chưa xác thực hoặc bị khóa
+            Service-->>App: HTTP 401 với thông báo đăng nhập chung
         else Hợp lệ
             Service->>Service: Reset failed_login_attempts = 0, Cập nhật last_login_at
-            Service->>Cache: Lưu phiên & Token Version vào Redis
+            Service->>Session: Lưu phiên và phiên bản token
             Service-->>App: HTTP 200 + Access Token + User Info + Role (+ Refresh Token)
             App->>App: Lưu Token an toàn (Web: Cookie/Memory, Mobile: SecureStorage)
             App-->>User: Toast xanh "Đăng nhập thành công. Chào mừng {username}!" (MSG003)
@@ -927,7 +348,7 @@ sequenceDiagram
 #### 2. Luồng Tự động Làm mới Phiên (Silent Refresh Token Flow)
 - **Tác vụ nền**: Client cài đặt HTTP Interceptor (sử dụng Axios Interceptor trên Web hoặc Dio Interceptor trên Flutter Mobile).
 - **Cơ chế xử lý**:
-  1. Khi một API nghiệp vụ (ví dụ `/api/v1/contests`) trả về mã lỗi `HTTP 401 Unauthorized` với mã `AUTH_TOKEN_EXPIRED`.
+  1. Khi một API nghiệp vụ (ví dụ `/api/v1/contests`) trả `HTTP 401 Unauthorized` khi access token không hợp lệ.
   2. Interceptor tạm giữ (hold) request vừa bị lỗi và đưa vào một hàng đợi đợi (`requestQueue`).
   3. Interceptor kiểm tra cờ `isRefreshing`:
      - Nếu cờ đang `false`: Đặt `isRefreshing = true`, lập tức gọi ngầm API `POST /api/v1/auth/refresh`.

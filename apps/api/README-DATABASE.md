@@ -28,7 +28,18 @@ bun install
 
 ## 4. Generate migration
 
-Khi schema trong `apps/api/src/db/schema.ts` được thay đổi, chạy:
+Các bảng Drizzle nằm trong `src/db/schemas/`. `index.ts` xuất schema cho Drizzle Kit. Các import qua `src/db/schema.ts` vẫn dùng được.
+
+| File | Bảng thuộc nghiệp vụ |
+| --- | --- |
+| `module-1.schema.ts` | Tài khoản, quyền, xác thực, audit tài khoản và phiên |
+| `module-3.schema.ts` | Cuộc thi, hạng mục, tiêu chí và phân công |
+| `module-4.schema.ts` | Cuộn phim |
+| `module-5.schema.ts` | Bài thi, thông số phim và log kiểm duyệt |
+| `module-6.schema.ts` | Phân tích và hàng đợi AI |
+| `module-7.schema.ts` | Phiếu chấm và điểm theo tiêu chí |
+
+Khi thay đổi bảng, chạy:
 
 ```bash
 bun run --filter api db:generate
@@ -50,15 +61,24 @@ Kiểm tra file SQL được sinh ra trước khi áp dụng.
 bun run --filter api db:migrate
 ```
 
-Migration khởi tạo tạo các bảng:
+[Baseline `0000_baseline.sql`](drizzle/0000_baseline.sql) tạo toàn bộ 20 bảng hiện tại. Cách áp dụng phụ thuộc vào lịch sử của database.
 
-- `users`
-- `roles`
-- `permissions`
-- `user_roles`
-- `role_permissions`
+| Database | Cách áp dụng |
+| --- | --- |
+| Mới, chưa có các bảng ứng dụng | Chạy `bun run --filter api db:migrate`. |
+| Đã chạy đủ chuỗi cũ đến `0015_pale_johnny_blaze` | Giữ lịch sử trong `public.__drizzle_migrations`. Baseline dùng cùng mốc thời gian `1795606798211`, nên Drizzle bỏ qua baseline và áp dụng được các migration mới sau đó. |
+| Đã có bảng nhưng chưa đến `0015` | Sao lưu, dùng mã ở commit `28c674c` để áp dụng các migration cũ còn thiếu trên cùng database. Sau khi thấy mốc `0015`, chuyển sang bản baseline. Nếu database được tạo thủ công hoặc bị lệch schema, đối chiếu trước khi chạy migration. |
 
-Không chạy migration khởi tạo trên database đã có các bảng này, trừ khi lịch sử migration đã được thiết lập đúng. Nếu database đã tồn tại từ trước, cần đối chiếu schema và thiết lập baseline trước khi dùng Drizzle quản lý tiếp.
+Kiểm tra mốc hiện tại của database đã có lịch sử.
+
+```sql
+SELECT created_at
+FROM public.__drizzle_migrations
+ORDER BY created_at DESC
+LIMIT 1;
+```
+
+Cách chuyển tiếp giữ nguyên dữ liệu nghiệp vụ và bảng lịch sử. Baseline dùng cho DB trống, còn DB cũ được nhận diện theo mốc đã chạy.
 
 ## 6. Important notes
 

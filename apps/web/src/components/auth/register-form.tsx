@@ -1,19 +1,19 @@
 "use client";
 
-import { Aperture } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { AuthField } from "@/components/auth/auth-field";
+import { BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { http } from "@/lib/http";
 
-const fieldLabelClassName = "text-sm font-medium text-slate-700";
+const fieldLabelClassName = "text-xs font-semibold text-foreground";
 
 const fieldInputClassName =
-  "h-12 rounded-[10px] border-slate-300 bg-white px-4 text-[15px] leading-[22px] text-slate-900 placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 md:text-[15px]";
+  "h-11 rounded-xl border-input bg-background px-3.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/20 transition-all";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -23,12 +23,56 @@ export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [code, setCode] = useState("");
+  const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function request(action: "register" | "verify-email" | "resend-verification") {
     setError("");
+    if (action === "resend-verification" && (!email.trim() || !password)) {
+      setError("Nhập email và mật khẩu đã dùng khi đăng ký.");
+      return;
+    }
+    setNotice("");
+    setIsLoading(true);
+    try {
+      const identity = { email: email.trim() };
+      if (action === "verify-email") {
+        await http.post("/api/v1/auth/verify-email", { ...identity, code: code.trim() });
+        router.push("/login");
+        return;
+      }
+      const payload = action === "register"
+        ? { ...identity, password, fullName: fullName.trim() }
+        : { ...identity, password };
+      const response = await http.post<{ data: { deliveryStatus: string } }>(
+        `/api/v1/auth/${action}`, payload,
+      );
+      setVerifying(true);
+      setNotice(response.data.data.deliveryStatus === "RETRY_REQUIRED"
+        ? "Chưa gửi được mã. Vui lòng thử gửi lại sau."
+        : "Kiểm tra hộp thư email để lấy mã xác thực.");
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { error?: string; message?: string } } };
+      const data = apiErr.response?.data;
+      setError(data?.message ?? data?.error ?? "Không thể hoàn tất yêu cầu. Vui lòng thử lại.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (verifying) {
+      if (!/^\d{6}$/.test(code.trim())) {
+        setError("Nhập mã xác thực gồm 6 chữ số.");
+        return;
+      }
+      void request("verify-email");
+      return;
+    }
 
     if (!fullName.trim() || !email.trim() || !password || !confirmPassword) {
       setError("Vui lòng điền đầy đủ thông tin.");
@@ -45,119 +89,123 @@ export function RegisterForm() {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      await http.post("/api/v1/auth/register", {
-        fullName: fullName.trim(),
-        email: email.trim(),
-        password,
-      });
-
-      router.push("/login");
-    } catch (err: unknown) {
-      console.error(err);
-      const apiErr = err as {
-        response?: { data?: { error?: string; message?: string } };
-      };
-      const data = apiErr.response?.data;
-      setError(
-        data?.error ??
-          data?.message ??
-          "Đăng ký thất bại. Email có thể đã tồn tại hoặc lỗi kết nối!",
-      );
-    } finally {
-      setIsLoading(false);
-    }
+    void request("register");
   }
 
   return (
-    <Card className="w-full gap-0 rounded-[20px] border border-slate-200 bg-white py-0 shadow-[0_2px_8px_0_rgba(15,23,42,0.06),0_24px_64px_-24px_rgba(30,58,138,0.10)] ring-0">
+    <Card className="w-full gap-0 rounded-2xl border border-border bg-card p-7 sm:p-9 shadow-xl shadow-brand-solid/5 ring-0">
       <form
-        className="flex flex-col items-center gap-7 p-10"
+        className="flex flex-col items-center gap-6"
         onSubmit={handleSubmit}
         noValidate
       >
-        <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_8px_20px_-6px_rgba(37,99,235,0.30)]">
-          <Aperture aria-hidden="true" className="size-7" strokeWidth={2} />
-        </div>
+        <Link
+          href="/"
+          title="Quay lại trang chủ"
+          className="group rounded-2xl p-1 transition-all hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <BrandMark size={56} className="shrink-0 rounded-2xl shadow-sm" />
+        </Link>
 
-        <header className="flex w-full flex-col items-center gap-2 text-center">
-          <h1 className="text-[32px] leading-10 font-semibold tracking-[-0.01em] text-slate-900">
-            Tạo tài khoản
+        <header className="flex w-full flex-col items-center gap-1.5 text-center">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            {verifying ? "Xác thực email" : "Tạo tài khoản"}
           </h1>
-          <p className="text-[15px] leading-[22px] text-slate-500">
-            Đăng ký để bắt đầu với Film Contest
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            {verifying ? email.trim() : "Đăng ký để bắt đầu với CINEGEN"}
           </p>
         </header>
 
-        <div className="flex w-full flex-col gap-5">
-          <AuthField
-            id="fullName"
-            label="Họ và tên"
-            labelClassName={fieldLabelClassName}
-            className={fieldInputClassName}
-            type="text"
-            autoComplete="name"
-            placeholder="Nguyễn Văn A"
-            value={fullName}
-            onChange={(event) => setFullName(event.target.value)}
-          />
-          <AuthField
-            id="email"
-            label="Email"
-            labelClassName={fieldLabelClassName}
-            className={fieldInputClassName}
-            type="email"
-            autoComplete="email"
-            placeholder="ban@example.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-          <AuthField
-            id="password"
-            label="Mật khẩu"
-            labelClassName={fieldLabelClassName}
-            className={fieldInputClassName}
-            type="password"
-            autoComplete="new-password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-          <AuthField
-            id="confirmPassword"
-            label="Xác nhận mật khẩu"
-            labelClassName={fieldLabelClassName}
-            className={fieldInputClassName}
-            type="password"
-            autoComplete="new-password"
-            placeholder="••••••••"
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-          />
+        <div className="flex w-full flex-col gap-4">
+          {verifying ? (
+            <AuthField
+              id="emailCode"
+              label="Mã xác thực email"
+              labelClassName={fieldLabelClassName}
+              className={fieldInputClassName}
+              autoComplete="one-time-code"
+              inputMode="numeric"
+              maxLength={6}
+              value={code}
+              onChange={(event) => setCode(event.target.value)}
+            />
+          ) : (
+            <>
+                <AuthField
+                  id="fullName"
+                  label="Họ và tên"
+                  labelClassName={fieldLabelClassName}
+                  className={fieldInputClassName}
+                  type="text"
+                  autoComplete="name"
+                  placeholder="Nguyễn Văn A"
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                />
+                <AuthField
+                  id="email"
+                  label="Email"
+                  labelClassName={fieldLabelClassName}
+                  className={fieldInputClassName}
+                  type="email"
+                  autoComplete="email"
+                  placeholder="ban@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+                <AuthField
+                  id="password"
+                  label="Mật khẩu"
+                  labelClassName={fieldLabelClassName}
+                  className={fieldInputClassName}
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+                <AuthField
+                  id="confirmPassword"
+                  label="Xác nhận mật khẩu"
+                  labelClassName={fieldLabelClassName}
+                  className={fieldInputClassName}
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                />
+            </>
+          )}
+          {notice ? <p role="status" className="text-sm">{notice}</p> : null}
 
           {error ? (
-            <p role="alert" className="text-sm font-medium text-red-600">
+            <div
+              role="alert"
+              className="rounded-lg border border-destructive/20 bg-destructive/10 p-2.5 text-xs font-medium text-destructive"
+            >
               {error}
-            </p>
+            </div>
           ) : null}
         </div>
 
-        <div className="flex w-full flex-col items-center gap-6">
+        <div className="flex w-full flex-col items-center gap-4">
           <Button
             type="submit"
             disabled={isLoading}
-            className="h-12 w-full rounded-[10px] bg-blue-600 text-base font-semibold text-white shadow-[0_8px_20px_-6px_rgba(37,99,235,0.30)] hover:bg-blue-700 focus-visible:border-blue-500 focus-visible:ring-blue-500/30 disabled:opacity-60"
+            className="h-11 w-full rounded-xl bg-brand-solid text-sm font-semibold text-white shadow-md shadow-brand-solid/20 hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 transition-all active:scale-[0.99]"
           >
-            {isLoading ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
+            {isLoading ? "Đang xử lý..." : verifying ? "Xác thực email" : "Tạo tài khoản"}
           </Button>
 
-          <p className="text-sm leading-5 text-slate-500">
+          <Button type="button" variant="outline" disabled={isLoading} onClick={() => void request("resend-verification")}>
+            {verifying ? "Gửi lại mã" : "Xác thực tài khoản đã đăng ký"}
+          </Button>
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Đã có tài khoản?{" "}
             <Link
               href="/login"
-              className="font-semibold text-blue-600 transition-colors hover:text-blue-700"
+              className="font-semibold text-brand-solid transition-colors hover:text-brand-hover"
             >
               Đăng nhập
             </Link>

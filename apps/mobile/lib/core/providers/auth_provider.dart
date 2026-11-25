@@ -92,53 +92,47 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  Future<void> register({
+  Future<String?> register({
     required String fullName,
     required String email,
     required String password,
-  }) async {
-    try {
-      final dio = ref.read(apiClientProvider).dio;
-      final response = await dio.post('/api/v1/auth/register', data: {
+  }) => _emailVerificationRequest('register', {
         'fullName': fullName,
         'email': email,
         'password': password,
       });
 
-      final body = response.data as Map<String, dynamic>;
-      final data = (body['data'] is Map<String, dynamic>)
-          ? body['data'] as Map<String, dynamic>
-          : body;
+  Future<String?> resendVerification(String email, String password) =>
+      _emailVerificationRequest('resend-verification', {
+        'email': email,
+        'password': password,
+      });
 
-      final tokens = (data['tokens'] is Map<String, dynamic>)
-          ? data['tokens'] as Map<String, dynamic>
-          : data;
+  Future<void> verifyEmail(String email, String code) async {
+    await _emailVerificationRequest('verify-email', {
+      'email': email,
+      'code': code,
+    });
+  }
 
-      final accessToken =
-          (tokens['accessToken'] ?? data['accessToken']) as String;
-      final refreshToken =
-          (tokens['refreshToken'] ?? data['refreshToken']) as String?;
-      final user = data['user'] as Map<String, dynamic>? ?? data;
-
-      await _storage.saveTokens(
-        accessToken: accessToken,
-        refreshToken: refreshToken,
+  Future<String?> _emailVerificationRequest(
+    String operation,
+    Map<String, String> payload,
+  ) async {
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final response = await dio.post(
+        '/api/v1/auth/$operation',
+        data: payload,
       );
-
-      state = AuthState(
-        isLoggedIn: true,
-        userId: user['id'] as String? ??
-            user['userId'] as String? ??
-            data['userId'] as String?,
-        fullName: user['fullName'] as String? ??
-            user['full_name'] as String? ??
-            fullName,
-        email: user['email'] as String? ?? email,
-        role: user['role'] as String? ?? 'Participant',
-      );
+      return response.data['data']?['deliveryStatus'] as String?;
     } on DioException catch (error) {
       throw ApiException.fromDio(error);
     }
+  }
+
+  Future<void> requestPasswordReset(String email) async {
+    await _emailVerificationRequest('forgot-password', {'email': email});
   }
 
   Future<void> logout() async {
