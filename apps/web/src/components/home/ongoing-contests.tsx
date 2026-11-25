@@ -76,7 +76,7 @@ export function OngoingContests() {
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
-            <div className="inline-flex items-center gap-2 text-xs font-semibold text-blue-600 uppercase tracking-wider mb-2">
+            <div className="inline-flex items-center gap-2 text-xs font-semibold text-brand-solid uppercase tracking-wider mb-2">
               <Film className="h-4 w-4" />
               <span>Sân chơi Nhiếp ảnh Phim</span>
             </div>
@@ -111,7 +111,7 @@ export function OngoingContests() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm cuộc thi theo tên, thể loại phim (35mm, 120, B&W)..."
-              className="w-full rounded-xl bg-white pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 border border-slate-300 focus:border-blue-500 focus:outline-none transition-colors shadow-sm"
+              className="w-full rounded-xl bg-white pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 border border-slate-300 focus:border-brand-ring focus:outline-none transition-colors shadow-sm"
             />
           </div>
 
@@ -135,7 +135,7 @@ export function OngoingContests() {
               onClick={() => setStatusFilter("published")}
               className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
                 statusFilter === "published"
-                  ? "bg-blue-600 text-white shadow-sm"
+                  ? "bg-brand-solid text-white shadow-sm"
                   : "bg-white text-slate-600 hover:text-slate-900 border border-slate-300"
               }`}
             >
@@ -159,7 +159,7 @@ export function OngoingContests() {
         {/* Loading State */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-24 text-slate-500 space-y-3">
-            <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-brand-solid border-t-transparent rounded-full animate-spin" />
             <p className="text-sm">Đang tải danh sách cuộc thi từ máy chủ...</p>
           </div>
         )}
@@ -200,10 +200,10 @@ export function OngoingContests() {
         )}
 
         {/* Bottom Banner */}
-        <div className="mt-16 p-8 rounded-3xl bg-gradient-to-r from-blue-50 via-indigo-50/50 to-white border border-blue-200 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+        <div className="mt-16 p-8 rounded-3xl bg-gradient-to-r from-brand-soft via-indigo-50/50 to-white border border-brand-glow flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
           <div className="space-y-1 text-center md:text-left">
             <h3 className="text-lg font-bold text-slate-900 flex items-center justify-center md:justify-start gap-2">
-              <Trophy className="h-5 w-5 text-blue-600" />
+              <Trophy className="h-5 w-5 text-brand-solid" />
               Bạn là Đơn vị / Câu lạc bộ muốn tổ chức cuộc thi ảnh phim?
             </h3>
             <p className="text-sm text-slate-600">
@@ -213,7 +213,7 @@ export function OngoingContests() {
           </div>
           <a
             href="/login"
-            className="shrink-0 px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-md shadow-blue-600/30 transition-all"
+            className="shrink-0 px-6 py-3 rounded-2xl bg-brand-solid hover:bg-brand-hover text-white text-sm font-semibold shadow-md shadow-brand-solid/30 transition-all"
           >
             Đăng ký làm Ban Tổ chức
           </a>

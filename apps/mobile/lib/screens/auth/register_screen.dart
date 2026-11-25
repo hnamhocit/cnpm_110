@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/cinegen_theme.dart';
 import '../../core/components/custom_button.dart';
 import '../../core/components/custom_input_field.dart';
 import '../../core/providers/auth_provider.dart';
@@ -74,11 +75,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(
-                      Icons.photo_camera_outlined,
-                      size: 64,
-                      color: theme.colorScheme.primary,
-                    ),
+                    const Center(child: CinegenMark(size: 72)),
                     const SizedBox(height: 16),
                     Text(
                       'Đăng ký tài khoản',

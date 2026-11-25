@@ -1,6 +1,5 @@
 "use client";
 
-import { Aperture } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
@@ -9,11 +8,12 @@ import { AuthField } from "@/components/auth/auth-field";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { http } from "@/lib/http";
+import { BrandMark } from "@/components/brand-mark";
 
 const fieldLabelClassName = "text-sm font-medium text-slate-700";
 
 const fieldInputClassName =
-  "h-12 rounded-[10px] border-slate-300 bg-white px-4 text-[15px] leading-[22px] text-slate-900 placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 md:text-[15px]";
+  "h-12 rounded-[10px] border-slate-300 bg-white px-4 text-[15px] leading-[22px] text-slate-900 placeholder:text-slate-400 focus-visible:border-brand-ring focus-visible:ring-brand-ring/20 md:text-[15px]";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -78,16 +78,14 @@ export function RegisterForm() {
         onSubmit={handleSubmit}
         noValidate
       >
-        <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_8px_20px_-6px_rgba(37,99,235,0.30)]">
-          <Aperture aria-hidden="true" className="size-7" strokeWidth={2} />
-        </div>
+        <BrandMark size={56} className="shrink-0 rounded-2xl" />
 
         <header className="flex w-full flex-col items-center gap-2 text-center">
           <h1 className="text-[32px] leading-10 font-semibold tracking-[-0.01em] text-slate-900">
             Tạo tài khoản
           </h1>
           <p className="text-[15px] leading-[22px] text-slate-500">
-            Đăng ký để bắt đầu với Film Contest
+            Đăng ký để bắt đầu với CINEGEN
           </p>
         </header>
 
@@ -148,7 +146,7 @@ export function RegisterForm() {
           <Button
             type="submit"
             disabled={isLoading}
-            className="h-12 w-full rounded-[10px] bg-blue-600 text-base font-semibold text-white shadow-[0_8px_20px_-6px_rgba(37,99,235,0.30)] hover:bg-blue-700 focus-visible:border-blue-500 focus-visible:ring-blue-500/30 disabled:opacity-60"
+            className="h-12 w-full rounded-[10px] bg-brand-solid text-base font-semibold text-white shadow-md shadow-brand-solid/25 hover:bg-brand-hover focus-visible:border-brand-ring focus-visible:ring-brand-ring/30 disabled:opacity-60"
           >
             {isLoading ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
           </Button>
@@ -157,7 +155,7 @@ export function RegisterForm() {
             Đã có tài khoản?{" "}
             <Link
               href="/login"
-              className="font-semibold text-blue-600 transition-colors hover:text-blue-700"
+              className="font-semibold text-brand-solid transition-colors hover:text-brand-hover"
             >
               Đăng nhập
             </Link>

@@ -149,7 +149,7 @@ export default function OrganizerContestsPage() {
                       href={`/portal/contests/${contest.id}/submissions`}
                       className="flex-1"
                     >
-                      <Button className="w-full text-xs bg-blue-600 hover:bg-blue-700 text-white">
+                      <Button className="w-full text-xs bg-brand-solid hover:bg-brand-hover text-white">
                         Bài dự thi
                       </Button>
                     </Link>

@@ -106,7 +106,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Film Photography Contest Platform'),
+            Text('CINEGEN'),
             SizedBox(height: 8),
             Text('Email hỗ trợ: support@filmcontest.vn'),
             SizedBox(height: 8),

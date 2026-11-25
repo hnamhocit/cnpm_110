@@ -3,7 +3,7 @@ import type { BlindEvaluationSubmission, ScoringCriterion } from "@/types/judgin
 import { FocusJudgingView } from "@/components/judging/focus-judging-view";
 
 export const metadata: Metadata = {
-  title: "Chấm thi ẩn danh (Focus Mode) | Film Contest",
+  title: "Chấm thi ẩn danh (Focus Mode) | CINEGEN",
   description: "Giao diện chấm thi chuyên sâu cho ban giám khảo với công cụ soi hạt phim và slider chấm điểm chuẩn BR-12.",
 };
 

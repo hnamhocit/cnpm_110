@@ -67,8 +67,8 @@ async function requestVerification(
 
 export const identityDelivery: IdentityDelivery = {
   emailCode(to, code) {
-    return sendEmail(to, "Film Contest · Xác thực email",
-      `Mã xác thực Film Contest của bạn là ${code}. Mã có hiệu lực trong 15 phút.`);
+    return sendEmail(to, "CINEGEN · Xác thực email",
+      `Mã xác thực CINEGEN của bạn là ${code}. Mã có hiệu lực trong 15 phút.`);
   },
   async startPhoneVerification(to) {
     const status = await requestVerification("Verifications", { To: to, Channel: "sms" });
@@ -84,7 +84,7 @@ export const identityDelivery: IdentityDelivery = {
     }
     const url = new URL(resetPage);
     url.searchParams.set("token", token);
-    await sendEmail(to, "Film Contest · Đặt lại mật khẩu",
-      `Mở liên kết sau để đặt lại mật khẩu Film Contest. Liên kết có hiệu lực trong 15 phút.\n${url.href}`);
+    await sendEmail(to, "CINEGEN · Đặt lại mật khẩu",
+      `Mở liên kết sau để đặt lại mật khẩu CINEGEN. Liên kết có hiệu lực trong 15 phút.\n${url.href}`);
   },
 };

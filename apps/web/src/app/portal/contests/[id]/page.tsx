@@ -109,7 +109,7 @@ export default async function PortalContestOverviewPage({
             </Button>
           </Link>
           <Link href={`/portal/contests/${contest.id}/submissions`}>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs">
+            <Button size="sm" className="bg-brand-solid hover:bg-brand-hover text-white text-xs">
               <Film className="w-3.5 h-3.5 mr-1.5" /> Quản lý bài dự thi
             </Button>
           </Link>

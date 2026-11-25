@@ -30,7 +30,7 @@ export async function generateMetadata({
 
   if (!contest) {
     return {
-      title: "Không tìm thấy cuộc thi | Film Contest",
+      title: "Không tìm thấy cuộc thi | CINEGEN",
     };
   }
 
@@ -38,9 +38,9 @@ export async function generateMetadata({
     title: contest.name,
     description:
       contest.description ||
-      `Chi tiết cuộc thi nhiếp ảnh phim ${contest.name} trên nền tảng Film Contest.`,
+      `Chi tiết cuộc thi nhiếp ảnh phim ${contest.name} trên nền tảng CINEGEN.`,
     openGraph: {
-      title: `${contest.name} | Film Contest`,
+      title: `${contest.name} | CINEGEN`,
       description:
         contest.description ||
         `Tham gia gửi bài dự thi cho ${contest.name} và khám phá các tác phẩm ảnh phim đoạt giải.`,
@@ -51,7 +51,7 @@ export async function generateMetadata({
       title: contest.name,
       description:
         contest.description ||
-        `Khám phá cuộc thi ảnh phim ${contest.name} trên nền tảng Film Contest.`,
+        `Khám phá cuộc thi ảnh phim ${contest.name} trên nền tảng CINEGEN.`,
     },
   };
 }
@@ -92,7 +92,7 @@ export default async function ContestDetailPage({
   const isOngoing = contest.status === "ongoing";
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f4f7ff] text-slate-900 selection:bg-blue-600 selection:text-white font-sans">
+    <div className="min-h-screen flex flex-col bg-brand-canvas text-slate-900 selection:bg-brand-solid selection:text-white font-sans">
       <Navbar />
 
       <main className="flex-1 pb-24">
@@ -231,21 +231,21 @@ export default async function ContestDetailPage({
                 {contest.rules && contest.rules.length > 0 ? (
                   contest.rules.map((rule) => (
                     <li key={rule} className="flex items-start gap-3">
-                      <span className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-2 shrink-0" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-brand-solid mt-2 shrink-0" />
                       <span>{rule}</span>
                     </li>
                   ))
                 ) : (
                   <>
                     <li className="flex items-start gap-3">
-                      <span className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-2 shrink-0" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-brand-solid mt-2 shrink-0" />
                       <span>
                         Tác phẩm phải được chụp hoàn toàn bằng máy ảnh cơ analog
                         và film quang học truyền thống.
                       </span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <span className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-2 shrink-0" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-brand-solid mt-2 shrink-0" />
                       <span>
                         Nghiêm cấm mọi hình thức can thiệp bằng trí tuệ nhân tạo
                         (AI) hoặc chỉnh sửa làm thay đổi cấu trúc quang học hạt
@@ -253,7 +253,7 @@ export default async function ContestDetailPage({
                       </span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <span className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-2 shrink-0" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-brand-solid mt-2 shrink-0" />
                       <span>
                         Thí sinh có trách nhiệm lưu trữ dải phim âm bản gốc để
                         đối chứng khi Ban Giám khảo yêu cầu.

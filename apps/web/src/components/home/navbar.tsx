@@ -1,9 +1,10 @@
 "use client";
 
-import { Camera, LogOut, Menu, Shield, User, X } from "lucide-react";
+import { LogOut, Menu, Shield, User, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { BrandMark } from "@/components/brand-mark";
 
 type CurrentUser = {
   id?: string;
@@ -57,43 +58,36 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
       <div className="flex h-16 w-full items-center justify-between px-6 lg:px-12">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-600/25 group-hover:scale-105 transition-transform">
-            <Camera className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2">
-              FILM CONTEST
-            </span>
-            <p className="text-[11px] text-slate-500 font-mono">
-              Film Photography Platform
-            </p>
-          </div>
+        <Link href="/" className="flex items-center gap-2.5">
+          <BrandMark className="rounded-xl" />
+          <span className="text-lg font-bold tracking-tight text-foreground">
+            CINEGEN
+          </span>
         </Link>
 
         {/* Desktop Nav Links */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
           <Link
             href="/#ongoing-contests"
-            className="text-slate-600 hover:text-blue-600 transition-colors"
+            className="text-slate-600 hover:text-brand-solid transition-colors"
           >
             Cuộc thi đang diễn ra
           </Link>
           <Link
             href="/archive"
-            className="text-slate-600 hover:text-blue-600 transition-colors"
+            className="text-slate-600 hover:text-brand-solid transition-colors"
           >
             Triển lãm số (Archive)
           </Link>
           <Link
             href="/#ai-features"
-            className="text-slate-600 hover:text-blue-600 transition-colors"
+            className="text-slate-600 hover:text-brand-solid transition-colors"
           >
             Tính năng AI
           </Link>
           <Link
             href="/#how-it-works"
-            className="text-slate-600 hover:text-blue-600 transition-colors"
+            className="text-slate-600 hover:text-brand-solid transition-colors"
           >
             Thể lệ tham gia
           </Link>
@@ -106,16 +100,16 @@ export function Navbar() {
               {isManagementRole && (
                 <Link
                   href="/portal"
-                  className="flex items-center gap-1.5 rounded-xl bg-blue-50 border border-blue-200 px-3.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                  className="flex items-center gap-1.5 rounded-xl bg-brand-soft border border-brand-glow px-3.5 py-1.5 text-xs font-semibold text-brand-hover hover:bg-brand-soft transition-colors"
                 >
-                  <Shield className="w-3.5 h-3.5 text-blue-600" />
+                  <Shield className="w-3.5 h-3.5 text-brand-solid" />
                   <span>Vào Cổng Quản Trị</span>
                 </Link>
               )}
               <div className="flex items-center gap-2 text-xs text-slate-700 font-medium bg-slate-100 px-3 py-1.5 rounded-lg">
                 <User className="w-3.5 h-3.5 text-slate-500" />
                 <span className="max-w-[120px] truncate">{user.fullName || user.email}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-600 text-white font-bold">{user.role}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-brand-solid text-white font-bold">{user.role}</span>
               </div>
               <button
                 type="button"
@@ -130,13 +124,13 @@ export function Navbar() {
             <>
               <Link
                 href="/login"
-                className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-brand-solid transition-colors"
               >
                 Đăng nhập
               </Link>
               <Link
                 href="/register"
-                className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-blue-600/25 hover:bg-blue-700 active:scale-95 transition-all"
+                className="rounded-xl bg-brand-solid px-5 py-2 text-sm font-semibold text-white shadow-md shadow-brand-solid/25 hover:bg-brand-hover active:scale-95 transition-all"
               >
                 Đăng ký
               </Link>
@@ -201,7 +195,7 @@ export function Navbar() {
                   <Link
                     href="/portal"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center rounded-xl bg-blue-50 border border-blue-200 py-2.5 text-sm font-semibold text-blue-700"
+                    className="w-full text-center rounded-xl bg-brand-soft border border-brand-glow py-2.5 text-sm font-semibold text-brand-hover"
                   >
                     Vào Cổng Quản Trị (Portal)
                   </Link>
@@ -226,7 +220,7 @@ export function Navbar() {
                 <Link
                   href="/register"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-600/25 hover:bg-blue-700"
+                  className="w-full text-center rounded-xl bg-brand-solid py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-solid/25 hover:bg-brand-hover"
                 >
                   Đăng ký
                 </Link>

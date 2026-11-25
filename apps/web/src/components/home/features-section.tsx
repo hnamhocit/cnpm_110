@@ -8,7 +8,7 @@ export function FeaturesSection() {
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 uppercase tracking-wider mb-2">
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-solid uppercase tracking-wider mb-2">
             <Sparkles className="h-4 w-4" />
             <span>Công nghệ tiên phong</span>
           </div>
@@ -24,8 +24,8 @@ export function FeaturesSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Feature 1 */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:shadow-md hover:border-blue-300">
-            <div className="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:shadow-md hover:border-brand-glow">
+            <div className="h-12 w-12 rounded-xl bg-brand-soft text-brand-solid flex items-center justify-center mb-6">
               <Cpu className="h-6 w-6" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 mb-3">
@@ -49,8 +49,8 @@ export function FeaturesSection() {
           </div>
 
           {/* Feature 2 */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:shadow-md hover:border-blue-300">
-            <div className="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:shadow-md hover:border-brand-glow">
+            <div className="h-12 w-12 rounded-xl bg-brand-soft text-brand-solid flex items-center justify-center mb-6">
               <Camera className="h-6 w-6" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 mb-3">
@@ -73,8 +73,8 @@ export function FeaturesSection() {
           </div>
 
           {/* Feature 3 */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:shadow-md hover:border-blue-300">
-            <div className="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:shadow-md hover:border-brand-glow">
+            <div className="h-12 w-12 rounded-xl bg-brand-soft text-brand-solid flex items-center justify-center mb-6">
               <Award className="h-6 w-6" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 mb-3">
@@ -113,7 +113,7 @@ export function FeaturesSection() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
             <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white font-bold mb-4 shadow-md shadow-blue-600/30">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-brand-solid text-white font-bold mb-4 shadow-md shadow-brand-solid/30">
                 1
               </div>
               <h4 className="font-semibold text-slate-900 mb-2">
@@ -126,7 +126,7 @@ export function FeaturesSection() {
             </div>
 
             <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white font-bold mb-4 shadow-md shadow-blue-600/30">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-brand-solid text-white font-bold mb-4 shadow-md shadow-brand-solid/30">
                 2
               </div>
               <h4 className="font-semibold text-slate-900 mb-2">
@@ -139,7 +139,7 @@ export function FeaturesSection() {
             </div>
 
             <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white font-bold mb-4 shadow-md shadow-blue-600/30">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-brand-solid text-white font-bold mb-4 shadow-md shadow-brand-solid/30">
                 3
               </div>
               <h4 className="font-semibold text-slate-900 mb-2">

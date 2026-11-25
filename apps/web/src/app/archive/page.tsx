@@ -4,11 +4,11 @@ import { Navbar } from "@/components/home/navbar";
 import { ArchiveClientView } from "@/components/archive/archive-client-view";
 
 export const metadata: Metadata = {
-  title: "Triển lãm số (Digital Archive) | Film Contest",
+  title: "Triển lãm số (Digital Archive) | CINEGEN",
   description:
     "Thưởng lãm các tác phẩm nhiếp ảnh phim đoạt giải cao với chất lượng phân giải cao, thông số cuộn phim, lab scan và đánh giá của ban giám khảo.",
   openGraph: {
-    title: "Triển Lãm Số Di Sản Ảnh Phim | Film Contest",
+    title: "Triển Lãm Số Di Sản Ảnh Phim | CINEGEN",
     description:
       "Lưu trữ nghệ thuật ảnh phim analog, tra cứu theo Film Stock, khổ phim 35mm/120 và năm tổ chức.",
     type: "website",

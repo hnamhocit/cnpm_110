@@ -1,6 +1,6 @@
-# 🎬 Film Contest Platform - Monorepo
+# CINEGEN
 
-Nền tảng Quản lý Cuộc thi Nhiếp ảnh Phim tích hợp Trí tuệ Nhân tạo (**FilmContest-AI**) là hệ thống Monorepo toàn diện bao gồm: Backend RESTful API, Web Frontend và Mobile App (Flutter).
+Nền tảng Quản lý Cuộc thi Nhiếp ảnh Phim tích hợp Trí tuệ Nhân tạo (**CINEGEN**) là hệ thống Monorepo toàn diện bao gồm: Backend RESTful API, Web Frontend và Mobile App (Flutter).
 
 Dự án được điều phối bằng **[Turborepo](https://turbo.build/)** và sử dụng **[Bun](https://bun.sh/)** làm Package Manager & Runtime chính.
 

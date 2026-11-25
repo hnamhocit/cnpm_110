@@ -99,7 +99,7 @@ export default async function PortalDashboardPage() {
 
         <div className="flex items-center gap-3">
           <Link href="/portal/contests/create">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm shadow-blue-600/20">
+            <Button className="bg-brand-solid hover:bg-brand-hover text-white text-xs font-semibold shadow-sm shadow-brand-solid/20">
               + Tạo cuộc thi mới
             </Button>
           </Link>

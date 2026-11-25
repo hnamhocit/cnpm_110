@@ -100,7 +100,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         {/* PAGE TITLE */}
         <div className="min-w-0">
           <p className="truncate text-xs text-slate-500 font-medium">
-            Film Contest / {pageName}
+            CINEGEN / {pageName}
           </p>
 
           <h2 className="truncate text-sm font-bold text-slate-900 sm:text-base">
@@ -117,7 +117,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </span>
 
           {/* AVATAR */}
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-sm shadow-blue-600/30">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-solid text-xs font-bold text-white shadow-sm shadow-brand-solid/30">
             {initials}
           </span>
 
@@ -128,7 +128,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         <div className="absolute right-0 top-full z-40 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-3 text-slate-900 shadow-xl">
           <div className="border-b border-slate-100 pb-3">
             <p className="font-semibold text-slate-900">{displayName}</p>
-            <p className="mt-0.5 text-xs text-blue-600 font-medium">
+            <p className="mt-0.5 text-xs text-brand-solid font-medium">
               {roleSubtitle}
             </p>
             {user?.email && (
