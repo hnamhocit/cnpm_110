@@ -1,14 +1,16 @@
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
-import { REFRESH_COOKIE } from "@/lib/auth-cookie-options";
-import { clearAuthCookies } from "@/lib/auth-cookies";
+import {
+  ACCESS_COOKIE,
+  accessCookieOptions,
+  REFRESH_COOKIE,
+  refreshCookieOptions,
+} from "@/lib/auth-cookie-options";
 import { clearRefreshCache } from "@/lib/auth-tokens";
 import { API_INTERNAL_URL } from "@/lib/server-api";
 
-export async function POST() {
-  const store = await cookies();
-  const refreshToken = store.get(REFRESH_COOKIE)?.value;
+export async function POST(request: NextRequest) {
+  const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value;
 
   // BR-04: thu hồi refresh token phía backend trước khi xóa cookie.
   if (refreshToken) {
@@ -26,14 +28,25 @@ export async function POST() {
   }
 
   clearRefreshCache();
-  await clearAuthCookies();
 
   const response = NextResponse.json({
     success: true,
     message: "Logged out successfully",
   });
+  response.cookies.set(ACCESS_COOKIE, "", {
+    ...accessCookieOptions(),
+    maxAge: 0,
+  });
+  response.cookies.set(REFRESH_COOKIE, "", {
+    ...refreshCookieOptions(),
+    maxAge: 0,
+  });
+
   // NextResponse.cookies indexes by name, so append the legacy path separately.
-  response.headers.append("Set-Cookie", `${REFRESH_COOKIE}=; Path=/; Max-Age=0`);
+  response.headers.append(
+    "Set-Cookie",
+    `${REFRESH_COOKIE}=; Path=/; Max-Age=0`,
+  );
 
   return response;
 }
