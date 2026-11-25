@@ -1,8 +1,8 @@
-# 🌐 Film Contest - Web Application
+# 🌐 CINEGEN - Web Application
 
-Ứng dụng Frontend cho dự án Film Contest, được xây dựng bằng **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4** và **Biome**.
+Ứng dụng Frontend cho dự án CINEGEN, được xây dựng bằng **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4** và **Biome**.
 
-Mọi chức năng, giao diện và luồng người dùng bắt buộc tuân theo **[Master SRS](../../docs/srs.md)** và các tài liệu đặc tả liên quan trong thư mục [`docs/`](../../docs/).
+Mọi chức năng, giao diện và luồng người dùng bắt buộc tuân theo **[Master SRS](../../docs/srs.md)** và các tài liệu đặc tả liên quan trong [chỉ mục module](../../docs/srs.md#4-module-specifications-mapping-chỉ-mục-ánh-xạ-module-chi-tiết).
 
 ---
 
@@ -80,7 +80,7 @@ apps/web/
 │   │   │   ├── judge/login/      # Đăng nhập dành cho Giám khảo
 │   │   │   ├── login/            # Đăng nhập chung
 │   │   │   └── register/         # Đăng ký tài khoản
-│   │   ├── portal/               # Khu vực quản trị / ban giám khảo (Guard route)
+│   │   ├── portal/               # Khu vực Admin và Organizer
 │   │   │   ├── contests/         # Quản lý cuộc thi
 │   │   │   └── reports/          # Báo cáo thống kê
 │   │   ├── forbidden/            # Trang 403 Forbidden

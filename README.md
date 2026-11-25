@@ -9,8 +9,8 @@ Dự án được điều phối bằng **[Turborepo](https://turbo.build/)** v�
 ## 📌 Mục lục
 
 - [Cấu trúc Monorepo](#-cấu-trúc-monorepo)
-- [Tài liệu Đặc tả AI-First (SSOT)](#-tài-liệu-đặc-tả-ai-first-ssot)
-- [Yêu cầu Môi trường (Prerequisites)](#-yêu-cầu-môi-trường-prerequisites)
+- [Tài liệu dự án](#tài-liệu-dự-án)
+- [Yêu cầu môi trường](#yêu-cầu-môi-trường)
 - [Khởi động Nhanh (Quick Start)](#-khởi-động-nhanh-quick-start)
 - [Các lệnh Điều phối Dự án (Scripts)](#-các-lệnh-điều-phối-dự-án-scripts)
 - [Cài đặt Thư viện mới (Add Dependencies)](#-cài-đặt-thư-viện-mới-add-dependencies)
@@ -31,7 +31,7 @@ film-contest/
 │   ├── typescript-config/ # Cấu hình TypeScript dùng chung (@repo/typescript-config)
 │   └── eslint-config/     # Cấu hình ESLint & Linting rules (@repo/eslint-config)
 │
-├── docs/                  # Tài liệu đặc tả Master SRS, 10 Module Specs, OpenAPI 3.0 & Postman
+├── docs/                  # SRS, đặc tả kỹ thuật, OpenAPI và tiến độ
 ├── AGENTS.md              # Chỉ dẫn bắt buộc dành cho AI Coding Agents
 ├── .cursorrules           # Cấu hình kiểm soát context cho Cursor AI
 ├── bun.lock               # Lockfile chính thức của Bun (KHÔNG xoá, KHÔNG dùng npm)
@@ -41,44 +41,26 @@ film-contest/
 
 ### Các Ứng dụng Thành phần:
 
-*   **[`apps/api`](apps/api/)**: RESTful API service hiệu năng cao với **Hono**, chạy native trên **Bun runtime**, tích hợp **PostgreSQL 16+**, **`pgvector`** và **Drizzle ORM**.
-*   **[`apps/web`](apps/web/)**: Ứng dụng Web dành cho Quản trị viên, Ban tổ chức, Giám khảo và Thí sinh xây dựng trên **Next.js 16 (App Router)**, **React 19**, **Tailwind CSS v4** và **Biome**.
-*   **[`apps/mobile`](apps/mobile/)**: Ứng dụng di động (iOS / Android) bằng **Flutter**, phục vụ ghi chép sổ tay cuộn phim ngoài hiện trường (Offline-First) và chụp tải dải phim âm bản đối chứng.
+*   **[`apps/api`](apps/api/README.md)**: RESTful API service hiệu năng cao với **Hono**, chạy native trên **Bun runtime**, tích hợp **PostgreSQL 16+**, **`pgvector`** và **Drizzle ORM**.
+*   **[`apps/web`](apps/web/README.md)**: Ứng dụng Web dành cho Quản trị viên, Ban tổ chức, Giám khảo và Thí sinh xây dựng trên **Next.js 16 (App Router)**, **React 19**, **Tailwind CSS v4** và **Biome**.
+*   **[`apps/mobile`](apps/mobile/README.md)**: Ứng dụng Flutter (iOS / Android) để xem cuộc thi, nộp ảnh kèm thông số phim và theo dõi trạng thái bài thi.
 
 ---
 
-## 📚 Tài liệu Đặc tả AI-First (SSOT)
+## Tài liệu dự án
 
-[SRS](docs/srs.md) quy định nghiệp vụ. Các module trong [`docs/`](docs/) mô tả thiết kế kỹ thuật và hợp đồng API.
-
-### Tài liệu Tổng thể (Master SRS)
-*   📖 **[Master SRS Specification](docs/srs.md)**: Đặc tả toàn diện hệ thống, 43 Use Cases cốt lõi, sơ đồ kiến trúc Mermaid, ma trận phân quyền màn hình, 25 Business Rules (`BR-01` $\to$ `BR-25`), 7 Common Rules và 28 Mã thông báo chuẩn.
-
-### Danh mục Module Specifications
-
-| Module | Tệp đặc tả | Phạm vi nghiệp vụ cốt lõi |
-| :---: | :--- | :--- |
-| **01** | [`docs/ai/01-auth-and-rbac.md`](docs/ai/01-auth-and-rbac.md) | Xác thực JWT, Refresh Token Rotation, Ma trận phân quyền RBAC, Chống brute-force |
-| **02** | [`docs/ai/02-analog-master-data.md`](docs/ai/02-analog-master-data.md) | Danh mục Phim (Film Stocks), Máy ảnh, Ống kính, Phòng Lab tráng/quét phim |
-| **03** | [`docs/ai/03-contest-lifecycle.md`](docs/ai/03-contest-lifecycle.md) | Vòng đời cuộc thi, Hạng mục, Chuẩn hóa trọng số 100% (BR-15), Lịch trình tuần tự (BR-08) |
-| **04** | [`docs/ai/04-film-logbook.md`](docs/ai/04-film-logbook.md) | Sổ tay cuộn phim, Khung hình, Giới hạn vật lý khổ phim (BR-23), Push/Pull ISO |
-| **05** | [`docs/ai/05-submission-and-proof.md`](docs/ai/05-submission-and-proof.md) | Nộp bài thi, Chống trùng lặp (BR-05), Đồng hồ 48h nộp âm bản (BR-19), Chuẩn ảnh (BR-07) |
-| **06** | [`docs/ai/06-ai-verification.md`](docs/ai/06-ai-verification.md) | Giám định AI ($P_{AI} \ge 75\%$), Trùng lặp pHash 64-bit, Vector CLIP, Redis Worker Queue |
-| **07** | [`docs/ai/07-blind-judging.md`](docs/ai/07-blind-judging.md) | Chấm thi ẩn danh kép (BR-12), Giám khảo độc lập (BR-13), Lệch điểm > 30% (BR-14) |
-| **08** | [`docs/ai/08-archive-and-exhibition.md`](docs/ai/08-archive-and-exhibition.md) | Tính bất biến kết quả (BR-16), Lưu trữ 2 vùng Private/Public Watermark (BR-17) |
-| **09** | [`docs/ai/09-api-contracts.md`](docs/ai/09-api-contracts.md) | Chuẩn hóa DTO, Response Envelopes và hợp đồng API dùng chung đa nền tảng |
-| **10** | [`docs/ai/10-database-and-storage.md`](docs/ai/10-database-and-storage.md) | DDL PostgreSQL 16+, Extension `pgvector`, Bảng `digital_assets`, Cloud Storage S3/R2 |
-
-Xem [danh mục endpoint](docs/ai/09-api-contracts.md#6-danh-mục-endpoint) để biết trạng thái triển khai trong [OpenAPI](docs/openapi.yaml).
+- [SRS](docs/srs.md) quy định nghiệp vụ, quyền và mã thông báo. [Chỉ mục module trong SRS](docs/srs.md#4-module-specifications-mapping-chỉ-mục-ánh-xạ-module-chi-tiết) dẫn tới từng đặc tả kỹ thuật.
+- [Hợp đồng API](docs/ai/09-api-contracts.md) và [OpenAPI](docs/openapi.yaml) ghi DTO, endpoint và trạng thái triển khai.
+- [Tổng quan tiến độ](docs/progress/overview.md) và [bảng sprint](docs/progress/sprints.md) ghi phần đã có và phần còn thiếu.
 
 ---
 
-## 🛠️ Yêu cầu Môi trường (Prerequisites)
+## Yêu cầu môi trường
 
-- **Bun**: `>= 1.1.0` (Cài đặt: `curl -fsSL https://bun.sh/install | bash`)
-- **Node.js**: `>= 20.0.0` (Hỗ trợ tương thích công cụ tooling)
-- **PostgreSQL**: `>= 16.0` (Kèm extension `uuid-ossp` và `vector`)
-- **Flutter SDK**: `>= 3.19.0` (Nếu phát triển ứng dụng di động)
+- **Bun** theo phiên bản trong [`package.json`](package.json).
+- **Node.js**: `>= 24` theo [`package.json`](package.json).
+- **PostgreSQL**: xem [hướng dẫn database](apps/api/README-DATABASE.md).
+- **Flutter SDK**: xem [hướng dẫn Mobile](apps/mobile/README.md).
 
 > [!IMPORTANT]
 > Dự án sử dụng **Bun** làm runtime và package manager duy nhất. **Tuyệt đối KHÔNG sử dụng `npm`, `yarn` hoặc `pnpm`** để tránh xung đột file lock và hỏng workspace resolution.
@@ -102,7 +84,9 @@ cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 ```
 
-### 3. Khởi tạo Cơ sở Dữ liệu
+### 3. Khởi tạo cơ sở dữ liệu
+
+Tạo database và thiết lập `DATABASE_URL` theo [hướng dẫn PostgreSQL](apps/api/README-DATABASE.md).
 ```bash
 bun --filter api db:migrate
 bun --filter api db:seed
@@ -135,7 +119,7 @@ Các lệnh thực thi tại thư mục gốc:
 | `bun dev` | Chạy đồng thời dev server toàn bộ workspace qua Turborepo |
 | `bun run build` | Build production cho tất cả ứng dụng (`turbo run build`) |
 | `bun run lint` | Kiểm tra cú pháp và chất lượng mã nguồn (`turbo run lint`) |
-| `bun run format` | Định dạng code bằng Prettier / Biome (`turbo run format`) |
+| `bun run format` | Chạy Prettier từ gốc repo |
 | `bun run check-types` | Kiểm tra tĩnh kiểu dữ liệu TypeScript toàn bộ dự án |
 | `bun run test` | Chạy unit test trên toàn monorepo (`turbo run test`) |
 
@@ -158,12 +142,6 @@ bun add -d <package-name>
 # Thêm package vào Mobile (Flutter):
 cd apps/mobile && flutter pub add <package-name>
 ```
-
----
-
-## Theo dõi tiến độ
-
-Xem [thứ tự triển khai, độ phủ theo SRS và đối chiếu Jira](docs/progress/overview.md).
 
 ---
 
