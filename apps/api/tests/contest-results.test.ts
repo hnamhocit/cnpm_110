@@ -1,20 +1,15 @@
 import { describe, expect, test, spyOn } from "bun:test";
-import { Hono } from "hono";
+import { createTestApp } from "./helpers/test-app";
 import { pool } from "../src/db";
-import contests from "../src/routes/contests";
-
-function createTestApp() {
-  const app = new Hono();
-  app.route("/api/v1/contests", contests);
-  return app;
-}
+import contests from "../src/routes/contests.route";
 
 describe("FPC-100: GET /api/v1/contests/:id/results (Winners Showcase)", () => {
   const app = createTestApp();
+  app.route("/api/v1/contests", contests);
 
   test("Returns 404 when contest does not exist or is deleted", async () => {
     const querySpy = spyOn(pool, "query").mockImplementation(async (sql: any) => {
-      if (typeof sql === "string" && sql.includes("FROM contests")) {
+      if (sql.text.includes('from "contests"')) {
         return { rowCount: 0, rows: [] } as any;
       }
       return { rowCount: 0, rows: [] } as any;
@@ -33,15 +28,15 @@ describe("FPC-100: GET /api/v1/contests/:id/results (Winners Showcase)", () => {
 
   test("Returns 400 when contest is in draft status (not published yet)", async () => {
     const querySpy = spyOn(pool, "query").mockImplementation(async (sql: any) => {
-      if (typeof sql === "string" && sql.includes("FROM contests")) {
+      if (sql.text.includes('from "contests"')) {
         return {
           rowCount: 1,
           rows: [
-            {
-              id: "550e8400-e29b-41d4-a716-446655440000",
-              name: "Cuộc thi Ảnh Phim 2026",
-              status: "draft",
-            },
+            [
+              "550e8400-e29b-41d4-a716-446655440000",
+              "Cuộc thi Ảnh Phim 2026",
+              "draft",
+            ],
           ],
         } as any;
       }
@@ -61,67 +56,64 @@ describe("FPC-100: GET /api/v1/contests/:id/results (Winners Showcase)", () => {
 
   test("Returns 200 with locked results and podium winners when contest is published (BR-16)", async () => {
     const querySpy = spyOn(pool, "query").mockImplementation(async (sql: any) => {
-      if (typeof sql === "string" && sql.includes("FROM contests")) {
+      if (sql.text.includes('from "contests"')) {
         return {
           rowCount: 1,
           rows: [
-            {
-              id: "550e8400-e29b-41d4-a716-446655440000",
-              name: "Cuộc thi Nhiếp ảnh Phim Mùa Thu 2026",
-              status: "published",
-            },
+            [
+              "550e8400-e29b-41d4-a716-446655440000",
+              "Cuộc thi Nhiếp ảnh Phim Mùa Thu 2026",
+              "published",
+            ],
           ],
         } as any;
       }
-      if (typeof sql === "string" && sql.includes("FROM submissions")) {
+      if (sql.text.includes('from "submissions"')) {
         return {
           rowCount: 3,
           rows: [
-            {
-              submission_id: "sub-1",
-              title: "Sapa Mùa Lúa Chín",
-              photo_url: "https://example.com/sapa.jpg",
-              negative_proof_path: "proofs/sapa_negative.jpg",
-              submission_status: "APPROVED",
-              created_at: new Date(),
-              author_name: "Hoàng Sỹ Sáng",
-              film_brand: "Kodak",
-              film_stock: "Kodak Portra 400",
-              film_format: "135",
-              camera: "Leica M6",
-              lens: "Summicron 35mm f/2",
-              dev_lab: "LLab Saigon",
-            },
-            {
-              submission_id: "sub-2",
-              title: "Phố Cổ Ban Chiều",
-              photo_url: "https://example.com/hanoi.jpg",
-              negative_proof_path: "proofs/hanoi_negative.jpg",
-              submission_status: "APPROVED",
-              created_at: new Date(),
-              author_name: "Lê Minh Tuấn",
-              film_brand: "Fujifilm",
-              film_stock: "Fujifilm Pro 400H",
-              film_format: "135",
-              camera: "Contax T2",
-              lens: "Zeiss Sonnar 38mm f/2.8",
-              dev_lab: "Croplab Hà Nội",
-            },
-            {
-              submission_id: "sub-3",
-              title: "Ngư Dân Đầm Chuồn",
-              photo_url: "https://example.com/hue.jpg",
-              negative_proof_path: "proofs/hue_negative.jpg",
-              submission_status: "APPROVED",
-              created_at: new Date(),
-              author_name: "Trần Bảo Ngọc",
-              film_brand: "Ilford",
-              film_stock: "Ilford HP5 Plus",
-              film_format: "120_66",
-              camera: "Hasselblad 500C/M",
-              lens: "Planar 80mm f/2.8",
-              dev_lab: "Zone5 Film Lab",
-            },
+            [
+              "sub-1",
+              "Sapa Mùa Lúa Chín",
+              "https://example.com/sapa.jpg",
+              "proofs/sapa_negative.jpg",
+              "APPROVED",
+              "Hoàng Sỹ Sáng",
+              "Kodak",
+              "Kodak Portra 400",
+              "135",
+              "Leica M6",
+              "Summicron 35mm f/2",
+              "LLab Saigon",
+            ],
+            [
+              "sub-2",
+              "Phố Cổ Ban Chiều",
+              "https://example.com/hanoi.jpg",
+              "proofs/hanoi_negative.jpg",
+              "APPROVED",
+              "Lê Minh Tuấn",
+              "Fujifilm",
+              "Fujifilm Pro 400H",
+              "135",
+              "Contax T2",
+              "Zeiss Sonnar 38mm f/2.8",
+              "Croplab Hà Nội",
+            ],
+            [
+              "sub-3",
+              "Ngư Dân Đầm Chuồn",
+              "https://example.com/hue.jpg",
+              "proofs/hue_negative.jpg",
+              "APPROVED",
+              "Trần Bảo Ngọc",
+              "Ilford",
+              "Ilford HP5 Plus",
+              "120_66",
+              "Hasselblad 500C/M",
+              "Planar 80mm f/2.8",
+              "Zone5 Film Lab",
+            ],
           ],
         } as any;
       }

@@ -35,7 +35,21 @@ export default function OrganizerContestsPage() {
     const fetchContests = async () => {
       try {
         setLoading(true);
-        const res = await http.get("/api/v1/contests");
+        // RBAC: Organizer chỉ thấy cuộc thi do mình quản lý, Admin xem tất cả
+        let url = "/api/v1/contests";
+        try {
+          const userRes = await fetch("/api/auth/me");
+          if (userRes.ok) {
+            const userData = await userRes.json();
+            if (userData.user?.role === "Organizer" && userData.user?.id) {
+              url = `/api/v1/contests?createdBy=${userData.user.id}`;
+            }
+          }
+        } catch {
+          // ignore
+        }
+
+        const res = await http.get(url);
         const raw = res.data?.data ?? res.data;
         const items = Array.isArray(raw)
           ? raw
@@ -135,7 +149,7 @@ export default function OrganizerContestsPage() {
                       href={`/portal/contests/${contest.id}/submissions`}
                       className="flex-1"
                     >
-                      <Button className="w-full text-xs bg-blue-600 hover:bg-blue-700 text-white">
+                      <Button className="w-full text-xs bg-brand-solid hover:bg-brand-hover text-white">
                         Bài dự thi
                       </Button>
                     </Link>

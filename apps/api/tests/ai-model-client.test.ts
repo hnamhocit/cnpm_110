@@ -1,6 +1,5 @@
-
 import { afterEach, expect, test, mock } from "bun:test";
-import { detectAiGeneratedImage } from "../src/services/ai-model-client";
+import { detectAiGeneratedImage } from "../src/services/ai/ai-model-client";
 
 const originalFetch = globalThis.fetch;
 const originalUrl = process.env.AI_MODEL_URL;
@@ -33,7 +32,7 @@ test("FPC-54: Nhận AI Confidence Score từ API", async () => {
         headers: { "Content-Type": "application/json" },
       },
     ),
-) as unknown as typeof fetch;
+  ) as unknown as typeof fetch;
 
   const result = await detectAiGeneratedImage(
     "https://example.com/test.jpg",
@@ -53,7 +52,7 @@ test("FPC-54: Từ chối AI Score không hợp lệ", async () => {
         headers: { "Content-Type": "application/json" },
       },
     ),
-) as unknown as typeof fetch;
+  ) as unknown as typeof fetch;
 
   expect(
     detectAiGeneratedImage("https://example.com/test.jpg"),

@@ -2,20 +2,13 @@
 
 import Link from "next/link";
 import { ShieldAlert, ArrowLeft, LogOut } from "lucide-react";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { logout } from "@/lib/logout";
 
 export default function ForbiddenPage() {
   const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch (e) {
-      console.error("Logout failed:", e);
+    if (await logout()) {
+      window.location.replace("/login");
     }
-    // Purge cookies & store
-    // biome-ignore lint/suspicious/noDocumentCookie: cookie purge
-    document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    useAuthStore.getState().clear();
-    window.location.href = "/login";
   };
 
   return (

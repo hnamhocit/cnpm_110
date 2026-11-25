@@ -1,12 +1,12 @@
 import {
   ArrowLeft,
   Calendar,
-  Clock,
+  ClipboardCheck,
   ExternalLink,
   Film,
   Layers,
+  Medal,
   Settings,
-  Sparkles,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/card";
 import { formatContestDate } from "@/lib/contest-utils";
 import { API_INTERNAL_URL } from "@/lib/server-api";
+import { ContestStatusActions } from "./status-actions";
 
 type ContestDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -98,14 +99,23 @@ export default async function PortalContestOverviewPage({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <ContestStatusActions
+            contestId={contest.id}
+            currentStatus={contest.status}
+          />
           <Link href={`/contests/${contest.id}`} target="_blank">
             <Button variant="outline" size="sm" className="text-xs">
               <ExternalLink className="w-3.5 h-3.5 mr-1.5" /> Xem trang công khai
             </Button>
           </Link>
           <Link href={`/portal/contests/${contest.id}/submissions`}>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs">
+            <Button size="sm" className="bg-brand-solid hover:bg-brand-hover text-white text-xs">
               <Film className="w-3.5 h-3.5 mr-1.5" /> Quản lý bài dự thi
+            </Button>
+          </Link>
+          <Link href="/portal/contests/judging-progress">
+            <Button variant="outline" size="sm" className="text-xs">
+              <ClipboardCheck className="w-3.5 h-3.5" /> Tiến độ chấm thi
             </Button>
           </Link>
         </div>

@@ -5,11 +5,22 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-brand-canvas: var(--brand-canvas);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-cyan: var(--brand-cyan);
+  --color-brand-indigo: var(--brand-indigo);
+  --color-brand-violet: var(--brand-violet);
+  --color-brand-solid: var(--brand-solid);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-glow: var(--brand-glow);
+  --color-brand-ring: var(--brand-ring);
+  --color-brand-text: var(--brand-text);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-geist), var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-heading: var(--font-jakarta), var(--font-geist), ui-sans-serif, system-ui, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,72 +60,93 @@
 }
 
 :root {
+  --brand-ink: #06071b;
+  --brand-canvas: #f7f6fd;
+  --brand-cyan: #126f92;
+  --brand-indigo: #4349d7;
+  --brand-violet: #7b3bc6;
+  --brand-solid: #4937bd;
+  --brand-hover: #372894;
+  --brand-soft: #f0edff;
+  --brand-glow: #ccc4ff;
+  --brand-ring: #7661e0;
+  --brand-text: #402d9e;
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: #171632;
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: var(--foreground);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #2563eb;
+  --popover-foreground: var(--foreground);
+  --primary: var(--brand-solid);
   --primary-foreground: #ffffff;
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --secondary: #f2effa;
+  --secondary-foreground: #292341;
+  --muted: #f4f2fa;
+  --muted-foreground: #5d5873;
+  --accent: var(--brand-soft);
+  --accent-foreground: var(--brand-text);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: #2563eb;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --border: #e2def1;
+  --input: var(--border);
+  --ring: var(--brand-ring);
+  --chart-1: var(--brand-indigo);
+  --chart-2: var(--brand-cyan);
+  --chart-3: var(--brand-violet);
+  --chart-4: #ae67d9;
+  --chart-5: #476cbe;
   --radius: 0.625rem;
   --sidebar: #ffffff;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #2563eb;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eff6ff;
-  --sidebar-accent-foreground: #1d4ed8;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #2563eb;
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: #3b82f6;
-  --primary-foreground: #ffffff;
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --brand-canvas: var(--brand-ink);
+  --brand-cyan: #6adeff;
+  --brand-indigo: #a7adff;
+  --brand-violet: #d8a4ff;
+  --brand-solid: #b1a6ff;
+  --brand-hover: #c9bdff;
+  --brand-soft: #28214b;
+  --brand-glow: #40346d;
+  --brand-ring: #ad9aff;
+  --brand-text: #dfd3ff;
+  --background: var(--brand-ink);
+  --foreground: #f1edff;
+  --card: #11112a;
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --primary: var(--brand-solid);
+  --primary-foreground: var(--brand-ink);
+  --secondary: #201e39;
+  --secondary-foreground: var(--foreground);
+  --muted: var(--secondary);
+  --muted-foreground: #b8b2ce;
+  --accent: var(--brand-soft);
+  --accent-foreground: var(--brand-text);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: #3b82f6;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: #1e293b;
-  --sidebar-foreground: #f8fafc;
-  --sidebar-primary: #3b82f6;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1e3a8a;
-  --sidebar-accent-foreground: #bfdbfe;
-  --sidebar-border: #334155;
-  --sidebar-ring: #3b82f6;
+  --border: #2c2845;
+  --input: var(--border);
+  --ring: var(--brand-ring);
+  --chart-1: var(--brand-indigo);
+  --chart-2: var(--brand-cyan);
+  --chart-3: var(--brand-violet);
+  --chart-4: #ae67d9;
+  --chart-5: #476cbe;
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 }
 
 @layer base {
@@ -122,21 +154,24 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
   }
   html {
     @apply font-sans;
   }
 }
 
-/* FPC Design Tokens - Unified Light Blue Theme */
+/* CINEGEN portal tokens */
 :root {
-  --portal-sidebar: #0f172a;
-  --portal-bg: #f8fafc;
-  --portal-background: #f8fafc;
+  --portal-sidebar: var(--brand-ink);
+  --portal-bg: var(--brand-canvas);
+  --portal-background: var(--portal-bg);
   --portal-surface: #ffffff;
-  --portal-primary: #2563eb;
-  --portal-text: #0f172a;
-  --portal-muted: #64748b;
-  --portal-border: #e2e8f0;
+  --portal-primary: var(--primary);
+  --portal-text: var(--foreground);
+  --portal-muted: var(--muted-foreground);
+  --portal-border: var(--border);
 }

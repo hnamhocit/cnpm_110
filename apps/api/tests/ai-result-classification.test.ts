@@ -1,6 +1,5 @@
-
 import { describe, expect, test } from "bun:test";
-import { classifyAiResult } from "../src/services/ai-result-classification";
+import { classifyAiResult } from "../src/services/ai/ai-result-classification";
 
 describe("FPC-55 AI result classification", () => {
   test("Low AI probability returns VERIFIED", () => {

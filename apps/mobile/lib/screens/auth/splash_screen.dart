@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/cinegen_theme.dart';
 import '../../core/providers/auth_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -34,15 +35,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     final scheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: scheme.primary,
+      backgroundColor: cinegenInk,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.photo_camera_outlined, size: 96, color: scheme.onPrimary),
+            const CinegenMark(size: 148),
             const SizedBox(height: 16),
             Text(
-              'Film Contest',
+              cinegenName,
               style: theme.textTheme.headlineMedium?.copyWith(
                 color: scheme.onPrimary,
                 fontWeight: FontWeight.bold,

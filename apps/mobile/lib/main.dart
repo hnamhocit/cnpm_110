@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/services/notification_service.dart';
+import 'core/theme/cinegen_theme.dart';
 import 'router/app_router.dart';
 
 void main() {
@@ -13,12 +15,10 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Film Contest',
+      title: cinegenName,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF386A5A)),
-      ),
+      scaffoldMessengerKey: rootScaffoldMessengerKey,
+      theme: cinegenTheme,
       routerConfig: appRouter,
     );
   }

@@ -1,4 +1,3 @@
-
 import { describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
@@ -11,7 +10,7 @@ import {
   submissions,
   users,
 } from "../src/db/schema";
-import { recoverStaleAiJobs } from "../src/services/ai-job-queue";
+import { recoverStaleAiJobs } from "../src/services/ai/ai-job-queue";
 
 describe("FPC-54: AI Job Recovery DB integration", () => {
   test("Recover stale jobs and preserve completed jobs", async () => {

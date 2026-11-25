@@ -1,11 +1,10 @@
-
 import { pool } from "./db";
 import {
   claimNextAiJob,
   failAiJob,
   recoverStaleAiJobs,
-} from "./services/ai-job-queue";
-import { processAiJob } from "./services/ai-job-processor";
+} from "./services/ai/ai-job-queue";
+import { processAiJob } from "./services/ai/ai-job-processor";
 
 const POLL_INTERVAL_MS = 5000;
 const RECOVERY_INTERVAL_MS = 60_000;

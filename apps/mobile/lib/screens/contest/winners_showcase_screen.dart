@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/components/cached_image_widget.dart';
+import '../../core/components/shimmer_loading.dart';
 import '../../core/providers/contest_provider.dart';
+import '../../core/services/contest_cache_manager.dart';
+import '../../core/utils/page_transitions.dart';
 import '../../models/contest_winner.dart';
+import 'photo_detail_screen.dart';
 
 /// Màn hình Bảng vàng vinh danh (Winners Showcase - FPC-100 / SCR-PAR-08)
 /// Tuân thủ:
@@ -33,6 +38,25 @@ class _WinnersShowcaseScreenState extends ConsumerState<WinnersShowcaseScreen> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _openPhotoDetail(BuildContext context, ContestWinner winner) {
+    try {
+      context.push(
+        '/contests/${widget.contestId}/winners/${winner.submissionId}',
+        extra: winner,
+      );
+    } catch (_) {
+      Navigator.of(context).push(
+        AppTransitions.buildPageRoute(
+          page: PhotoDetailScreen(
+            winner: winner,
+            contestTitle: widget.contestTitle,
+          ),
+          isDetail: true,
+        ),
+      );
+    }
   }
 
   void _showImageLightbox(BuildContext context, ContestWinner winner) {
@@ -266,16 +290,7 @@ class _WinnersShowcaseScreenState extends ConsumerState<WinnersShowcaseScreen> {
         ],
       ),
       body: resultsAsync.when(
-        loading: () => const Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Đang tải danh sách vinh danh...'),
-            ],
-          ),
-        ),
+        loading: () => const WinnersShowcaseSkeleton(),
         error: (error, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -329,6 +344,15 @@ class _WinnersShowcaseScreenState extends ConsumerState<WinnersShowcaseScreen> {
             );
           }
 
+          // Precache trước 5 ảnh đầu tiên để cuộn siêu mượt không khựng
+          for (var i = 0; i < results.winners.length && i < 5; i++) {
+            ContestCacheManager.precache(
+              context,
+              results.winners[i].photoUrl,
+              isThumbnail: true,
+            );
+          }
+
           return RefreshIndicator(
             onRefresh: () async {
               ref.invalidate(contestResultsProvider(widget.contestId));
@@ -336,6 +360,7 @@ class _WinnersShowcaseScreenState extends ConsumerState<WinnersShowcaseScreen> {
             },
             child: CustomScrollView(
               controller: _scrollController,
+              cacheExtent: 600,
               slivers: [
                 // Top Header Banner
                 SliverToBoxAdapter(
@@ -456,16 +481,20 @@ class _WinnersShowcaseScreenState extends ConsumerState<WinnersShowcaseScreen> {
                   ),
                 ),
 
-                // Winner Cards List
+                // Winner Cards List (Tối ưu hóa render danh sách lớn)
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final winner = results.winners[index];
-                        return _buildWinnerCard(context, winner);
+                        return RepaintBoundary(
+                          child: _buildWinnerCard(context, winner),
+                        );
                       },
                       childCount: results.winners.length,
+                      addAutomaticKeepAlives: true,
+                      addRepaintBoundaries: true,
                     ),
                   ),
                 ),
@@ -553,7 +582,7 @@ class _WinnersShowcaseScreenState extends ConsumerState<WinnersShowcaseScreen> {
     final tier = winner.tier;
 
     return InkWell(
-      onTap: () => _showImageLightbox(context, winner),
+      onTap: () => _openPhotoDetail(context, winner),
       borderRadius: BorderRadius.circular(12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -585,15 +614,13 @@ class _WinnersShowcaseScreenState extends ConsumerState<WinnersShowcaseScreen> {
                   child: CachedImageWidget(
                     imageUrl: winner.photoUrl,
                     fit: BoxFit.cover,
-                    placeholder: (ctx, url) => Container(
-                      color: Colors.grey.shade800,
-                      child: const Center(
-                        child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
+                    useShimmer: true,
+                    memCacheWidth: 200,
+                    memCacheHeight: 200,
+                    maxWidthDiskCache: 600,
+                    maxHeightDiskCache: 600,
+                    placeholder: (ctx, url) => const ShimmerImagePlaceholder(
+                      showIcon: false,
                     ),
                     errorWidget: (ctx, url, error) => Container(
                       color: Colors.grey.shade800,
@@ -764,7 +791,7 @@ class _WinnersShowcaseScreenState extends ConsumerState<WinnersShowcaseScreen> {
 
           // Photo Preview with Watermark Overlay (BR-17)
           GestureDetector(
-            onTap: () => _showImageLightbox(context, winner),
+            onTap: () => _openPhotoDetail(context, winner),
             child: Stack(
               children: [
                 Hero(
@@ -774,11 +801,14 @@ class _WinnersShowcaseScreenState extends ConsumerState<WinnersShowcaseScreen> {
                     child: CachedImageWidget(
                       imageUrl: winner.photoUrl,
                       fit: BoxFit.cover,
-                      placeholder: (ctx, url) => Container(
-                        color: colorScheme.surfaceContainerHighest,
-                        child: const Center(
-                          child: CircularProgressIndicator(),
-                        ),
+                      useShimmer: true,
+                      memCacheWidth: 800,
+                      memCacheHeight: 500,
+                      maxWidthDiskCache: 800,
+                      maxHeightDiskCache: 800,
+                      placeholder: (ctx, url) => const ShimmerImagePlaceholder(
+                        borderRadius: BorderRadius.zero,
+                        showIcon: true,
                       ),
                       errorWidget: (ctx, url, error) => Container(
                         color: colorScheme.surfaceContainerHighest,
@@ -822,22 +852,25 @@ class _WinnersShowcaseScreenState extends ConsumerState<WinnersShowcaseScreen> {
                 Positioned(
                   right: 12,
                   bottom: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.65),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.zoom_in, size: 14, color: Colors.white),
-                        SizedBox(width: 4),
-                        Text(
-                          'Xem lớn',
-                          style: TextStyle(color: Colors.white, fontSize: 10),
-                        ),
-                      ],
+                  child: InkWell(
+                    onTap: () => _openPhotoDetail(context, winner),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.zoom_in, size: 14, color: Colors.white),
+                          SizedBox(width: 4),
+                          Text(
+                            'Xem lớn',
+                            style: TextStyle(color: Colors.white, fontSize: 10),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

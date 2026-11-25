@@ -140,7 +140,7 @@ export const DETAILED_CONTESTS: Record<string, Contest> = {
           step: 2,
           title: "Tạo tài khoản & Đăng nhập",
           description:
-            "Đăng ký tài khoản trên nền tảng Film Contest bằng Email hoặc tài khoản Google/GitHub chỉ trong 30 giây.",
+            "Đăng ký tài khoản trên nền tảng CINEGEN bằng Email hoặc tài khoản Google/GitHub chỉ trong 30 giây.",
           tip: "Cập nhật đúng số điện thoại và họ tên thật để nhận thông báo giải thưởng.",
         },
         {

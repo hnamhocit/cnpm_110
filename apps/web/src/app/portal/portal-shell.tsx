@@ -2,8 +2,9 @@
 
 import {
   BarChart3,
-  Camera,
+  ClipboardCheck,
   LayoutDashboard,
+  Medal,
   Trophy,
   Users,
 } from "lucide-react";
@@ -12,12 +13,18 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import Header from "../components/portal/Header";
+import { BrandMark } from "@/components/brand-mark";
 
 // Các mục điều hướng của Portal
 const menuItems = [
   { label: "Dashboard", href: "/portal", icon: LayoutDashboard },
   { label: "Contests", href: "/portal/contests", icon: Trophy },
   { label: "Judges", href: "/portal/contests/judges", icon: Users },
+  {
+    label: "Tiến độ chấm thi",
+    href: "/portal/contests/judging-progress",
+    icon: ClipboardCheck,
+  },
   { label: "Reports", href: "/portal/reports", icon: BarChart3 },
 ];
 
@@ -31,7 +38,7 @@ function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-full w-full flex-col overflow-y-auto bg-slate-900 px-4 py-6 text-white border-r border-slate-800">
+    <aside className="flex h-full w-full flex-col overflow-y-auto bg-brand-ink px-4 py-6 text-white border-r border-slate-800">
       {/* LOGO */}
       <div className="mb-8 flex items-center justify-between gap-2 px-2">
         <Link
@@ -39,10 +46,8 @@ function Sidebar({ onClose }: SidebarProps) {
           onClick={onClose}
           className="flex items-center gap-2.5 font-bold tracking-tight text-white hover:opacity-90 transition-opacity"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-600/30">
-            <Camera className="h-5 w-5" />
-          </div>
-          <span className="text-base font-bold">Film Contest</span>
+          <BrandMark size={36} className="rounded-lg" />
+          <span className="text-base font-bold">CINEGEN</span>
         </Link>
 
         {/* Nút đóng Sidebar trên Mobile */}
@@ -68,7 +73,8 @@ function Sidebar({ onClose }: SidebarProps) {
               : item.href === "/portal/contests"
                 ? pathname === "/portal/contests" ||
                   (pathname.startsWith("/portal/contests/") &&
-                    !pathname.startsWith("/portal/contests/judges"))
+                    !pathname.startsWith("/portal/contests/judges") &&
+                    !pathname.startsWith("/portal/contests/judging-progress"))
                 : pathname.startsWith(item.href);
 
           return (
@@ -78,7 +84,7 @@ function Sidebar({ onClose }: SidebarProps) {
               onClick={onClose}
               className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all ${
                 isActive
-                  ? "bg-blue-600 font-semibold text-white shadow-sm shadow-blue-600/25"
+                  ? "bg-brand-solid font-semibold text-white shadow-sm shadow-brand-solid/25"
                   : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
               }`}
             >

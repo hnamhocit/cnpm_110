@@ -1,4 +1,3 @@
-
 import { afterEach, expect, mock, test } from "bun:test";
 
 const signedUrlMock = mock(async (_key: string, _expires: number) =>
@@ -18,7 +17,7 @@ mock.module("../src/services/ai-model-client", () => ({
 }));
 
 const { analyzeSubmissionImage } = await import(
-  "../src/services/ai-analysis"
+  "../src/services/ai/ai-analysis"
 );
 
 afterEach(() => {

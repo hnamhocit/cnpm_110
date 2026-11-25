@@ -6,9 +6,8 @@ const healthRoute = new Hono();
 
 healthRoute.get("/", async (c) => {
   const health = await getHealthStatus();
-  const { httpStatus, ...response } = health;
 
-  return c.json(response, httpStatus);
+  return c.ok(health)
 });
 
 export default healthRoute;

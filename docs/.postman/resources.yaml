@@ -1,0 +1,9 @@
+# Use this workspace to collaborate
+workspace:
+  id: 6efece78-42cf-4f04-8e22-80b267e195b1
+
+localResources:
+  collections:
+    - ../Film Contest API
+  specs:
+    - ../openapi.yaml

@@ -1,5 +1,6 @@
-import { Camera, Film, Heart } from "lucide-react";
+import { Film, Heart } from "lucide-react";
 import Link from "next/link";
+import { BrandMark } from "@/components/brand-mark";
 
 export function Footer() {
   return (
@@ -9,11 +10,9 @@ export function Footer() {
           {/* Brand info */}
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm shadow-blue-600/30">
-                <Camera className="h-4 w-4" />
-              </div>
+              <BrandMark size={32} className="rounded-lg" />
               <span className="text-base font-bold text-slate-900 tracking-tight">
-                FILM CONTEST PLATFORM
+                CINEGEN
               </span>
             </div>
             <p className="text-sm text-slate-600 max-w-sm leading-relaxed mb-4">
@@ -22,7 +21,7 @@ export function Footer() {
               nguyên bản.
             </p>
             <div className="flex items-center gap-2 text-xs text-slate-500 font-mono">
-              <Film className="h-3.5 w-3.5 text-blue-600" />
+              <Film className="h-3.5 w-3.5 text-brand-solid" />
               <span>Capstone Project 2026 — CNPM 110</span>
             </div>
           </div>
@@ -36,7 +35,7 @@ export function Footer() {
               <li>
                 <a
                   href="#ongoing-contests"
-                  className="hover:text-blue-600 transition-colors"
+                  className="hover:text-brand-solid transition-colors"
                 >
                   Cuộc thi đang diễn ra
                 </a>
@@ -44,7 +43,7 @@ export function Footer() {
               <li>
                 <a
                   href="#ai-features"
-                  className="hover:text-blue-600 transition-colors"
+                  className="hover:text-brand-solid transition-colors"
                 >
                   Tính năng AI
                 </a>
@@ -52,7 +51,7 @@ export function Footer() {
               <li>
                 <a
                   href="#how-it-works"
-                  className="hover:text-blue-600 transition-colors"
+                  className="hover:text-brand-solid transition-colors"
                 >
                   Thể lệ nộp bài
                 </a>
@@ -60,7 +59,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/judge/login"
-                  className="hover:text-blue-600 transition-colors"
+                  className="hover:text-brand-solid transition-colors"
                 >
                   Cổng Giám khảo
                 </Link>
@@ -77,7 +76,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/login"
-                  className="hover:text-blue-600 transition-colors"
+                  className="hover:text-brand-solid transition-colors"
                 >
                   Đăng nhập tài khoản
                 </Link>
@@ -85,7 +84,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/register"
-                  className="hover:text-blue-600 transition-colors"
+                  className="hover:text-brand-solid transition-colors"
                 >
                   Đăng ký thí sinh
                 </Link>
@@ -93,7 +92,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/portal"
-                  className="hover:text-blue-600 transition-colors"
+                  className="hover:text-brand-solid transition-colors"
                 >
                   Cổng Quản trị (Portal)
                 </Link>
@@ -104,7 +103,7 @@ export function Footer() {
 
         <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div>
-            &copy; 2026 Film Photography Contest Platform. All rights reserved.
+            &copy; 2026 CINEGEN. All rights reserved.
           </div>
           <div className="flex items-center gap-1">
             <span>Xây dựng với</span>

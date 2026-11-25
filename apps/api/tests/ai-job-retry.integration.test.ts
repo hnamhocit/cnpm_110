@@ -1,4 +1,3 @@
-
 import { describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
@@ -14,7 +13,7 @@ import {
 import {
   claimNextAiJob,
   failAiJob,
-} from "../src/services/ai-job-queue";
+} from "../src/services/ai/ai-job-queue";
 
 describe("FPC-54: AI Job Retry integration", () => {
   test("Retry twice, then mark FAILED", async () => {
