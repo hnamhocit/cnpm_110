@@ -362,6 +362,7 @@ Các module dưới đây mô tả thiết kế kỹ thuật. Khi có khác bi�
 8.  [`docs/ai/08-archive-and-exhibition.md`](ai/08-archive-and-exhibition.md): Kho Lưu trữ Di sản Số, Bảo vệ Tác quyền, Đóng dấu Bản quyền & Phòng Triển lãm.
 9.  [`docs/ai/09-api-contracts.md`](ai/09-api-contracts.md): Chuẩn hóa Data Transfer Objects (DTO) và Hợp đồng API dùng chung đa nền tảng.
 10. [`docs/ai/10-database-and-storage.md`](ai/10-database-and-storage.md): Lược đồ PostgreSQL, Cấu hình pgvector & Quản lý Tệp Lưu trữ Đám mây S3/R2.
+11. [`docs/ai/11-cross-cutting-services.md`](ai/11-cross-cutting-services.md): Đặc tả bổ sung cho Nhật ký Kiểm toán, Thông báo và Báo cáo (UC-10, UC-28, CR-04, §5.1.2).
 
 ---
 

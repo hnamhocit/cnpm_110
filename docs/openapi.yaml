@@ -1320,7 +1320,7 @@ paths:
   /api/v1/organizer/submissions/{id}/moderate:
     post:
       summary: Kiểm duyệt bài thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF hiện chỉ đổi trạng thái và ghi log, chưa tạo hạn 48 giờ.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF có nhánh xử lý nhưng ràng buộc trạng thái DB chưa cho phép lưu PROOF_REQUESTED. Hạn 48 giờ chưa được triển khai.
       tags:
       - Submissions
       responses:
@@ -1866,7 +1866,7 @@ paths:
   /api/v1/submissions/{id}/moderate:
     post:
       summary: Kiểm duyệt bài thi
-      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF hiện chỉ đổi trạng thái và ghi log, chưa tạo hạn 48 giờ.
+      description: Organizer chỉ thao tác trong cuộc thi do mình tạo. Bài ngoài phạm vi trả 404. Cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. APPROVE_FOR_JUDGING và OVERRIDE_AI_FLAG trả 409 nếu bài còn bị giữ do rủi ro AI cao. REQUEST_PROOF có nhánh xử lý nhưng ràng buộc trạng thái DB chưa cho phép lưu PROOF_REQUESTED. Hạn 48 giờ chưa được triển khai.
       tags:
       - Submissions
       responses:

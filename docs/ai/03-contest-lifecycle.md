@@ -1,5 +1,12 @@
 # Module Spec: 03-contest-lifecycle.md
 
+## Phạm vi nghiệm thu và trạng thái hiện tại
+
+UC-11–17 và UC-34 bao gồm cả lưu bản nháp wizard, đăng ký tham gia và danh sách đăng ký cho Organizer. Hiện có CRUD cuộc thi và đọc hạng mục. Schema trọng số hỗ trợ 4 chữ số thập phân và giới hạn từng trọng số. Cần luồng lưu bộ tiêu chí kiểm tra tổng đúng 1.0000 theo BR-15. [Schema](../../apps/api/src/db/schema.ts) · [Route](../../apps/api/src/routes/contests.route.ts)
+
+Khi triển khai đăng ký, cho Participant đăng ký lúc cuộc thi mở và cho Organizer sở hữu cuộc thi xem danh sách cùng số bài nộp. BR-21 áp dụng ở cả đăng ký và nộp bài. Trước khi mở chấm, kiểm tra đúng lịch BR-08 và tối thiểu 3 giám khảo hoạt động **ở từng hạng mục**. UC-15 còn yêu cầu cấu hình vòng Sơ loại, Bán kết, Chung kết và số bài đi tiếp. Hợp đồng lưu đăng ký, cấu hình vòng chấm và cơ cấu giải cần chốt trong [Module 09](09-api-contracts.md) trước khi triển khai.
+
+
 > **Module Name**: Manage Contests & Categories (Quản lý Vòng đời Cuộc thi & Hạng mục)  
 > **Status**: READY FOR CODE GENERATION  
 > **Version**: 1.0.0  
@@ -211,14 +218,14 @@ Bảng gán trách nhiệm chấm điểm giữa Giám khảo chuyên môn và H
 
 | Mã BR | Tên Quy tắc | Diễn giải Ràng buộc Kỹ thuật | Xử lý Vi phạm |
 | :--- | :--- | :--- | :--- |
-| **BR-02** | Phân quyền Khởi tạo | Chỉ tài khoản có Role `ORGANIZER` hoặc `ADMIN` mới được tạo và cấu hình cuộc thi. Organizer chỉ có quyền sửa cuộc thi do chính mình tạo ra (`created_by = current_user_id`). | HTTP 403 Forbidden (`MSG005`) |
+| **BR-02** | Phân quyền Khởi tạo | Theo UC-11/12, tài khoản có Role `ORGANIZER` được tạo và cấu hình cuộc thi. Organizer chỉ có quyền sửa cuộc thi do chính mình tạo ra (`created_by = current_user_id`). | HTTP 403 Forbidden (`MSG005`) |
 | **BR-03** | Xóa mềm Dữ liệu | Khi cuộc thi bị xóa, cập nhật `is_deleted = TRUE`. Không xóa vật lý các bản ghi liên quan (hạng mục, tiêu chí, bài thi). | Soft Delete Filter |
 | **BR-06** | Yêu cầu Đối chứng Âm bản | Cấu hình tại bảng `contest_categories.require_negative_proof_upfront`. Nếu `TRUE`, thí sinh phải upload âm bản ngay lúc nộp; nếu `FALSE`, yêu cầu âm bản hoặc Contact Sheet đã xác minh đối với tác phẩm lọt vào Chung kết/Xét giải. | Validate tại Form Nộp bài |
 | **BR-08** | Lịch trình Tuần tự Bắt buộc | Bắt buộc tuân thủ thứ tự thời gian: $T_{reg\_start} < T_{sub\_deadline} < T_{judge\_start} < T_{judge\_deadline} < T_{publish}$. Khi $CurrentTime \ge T_{sub\_deadline}$, hệ thống tự động khóa cổng nhận bài và không cho phép thí sinh sửa/nộp mới. | HTTP 400 Bad Request (`MSG008`, `MSG014`) |
 | **BR-15** | Chuẩn hóa Trọng số Tiêu chí | Tổng trọng số các tiêu chí chấm trong 1 hạng mục phải bằng đúng $1.0000$ (100%): $\sum_{i=1}^n w_i = 1.0000$. Công thức tính điểm của một giám khảo: $S_{judge} = \sum_{i=1}^n (s_i \times w_i)$. | HTTP 422 Unprocessable (`MSG007`) |
 | **BR-16** | Tính Bất biến của Kết quả | Khi cuộc thi chuyển sang trạng thái `PUBLISHED`, toàn bộ điểm số, tiêu chí, giải thưởng và thông tin bài thi chuyển sang chế độ Read-Only vĩnh viễn. Không cho phép bất kỳ ai sửa đổi dữ liệu. | HTTP 403 / DB Trigger Lock |
 | **BR-20** | Tối thiểu 3 Giám khảo Quorum | Trước khi cuộc thi chuyển trạng thái sang `JUDGING`, mỗi hạng mục bắt buộc phải có ít nhất 3 giám khảo đang hoạt động (`is_active = TRUE`). | HTTP 422 Unprocessable |
-| **BR-21** | Ngăn chặn Xung đột Lợi ích | Một người dùng đã được gán làm `Judge` hoặc `Organizer` trong một cuộc thi thì bị hệ thống chặn không cho phép nộp bài thi (làm `Participant`) trong chính cuộc thi đó. Ngược lại, nếu tài khoản đã có bài dự thi, không được phép gán làm Giám khảo. | HTTP 400 Bad Request (`MSG022`) |
+| **BR-21** | Ngăn chặn Xung đột Lợi ích | Một người dùng đã được gán làm `Judge` hoặc `Organizer` trong một cuộc thi thì bị hệ thống chặn không cho phép đăng ký tham gia hoặc nộp bài thi trong chính cuộc thi đó. Ngược lại, nếu tài khoản đã có bài dự thi, không được phép gán làm Giám khảo. | HTTP 400 Bad Request (`MSG022`) |
 | **BR-24** | Khóa Sửa & Rút Bài thi | Thí sinh chỉ được sửa thông số hoặc rút bài khi còn trong hạn nhận bài ($CurrentTime < T_{sub\_deadline}$) và bài thi chưa vào trạng thái đang chấm. | HTTP 403 Forbidden |
 | **BR-25** | Trung bình cộng Điểm Cuối | Điểm chung cuộc của bài thi là trung bình cộng điểm của toàn bộ giám khảo được phân công chấm hạng mục đó: $S_{final} = \frac{1}{M}\sum_{k=1}^M S_{judge\_k}$, làm tròn 2 chữ số thập phân. | Auto-calculated in Leaderboard |
 
@@ -226,7 +233,7 @@ Bảng gán trách nhiệm chấm điểm giữa Giám khảo chuyên môn và H
 
 ## 3. State Machine & Lifecycle (Máy Trạng thái Cuộc thi)
 
-Cuộc thi ảnh phim vận hành tuần tự qua 6 trạng thái nghiêm ngặt:
+Sơ đồ dưới đây mô tả vòng đời đích. SRS gọi giai đoạn thẩm định là Verifying. Thiết kế và Backend dùng `UNDER_REVIEW`/`under_review` cho giai đoạn này. Module 09 cần thống nhất cách biểu diễn trước khi nối client mới.
 
 ```mermaid
 stateDiagram-v2
@@ -235,7 +242,7 @@ stateDiagram-v2
     OPEN --> UNDER_REVIEW : Đạt mốc submission_deadline_at (Tự động khóa nộp bài)
     UNDER_REVIEW --> JUDGING : Hoàn thành thẩm định AI/Âm bản & Đủ tối thiểu 3 Giám khảo (BR-20)
     JUDGING --> PUBLISHED : Đạt mốc công bố kết quả, giải quyết xong lệch điểm (BR-14) & Xác minh âm bản giải thưởng (BR-06)
-    PUBLISHED --> ARCHIVED : Chuyển toàn bộ tác phẩm vào Kho Lưu trữ Di sản Số (BR-17)
+    PUBLISHED --> ARCHIVED : Chọn và xuất bản tác phẩm vào Kho Lưu trữ Di sản Số (BR-17)
     ARCHIVED --> [*]
 ```
 
@@ -247,7 +254,7 @@ stateDiagram-v2
 | `OPEN` | `UNDER_REVIEW`| System Cron Worker | $CurrentTime \ge submission\_deadline\_at$. | Khóa hoàn toàn API nộp và sửa bài (`MSG014`); đẩy toàn bộ bài thi sang hàng đợi thẩm định AI. |
 | `UNDER_REVIEW` | `JUDGING` | Organizer | - Đã tới mốc `judging_start_at`.<br>- Toàn bộ bài thi đã có kết luận thẩm định AI.<br>- Mỗi hạng mục có $\ge 3$ Giám khảo hoạt động (BR-20). | Mở quyền truy cập Lightbox Workspace cho Giám khảo; kích hoạt bộ lọc Ẩn danh kép (BR-12). |
 | `JUDGING` | `PUBLISHED` | Organizer | - Đã tới mốc công bố theo BR-08.<br>- $100\%$ Giám khảo đã khóa bảng điểm (UC-33).<br>- Không còn bài thi bị cờ lệch điểm `DISCREPANCY_CONFLICT` (BR-14).<br>- Toàn bộ bài vào chung kết hoặc xét giải đã có âm bản hoặc Contact Sheet hợp lệ (BR-06). | Kích hoạt khóa bất biến (BR-16); tính điểm trung bình (BR-25); công bố bảng vàng; gửi email thông báo thí sinh. |
-| `PUBLISHED` | `ARCHIVED` | Organizer / Admin | Cuộc thi kết thúc $\ge 30$ ngày sau khi công bố giải. | Sinh ảnh tối ưu kèm watermark; lưu trữ vĩnh viễn vào Digital Archive (BR-17). |
+| `PUBLISHED` | `ARCHIVED` | Organizer | Kết quả đã công bố. Chính sách thời điểm lưu trữ cần được nhóm xác nhận. | Sinh ảnh tối ưu kèm watermark; lưu trữ vĩnh viễn vào Digital Archive (BR-17). |
 
 ---
 
@@ -255,9 +262,9 @@ stateDiagram-v2
 
 ### Hành vi Backend đang triển khai
 
-- `PUT /api/v1/contests/{id}` và `DELETE /api/v1/contests/{id}` yêu cầu Admin hoặc Organizer. Với Organizer, Backend kiểm tra `createdBy`. Sửa cuộc thi ngoài phạm vi trả 403, xóa ngoài phạm vi trả 404.
+- `PUT /api/v1/contests/{id}` và `DELETE /api/v1/contests/{id}` yêu cầu Organizer và Backend kiểm tra `createdBy`. Sửa cuộc thi ngoài phạm vi trả 403, xóa ngoài phạm vi trả 404.
 - Sửa cuộc thi trạng thái `published`, `completed` hoặc `archived` trả 403. Xóa mềm các cuộc thi này trả 404. Trạng thái được so sánh không phân biệt hoa thường.
-- CRUD đang lưu `startAt` và `endAt`. Lịch 5 mốc, bộ điều kiện mở chấm và công bố ở phần thiết kế bên dưới vẫn cần triển khai.
+- CRUD đang lưu `startAt` và `endAt`. Khi chuyển từ `under_review` sang `judging`, Backend kiểm tra tổng trọng số 1.0000 và ít nhất 3 giám khảo hoạt động mỗi hạng mục. Khi công bố, Backend kiểm tra trạng thái, hạn hiện có, phiếu đã khóa và cờ lệch điểm. Lịch 5 mốc và kiểm chứng âm bản trước công bố vẫn cần triển khai.
 
 
 ### 4.1 Tra cứu Danh sách Cuộc thi (`GET /api/v1/contests`)
@@ -308,7 +315,7 @@ stateDiagram-v2
 ### 4.2 Khởi tạo Cuộc thi Mới (`POST /api/v1/contests`)
 *   **Method**: `POST`
 *   **Path**: `/api/v1/contests`
-*   **Auth**: Bearer JWT (Roles: `ORGANIZER`, `ADMIN`)
+*   **Auth**: Bearer JWT (Role `ORGANIZER`)
 *   **Request Payload (4-Step Wizard Data):**
     ```json
     {

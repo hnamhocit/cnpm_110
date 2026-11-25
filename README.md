@@ -69,7 +69,7 @@ film-contest/
 | **09** | [`docs/ai/09-api-contracts.md`](docs/ai/09-api-contracts.md) | Chuẩn hóa DTO, Response Envelopes và hợp đồng API dùng chung đa nền tảng |
 | **10** | [`docs/ai/10-database-and-storage.md`](docs/ai/10-database-and-storage.md) | DDL PostgreSQL 16+, Extension `pgvector`, Bảng `digital_assets`, Cloud Storage S3/R2 |
 
-Xem [danh mục endpoint](docs/ai/09-api-contracts.md#6-danh-mục-endpoint) để biết trạng thái triển khai trong [OpenAPI](docs/openapi.yaml) và [Postman](docs/film-contest.postman_collection.json).
+Xem [danh mục endpoint](docs/ai/09-api-contracts.md#6-danh-mục-endpoint) để biết trạng thái triển khai trong [OpenAPI](docs/openapi.yaml).
 
 ---
 
@@ -163,7 +163,7 @@ cd apps/mobile && flutter pub add <package-name>
 
 ## Theo dõi tiến độ
 
-Xem [tổng quan độ phủ và đối chiếu Jira](docs/progress/overview.md).
+Xem [thứ tự triển khai, độ phủ theo SRS và đối chiếu Jira](docs/progress/overview.md).
 
 ---
 

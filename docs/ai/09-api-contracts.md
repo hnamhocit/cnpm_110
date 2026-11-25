@@ -83,12 +83,12 @@ Quy trình xử lý một yêu cầu API:
 
 ## 4. Shared API Contracts
 
-### Hành vi route đang mount tại `f06e312`
+### Hành vi các route đang mount
 
 - Bearer token cần thuộc tài khoản còn hoạt động. `GET /api/v1/rbac/manage-contest` chỉ chấp nhận Admin và Organizer. [Module 01](01-auth-and-rbac.md)
 - Organizer chỉ sửa/xóa cuộc thi do mình tạo. Danh sách, kiểm duyệt và báo cáo bài thi cũng giới hạn theo quyền sở hữu cuộc thi, kể cả các alias Organizer. [Module 03](03-contest-lifecycle.md) · [Module 05](05-submission-and-proof.md)
 - Khi nộp bài, cuộc thi phải đang nhận bài. Sai khổ, vượt giới hạn frame hoặc thiếu Lab/quy trình trả 422. Trùng cuộn–frame trả 409. Xem bảng multipart bên dưới.
-- Kiểm duyệt bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. Bài rủi ro AI cao đang bị giữ trả 409 khi duyệt hoặc gỡ cờ. Route yêu cầu đối chứng độc lập và upload đối chứng vẫn chưa mount.
+- Kiểm duyệt bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403. Bài rủi ro AI cao đang bị giữ trả 409 khi duyệt hoặc gỡ cờ. Nhánh REQUEST_PROOF trong route kiểm duyệt vướng ràng buộc trạng thái DB. Route yêu cầu đối chứng độc lập và upload đối chứng vẫn chưa mount.
 - Webhook AI nhận tối đa 5 thẻ. Báo cáo đối sánh trả `null` cho kết quả chưa có và `[]` khi thiếu danh sách thẻ. [Module 06](06-ai-verification.md)
 
 
@@ -2907,16 +2907,16 @@ Các nội dung cần được nhóm xác nhận trước khi triển khai chín
 Sau khi được phê duyệt, tài liệu cần được đồng bộ với OpenAPI và mã nguồn Backend để đảm bảo các Client sử dụng cùng một hợp đồng API.
 ## 6. Danh mục endpoint
 
-[OpenAPI](../openapi.yaml) và [Postman Film Contest](../film-contest.postman_collection.json) cùng liệt kê **38** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **36** endpoint dự kiến đã có method và path. OpenAPI ghi trạng thái qua `x-implementation`. Các mục trong thư mục Postman `Planned` dùng để tra cứu đường dẫn và module chứa DTO.
+[OpenAPI](../openapi.yaml) liệt kê **38** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **36** thao tác dự kiến đã có method và path. Dùng `x-implementation` để tra trạng thái và [đăng ký Hono](../../apps/api/src/index.ts) để lần tới route thực tế.
 
-Các chức năng còn thiếu method/path trong đặc tả gồm quản lý role và permission, tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, quản lý hạng mục và vòng chấm, sửa hoặc rút bài thi, đọc bảng điểm cá nhân và điều phối lệch điểm. Xem yêu cầu nghiệp vụ tương ứng tại [SRS](../srs.md#22-use-case-catalog-43-ca-sử-dụng-cốt-lõi).
+Các chức năng còn thiếu method/path trong đặc tả gồm quản lý role và permission, tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, quản lý hạng mục và vòng chấm, sửa metadata hoặc rút bài thi, đọc bảng điểm cá nhân, điều phối lệch điểm và xuất thống kê cuộc thi (UC-28, [Module 11](11-cross-cutting-services.md)). Xem yêu cầu nghiệp vụ tương ứng tại [SRS](../srs.md#22-use-case-catalog-43-ca-sử-dụng-cốt-lõi).
 
 Route công khai `GET /api/v1/contests/{id}/results` hiện dùng dữ liệu giải và điểm mẫu. DTO lịch trình của `POST /api/v1/contests` hiện dùng hai mốc `startAt` và `endAt`. Quy tắc công bố kết quả và lịch trình đích được mô tả trong Module 03 và 08.
 
 
 ### 6.1. Hợp đồng Judging
 
-Năm route dưới đây được đăng ký trong Hono và có trong nhóm Judging của Postman. Tất cả yêu cầu bearer JWT. Các phản hồi JSON thành công đặt dữ liệu trong `data`.
+Năm route dưới đây được đăng ký trong Hono và có trong OpenAPI. Tất cả yêu cầu bearer JWT. Các phản hồi JSON thành công đặt dữ liệu trong `data`.
 
 | Method và path | Quyền và đầu vào | Dữ liệu phản hồi |
 | --- | --- | --- |
@@ -2927,3 +2927,21 @@ Năm route dưới đây được đăng ký trong Hono và có trong nhóm Judg
 | `GET /api/v1/contests/{id}/scoreboard` | Organizer sở hữu cuộc thi | `entries`, `updatedAt`. Mỗi mục có `submissionId`, `submissionCode`, `title`, `categoryId`, `categoryName`, `judgeCount`, `scoreScale`, `negativeProofVerified`, `finalScore`, `rank`, `discrepancyFlag`, `scores`. Mỗi mục trong `scores` có `judgeId`, `judgeName`, `totalScore`, `submittedAt`. |
 
 Bảng điểm xếp hạng riêng từng hạng mục. Đồng điểm dùng cùng hạng và bỏ qua các vị trí tương ứng, ví dụ 1, 1, 3. Bài thiếu phiếu hoàn chỉnh hoặc có cờ `DISCREPANCY_CONFLICT` có `finalScore` và `rank` bằng `null`. Còn cờ chênh lệch thì cập nhật trạng thái công bố trả `409`. Trường `negativeProofVerified` vẫn có giá trị `false` trong khi chờ tích hợp quy trình xác minh âm bản.
+
+## 7. Truy vết SRS theo module
+
+Bảng ánh xạ toàn bộ 43 UC về nơi mô tả chính. Khi nghiệm thu một UC, kiểm tra thêm BR, CR và màn hình tương ứng trong [SRS](../srs.md). Trình tự phụ thuộc nằm trong [overview](../progress/overview.md#thứ-tự-triển-khai).
+
+| Module | UC chính |
+| --- | --- |
+| [01 Auth & RBAC](01-auth-and-rbac.md) | UC-01–05 |
+| [02 Danh mục](02-analog-master-data.md) | UC-06–08 |
+| [03 Cuộc thi](03-contest-lifecycle.md) | UC-11–17, UC-34 |
+| [04 Logbook](04-film-logbook.md) | UC-35–36 |
+| [05 Nộp bài và đối chứng](05-submission-and-proof.md) | UC-18, UC-21–23, UC-37–40 |
+| [06 AI](06-ai-verification.md) | UC-09, UC-19–20 |
+| [07 Chấm thi](07-blind-judging.md) | UC-24–25, UC-29–33 |
+| [08 Công bố và triển lãm](08-archive-and-exhibition.md) | UC-26–27, UC-41–43 |
+| [11 Audit, thông báo và báo cáo](11-cross-cutting-services.md) | UC-10, UC-28 |
+
+Module 09 cung cấp quy ước API và DTO dùng chung. [Module 10](10-database-and-storage.md) cung cấp thiết kế dữ liệu và lưu trữ hỗ trợ các UC cần ảnh hoặc dữ liệu phân tích.

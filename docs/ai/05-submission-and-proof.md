@@ -1,5 +1,12 @@
 # Module Spec: 05-submission-and-proof.md
 
+## Phạm vi nghiệm thu và trạng thái hiện tại
+
+UC-18, UC-21–23 và UC-37–40 bao gồm nộp, kiểm duyệt, đối chứng, sửa/rút và theo dõi. Khi nghiệm thu UC-37, kiểm tra hạng mục, giới hạn bài, liên kết Logbook, ảnh scan, năm trường metadata và thông điệp tác phẩm. Form metadata hiện có chưa thay thế được luồng liên kết Logbook.
+
+Khi yêu cầu đối chứng, Backend xác lập hạn từ thời điểm yêu cầu cộng đúng 48 giờ, trả hạn để client hiển thị và tự động loại bài quá hạn chưa nộp đối chứng. Kiểm tra tải ảnh thành công trước hạn, yêu cầu gửi đúng hoặc sau hạn và xử lý đồng thời với tác vụ hết hạn. Âm bản/Contact Sheet đã nhận cần được xác minh trước khi gỡ cờ AI hoặc công bố các bài thuộc BR-06. Sửa metadata/rút bài tuân thủ cả hạn nộp lẫn trạng thái chấm (BR-24).
+
+
 > **Module Name**: Contest Submission & Negative Proof Verification (Nộp Bài Dự Thi & Xác Thực Bằng Chứng Âm Bản)  
 > **Status**: READY FOR CODE GENERATION  
 > **Version**: 1.0.0  
@@ -131,7 +138,7 @@ Lưu vết toàn bộ các quyết định hành chính nhạy cảm của Ban t
 | **BR-08** | Khóa Cổng Theo Thời hạn | Thí sinh chỉ được nộp bài hoặc chỉnh sửa bài thi khi $CurrentTime < submission\_deadline\_at$. Khi quá hạn, toàn bộ thao tác nộp mới hoặc sửa bài bị từ chối. | HTTP 400 Bad Request (`MSG014`) |
 | **BR-18** | Bắt buộc Nhập Lý do Kiểm duyệt | Mọi thao tác: Yêu cầu âm bản (`REQUEST_PROOF`), Loại bài (`DISQUALIFY`), Gỡ cờ AI (`OVERRIDE_AI_FLAG`) bắt buộc phải truyền trường `reason` tối thiểu 10 ký tự và ghi tự động vào `submission_moderation_logs`. | HTTP 422 Unprocessable (`MSG021`) |
 | **BR-19** | Đồng hồ Đếm ngược 48 Giờ | Khi bài thi chuyển sang `PROOF_REQUESTED`, hệ thống lưu `proof_requested_at = NOW()` và tính `proof_deadline_at = NOW() + INTERVAL '48 hours'`. Một cron worker chạy ngầm định kỳ: Nếu $NOW() \ge proof\_deadline\_at$ và thí sinh chưa nộp âm bản, tự động chuyển trạng thái bài thi sang `DISQUALIFIED_NO_PROOF`. | Tự động Loại bài Quá hạn |
-| **BR-21** | Chặn Xung đột Lợi ích | Người dùng đã được gán vai trò Judge hoặc Organizer trong một cuộc thi thì bị hệ thống chặn không cho phép nộp bài thi vào chính cuộc thi đó. | HTTP 403 Forbidden (`MSG022`) |
+| **BR-21** | Chặn Xung đột Lợi ích | Người dùng đã được gán vai trò Judge hoặc Organizer trong một cuộc thi thì bị hệ thống chặn không cho phép đăng ký hoặc nộp bài thi vào chính cuộc thi đó. | HTTP 403 Forbidden (`MSG022`) |
 | **BR-22** | 5 Tham số Kỹ thuật Bắt buộc | Mọi bài thi hợp lệ bắt buộc khai báo tối thiểu: (1) Film Stock, (2) Khổ phim Format, (3) Thân máy Camera, (4) Số Frame, (5) Phòng Lab/Quy trình tráng. | HTTP 422 Unprocessable |
 | **BR-24** | Quy định Sửa & Rút bài | Thí sinh chỉ được phép chỉnh sửa metadata hoặc rút bài (`WITHDRAWN`) khi $CurrentTime < submission\_deadline\_at$ và bài thi chưa chuyển sang vòng chấm điểm (`JUDGING`). Điều kiện chặn theo mốc thời gian của cuộc thi được quy định tại **BR-08**; BR-24 chỉ giới hạn quyền sửa/rút của thí sinh. | HTTP 403 Forbidden |
 
@@ -166,7 +173,7 @@ Lưu vết toàn bộ các quyết định hành chính nhạy cảm của Ban t
 - `POST /api/v1/submissions` và alias `/api/v1/organizer/submissions` nhận multipart từ Participant. Cuộc thi phải ở `open` hoặc `ongoing` và trong khoảng nhận bài theo `startAt`/`endAt` nếu các mốc được đặt. Backend yêu cầu một trong hai trường `devLabName` và `devChemistry`.
 - `frameNumber` là số nguyên dương truyền dưới dạng chuỗi. Giới hạn theo `filmFormat` là `135` → 39, `120_645` → 16, `120_66` → 12, `120_67` → 10 và `4x5` → 1. Sai khổ, vượt giới hạn hoặc thiếu thông tin tráng trả 422. Trùng cuộn–frame trong cùng cuộc thi và cùng tài khoản trả 409. Backend kiểm tra trùng sau khi lấy khóa theo bộ giá trị này trong transaction ghi bài.
 - Danh sách, kiểm duyệt và đối sánh giới hạn Organizer theo cuộc thi do mình tạo. Yêu cầu chi tiết ngoài phạm vi trả 404. Thao tác sửa trạng thái bài thuộc cuộc thi đã công bố, hoàn tất hoặc lưu trữ trả 403.
-- Duyệt và gỡ cờ AI trả 409 khi bài vẫn bị giữ do rủi ro cao. `REQUEST_PROOF` lưu trạng thái và log kiểm duyệt. Luồng tải/xác minh đối chứng bổ sung, gỡ cờ rủi ro cao sau xác minh và hạn 48 giờ vẫn cần triển khai.
+- Duyệt và gỡ cờ AI trả 409 khi bài vẫn bị giữ do rủi ro cao. `REQUEST_PROOF` có nhánh xử lý trong route kiểm duyệt, nhưng schema hiện tại chưa cho phép lưu `PROOF_REQUESTED`. Cần đồng bộ ràng buộc trạng thái DB trước khi nghiệm thu. Luồng tải/xác minh đối chứng bổ sung, gỡ cờ rủi ro cao sau xác minh và hạn 48 giờ vẫn cần triển khai.
 
 
 ### 4.1 Yêu cầu Presigned URL Tải Ảnh Scan (`POST /api/v1/submissions/presigned-url`)

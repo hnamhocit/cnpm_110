@@ -1,5 +1,10 @@
 # Module Spec: 02-analog-master-data.md
 
+## Phạm vi nghiệm thu và trạng thái hiện tại
+
+UC-06–08 cần CRUD quản trị và tra cứu danh mục cho Logbook/nộp bài. [Hono](../../apps/api/src/index.ts) chưa mount các route danh mục. Nghiệm thu tổ hợp tên phim, hãng và ISO duy nhất, xóa mềm vẫn giữ tham chiếu cũ, bản ghi vô hiệu hóa không xuất hiện trong danh sách chọn mới và Lab hỗ trợ trạng thái đối tác xác minh.
+
+
 > **Module Name**: Analog Photography Master Data Management (Danh mục dữ liệu dùng chung Hệ thống Nhiếp ảnh Phim)  
 > **Status**: DRAFT / READY FOR CODE GENERATION  
 > **Version**: 1.0.0  

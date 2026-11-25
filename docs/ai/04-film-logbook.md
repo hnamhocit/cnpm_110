@@ -1,5 +1,10 @@
 # Module Spec: 04-film-logbook.md
 
+## Phạm vi nghiệm thu và trạng thái hiện tại
+
+UC-35–36 cần quản lý cuộn và frame của chính Participant, kiểm tra giới hạn vật lý theo BR-23 và tự đồng bộ Mobile khi có mạng. Hiện có bảng cuộn phim và form metadata trong luồng nộp bài. API Logbook còn dự kiến. Nghiệm thu tạo cuộn và frame khi offline, mở lại app, đồng bộ khi có mạng và thử lại sau lỗi mà không sinh bản ghi trùng. Cần thống nhất hợp đồng đồng bộ và xử lý xung đột trước khi triển khai. Kết quả đồng bộ cung cấp dữ liệu cho UC-37 ở [Module 05](05-submission-and-proof.md).
+
+
 > **Module Name**: Personal Film Roll & Frame Logbook (Quản lý Sổ tay Cuộn phim & Khung hình Cá nhân)  
 > **Status**: READY FOR CODE GENERATION  
 > **Version**: 1.0.0  

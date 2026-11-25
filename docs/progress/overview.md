@@ -1,11 +1,27 @@
 # Tổng quan tiến độ Film Contest
 
-**Mốc rà soát:** 2026-11-25, mã nguồn local trên `develop` tại `56c2576` cộng các sửa đổi schema/actor chưa commit. Đã áp dụng migration mới và rà controller, route, middleware, service cùng schema với SRS.
+**Mốc rà soát:** 2026-11-25, đối chiếu tài liệu với SRS và mã nguồn tại `3f92660`. Các kết quả chạy test và migration cũ được ghi ở các mục rà soát bên dưới.
 
-- **Đặc tả:** Có đủ **10/10** tài liệu module. OpenAPI và Postman có **38 cặp method/path đang mount**, gồm các alias, và **36 endpoint dự kiến**. [Danh mục API](../ai/09-api-contracts.md#6-danh-mục-endpoint)
+- **Đặc tả:** Có đủ **10 module thiết kế gốc**, cùng Module 11 cho audit, thông báo và báo cáo. OpenAPI ghi **38 cặp method/path đang mount**, gồm alias, và **36 thao tác dự kiến**. [Danh mục API](../ai/09-api-contracts.md#6-danh-mục-endpoint)
 - **Sprint 4:** Đã tích hợp FPC-70–75 và sửa các lỗi phát hiện trong FPC-86. Năm route Judging đã được đồng bộ với Swagger/Postman qua FPC-87. [Tracker](sprints.md#sprint-4--chấm-thi) · [Hợp đồng Judging](../ai/09-api-contracts.md#61-hợp-đồng-judging)
-- **Nghiệp vụ có ít nhất một luồng nối API hoặc xử lý thật trong mã:** Web **4/8** module, Backend **6/8**, Mobile **4/8**. Mẫu số là module 01–08. Module 09–10 được đánh giá riêng vì dùng chung cho nhiều luồng.
+- **Nghiệp vụ có ít nhất một luồng nối API hoặc xử lý thật trong mã:** Web **4/8** module, Backend **6/8**, Mobile **4/8**. Mẫu số là module 01–08. Module 09–11 phục vụ các luồng dùng chung.
 - **Hoàn tất trọn module theo SRS:** Chưa xác nhận module nào đạt đầy đủ. Các tỷ lệ trên đo độ phủ tối thiểu theo module và không quy đổi thành phần trăm hoàn thành dự án.
+
+## Thứ tự triển khai
+
+SRS mục 2 và 6 quy định nghiệp vụ. Các chặng dưới đây là thứ tự triển khai đề xuất theo phụ thuộc. Với mỗi chặng, chốt hợp đồng trong Module 09, cập nhật OpenAPI, làm schema và Backend cần thiết, rồi nối Web/Mobile theo vai trò trong SRS. Có thể triển khai theo lát nhỏ và kiểm thử từng luồng trên dữ liệu thật.
+
+| Chặng | Module và phụ thuộc | Nghiệm thu để chuyển chặng |
+| --- | --- | --- |
+| **1. Phiên, quyền và hạ tầng dùng chung** | 01 + phần cần thiết của 09, 10, 11. Danh mục 02 có thể bắt đầu song song ngay khi xác định quyền Admin và hợp đồng tra cứu. | Phiên bị thu hồi đúng BR-04. API thực thi đúng vai trò và phạm vi. Có tải/đọc ảnh theo quyền và ghi vết cho các thao tác nhạy cảm đang triển khai. |
+| **2. Mở cuộc thi và chuẩn bị dữ liệu phim** | 03 và nhánh 02 → 04 có thể làm song song. Hoàn thiện chọn hạng mục trên Mobile có thể bắt đầu bằng API danh sách hạng mục đang có. | Organizer lưu bản nháp, hạng mục, giới hạn và năm mốc. Participant đăng ký hợp lệ, bị chặn xung đột lợi ích và chọn đúng hạng mục. Tạo cuộn/frame theo BR-23, đồng bộ Mobile và dùng được frame khi nộp. |
+| **3. Nộp bài, AI và đối chứng** | 05 + 06 dựa trên cuộc thi, hạng mục và Logbook ở chặng 2. Có thể sửa lỗi chuyển hạng mục trên Mobile và chuẩn bị luồng đối chứng ngay bằng cuộc thi thử. | Participant nộp, theo dõi, sửa/rút đúng hạn. Organizer kiểm duyệt, xem cờ AI/trùng lặp, yêu cầu và xác minh đối chứng. Hết 48 giờ mà chưa nộp thì tự động loại. Bài AI rủi ro cao chỉ vào chấm sau khi đối chứng hợp lệ và đã gỡ cờ có audit. |
+| **4. Mở vòng và chấm ẩn danh** | Phần vòng chấm, tiêu chí, phân công của 03 → 07. Có thể phát triển song song với chặng 3 bằng bài đã duyệt trong fixture. Nghiệm thu xuyên luồng dùng đầu ra chặng 3. | Mỗi hạng mục có đủ giám khảo hoạt động và trọng số 1.0000. Judge chỉ thấy bài được giao, ảnh và DTO ẩn danh, lưu/sửa/khóa phiếu thật. Organizer xem tiến độ, xử lý lệch điểm và đối chiếu điểm chung cuộc. |
+| **5. Công bố, triển lãm và báo cáo** | 08 + phần báo cáo/thông báo 11, dùng kết quả chặng 4 và đối chứng hợp lệ từ chặng 3. | Công bố với điểm/giải thật khi đủ điều kiện, kiểm tra khóa dữ liệu sau công bố, hiển thị kết quả/phản hồi và portfolio, xuất bản ảnh có watermark và xuất thống kê đúng cuộc thi. |
+
+**Việc nên bắt đầu ngay** là nối chọn hạng mục thật trên Mobile và chốt hợp đồng đối chứng. Luồng đối chứng cần giải quyết đồng thời ràng buộc trạng thái DB, lưu hạn, upload/xác minh và tự động loại quá hạn. Có thể chạy thử bằng cuộc thi đã có trong môi trường test. Nghiệm thu UC-37 đầy đủ vẫn cần dữ liệu Logbook. [Module 05](../ai/05-submission-and-proof.md)
+
+**Tiêu chí hoàn thành** là kiểm thử UC/BR liên quan trên nền tảng áp dụng, gồm quyền, lỗi và các mốc biên, đồng thời đo yêu cầu phi chức năng trong SRS §5. Với API còn thiếu method/path hoặc DTO, chốt hợp đồng trước khi nối client. Dùng [bảng truy vết](../ai/09-api-contracts.md#7-truy-vết-srs-theo-module) để rà soát phạm vi.
 
 ## Độ phủ theo module
 
@@ -15,14 +31,15 @@
 | --- | --- | --- | --- | --- |
 | [01 Auth & RBAC](../ai/01-auth-and-rbac.md) | Có luồng · Đăng nhập, đăng ký, phiên | Có luồng · JWT, refresh, logout, hồ sơ hiện tại | Có luồng · Đăng nhập, đăng ký, lưu phiên | Thiếu thu hồi access token tức thì khi khóa tài khoản, xác thực định danh, khôi phục mật khẩu, chỉnh hồ sơ/mật khẩu và quản trị tài khoản. Mobile có màn hình gọi một số route chưa mount. |
 | [02 Danh mục ảnh phim](../ai/02-analog-master-data.md) | — | — | — | Chưa thấy luồng CRUD hoặc tra cứu danh mục phim, máy, ống kính và lab tập trung. |
-| [03 Vòng đời cuộc thi](../ai/03-contest-lifecycle.md) | Có luồng · Danh sách, chi tiết, tạo cuộc thi và cập nhật trạng thái | Có luồng · CRUD cuộc thi, đọc hạng mục | Có luồng · Danh sách và chi tiết | Chưa đủ 5 mốc, đăng ký tham gia, cấu hình tiêu chí, phân công giám khảo và kiểm tra đủ số giám khảo. |
+| [03 Vòng đời cuộc thi](../ai/03-contest-lifecycle.md) | Có luồng · Danh sách, chi tiết, tạo cuộc thi và cập nhật trạng thái | Có luồng · CRUD cuộc thi, đọc hạng mục | Có luồng · Danh sách và chi tiết | Đã kiểm tra tổng trọng số và đủ giám khảo khi mở chấm. Còn thiếu 5 mốc, đăng ký tham gia, cấu hình tiêu chí, vòng chấm và luồng phân công. |
 | [04 Sổ tay cuộn phim](../ai/04-film-logbook.md) | — | Một phần · Có schema cuộn phim | Một phần · Có form thông số phim trong luồng nộp | Thiếu quản lý cuộn phim và frame riêng, tích hợp API và đồng bộ offline. |
-| [05 Nộp bài & đối chứng](../ai/05-submission-and-proof.md) | Có luồng · Nộp ảnh, hàng đợi, kiểm duyệt | Có luồng · Nộp và liệt kê bài, duyệt/loại và yêu cầu đối chứng qua kiểm duyệt | Có luồng · Danh sách bài và giao diện trạng thái, có màn nộp ảnh | Mobile thiếu hạng mục khi mở form nộp từ trang chi tiết. Route upload đối chứng và sửa metadata chưa mount. Chưa lưu hạn đối chứng 48 giờ, chưa có xử lý hết hạn tự động hoặc route rút bài. |
-| [06 Thẩm định AI](../ai/06-ai-verification.md) | Có luồng · Gọi API đối sánh bài | Có luồng · Worker, webhook, phân loại và pHash | — | Chưa thấy API quét lại theo yêu cầu và nhánh tương đồng vector 92% trong mã hiện tại. |
+| [05 Nộp bài & đối chứng](../ai/05-submission-and-proof.md) | Có luồng · Nộp ảnh, hàng đợi, kiểm duyệt | Có luồng · Nộp và liệt kê bài, duyệt/loại. Có nhánh yêu cầu đối chứng trong kiểm duyệt | Có luồng · Danh sách bài và giao diện trạng thái, có màn nộp ảnh | Mobile thiếu hạng mục khi mở form nộp từ trang chi tiết. Route upload đối chứng và sửa metadata chưa mount. DB chưa chấp nhận trạng thái `PROOF_REQUESTED`. Chưa lưu hạn 48 giờ, xử lý hết hạn tự động hoặc có route rút bài. |
+| [06 Thẩm định AI](../ai/06-ai-verification.md) | Có luồng · Gọi API đối sánh bài | Có luồng · Worker, webhook, phân loại và pHash | — | Thiếu quét lại theo yêu cầu, nhánh cosine 92% và cảnh báo lệch hạng mục. Hàng đợi hiện dùng PostgreSQL, trong khi SRS mô tả Redis. |
 | [07 Chấm ẩn danh](../ai/07-blind-judging.md) | Một phần · Có Focus Mode, zoom ảnh/metadata và form chấm điểm trên dữ liệu mẫu. Màn phân công, tiến độ và bảng điểm còn dùng dữ liệu mẫu | Có luồng · Phân công, ảnh ẩn danh, nộp và khóa điểm, bảng điểm | Một phần · Hiển thị trạng thái bài vào vòng chấm | Còn nối Web với API và triển khai quy trình điều phối lệch điểm. |
 | [08 Kết quả & triển lãm](../ai/08-archive-and-exhibition.md) | Một phần · Triển lãm dùng dữ liệu mẫu | Có luồng · Có route kết quả và portfolio, một số điểm/giải lấy từ mẫu | Có luồng · Gọi API bảng vàng và portfolio | Thiếu công bố kết quả chính thức, dữ liệu điểm/giải từ chấm thi và xuất bản ảnh triển lãm. |
 | [09 Hợp đồng API](../ai/09-api-contracts.md) | Có tích hợp một số API chuẩn | Có envelope và danh mục route | Có tích hợp một số API chuẩn | Một số màn hình còn gọi route dự kiến hoặc phụ thuộc DTO khác hợp đồng đích. |
-| [10 CSDL & lưu trữ](../ai/10-database-and-storage.md) | Tải multipart qua Backend | Có PostgreSQL/Drizzle và lưu R2 hoặc local | Tải multipart qua Backend | Thiếu contract presigned upload/confirm; chưa thấy đầy đủ luồng hai bản ảnh và lưu trữ vector. |
+| [10 CSDL & lưu trữ](../ai/10-database-and-storage.md) | Tải multipart qua Backend | Có PostgreSQL/Drizzle và lưu R2 hoặc local | Tải multipart qua Backend | Chưa mount presigned upload/confirm; chưa thấy đầy đủ luồng hai bản ảnh và lưu trữ vector. |
+| [11 Audit, thông báo và báo cáo](../ai/11-cross-cutting-services.md) | — | Một phần · Log kiểm duyệt bài | — | Thiếu audit toàn hệ thống, xuất thống kê cuộc thi. Chưa xác nhận tích hợp SMTP/FCM xuyên suốt. |
 
 ## Rà soát 4 PR Web của Phạm Tiến Thành Nhân · 2026-11-23
 
@@ -56,7 +73,7 @@ Cả bốn PR đã được duyệt và merge vào `develop`. Diff của ba merg
 
 ## Sửa lỗi sau rà soát
 
-Hành vi API sau sửa đã được ghi trong [OpenAPI](../openapi.yaml), [Postman](../film-contest.postman_collection.json) và [hợp đồng API](../ai/09-api-contracts.md).
+Hành vi API sau sửa đã được ghi trong [OpenAPI](../openapi.yaml) và [hợp đồng API](../ai/09-api-contracts.md).
 
 - Web đã khôi phục cấu hình và kiểu dữ liệu để qua TypeScript, dùng phản hồi đã xác thực từ Backend để mở Portal và khôi phục bộ lọc danh sách Organizer. Focus Mode báo rõ phiếu chấm thử chưa được lưu.
 - Backend đã kiểm tra tài khoản còn hoạt động khi dùng access token, giới hạn quyền Organizer theo cuộc thi, kiểm tra trạng thái nhận bài, frame và Lab/quy trình tráng. Ghi bài khóa theo cuộn–frame trong transaction. Kiểm duyệt chặn đổi bài sau công bố và duyệt bài AI rủi ro cao khi chưa có luồng xác minh âm bản. Đối sánh trả giá trị thiếu thay cho số liệu mẫu. Webhook giới hạn 5 tags.
@@ -85,13 +102,6 @@ Một số task Done có bằng chứng đúng phạm vi đang rà. FPC-16 có i
 - **Thiếu giao việc xuyên nền tảng:** Web đã lấy hạng mục thật qua API khi nộp bài. Từ trang chi tiết Mobile, nút đăng ký chỉ truyền tên cuộc thi, router để `categoryId` rỗng và form chặn gửi. Đây là điểm đứt cụ thể giữa FPC-41/42 và luồng nộp, dù API hạng mục đã có. [Web chọn hạng mục](../../apps/web/src/components/contest/contest-cta-button.tsx) · [Mobile router](../../apps/mobile/lib/router/app_router.dart) · [Mobile upload](../../apps/mobile/lib/screens/submission/submission_upload_screen.dart)
 - **Chấm và công bố phụ thuộc Backend:** Jira để FPC-70–72 và FPC-88–90 ở To Do. Các màn theo dõi, bảng điểm và triển lãm Web vẫn có dữ liệu mẫu. Bảng vàng Mobile đã gọi API, nhưng điểm và giải còn lấy từ mẫu tại Backend. Các task `In View` trong ảnh cần review theo phạm vi gốc. [Bảng điểm Web](../../apps/web/src/app/portal/contests/scoreboard/page.tsx) · [Kết quả Backend](../../apps/api/src/services/contest.service.ts)
 - **Phạm vi nghiệm thu đang dừng ở từng màn hoặc từng route:** Khi tạo Jira mới, gom các task theo luồng và ghi phụ thuộc rõ. Với luồng chung cho Participant, nghiệm thu bằng một tài khoản thử đi qua đăng ký, chọn hạng mục, nộp, xem trạng thái và đối chứng giữa hai nền tảng. Luồng Organizer/Judge nghiệm thu từ phân công đến chấm, khóa điểm và công bố.
-
-## Luồng còn thiếu để nối xuyên hệ thống
-
-1. **Đăng ký và nộp bài.** Nối đăng ký cuộc thi, kiểm tra lịch trình 5 mốc, bổ sung route đối chứng và xử lý hết hạn 48 giờ.
-2. **Chấm thi.** Nối phân công, danh sách ẩn danh, chấm/khóa điểm, tính điểm và xử lý lệch điểm.
-3. **Công bố và triển lãm.** Dùng điểm và giải thật sau khi đủ điều kiện công bố, sau đó nối kho triển lãm Web với ảnh công khai đã xử lý.
-4. **Danh mục và logbook.** Nối CRUD danh mục và cuộn phim/frame với luồng nộp bài, giữ mô hình dữ liệu nhất quán giữa các nền tảng.
 
 ## Điểm đối chiếu trong mã
 

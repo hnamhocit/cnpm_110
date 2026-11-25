@@ -1,5 +1,12 @@
 # Module Spec: 10 - Database Schema & Cloud Storage (Cơ sở Dữ liệu & Lưu trữ Đám mây)
 
+## Phạm vi nghiệm thu và trạng thái hiện tại
+
+Hiện có upload multipart qua Backend, lưu R2 hoặc local. Luồng presigned upload/confirm trực tiếp là thiết kế đích của SRS §5.1.2. Đối chiếu [route upload](../../apps/api/src/routes/upload.route.ts), [R2](../../apps/api/src/r2.ts) và [schema](../../apps/api/src/db/schema.ts) trước khi tích hợp. Áp dụng cho ảnh scan và đối chứng ở Module 05, vector ở Module 06 và hai bản ảnh triển lãm ở Module 08.
+
+Nghiệm thu quyền upload/confirm theo chủ tệp, truy cập riêng tư cho scan gốc và ảnh âm bản, bản preview/thumbnail công khai theo quyền xuất bản, và lỗi khi URL hết hạn hoặc xác nhận lại. Đo tải 200 người dùng upload đồng thời theo SRS §5.2.4.
+
+
 ## 1. Domain Entities & Database Mapping
 
 Hệ thống sử dụng cơ sở dữ liệu quan hệ **PostgreSQL 16+** kết hợp tiện ích mở rộng **`pgvector`** để quản lý vector nhúng và tìm kiếm tương đồng hình ảnh.

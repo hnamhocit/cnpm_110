@@ -1,5 +1,12 @@
 # Module Spec: 06 - AI Verification & Automated Screening (Thẩm định & Giám định Trí tuệ Nhân tạo)
 
+## Phạm vi nghiệm thu và trạng thái hiện tại
+
+UC-09 và UC-19–20 bao gồm cấu hình ngưỡng cho Admin, quét thủ công/hàng loạt và đối sánh cho Organizer. Có worker, webhook, phân loại và pHash. Cần hoàn thiện quét theo yêu cầu, nhánh cosine từ 92%, cảnh báo lệch hạng mục và quy trình giữ bài rủi ro cao cho tới khi đối chứng đã xác minh và BTC gỡ cờ. Hợp đồng cấu hình ngưỡng cần làm rõ cách bảo toàn hành vi bắt buộc của BR-09/10, phạm vi thay đổi và thời điểm hiệu lực.
+
+SRS §5.1.2 chỉ định Redis Queue. [Hàng đợi hiện tại](../../apps/api/src/services/ai/ai-job-queue.ts) dùng PostgreSQL. Cần quyết định kiến trúc trước khi coi yêu cầu hàng đợi đã đạt. Nghiệm thu các giá trị biên 75%, Hamming 5, cosine 92%, tối đa 5 thẻ và thời gian xử lý dưới 10 giây theo SRS.
+
+
 ## 1. Domain Entities & Database Mapping
 
 ### 1.1 Bảng `ai_verification_jobs` (Hàng đợi tác vụ kiểm tra AI)

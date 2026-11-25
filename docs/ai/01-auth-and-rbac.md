@@ -1,5 +1,12 @@
 # Module Spec: 01-auth-and-rbac.md
 
+## Phạm vi nghiệm thu và trạng thái hiện tại
+
+Phạm vi SRS gồm UC-01–05 và BR-01/02/04. Đăng nhập, đăng xuất, refresh và đọc hồ sơ đã có API. Schema có role, permission và bảng liên kết. Luồng quản trị role/permission (UC-05) còn cần thống nhất API và cách áp dụng quyền đã thay đổi vào các phiên hiện hành. Các bảng và DTO mô tả bên dưới là thiết kế đích. Đối chiếu bảng `users`, các bảng quyền và `refresh_tokens` trong [schema Drizzle](../../apps/api/src/db/schema.ts).
+
+Nghiệm thu bằng tài khoản đã xác minh email và số điện thoại, đổi/khôi phục mật khẩu, khóa và mở khóa tài khoản. Sau khi khóa, access token và refresh token cấp trước đó phải bị từ chối ngay, kể cả khi tài khoản được mở khóa lại. Kiểm tra thêm quyền bị từ chối khi role không phù hợp. Ghi vết quản trị theo [Module 11](11-cross-cutting-services.md).
+
+
 > **Module Name**: Authentication & Role-Based Access Control (Xác thực & Phân quyền Người dùng)  
 > **Status**: READY FOR CODE GENERATION  
 > **Version**: 1.0.0  
@@ -304,7 +311,7 @@ stateDiagram-v2
 
 - Middleware của các route có Bearer token kiểm tra chữ ký HS256, hạn JWT, ID người dùng và vai trò. Sau đó đọc `users.is_active`. Tài khoản bị khóa hoặc không còn tồn tại nhận HTTP 401.
 - `GET /api/v1/rbac/manage-contest` trả 200 cho Admin hoặc Organizer đang hoạt động, 403 cho vai trò khác. Portal Web dùng kết quả Backend để quyết định truy cập.
-- Refresh từ chối tài khoản không hoạt động và xoay vòng refresh token khi thành công. Quy trình khóa tài khoản, thu hồi toàn bộ phiên và phiên bản token theo BR-04 vẫn là thiết kế cần hoàn thiện. Role trên access token lấy từ token đã ký.
+- Refresh từ chối tài khoản không hoạt động và xoay vòng refresh token khi thành công. Quy trình khóa tài khoản, thu hồi toàn bộ phiên và phiên bản token theo BR-04 vẫn là thiết kế cần hoàn thiện. Role trong access token được đối chiếu với vai trò hiện hành trong DB.
 
 
 Quy chuẩn kỹ thuật toàn hệ thống FilmContest-AI:
