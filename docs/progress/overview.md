@@ -58,7 +58,7 @@ Cả bốn PR đã được duyệt và merge vào `develop`. Diff của ba merg
 
 - **Kiểm tra:** `bun --filter web test` qua **59/59**. TypeScript báo trùng khóa `images` trong `next.config.ts`, trùng hàm `generateMetadata` ở trang chi tiết cuộc thi và thiếu các kiểu dữ liệu mà màn tiến độ chấm FPC-76 dùng. Hai job CI Web/API và Mobile đều báo thất bại trên cả bốn PR. Chưa chạy luồng E2E.
 - **Phân quyền:** Fallback 404 đọc role từ JWT mà không xác minh chữ ký. Cần kiểm tra lại phạm vi danh sách Organizer sau khi bỏ `createdBy`. Các yêu cầu BR-12/13 còn phụ thuộc kiểm soát quyền và DTO từ Backend.
-- **Sprint 4:** FPC-79–81 giữ `REVIEW`. FPC-70–72 vẫn là các phần phụ thuộc để lấy bài phân công, lưu và khóa phiếu chấm thật.
+- **Sau review:** `f06e312` sửa lỗi TypeScript, bỏ fallback quyền từ JWT chưa xác minh và hiển thị rõ phiếu chấm thử chưa lưu. Lượt kiểm tra trên `develop` qua TypeScript và 60 unit test Web. FPC-79–81 hoàn tất phạm vi UI. API FPC-70–72 đã tích hợp và còn cần nối vào luồng chấm Web. [Sprint 4](sprints.md#sprint-4--chấm-thi)
 
 ## Rà soát nghiệm thu Backend · 2026-11-23
 

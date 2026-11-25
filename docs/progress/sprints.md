@@ -10,8 +10,8 @@ Dùng cột **Hiện tại** để quản lý từ đây. Cột **Jira** giữ �
 | --- | ---: | ---: |
 | TODO | 37 | 29 |
 | DOING | 1 | 2 |
-| REVIEW | 17 | 30 |
-| DONE | 73 | 67 |
+| REVIEW | 17 | 25 |
+| DONE | 73 | 72 |
 | **Tổng** | **128** | **128** |
 
 ## Sprint 1 · Nền tảng và xác thực
@@ -103,26 +103,28 @@ Các đầu việc dưới đây chưa có mã Jira riêng trong bảng phục d
 
 ## Sprint 4 · Chấm thi
 
+Đối chiếu trên `develop`. Web qua kiểm tra TypeScript và 60 unit test. Trạng thái DONE của FPC-79–81 áp dụng cho phần UI đã review. Tiến độ chấm, bảng điểm và gửi phiếu thật vẫn cần tích hợp Web với Backend.
+
 | Mã | Phạm vi | Công việc | Người phụ trách | Jira | Hiện tại | Ghi chú |
 | --- | --- | --- | --- | --- | --- | --- |
-| FPC-70 | Backend | API danh sách bài được phân công cho giám khảo | Duong Nguyen | TODO | DONE | Ảnh tải bằng URL ẩn danh có kiểm tra phân công. |
-| FPC-71 | Backend | API nộp điểm theo tiêu chí | Duong Nguyen | TODO | DONE | Chỉ ghi khi JUDGING và gửi đủ tiêu chí. |
-| FPC-72 | Backend | API khóa bảng điểm khi kết thúc vòng | Duong Nguyen | TODO | DONE | Chỉ khóa phiếu đã chấm đủ bài. |
-| FPC-73 | Backend | Thuật toán tổng hợp điểm từ nhiều giám khảo | Hà Đức Bình | DOING | DONE | Làm tròn sau khi tính trung bình và dùng trọng số bốn chữ số. |
-| FPC-74 | Backend | API bảng xếp hạng theo điểm | Hà Đức Bình | TODO | DONE | Bảng điểm có cờ lệch điểm và chặn công bố khi còn cờ. |
-| FPC-75 | Backend | Xử lý đồng điểm | Hà Đức Bình | TODO | DONE | Đồng điểm dùng hạng 1, 1, 3 riêng mỗi hạng mục. |
-| FPC-76 | Web | Màn theo dõi tiến độ chấm của từng giám khảo | Vĩ Nguyễn | REVIEW | REVIEW | Có màn theo dõi với dữ liệu mẫu. Commit `0d5b809` trên develop. |
-| FPC-77 | Web | Bảng điểm tổng hợp cập nhật cho Organizer | Vĩ Nguyễn | REVIEW | REVIEW | Có bảng điểm với dữ liệu mẫu. Commit `940d758` trên develop. |
-| FPC-78 | Web | Nhắc giám khảo sắp trễ hạn qua email | Vĩ Nguyễn | TODO | TODO | — |
-| FPC-79 | Web | Giao diện chấm toàn màn hình | Phạm Tiến Thành Nhân | REVIEW | REVIEW | [PR #147](https://github.com/hnamhocit/cnpm_110/pull/147), tích hợp qua #150. Có Focus Mode toàn màn hình trên trang demo dùng bài mẫu. Chưa nối danh sách phân công và kiểm soát quyền Judge. |
-| FPC-80 | Web | Trình xem ảnh chất lượng cao có zoom và metadata | Phạm Tiến Thành Nhân | REVIEW | REVIEW | [PR #148](https://github.com/hnamhocit/cnpm_110/pull/148), tích hợp qua #150. Có zoom đến 350%, kéo ảnh và xem thông số phim/máy từ dữ liệu mẫu. Chưa thử với ảnh scan thật. |
-| FPC-81 | Web | Thanh trượt chấm từng tiêu chí và nhập nhận xét | Phạm Tiến Thành Nhân | REVIEW | REVIEW | [PR #149](https://github.com/hnamhocit/cnpm_110/pull/149), tích hợp qua #150. Có slider, nhận xét, kiểm tra đầu vào và tính điểm theo trọng số. Nút gửi giả lập thành công, chưa lưu điểm. |
-| FPC-82 | Mobile | Thông báo khi bài được đưa vào vòng chấm | Dương Nguyễn | REVIEW | REVIEW | Commit `90d6f07` trên develop. Cần xác nhận nghiệm thu. |
-| FPC-83 | Mobile | Hiển thị trạng thái đang trong vòng chấm | Dương Nguyễn | REVIEW | REVIEW | Commit `f5eec7e` trên develop. Cần xác nhận nghiệm thu. |
-| FPC-84 | Mobile | Cache ảnh bài thi | Huỳnh Trần Gia Bảo | REVIEW | REVIEW | Commit `260dd1f` trên develop. Cần xác nhận nghiệm thu. |
-| FPC-85 | Mobile | Chuyển trang và skeleton loading danh sách ảnh lớn | Huỳnh Trần Gia Bảo | REVIEW | REVIEW | Commit `a628e31` trên develop. Cần xác nhận nghiệm thu. |
-| FPC-86 | Lead | Review thuật toán tính điểm và kiểm tra xử lý đồng thời | Nam Nguyễn | TODO | DONE | Đã review và chạy 15 unit test, 25 ca integration PostgreSQL sau khi sửa. [Kết quả review](overview.md#review-fpc-86) |
-| FPC-87 | Lead | Cập nhật Swagger/Postman cho Judging | Nam Nguyễn | TODO | DONE | Đã cập nhật năm route Judging đã đăng ký trong Swagger/Postman. [Hợp đồng](../ai/09-api-contracts.md#61-hợp-đồng-judging) |
+| FPC-70 | Backend | API danh sách bài được phân công cho giám khảo | Duong Nguyen | TODO | DONE | Đã tích hợp `520148c`, sửa tại `56c2576`. Ảnh ẩn danh bỏ metadata và kiểm tra phân công. |
+| FPC-71 | Backend | API nộp điểm theo tiêu chí | Duong Nguyen | TODO | DONE | Đã tích hợp `14c5d66`, sửa tại `56c2576`. Chỉ ghi ở JUDGING, phải đủ tiêu chí và khóa hàng cuộc thi khi ghi. |
+| FPC-72 | Backend | API khóa bảng điểm khi kết thúc vòng | Duong Nguyen | TODO | DONE | Đã tích hợp `9190eeb`, sửa tại `56c2576`. Khóa phiếu đã chấm đủ bài, đồng bộ với ghi điểm và chuyển trạng thái. |
+| FPC-73 | Backend | Thuật toán tổng hợp điểm từ nhiều giám khảo | Hà Đức Bình | DOING | DONE | Đã merge tại `e2adee1` và sửa tại `56c2576`. Điểm chung cuộc làm tròn sau khi lấy trung bình, trọng số có bốn chữ số thập phân. |
+| FPC-74 | Backend | API bảng xếp hạng theo điểm | Hà Đức Bình | TODO | DONE | Đã tích hợp `ba4b828`, sửa tại `56c2576`. Bảng điểm trả cờ chênh lệch và chặn công bố khi còn cờ. |
+| FPC-75 | Backend | Xử lý đồng điểm | Hà Đức Bình | TODO | DONE | Đã tích hợp `c73275a`. Xếp hạng đồng điểm theo kiểu 1, 1, 3 trong từng hạng mục. |
+| FPC-76 | Web | Màn theo dõi tiến độ chấm của từng giám khảo | Vĩ Nguyễn | REVIEW | REVIEW | Đã merge PR #141. Bản sửa `f06e312` bổ sung kiểu dữ liệu chấm. TypeScript đã qua, màn tiến độ vẫn dùng dữ liệu mẫu. |
+| FPC-77 | Web | Bảng điểm tổng hợp cập nhật cho Organizer | Vĩ Nguyễn | REVIEW | REVIEW | Đã merge PR #142. Test lọc và xếp hạng bảng điểm đã qua. Màn Organizer vẫn dùng dữ liệu mẫu dù API FPC-74 đã có. |
+| FPC-78 | Web | Nhắc giám khảo sắp trễ hạn qua email | Vĩ Nguyễn | TODO | TODO | Chưa thấy luồng Web hoặc API gửi email nhắc giám khảo sắp trễ hạn. |
+| FPC-79 | Web | Giao diện chấm toàn màn hình | Phạm Tiến Thành Nhân | REVIEW | DONE | Đã duyệt và merge PR #147 qua #150. UI toàn màn hình đã có trên trang demo; còn nối bài phân công và kiểm soát quyền Judge. |
+| FPC-80 | Web | Trình xem ảnh chất lượng cao có zoom và metadata | Phạm Tiến Thành Nhân | REVIEW | DONE | Đã duyệt và merge PR #148 qua #150. UI hỗ trợ kéo ảnh, zoom 350% và xem metadata mẫu; chưa nghiệm thu với ảnh scan thật. |
+| FPC-81 | Web | Thanh trượt chấm từng tiêu chí và nhập nhận xét | Phạm Tiến Thành Nhân | REVIEW | DONE | Đã duyệt và merge PR #149 qua #150. UI slider, nhận xét và tính điểm có unit test. Bản sửa `f06e312` hiện báo rõ phiếu thử chưa lưu; còn nối API FPC-71. |
+| FPC-82 | Mobile | Thông báo khi bài được đưa vào vòng chấm | Dương Nguyễn | REVIEW | REVIEW | Đã merge PR #144. Banner trong app dựa vào trạng thái APPROVED và lưu dấu đã báo. Cần nghiệm thu theo sự kiện vào vòng chấm và xác nhận phạm vi thông báo khi app đóng. |
+| FPC-83 | Mobile | Hiển thị trạng thái đang trong vòng chấm | Dương Nguyễn | REVIEW | REVIEW | Đã merge PR #145. Màn chi tiết hiển thị banner vòng chấm khi bài APPROVED. Cần đối chiếu trạng thái vòng chấm thực từ Backend. |
+| FPC-84 | Mobile | Cache ảnh bài thi | Huỳnh Trần Gia Bảo | REVIEW | DONE | Đã merge PR #143. Danh sách và chi tiết bài dùng ảnh cache; có widget test trong repo. Chưa chạy lại trên Flutter trong lượt rà soát này. |
+| FPC-85 | Mobile | Chuyển trang và skeleton loading danh sách ảnh lớn | Huỳnh Trần Gia Bảo | REVIEW | DONE | Đã merge PR #146. Có chuyển cảnh, skeleton danh sách bài và bảng vàng; có test trong repo. Chưa chạy lại trên Flutter trong lượt rà soát này. |
+| FPC-86 | Lead | Review thuật toán tính điểm và kiểm tra xử lý đồng thời | Nam Nguyễn | TODO | DONE | Đã review và sửa tại `56c2576`. 15 unit test và 25 ca integration PostgreSQL đạt sau bản sửa. [Kết quả review](overview.md#review-fpc-86) |
+| FPC-87 | Lead | Cập nhật Swagger/Postman cho Judging | Nam Nguyễn | TODO | DONE | Năm route Judging đã được cập nhật trong OpenAPI và collection tại `56c2576`. Repo hiện quản lý Postman qua workspace tại `docs/.postman/resources.yaml`. [Hợp đồng](../ai/09-api-contracts.md#61-hợp-đồng-judging) |
 
 ## Sprint 5 · Kết quả, triển lãm và kiểm thử
 
