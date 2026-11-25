@@ -69,8 +69,8 @@ Các đầu việc dưới đây chưa có mã Jira riêng trong bảng phục d
 | FPC-40 | Mobile | Danh sách cuộc thi và lọc theo trạng thái | Hoài Bảo Từ | DONE | DONE | — |
 | FPC-41 | Mobile | Chi tiết cuộc thi và nút đăng ký | Hoài Bảo Từ | DONE | DONE | Có màn và nút. Nghiệm thu luồng đăng ký theo FPC-42. |
 | FPC-42 | Mobile | Kiểm tra điều kiện và lưu trạng thái tham gia | Hoài Bảo Từ | DONE | DOING | Có kiểm tra trên Mobile. Thiếu lưu tham gia, hạng mục chưa được truyền vào form. Commit `ca22a0f` trên develop. |
-| FPC-43 | Mobile | Form thông số chụp gồm máy, ống kính, phim, ISO và frame | Huỳnh Trần Gia Bảo | DONE | DONE | — |
-| FPC-44 | Mobile | Form tráng và scan gồm lab, thiết bị và độ phân giải | Huỳnh Trần Gia Bảo | DONE | DONE | — |
+| FPC-43 | Mobile | Form thông số chụp gồm máy, ống kính, phim, ISO và frame | Huỳnh Trần Gia Bảo | DONE | DONE | Merge PR #46. Đã nối vào luồng nộp bài mobile. |
+| FPC-44 | Mobile | Form tráng và scan gồm lab, thiết bị và độ phân giải | Huỳnh Trần Gia Bảo | DONE | DONE | Merge PR #51. Đã nối vào luồng nộp bài mobile. |
 | FPC-45 | Mobile | Image picker và preview ảnh scan, đính kèm đối chứng | Huỳnh Trần Gia Bảo | DONE | DONE | — |
 | FPC-46 | Lead | Đo hiệu năng upload ảnh lớn và xây luồng sinh thumbnail | Nam Nguyễn | DONE | REVIEW | Chưa xác minh số đo upload lớn hoặc luồng sinh thumbnail. |
 | FPC-47 | Lead | Đặc tả Contest và Submission trên Postman/Swagger | Nam Nguyễn | DONE | DONE | — |
@@ -176,7 +176,7 @@ Các đầu việc dưới đây chưa có mã Jira riêng trong bảng phục d
 | Mã | Phạm vi | Công việc | Người phụ trách | Jira | Hiện tại | Ghi chú |
 | --- | --- | --- | --- | --- | --- | --- |
 | FPC-126 | Tài liệu | Module 01 Auth & RBAC | Huỳnh Trần Gia Bảo | DONE | DONE | Đã đồng bộ tài liệu với Backend và biến môi trường SMTP/Twilio. |
-| FPC-127 | Tài liệu | Module 02 Analog Master Data | Huỳnh Trần Gia Bảo | DONE | DONE | — |
+| FPC-127 | Tài liệu | Module 02 Analog Master Data | Huỳnh Trần Gia Bảo | DONE | DONE | Đã có đặc tả. Theo dõi phần quản trị và tra cứu danh mục tại [overview](overview.md#độ-phủ-theo-module). |
 | FPC-128 | Tài liệu | Module 03 Contest Lifecycle | Duong Nguyen | DONE | DONE | — |
 | FPC-129 | Tài liệu | Module 07 Blind Judging | Duong Nguyen | DONE | DONE | — |
 | FPC-130 | Tài liệu | Module 04 Film Logbook | Vĩ Nguyễn | DONE | DONE | — |
