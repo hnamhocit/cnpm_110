@@ -1,11 +1,11 @@
 {
-    "name": "mobile",
-    "short_name": "mobile",
+    "name": "CINEGEN",
+    "short_name": "CINEGEN",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#1b2f28",
+    "theme_color": "#386A5A",
+    "description": "Nền tảng nhiếp ảnh phim analog CINEGEN",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

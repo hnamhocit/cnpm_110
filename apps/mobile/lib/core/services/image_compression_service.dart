@@ -340,7 +340,7 @@ String _ensureExtension(String fileName, String ext) {
   return '${fileName.substring(0, dotIdx)}$ext';
 }
 
-/// Service nén ảnh chuyên trách phía Client cho ứng dụng Film Contest Mobile.
+/// Service nén ảnh chuyên trách phía Client cho ứng dụng CINEGEN Mobile.
 class ImageCompressionService {
   const ImageCompressionService();
 

@@ -39,20 +39,31 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.photo_camera_outlined, size: 96, color: scheme.onPrimary),
-            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Image.asset(
+                'assets/images/logo.png',
+                width: 120,
+                height: 120,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    Icon(Icons.movie_filter_outlined, size: 96, color: scheme.onPrimary),
+              ),
+            ),
+            const SizedBox(height: 20),
             Text(
-              'Film Contest',
-              style: theme.textTheme.headlineMedium?.copyWith(
+              'CINEGEN',
+              style: theme.textTheme.headlineLarge?.copyWith(
                 color: scheme.onPrimary,
                 fontWeight: FontWeight.bold,
+                letterSpacing: 2.0,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Cuộc thi nhiếp ảnh phim',
+              'Nền tảng nhiếp ảnh phim analog',
               style: theme.textTheme.bodyLarge?.copyWith(
-                color: scheme.onPrimary,
+                color: scheme.onPrimary.withValues(alpha: 0.9),
               ),
             ),
           ],

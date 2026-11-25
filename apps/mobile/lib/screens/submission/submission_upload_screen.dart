@@ -304,14 +304,14 @@ class _SubmissionUploadScreenState
 
     if (!formValid) return;
 
-    // Bug 14: Bắt buộc kiểm tra contestId và categoryId hợp lệ từ arguments truyền vào
+    // Bug 14: Bắt buộc kiểm tra contestId hợp lệ từ arguments truyền vào
     final contestId = widget.contestId.trim();
     final categoryId = widget.categoryId.trim();
-    if (contestId.isEmpty || categoryId.isEmpty) {
+    if (contestId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text(
-            'Lỗi: Thiếu thông tin cuộc thi (contestId) hoặc danh mục (categoryId).',
+            'Lỗi: Thiếu thông tin cuộc thi (contestId).',
           ),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
@@ -381,7 +381,7 @@ class _SubmissionUploadScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Tác phẩm "${result.title}" đã được tải lên hệ thống Film Contest.',
+                  'Tác phẩm "${result.title}" đã được tải lên hệ thống CINEGEN.',
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 12),

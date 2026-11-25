@@ -69,9 +69,9 @@ class NotificationService {
       ),
       AppNotification(
         id: 'init_welcome',
-        title: 'Chào mừng bạn đến với Film Contest! 📷',
+        title: 'Chào mừng bạn đến với CINEGEN! 📷',
         message:
-            'Hệ thống quản lý dự thi nhiếp ảnh phim analog đã sẵn sàng. Chúc bạn có những bức ảnh giàu cảm xúc!',
+            'Nền tảng nhiếp ảnh phim analog CINEGEN đã sẵn sàng. Chúc bạn có những tác phẩm giàu cảm xúc!',
         type: NotificationType.system,
         createdAt: now.subtract(const Duration(hours: 3)),
         isRead: true,

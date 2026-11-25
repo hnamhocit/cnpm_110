@@ -24,7 +24,7 @@ void main() {
         AppNotification(
           id: 'test_2',
           title: 'Chào mừng bạn! 📷',
-          message: 'Chào mừng bạn đến với hệ thống Film Contest.',
+          message: 'Chào mừng bạn đến với hệ thống CINEGEN.',
           type: NotificationType.system,
           createdAt: DateTime.now().subtract(const Duration(hours: 1)),
           isRead: true,

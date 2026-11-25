@@ -239,13 +239,29 @@ void main() {
     expect(find.text('Hợp lệ (Đã phê duyệt)'), findsOneWidget);
 
     // Scroll down bottom sheet to reveal lower sections
-    await tester.drag(find.text('Tiến trình kiểm duyệt thời gian thực'), const Offset(0, -400));
+    await tester.scrollUntilVisible(
+      find.text('Thông số tệp ảnh (BR-07)'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Thông số tệp ảnh (BR-07)'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Siêu dữ liệu Analog (BR-22)'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+
     expect(find.text('Siêu dữ liệu Analog (BR-22)'), findsOneWidget);
 
-    await tester.drag(find.text('Siêu dữ liệu Analog (BR-22)'), const Offset(0, -300));
+    await tester.scrollUntilVisible(
+      find.text('Đóng'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Đóng'), findsOneWidget);
