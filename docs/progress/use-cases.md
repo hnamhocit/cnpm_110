@@ -14,6 +14,12 @@ Tên và phạm vi lấy từ [SRS](../srs.md). Dùng [ánh xạ module chính](
 
 **Integration** là mức xác nhận xuyên các thành phần áp dụng. DONE ở Backend chỉ tính cho phần Backend của UC. Một task DONE hoặc PR đã merge vẫn được ghi nhận ở [bảng đối chiếu Sprint → PR → UC](technical-evidence.md#đối-chiếu-task-sprint-với-pr-và-use-case) nếu phạm vi nghiệm thu của UC còn thiếu. **Owner** ghi **Chờ chốt** nếu Project Lead chưa phân công, và dấu **—** nếu UC đã đóng. Phân công Jira theo task nằm trong lịch sử sprint.
 
+## Phân cấp và cách tính tiến độ
+
+43 UC là các đặc tả chi tiết của 10 nhóm FR cấp cao. Mỗi UC có đúng một FR chính trong [ma trận SRS](../srs.md#23-phân-cấp-yêu-cầu-và-truy-vết-chức-năng). Các nhóm bên dưới vẫn theo module sở hữu triển khai. Khi tính độ phủ, đếm mỗi UC một lần, dùng Overall để xác định trạng thái nhóm FR và đối chiếu Integration để xác nhận hoàn thành toàn luồng.
+
+Hiện có **1/10 FR DONE (FR-01)**, **8/43 UC DONE**, **30 UC PARTIAL** và **5 UC TODO**. Backend DONE có **10/43 UC** và nghiệm thu toàn luồng có **8/43 UC**. Cột Backend có 8 TODO. Xem [tổng hợp theo FR](overview.md#tiến-độ-theo-nhóm-yêu-cầu-chức-năng).
+
 ## M01 Authentication & RBAC
 
 | UC ID | Use Case | Backend | Web | Mobile | Integration | Overall Status | Remaining Work | Owner |
