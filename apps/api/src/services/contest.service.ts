@@ -13,6 +13,7 @@ import {
 import { db } from "../db";
 import {
   categories,
+  contestPublications,
   contests,
   contestJudges,
   evaluations,
@@ -199,6 +200,13 @@ export async function getContestResults(contestId: string) {
   if (!isPublished) {
     throw AppError.badRequest("Contest results have not been published yet");
   }
+
+  const [official] = await db
+    .select({ contestId: contestPublications.contestId })
+    .from(contestPublications)
+    .where(eq(contestPublications.contestId, contestId))
+    .limit(1);
+  if (official) return getOfficialContestResults(contestId);
 
   const winnerRows = await db
     .select({

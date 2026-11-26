@@ -29,6 +29,7 @@ import {
   type Body,
 } from "./contest-configuration.input";
 import { publishContestResults } from "../services/contest-publication";
+import { getMyContestResults } from "../services/contest-results-feedback";
 import { AppError } from "../utils/errors";
 
 const VALID_STATUSES = [
@@ -338,4 +339,9 @@ export async function handlePublishContestResults(c: Context<AuthEnv>) {
   });
   const data = await publishContestResults(resourceId(c.req.param("id")), c.get("user").id, tieBreaks);
   return c.ok(data);
+}
+
+export async function handleGetMyContestResults(c: Context<AuthEnv>) {
+  const data = await getMyContestResults(resourceId(c.req.param("id")), c.get("user").id);
+  return c.ok(data, "Participant contest results retrieved successfully");
 }

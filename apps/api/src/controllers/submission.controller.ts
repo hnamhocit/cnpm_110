@@ -13,6 +13,7 @@ import {
   getSubmissionProofDetail, getSubmissionProofImage, listContestNotifications, requestProof, uploadProof,
   verifyProof, type ProofType,
 } from "../services/submission-proof";
+import { getMySubmissionResultAndFeedback } from "../services/contest-results-feedback";
 import { AppError } from "../utils/errors";
 
 const UUID_REGEX =
@@ -400,4 +401,11 @@ export async function handleGetSubmissionProofImage(c: Context<AuthEnv>) {
   const id = c.req.param("id") ?? "";
   assertUuid(id, "submission ID");
   return getSubmissionProofImage(id, c.get("user"));
+}
+
+export async function handleGetSubmissionFeedback(c: Context<AuthEnv>) {
+  const id = c.req.param("id") ?? "";
+  assertUuid(id, "submission ID");
+  const data = await getMySubmissionResultAndFeedback(id, c.get("user").id);
+  return c.ok(data, "Submission results and feedback retrieved successfully");
 }

@@ -119,6 +119,38 @@ export async function deleteFromR2(key: string): Promise<void> {
   }
 }
 
+function resolveLocalUploadPath(key: string): string | null {
+  const uploadDir = path.resolve(process.cwd(), "uploads");
+  const targetPath = path.resolve(uploadDir, key);
+  const relative = path.relative(uploadDir, targetPath);
+  if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+    return null;
+  }
+  return targetPath;
+}
+
+/** Reads a private object (master image or generated WebP) from local storage or the private bucket. */
+export async function readFromStorage(key: string): Promise<Buffer | null> {
+  const localPath = resolveLocalUploadPath(key);
+  if (localPath && fs.existsSync(localPath)) {
+    return fs.readFileSync(localPath);
+  }
+
+  if (isR2Configured()) {
+    try {
+      const { client, bucketName } = getR2Config();
+      const response = await client.send(new GetObjectCommand({ Bucket: bucketName, Key: key }));
+      const bytes = await response.Body?.transformToByteArray();
+      client.destroy();
+      return bytes ? Buffer.from(bytes) : null;
+    } catch (error) {
+      console.warn("Cloudflare R2 read failed:", error);
+    }
+  }
+
+  return null;
+}
+
 export async function getR2SignedReadUrl(
   key: string,
   expiresInSeconds = 300,
