@@ -19,7 +19,7 @@ import submissionRoute from "./routes/submissions.route";
 import uploadRoute from "./routes/upload.route";
 import { AppError } from "./utils/errors";
 import { attachResponseHelpers, errorResponse } from "./utils/result";
-import { initializeDatabase } from "./db/initialize";
+import { seed } from "./db/seed";
 
 const app = new Hono();
 
@@ -69,7 +69,7 @@ app.route("/api/v1", v1);
 // 5. Server & Graceful Shutdown
 const port = Number(process.env.PORT) || 8080;
 
-await initializeDatabase();
+await seed();
 
 const server = Bun.serve({
   port,

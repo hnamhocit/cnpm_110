@@ -53,23 +53,24 @@ bun run --filter api db:check
 
 Kiểm tra file SQL được sinh ra trước khi áp dụng.
 
-## 5. Khởi động API và áp dụng migration
+## 5. Apply migrations
 
 Khi mới clone, tạo database trên PostgreSQL local bằng công cụ quản trị bạn đang dùng. Dùng `film_contest` cho bộ demo hoặc `cinegen_acceptance_test` cho bộ nghiệm thu. Hai bộ dùng database riêng. Cập nhật `DATABASE_URL` trong `apps/api/.env` theo đúng host, cổng, tài khoản và tên database đã tạo.
 
-Từ thư mục gốc, khởi động API:
+Từ thư mục gốc, tạo các bảng rồi khởi động API:
 
 ```bash
+bun --filter api db:migrate
 bun --filter api dev
 ```
 
-API tự áp dụng migration còn thiếu, rồi nạp dữ liệu mẫu trước khi mở cổng. Khi đổi sang bộ còn lại, cập nhật `DATABASE_URL` rồi khởi động lại API. Với bộ nghiệm thu, để trống cấu hình R2 để dùng ảnh tổng hợp trong local storage.
+API tự nạp dữ liệu mẫu còn thiếu trước khi mở cổng. Khi đổi sang bộ còn lại, cập nhật `DATABASE_URL` rồi chạy lại hai lệnh trên. Với bộ nghiệm thu, để trống cấu hình R2 để dùng ảnh tổng hợp trong local storage.
 
 [Baseline `0000_baseline.sql`](drizzle/0000_baseline.sql) tạo toàn bộ 20 bảng hiện tại. Cách áp dụng phụ thuộc vào lịch sử của database.
 
 | Database | Cách áp dụng |
 | --- | --- |
-| Mới, chưa có các bảng ứng dụng | Khởi động API để tự áp dụng baseline. |
+| Mới, chưa có các bảng ứng dụng | Chạy `bun run --filter api db:migrate`. |
 | Đã chạy đủ chuỗi cũ đến `0015_pale_johnny_blaze` | Giữ lịch sử trong `public.__drizzle_migrations`. Baseline dùng cùng mốc thời gian `1795606798211`, nên Drizzle bỏ qua baseline và áp dụng được các migration mới sau đó. |
 | Đã có bảng nhưng chưa đến `0015` | Sao lưu, dùng mã ở commit `28c674c` để áp dụng các migration cũ còn thiếu trên cùng database. Sau khi thấy mốc `0015`, chuyển sang bản baseline. Nếu database được tạo thủ công hoặc bị lệch schema, đối chiếu trước khi chạy migration. |
 
@@ -96,12 +97,13 @@ bun --filter api db:reset --confirm=cinegen
 
 Ví dụ Docker Compose mặc định dùng database `cinegen` tại `127.0.0.1:5433`. Database phải tồn tại và tài khoản kết nối cần quyền quản lý schema `public`. Lệnh kiểm tra tên xác nhận, chỉ chấp nhận địa chỉ loopback và từ chối khi `NODE_ENV=production`.
 
-Reset và chạy lại toàn bộ migration có trong journal diễn ra trong một transaction. Nếu migration lỗi, PostgreSQL hoàn tác việc xóa schema. Sau khi thành công, chạy `bun --filter api dev`. API tự nạp vai trò hệ thống và dữ liệu mẫu khi khởi động ở môi trường phát triển. Với PostgreSQL local, API còn tự tạo cuộc thi **CINEGEN Demo · Theo dõi bài dự thi** với 72 bài và dữ liệu đối sánh giả lập.
+Reset và chạy lại toàn bộ migration có trong journal diễn ra trong một transaction. Nếu migration lỗi, PostgreSQL hoàn tác việc xóa schema. Sau khi thành công, chạy `bun --filter api dev`. API tự nạp vai trò hệ thống và dữ liệu mẫu khi khởi động ở môi trường phát triển. Với PostgreSQL local, API còn tự tạo cuộc thi **CINEGEN Demo · Theo dõi bài dự thi** với 72 bài và dữ liệu đối sánh giả lập. Lệnh `db:seed:demo` vẫn dùng được nếu cần chuẩn bị trước trên `cinegen_demo`.
 
 ### Xử lý lỗi thường gặp
 
 | Triệu chứng | Cách xử lý |
 | --- | --- |
+| `Script not found "db:migrate"` | Từ root dùng `bun --filter api db:migrate` vì script nằm trong workspace `api`. |
 | `ECONNREFUSED` | Kiểm tra PostgreSQL đang chạy và cổng trong `DATABASE_URL`. Docker Compose mặc định ánh xạ cổng máy host `5433`. |
 | `relation ... already exists` | Kiểm tra lịch sử theo mục 5. Nếu đây là database local có thể xóa, dùng `db:reset`. |
 | Dữ liệu mẫu xuất hiện lại sau reset | API tự tạo lại tài khoản, cuộc thi và bài thi mẫu khi khởi động ở môi trường phát triển. Để đối chiếu, kiểm tra dữ liệu ngay sau reset trước khi bật API. Nếu vẫn thấy dữ liệu do nhóm tự tạo, kiểm tra API đang dùng đúng host/cổng/tên database trong `DATABASE_URL` và Web đang trỏ đúng API qua `NEXT_PUBLIC_API_URL`. |
