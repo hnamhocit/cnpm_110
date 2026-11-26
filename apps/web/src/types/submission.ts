@@ -17,12 +17,12 @@ export interface Submission {
   submittedAt: string;
   isAiFlagged: boolean;
   status: SubmissionStatus;
-  aiAnalysis?: {
-    aiGeneratedProbability?: number | null;
-    phashHex?: string | null;
-    duplicateSuspectId?: string | null;
-    duplicateSimilarityScore?: number | null;
-    predictedTags?: { tag: string; confidence?: number | null }[] | null;
-    flagReasons?: string[] | null;
-  } | null;
+  code?: string | null;
+  submissionCode?: string | null;
+  proofRequestedAt?: string | null;
+  proofDeadlineAt?: string | null;
+  proofSubmittedAt?: string | null;
+  negativeProofPath?: string | null;
+  proofReviewStatus?: "PENDING" | "VALID" | "INVALID" | string | null;
+  categoryRequiresProofUpfront?: boolean | null;
 }
