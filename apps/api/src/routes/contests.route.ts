@@ -2,12 +2,14 @@ import { Hono } from "hono";
 import { generateContestAnalytics, getContestAnalytics } from "../services/contest-analytics";
 import { AppError } from "../utils/errors";
 import {
+  handleCloseJudgingRound,
   handleCreateContest,
   handleDeleteContest,
   handleGetContest,
   handleGetContestCategories,
   handleGetContestResults,
   handleGetContestScoreboard,
+  handleGetJudgingProgress,
   handleListContests,
   handleUpdateContest,
 } from "../controllers/contest.controller";
@@ -28,6 +30,18 @@ contests.get(
   authenticate,
   requirePermission("judging:read_scoreboard"),
   handleGetContestScoreboard,
+);
+contests.get(
+  "/:id/judging-progress",
+  authenticate,
+  requirePermission("judging:read_scoreboard"),
+  handleGetJudgingProgress,
+);
+contests.post(
+  "/:id/close-judging",
+  authenticate,
+  requirePermission("contests:update"),
+  handleCloseJudgingRound,
 );
 contests.on(
   ["GET", "POST"],

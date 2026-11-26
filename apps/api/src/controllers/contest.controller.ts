@@ -1,11 +1,13 @@
 import type { Context } from "hono";
 import type { AuthEnv } from "../middlewares/auth";
 import {
+  closeJudgingRound,
   createContest,
   getContestById,
   getContestCategories,
   getContestResults,
   getContestScoreboard,
+  getJudgingProgress,
   listContests,
   softDeleteContest,
   updateContest,
@@ -256,4 +258,16 @@ export async function handleDeleteContest(c: Context<AuthEnv>) {
   const { id } = c.req.param();
   const deleted = await softDeleteContest(id, c.get("user"));
   return c.ok(deleted, "Contest deleted successfully (BR-03: Soft Delete)");
+}
+
+export async function handleGetJudgingProgress(c: Context<AuthEnv>) {
+  const { id } = c.req.param();
+  const data = await getJudgingProgress(id);
+  return c.ok(data, "Judging progress retrieved successfully");
+}
+
+export async function handleCloseJudgingRound(c: Context<AuthEnv>) {
+  const { id } = c.req.param();
+  const data = await closeJudgingRound(id);
+  return c.ok(data, "Judging round closed and results published (BR-16)");
 }
