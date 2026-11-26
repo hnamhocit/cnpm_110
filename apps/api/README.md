@@ -52,10 +52,11 @@ Các lệnh cơ bản:
 ```bash
 # Áp dụng migrations tạo các bảng users, roles, permissions...
 bun --filter api db:migrate
-
-# Seed dữ liệu mặc định (Admin, Organizer, Judge, Participant)
-bun --filter api db:seed
 ```
+
+API tự nạp vai trò hệ thống khi khởi động. Môi trường phát triển cũng tự nạp tài khoản và cuộc thi mẫu.
+
+Nếu database local cũ lệch schema và có thể xóa, chạy `bun --filter api db:reset --confirm=cinegen` với tên database thực tế. Lệnh xóa dữ liệu trong schema `public` và chạy lại migration. Xem [hướng dẫn reset và xử lý lỗi](./README-DATABASE.md#6-reset-và-migrate-database-local).
 
 ### 4. Khởi chạy Development Server
 
@@ -85,7 +86,7 @@ API Server lắng nghe tại cổng: **[http://localhost:8080](http://localhost:
 | `bun --filter api test:integration` | Chạy integration test Auth trên PostgreSQL |
 | `bun --filter api db:generate`      | Sinh file SQL migration mới từ schema                |
 | `bun --filter api db:migrate`       | Áp dụng migration vào PostgreSQL                     |
-| `bun --filter api db:seed`          | Nạp dữ liệu vai trò ban đầu                          |
+| `bun --filter api db:reset --confirm=cinegen` | Xóa schema `public` của database local rồi chạy lại migration |
 
 ## Xác thực định danh và khôi phục mật khẩu
 

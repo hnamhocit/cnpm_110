@@ -297,15 +297,3 @@ export async function seed() {
   await seedOngoingContest(organizerUserId, participantUserId);
   await seedPublishedContest(organizerUserId, participantUserId);
 }
-
-if (import.meta.main) {
-  seed()
-    .then(() => {
-      console.log("Seed completed.");
-      process.exit(0);
-    })
-    .catch((err) => {
-      console.error("Seed failed:", err);
-      process.exit(1);
-    });
-}

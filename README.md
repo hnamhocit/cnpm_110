@@ -89,8 +89,9 @@ cp apps/web/.env.example apps/web/.env.local
 Tạo database và thiết lập `DATABASE_URL` theo [hướng dẫn PostgreSQL](apps/api/README-DATABASE.md).
 ```bash
 bun --filter api db:migrate
-bun --filter api db:seed
 ```
+
+Backend tự nạp vai trò và dữ liệu mẫu khi khởi động ở môi trường phát triển.
 
 ### 4. Chạy Môi trường Phát triển (Development)
 
