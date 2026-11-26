@@ -75,12 +75,12 @@ Cấu hình, đăng ký và vận hành cuộc thi theo lịch, hạng mục và
 
 | UC ID | Chức năng | Tiêu chí nghiệm thu | Trạng thái nhóm | GV đạt | GV chưa đạt | Ghi chú |
 | --- | --- | --- | --- | --- | --- | --- |
-| UC-11 | Create / Duplicate Contest | Tạo cuộc thi với năm mốc hợp lệ. Sao chép hạng mục, tiêu chí, vòng, thể lệ và giải sang DRAFT có lịch mới. Kiểm tra bản sao trống đăng ký, bài, điểm và kết quả. (SRS §3, BR-08) | PARTIAL |  |  |  |
-| UC-12 | Update Contest Configuration | Sửa thông tin, hạn nộp và thể lệ khi cuộc thi chưa đóng. Từ chối lịch sai thứ tự: mở đăng ký, hạn nộp, bắt đầu chấm, kết thúc chấm, công bố. (BR-08) | PARTIAL |  |  |  |
-| UC-13 | Manage Contest Categories | Organizer thêm, sửa, kích hoạt/vô hiệu hóa hạng mục. Kiểm tra Participant chỉ đăng ký được hạng mục hợp lệ. (SRS §2.2–3) | PARTIAL |  |  |  |
-| UC-14 | Configure Judging Criteria | Lưu tiêu chí và trọng số theo hạng mục. Chấp nhận tổng đúng 100% và báo MSG007 khi tổng sai. (BR-15) | PARTIAL |  |  |  |
-| UC-15 | Manage Judging Rounds | Cấu hình một hoặc nhiều vòng chấm, thời hạn từng vòng và số bài đi tiếp. Mở lại để kiểm tra cấu hình đã lưu. (SRS §2.2, BR-14) | TODO |  |  |  |
-| UC-16 | Assign Judges to Categories | Phân công theo hạng mục/vòng, bảo đảm ít nhất một Judge hoạt động. Thử tài khoản có xung đột với vai trò Participant trong cùng cuộc thi. (BR-20/21) | PARTIAL |  |  |  |
+| UC-11 | Create / Duplicate Contest | Tạo cuộc thi với năm mốc hợp lệ. Sao chép hạng mục, tiêu chí, vòng, thể lệ và giải sang DRAFT có lịch mới. Kiểm tra bản sao trống đăng ký, bài, điểm và kết quả. (SRS §3, BR-08) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
+| UC-12 | Update Contest Configuration | Sửa thông tin, hạn nộp và thể lệ khi cuộc thi chưa đóng. Từ chối lịch sai thứ tự: mở đăng ký, hạn nộp, bắt đầu chấm, kết thúc chấm, công bố. (BR-08) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
+| UC-13 | Manage Contest Categories | Organizer thêm, sửa, kích hoạt/vô hiệu hóa hạng mục. Kiểm tra Participant chỉ đăng ký được hạng mục hợp lệ. (SRS §2.2–3) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
+| UC-14 | Configure Judging Criteria | Lưu tiêu chí và trọng số theo hạng mục. Chấp nhận tổng đúng 100% và báo MSG007 khi tổng sai. (BR-15) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
+| UC-15 | Manage Judging Rounds | Cấu hình một hoặc nhiều vòng chấm, thời hạn từng vòng và số bài đi tiếp. Mở lại để kiểm tra cấu hình đã lưu. (SRS §2.2, BR-14) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
+| UC-16 | Assign Judges to Categories | Phân công theo hạng mục/vòng, bảo đảm ít nhất một Judge hoạt động. Thử tài khoản có xung đột với vai trò Participant trong cùng cuộc thi. (BR-20/21) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
 | UC-17 | View Participant Registrations | Tìm và lọc đăng ký theo cuộc thi, hạng mục và trạng thái nộp. Kiểm tra phạm vi quyền Organizer. (SRS §2.2–3, CR-03) | TODO |  |  |  |
 | UC-34 | Browse & Register for Contests | Tìm cuộc thi đang mở, xem và chấp nhận thể lệ, đăng ký hạng mục hợp lệ. Thử đăng ký trùng, ngoài hạn và xung đột vai trò. (SRS §3, BR-08/21) | PARTIAL |  |  |  |
 
@@ -100,8 +100,8 @@ Nhận bài dự thi, kiểm duyệt, xác minh đối chứng và theo dõi tr�
 | UC ID | Chức năng | Tiêu chí nghiệm thu | Trạng thái nhóm | GV đạt | GV chưa đạt | Ghi chú |
 | --- | --- | --- | --- | --- | --- | --- |
 | UC-18 | View Submission Queue | Mở hàng đợi cuộc thi thuộc quyền. Đối chiếu danh sách bài, trạng thái kiểm duyệt và nhãn cảnh báo AI. (SRS §2.2, CR-03) | DONE |  |  |  |
-| UC-21 | Request Negative / Contact Sheet Proof | Organizer gửi yêu cầu âm bản hoặc contact sheet với hạn do mình đặt. Kiểm tra thí sinh thấy hạn đúng và Organizer xử lý thủ công khi quá hạn. (BR-06/19) | PARTIAL |  |  |  |
-| UC-22 | Verify & Approve Submission | Duyệt bài đạt chuẩn kỹ thuật vào danh sách chấm. Thử bài yêu cầu đối chứng và xác nhận hệ thống chỉ cho duyệt sau xác minh. (BR-06/07/09) | PARTIAL |  |  |  |
+| UC-21 | Request Negative / Contact Sheet Proof | Organizer gửi yêu cầu âm bản hoặc contact sheet với hạn do mình đặt. Kiểm tra thí sinh thấy hạn đúng và Organizer xử lý thủ công khi quá hạn. (BR-06/19) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
+| UC-22 | Verify & Approve Submission | Duyệt bài đạt chuẩn kỹ thuật vào danh sách chấm. Thử bài yêu cầu đối chứng và xác nhận hệ thống chỉ cho duyệt sau xác minh. (BR-06/07/09) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
 | UC-23 | Disqualify / Reject Submission | Organizer loại bài vi phạm. Thiếu lý do thì bị chặn; khi thành công kiểm tra trạng thái và AuditLog. (BR-18, CR-04) | DONE |  |  |  |
 | UC-37 | Submit Film Photograph | Nộp ảnh đúng chuẩn, đủ metadata/tuyên ngôn, gắn đăng ký và cuộn/frame thuộc quyền. Thử quá hạn, quá số bài, trùng cuộn/frame và thiếu đối chứng bắt buộc. (BR-05–08/22–24) | PARTIAL |  |  |  |
 | UC-38 | Upload Negative / Contact Sheet Proof | Tải âm bản hoặc contact sheet cho bài của mình. Kiểm tra Organizer có quyền xem đúng bằng chứng. Quá hạn do Organizer xử lý thủ công. (BR-06/19, CR-03) | PARTIAL |  |  |  |
@@ -142,9 +142,9 @@ Công bố kết quả, tổng hợp portfolio và trưng bày tác phẩm. 0/5 
 
 | UC ID | Chức năng | Tiêu chí nghiệm thu | Trạng thái nhóm | GV đạt | GV chưa đạt | Ghi chú |
 | --- | --- | --- | --- | --- | --- | --- |
-| UC-26 | Approve & Publish Results | Công bố thứ hạng và giải từ vòng cuối đã chốt với đủ đối chứng theo thể lệ. Làm tròn hai chữ số, ghi lý do khi đồng điểm và thử sửa sau công bố. (BR-06/16/25) | PARTIAL |  |  |  |
-| UC-27 | Manage Digital Archive & Exhibition | Chọn tác phẩm đưa vào triển lãm. Kiểm tra bản công khai tối ưu có bản quyền và bản gốc độ phân giải cao vẫn riêng tư. (BR-17) | PARTIAL |  |  |  |
-| UC-41 | View Contest Results & Judge Feedback | Participant xem kết quả chung cuộc, điểm trung bình và nhận xét cho bài của mình sau công bố. Thử truy cập phản hồi của tài khoản khác. (SRS §2.2–3, CR-03) | PARTIAL |  |  |  |
+| UC-26 | Approve & Publish Results | Công bố thứ hạng và giải từ vòng cuối đã chốt với đủ đối chứng theo thể lệ. Làm tròn hai chữ số, ghi lý do khi đồng điểm và thử sửa sau công bố. (BR-06/16/25) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
+| UC-27 | Manage Digital Archive & Exhibition | Chọn tác phẩm đưa vào triển lãm. Kiểm tra bản công khai tối ưu có bản quyền và bản gốc độ phân giải cao vẫn riêng tư. (BR-17) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
+| UC-41 | View Contest Results & Judge Feedback | Participant xem kết quả chung cuộc, điểm trung bình và nhận xét cho bài của mình sau công bố. Thử truy cập phản hồi của tài khoản khác. (SRS §2.2–3, CR-03) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
 | UC-42 | Manage Personal Film Portfolio | Mở portfolio cá nhân và đối chiếu tác phẩm với lịch sử nộp bài, kết quả tương ứng. Kiểm tra phạm vi tài khoản. (SRS §2.2–3, CR-03) | PARTIAL |  |  |  |
 | UC-43 | Explore Digital Archive & Gallery | Khách xem kho ảnh đã công bố và lọc theo phim, máy, năm. Kiểm tra bài chưa công bố và ảnh gốc được bảo vệ. (SRS §2.2–3, BR-17) | PARTIAL |  |  |  |
 
@@ -245,3 +245,65 @@ ________________________________________________________________________________
 | Ngày kiểm tra | Chữ ký giảng viên |
 | --- | --- |
 | …… / …… / ………… |  |
+
+
+## FPC-130 · Checklist hợp đồng cho 11 UC của Nam
+
+Phạm vi UC-11,12,13,14,15,16,21,22,26,27,41. FPC-109 và FPC-113 hoàn thành phần Backend trên cùng nhánh theo xác nhận của chủ sở hữu. Trạng thái công việc độc lập với kết quả nghiệm thu toàn luồng của GV.
+
+| Test | Kết quả hiện tại | Bằng chứng / phần cần kiểm tra |
+| --- | --- | --- |
+| N130-01 | Đã sửa sai lệch đã phát hiện | PATCH/DELETE /exhibitions/{id}, bổ sung alias feedback/result trong OpenAPI. Cần đối chiếu toàn bộ route từng UC. |
+| N130-02 | Chưa nghiệm thu | Cần request hợp lệ, HTTP status và body riêng từng endpoint. |
+| N130-03 | Chưa nghiệm thu | Bỏ từng field bắt buộc, null và chuỗi rỗng, so DB. |
+| N130-04 | Chưa nghiệm thu | Sai type/enum/miền giá trị/timestamp từng endpoint. |
+| N130-05 | PARTIAL | Test JWT chung đạt. Cần thiếu/sai/hết hạn token tại từng route bảo vệ. |
+| N130-06 | Chưa nghiệm thu | Participant/Judge gọi từng route Organizer. |
+| N130-07 | Chưa nghiệm thu | O2 dùng tài nguyên O1, so DB trước/sau. |
+| N130-08 | Chưa nghiệm thu | UUID không tồn tại và ID sai định dạng tại từng route. |
+| N130-09 | Chưa nghiệm thu | Ghi UTC+7, đọc lại client và DB. |
+| N130-10 | Chưa nghiệm thu | Phân trang/bộ lọc/empty và cách ly C1/C2. |
+| N130-11 | Chưa nghiệm thu | Gây lỗi có kiểm soát trong DB test, kiểm tra body/log. |
+| N130-12 | Chưa nghiệm thu | Mutation lỗi giữ DB nhất quán. |
+| N130-13 | Chưa đạt | Web phân công/mời Judge đang gọi route chưa mount. Cần tích hợp client thật. |
+| N130-14 | PARTIAL | OpenAPI đã sửa path/alias. Cần schema response chi tiết và validation tài liệu. |
+
+Kiểm tra nền đã đạt 39 test API, TypeScript và git diff --check. API khởi động được với DB nghiệm thu. Chưa đánh dấu PASS toàn bộ FPC-130 từ các kiểm tra nền này.
+
+### Bằng chứng Backend cho 11 UC của Nam ngày 2026-11-26
+
+Bộ test apps/api/tests/organizer-usecases.integration.test.ts gọi Hono route thật và PostgreSQL cinegen_acceptance_test. Kết quả 13/13 test, 60 assertions đạt. TypeScript đạt. Dữ liệu mutation tạo riêng và được dọn sau test. Fixture nghiệm thu có sẵn dùng cho kiểm tra kết quả 8.50 và hai nhận xét.
+
+| UC | Bằng chứng Backend đạt |
+| --- | --- |
+| UC-11 | Tạo DRAFT với năm mốc, UTC+7 đúng, chặn trọng số sai/RBAC; sao chép hạng mục và vòng chấm, bỏ phân công. Đã sửa thiếu sao chép vòng chấm thực tế. |
+| UC-12 | Owner sửa được, O2 bị chặn, lịch sai thứ tự bị chặn, sửa sau công bố bị chặn. |
+| UC-13 | Tạo và đổi tên hạng mục, chặn Organizer khác. |
+| UC-14 | Lưu trọng số 0.6/0.4, chặn tổng 0.5 và giữ bộ tiêu chí cũ. |
+| UC-15 | Tạo vòng cuối, chặn cấu hình chồng thứ tự và owner khác. |
+| UC-16 | Phân Judge hoạt động, retry giữ cùng ID, chặn Participant làm Judge. |
+| UC-21 | Gửi yêu cầu có hạn, chặn hạn quá khứ và owner khác, Participant nhận thông báo. |
+| UC-22 | Chặn duyệt khi chưa xác minh proof, xác minh rồi duyệt thành APPROVED với ảnh đạt BR-07. |
+| UC-26 | Chặn công bố sớm, tính điểm cuối 8.55 từ phiếu thật, snapshot bất biến khi retry, chặn owner khác. |
+| UC-27 | Chặn watermark false/cuộc thi chưa công bố/owner khác; tạo preview WebP bỏ EXIF, bảo vệ master key, xóa mềm ẩn khỏi public. |
+| UC-41 | Đọc đúng 8.50 và hai nhận xét, chặn Participant khác, đọc danh sách kết quả cá nhân. |
+
+Backend DONE ghi nhận phạm vi Backend của người thực hiện. Cột GV đạt/chưa đạt giữ cho nghiệm thu của GV. FPC-130 tiếp tục để sau theo yêu cầu chủ sở hữu. Bộ test này bao phủ các tình huống nêu trong bảng, chưa phải toàn bộ tổ hợp lỗi và concurrency.
+
+### Hồ sơ rà soát FPC-130 ngày 2026-11-26
+
+
+Phạm vi đã xác nhận gồm UC-11–16, UC-21–22, UC-26–27 và UC-41. Kiểm tra trên commit cfebeea của nhánh feature/FPC-109-FPC-113-m08-archive-results, theo SRS, Sprint 5 và MEMBER_WORKFLOW.
+
+Đã chạy bun --filter api test với 39 test đạt và bun --filter api check-types đạt. API đã khởi động được với PostgreSQL cinegen_acceptance_test và fixture nghiệm thu. Chưa đủ bằng chứng để đánh dấu PASS N130-02–13 theo từng endpoint.
+
+N130-01 phát hiện PATCH/DELETE triển lãm bị tài liệu hóa dưới /api/v1/exhibitions/{id}/status trong khi Hono mount tại /api/v1/exhibitions/{id}. Đã sửa OpenAPI và bổ sung GET /result cùng các alias /organizer/submissions/{id}/feedback và /result.
+
+N130-13 còn sai lệch client Web. Trang phân công gọi POST /contests/{id}/judges/assignments, trong khi API mount POST /contests/{id}/judges. Trang mời Judge gọi /judges/invite chưa mount. Hai luồng này chưa đạt nghiệm thu tích hợp.
+
+N130-02–04,06–12 còn cần request/response và kiểm tra DB riêng từng route. N130-05 có test JWT chung đạt, còn cần kiểm tra từng route bảo vệ. N130-14 còn thiếu schema response chi tiết tại nhiều endpoint M08. Các mục này giữ trạng thái chưa nghiệm thu.
+
+Theo xác nhận của chủ sở hữu, nhánh gộp FPC-109/FPC-113 bàn giao cả hai công việc. Đánh giá hoàn thành riêng theo deliverable của mỗi mã. FPC-130 trong sprints.md là mã hiện hành, mã trùng trong technical-evidence.md thuộc hồ sơ cũ.
+
+
+Backend 11 UC đã có bằng chứng 13 test integration đạt ngày 2026-11-26, xem bảng bằng chứng trong checklist. FPC-130 để sau theo quyết định chủ sở hữu.

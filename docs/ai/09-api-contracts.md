@@ -2843,7 +2843,7 @@ Sau khi được phê duyệt, tài liệu cần được đồng bộ với Ope
 
 ## 6. Danh mục endpoint
 
-[OpenAPI](../openapi.yaml) liệt kê **77** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **24** thao tác dự kiến đã có method và path. Dùng `x-implementation` để tra trạng thái và [đăng ký Hono](../../apps/api/src/index.ts) để lần tới route thực tế.
+[OpenAPI](../openapi.yaml) liệt kê **91** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **19** thao tác dự kiến đã có method và path. Dùng `x-implementation` để tra trạng thái và [đăng ký Hono](../../apps/api/src/index.ts) để lần tới route thực tế.
 
 Các chức năng còn thiếu method/path trong đặc tả gồm tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, điều phối vòng chấm, sửa metadata hoặc rút bài thi, đọc bảng điểm cá nhân, điều phối lệch điểm và xuất thống kê cuộc thi (UC-28, [Module 11](11-cross-cutting-services.md)). Xem yêu cầu nghiệp vụ tương ứng tại [SRS](../srs.md#22-use-case-catalog).
 

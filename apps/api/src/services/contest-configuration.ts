@@ -1,6 +1,6 @@
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "../db";
-import { categories, contests, evaluationScores, scoringCriteria } from "../db/schema";
+import { categories, contests, evaluationScores, judgingRounds, scoringCriteria } from "../db/schema";
 import type { ContestAward, ContestRound } from "../db/schemas/module-3.schema";
 import { AppError } from "../utils/errors";
 
@@ -108,6 +108,19 @@ export async function duplicateContest(id: string, ownerId: string, schedule: Sc
       await insertCriteria(tx, section.id, criteria.map(({ name, description, weight, maxScore, sortOrder }) => ({
         name, description, weight, maxScore, sortOrder,
       })));
+    }
+    const sourceRounds = await tx.select().from(judgingRounds).where(eq(judgingRounds.contestId, id));
+    const offset = schedule.judgingStartAt!.getTime() - source.judgingStartAt!.getTime();
+    for (const round of sourceRounds) {
+      const startAt = new Date(round.startAt.getTime() + offset);
+      const deadlineAt = new Date(round.deadlineAt.getTime() + offset);
+      if (deadlineAt > schedule.judgingDeadlineAt!) {
+        throw AppError.badRequest("MSG008: Copied rounds do not fit the new judging window");
+      }
+      await tx.insert(judgingRounds).values({
+        contestId: copy.id, name: round.name, position: round.position,
+        advanceCount: round.advanceCount, requiredJudges: round.requiredJudges, startAt, deadlineAt,
+      });
     }
     return contestDto(copy);
   });

@@ -1465,6 +1465,13 @@ paths:
           $ref: '#/components/responses/BadRequest'
       operationId: getExhibitions
   /api/v1/exhibitions/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     get:
       summary: Chi tiết tác phẩm triển lãm công khai
       description: Trả metadata, giải chính thức và thông tin bản quyền của bản xem trước. Không trả master key hay âm bản.
@@ -1484,6 +1491,58 @@ paths:
           type: string
           format: uuid
       operationId: getExhibitionsById
+    patch:
+      summary: Đổi trạng thái tác phẩm triển lãm
+      description: Organizer sở hữu cuộc thi chuyển trạng thái giữa PUBLISHED, READY và ARCHIVED. PUBLISHED yêu cầu đã có bản WebP watermark.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [PUBLISHED, READY, ARCHIVED]
+      responses:
+        '200':
+          description: Trạng thái mới của tác phẩm
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+      operationId: patchExhibitionsById
+    delete:
+      summary: Xóa mềm tác phẩm triển lãm
+      description: Bản ghi được giữ với status ARCHIVED và isDeleted true theo BR-03; tác phẩm biến mất khỏi gallery công khai.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Đã xóa mềm
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      operationId: deleteExhibitionsById
+
   /api/v1/exhibitions/{id}/image:
     get:
       summary: Ảnh WebP công khai của tác phẩm triển lãm
@@ -1575,58 +1634,6 @@ paths:
           type: string
           format: uuid
       operationId: getExhibitionsByIdStatus
-    patch:
-      summary: Đổi trạng thái tác phẩm triển lãm
-      description: Organizer sở hữu cuộc thi chuyển trạng thái giữa PUBLISHED, READY và ARCHIVED. PUBLISHED yêu cầu đã có bản WebP watermark.
-      tags:
-      - Archive & Exhibition
-      x-implementation: mounted
-      security:
-      - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [status]
-              properties:
-                status:
-                  type: string
-                  enum: [PUBLISHED, READY, ARCHIVED]
-      responses:
-        '200':
-          description: Trạng thái mới của tác phẩm
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          description: Xung đột trạng thái hoặc dữ liệu
-      operationId: patchExhibitionsById
-    delete:
-      summary: Xóa mềm tác phẩm triển lãm
-      description: Bản ghi được giữ với status ARCHIVED và isDeleted true theo BR-03; tác phẩm biến mất khỏi gallery công khai.
-      tags:
-      - Archive & Exhibition
-      x-implementation: mounted
-      security:
-      - BearerAuth: []
-      responses:
-        '200':
-          description: Đã xóa mềm
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      operationId: deleteExhibitionsById
-
   /api/v1/film-rolls:
     get:
       summary: GET /api/v1/film-rolls
@@ -3745,6 +3752,102 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/submissions/{id}/result:
+    get:
+      summary: Kết quả và nhận xét giám khảo cho bài của tôi
+      description: Participant sở hữu bài thi (submissions:read_own). Chỉ trả điểm,
+        thứ hạng, giải và nhận xét riêng sau khi cuộc thi công bố; bài của người khác
+        trả 403 (MSG005), chưa công bố trả 409. Route alias là /result.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Kết quả chính thức và nhận xét của giám khảo
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+      operationId: getSubmissionResult
+  /api/v1/organizer/submissions/{id}/feedback:
+    get:
+      summary: Kết quả và nhận xét giám khảo cho bài của tôi
+      description: Participant sở hữu bài thi (submissions:read_own). Chỉ trả điểm,
+        thứ hạng, giải và nhận xét riêng sau khi cuộc thi công bố; bài của người khác
+        trả 403 (MSG005), chưa công bố trả 409. Route alias là /result.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Kết quả chính thức và nhận xét của giám khảo
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+      operationId: getOrganizerSubmissionFeedback
+  /api/v1/organizer/submissions/{id}/result:
+    get:
+      summary: Kết quả và nhận xét giám khảo cho bài của tôi
+      description: Participant sở hữu bài thi (submissions:read_own). Chỉ trả điểm,
+        thứ hạng, giải và nhận xét riêng sau khi cuộc thi công bố; bài của người khác
+        trả 403 (MSG005), chưa công bố trả 409. Route alias là /result.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Kết quả chính thức và nhận xét của giám khảo
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+      operationId: getOrganizerSubmissionResult
 components:
   securitySchemes:
     BearerAuth:

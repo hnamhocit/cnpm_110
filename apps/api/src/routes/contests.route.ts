@@ -87,7 +87,6 @@ contests.on(
   authenticate,
   requirePermission("contests:update"),
   handleCategoryCriteria,
-  handlePublishContestResults,
 );
 contests.post(
   "/",
