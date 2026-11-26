@@ -59,11 +59,13 @@ export default function Header({ onMenuClick }: HeaderProps) {
       ? "Contests"
       : pathname === "/portal/reports"
         ? "Reports"
-        : pathname.startsWith("/portal/contests/judges")
-          ? "Judges Management"
-          : pathname.startsWith("/portal/contests/")
-            ? "Contest Detail"
-            : "Dashboard";
+        : pathname.startsWith("/portal/master-data")
+          ? "Master Data"
+          : pathname.startsWith("/portal/contests/judges")
+            ? "Judges Management"
+            : pathname.startsWith("/portal/contests/")
+              ? "Contest Detail"
+              : "Dashboard";
 
   async function handleLogout() {
     try {
