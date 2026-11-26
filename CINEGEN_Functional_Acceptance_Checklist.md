@@ -4,8 +4,6 @@
 
 AI-powered Film Photography Contest Management Platform
 
-End of Sprint 4 · Ngày xuất báo cáo 26/11/2026
-
 ## 1. Tổng quan
 
 ### 10 high-level Functional Requirements, detailed through 43 Use Cases
@@ -26,17 +24,9 @@ End of Sprint 4 · Ngày xuất báo cáo 26/11/2026
 | Overall TODO | 5 |
 | Module hoàn thành | 1/11 |
 
-### Đối chiếu tiến độ
-
-Dashboard và checklist dùng cùng số liệu. Overall TODO có 5 UC. Cột Backend có 8 TODO. Trạng thái từng UC lấy từ bảng Use Case.
-
-Tổng kết Sprint 4 ghi UC-06–43 chưa nghiệm thu tại thời điểm chuyển giao. Mục nghiệm thu bổ sung sau Sprint 4 xác nhận UC-18, UC-23 và UC-40 đạt. Checklist dùng trạng thái hiện hành gồm 5 UC M01 và 3 UC M05 đã nghiệm thu toàn luồng. UC-28 và UC-30 chỉ DONE ở Backend, Overall vẫn PARTIAL.
-
 ### Cách ghi kết quả
 
 Trạng thái nhóm lấy theo Overall. DONE là đã nghiệm thu theo hồ sơ nhóm, PARTIAL là đã triển khai hoặc tích hợp một phần, TODO là còn phải triển khai hoặc kết nối. Giảng viên đánh dấu một ô mỗi hàng sau khi kiểm tra. Để trống cả hai ô nếu chưa kiểm tra.
-
-Căn cứ: docs/srs.md (§2.2, §3–6 và SRS PDF đồng bộ), docs/progress/use-cases.md, overview.md, sprints.md và 11 đặc tả docs/ai/. Quy tắc nghiệp vụ hiện hành theo SRS; sở hữu UC theo M09 §7.
 
 ## Tổng hợp nghiệm thu theo nhóm FR
 
