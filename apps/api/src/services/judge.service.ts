@@ -5,6 +5,8 @@ import {
   categories,
   contestJudges,
   contests,
+  judgingRoundEntries,
+  judgingRounds,
   submissions,
   scoringCriteria,
   evaluations,
@@ -16,6 +18,7 @@ function assignedSubmissions(judgeId: string, submissionId?: string) {
   return db
     .select({
       assignmentId: contestJudges.id,
+      roundId: contestJudges.roundId,
       contestId: contests.id,
       contestName: contests.name,
       categoryId: categories.id,
@@ -45,8 +48,18 @@ function assignedSubmissions(judgeId: string, submissionId?: string) {
         eq(submissions.categoryId, contestJudges.categoryId),
       ),
     )
+    .leftJoin(judgingRounds, eq(judgingRounds.id, contestJudges.roundId))
     .where(
       and(
+        sql`(
+          (${contestJudges.roundId} is null and not exists (
+            select 1 from ${judgingRounds} where "judging_rounds"."contest_id" = ${contests.id}
+          ))
+          or (${judgingRounds.startedAt} is not null and ${judgingRounds.lockedAt} is null and exists (
+            select 1 from ${judgingRoundEntries} where ${judgingRoundEntries.roundId} = ${contestJudges.roundId}
+              and ${judgingRoundEntries.submissionId} = ${submissions.id}
+          ))
+        )`,
         eq(contestJudges.judgeId, judgeId),
         eq(contestJudges.isActive, true),
         eq(contests.isDeleted, false),
@@ -157,6 +170,15 @@ export async function submitEvaluation(input: SubmitEvaluationInput) {
     }
 
     await requireOpenJudging(tx, submission.contestId);
+    const rounds = await tx.select().from(judgingRounds).where(eq(judgingRounds.contestId, submission.contestId));
+    const round = rounds.find(({ startedAt, lockedAt }) => startedAt && !lockedAt);
+    if (rounds.length && (!round || round.deadlineAt <= new Date())) throw AppError.conflict("The judging round is closed");
+    if (round) {
+      const [entry] = await tx.select({ id: judgingRoundEntries.submissionId }).from(judgingRoundEntries)
+        .where(and(eq(judgingRoundEntries.roundId, round.id), eq(judgingRoundEntries.submissionId, submissionId)));
+      if (!entry) throw AppError.forbidden("Submission is outside the current round");
+    }
+
 
     // Check the judge's active assignment.
     const [assignment] = await tx
@@ -171,6 +193,7 @@ export async function submitEvaluation(input: SubmitEvaluationInput) {
           eq(contestJudges.contestId, submission.contestId),
           eq(contestJudges.categoryId, submission.categoryId),
           eq(contestJudges.isActive, true),
+          round ? eq(contestJudges.roundId, round.id) : isNull(contestJudges.roundId),
         ),
       )
       .limit(1)
@@ -229,13 +252,14 @@ export async function submitEvaluation(input: SubmitEvaluationInput) {
       .values({
         submissionId,
         judgeId,
+        roundId: round?.id ?? null,
         comment: comment ?? null,
       })
       .onConflictDoUpdate({
-        target: [
-          evaluations.submissionId,
-          evaluations.judgeId,
-        ],
+        target: round
+          ? [evaluations.roundId, evaluations.submissionId, evaluations.judgeId]
+          : [evaluations.submissionId, evaluations.judgeId],
+        targetWhere: round ? sql`${evaluations.roundId} is not null` : isNull(evaluations.roundId),
         set: {
           comment: comment ?? null,
           updatedAt: new Date(),
@@ -288,6 +312,7 @@ export async function lockJudgeAssignment(
       .select({
         id: contestJudges.id,
         categoryId: contestJudges.categoryId,
+        roundId: contestJudges.roundId,
         lockedAt: contestJudges.lockedAt,
       })
       .from(contestJudges)
@@ -308,6 +333,15 @@ export async function lockJudgeAssignment(
       };
     }
 
+    if (assignment.roundId) {
+      const [round] = await tx.select().from(judgingRounds).where(eq(judgingRounds.id, assignment.roundId));
+      if (!round?.startedAt || round.lockedAt) throw AppError.conflict("The judging round is not open");
+    } else {
+      const [configured] = await tx.select({ id: judgingRounds.id }).from(judgingRounds)
+        .where(eq(judgingRounds.contestId, current.contestId)).limit(1);
+      if (configured) throw AppError.conflict("Use a round-specific assignment");
+    }
+
     const [criterion] = await tx
       .select({ id: scoringCriteria.id })
       .from(scoringCriteria)
@@ -319,9 +353,14 @@ export async function lockJudgeAssignment(
       .select({ submissionId: submissions.id })
       .from(submissions)
       .innerJoin(scoringCriteria, eq(scoringCriteria.categoryId, submissions.categoryId))
+      .leftJoin(judgingRoundEntries, and(
+        eq(judgingRoundEntries.submissionId, submissions.id),
+        assignment.roundId ? eq(judgingRoundEntries.roundId, assignment.roundId) : sql`false`,
+      ))
       .leftJoin(evaluations, and(
         eq(evaluations.submissionId, submissions.id),
         eq(evaluations.judgeId, judgeId),
+        assignment.roundId ? eq(evaluations.roundId, assignment.roundId) : isNull(evaluations.roundId),
       ))
       .leftJoin(evaluationScores, and(
         eq(evaluationScores.evaluationId, evaluations.id),
@@ -331,6 +370,7 @@ export async function lockJudgeAssignment(
         eq(submissions.contestId, current.contestId),
         eq(submissions.categoryId, assignment.categoryId),
         eq(submissions.status, "APPROVED"),
+        assignment.roundId ? eq(judgingRoundEntries.roundId, assignment.roundId) : undefined,
         isNull(evaluationScores.id),
       ))
       .limit(1);

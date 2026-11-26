@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import judgingRounds, { handleAssignRoundJudge } from "./judging-rounds.route";
 import { generateContestAnalytics, getContestAnalytics } from "../services/contest-analytics";
 import { AppError } from "../utils/errors";
 import {
@@ -22,6 +23,9 @@ import {
 } from "../middlewares/auth";
 
 const contests = new Hono<AuthEnv>();
+
+contests.route("/:id/rounds", judgingRounds);
+contests.post("/:id/judges", authenticate, requirePermission("contests:update"), handleAssignRoundJudge);
 
 contests.get("/", handleListContests);
 contests.get("/:id", handleGetContest);

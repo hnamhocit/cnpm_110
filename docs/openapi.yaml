@@ -1008,24 +1008,234 @@ paths:
         '409':
           description: Xung đột với cấu hình hoặc dữ liệu hiện có
   /api/v1/contests/{id}/judges:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
     post:
-      summary: POST /api/v1/contests/{id}/judges
-      description: Hợp đồng dự kiến trong [03-contest-lifecycle.md](ai/03-contest-lifecycle.md). Route chưa được đăng
-        ký trong Hono.
+      summary: Phân công Judge vào hạng mục và vòng
       tags:
-      - Planned · 03
-      x-implementation: planned
-      responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
-      parameters:
-      - name: id
-        in: path
+      - Contests
+      x-implementation: mounted
+      operationId: assignRoundJudge
+      security:
+      - BearerAuth: []
+      requestBody:
         required: true
-        schema:
-          type: string
-          format: uuid
-      operationId: postContestsByIdJudges
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoundJudgeInput'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/RoundJudge'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/contests/{id}/rounds:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    get:
+      summary: Danh sách vòng chấm
+      tags:
+      - Contests
+      x-implementation: mounted
+      operationId: getJudgingRounds
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/JudgingRound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+    post:
+      summary: Tạo vòng chấm
+      tags:
+      - Contests
+      x-implementation: mounted
+      operationId: createJudgingRound
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JudgingRoundCreate'
+      responses:
+        '201':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/JudgingRound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/contests/{id}/rounds/{roundId}:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    - name: roundId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    patch:
+      summary: Sửa cấu hình vòng chấm
+      tags:
+      - Contests
+      x-implementation: mounted
+      operationId: updateJudgingRound
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JudgingRoundConfig'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/JudgingRound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/contests/{id}/rounds/{roundId}/judges:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    - name: roundId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    get:
+      summary: Danh sách phân công theo vòng
+      tags:
+      - Contests
+      x-implementation: mounted
+      operationId: getRoundJudges
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/RoundJudge'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/contests/{id}/rounds/{roundId}/start:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    - name: roundId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    post:
+      summary: Bắt đầu vòng chấm
+      tags:
+      - Contests
+      x-implementation: mounted
+      operationId: startJudgingRound
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/JudgingRound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
   /api/v1/contests/{id}/publish-results:
     post:
       summary: POST /api/v1/contests/{id}/publish-results
@@ -2898,6 +3108,42 @@ components:
         byStatus:
           type: object
           additionalProperties: { type: integer, minimum: 0 }
+    JudgingRoundConfig:
+      type: object
+      properties:
+        name: {type: string, maxLength: 150}
+        position: {type: integer, minimum: 1}
+        startAt: {type: string, format: date-time}
+        deadlineAt: {type: string, format: date-time}
+        advanceCount: {type: integer, minimum: 1, nullable: true}
+        requiredJudges: {type: integer, minimum: 1, default: 1}
+    JudgingRoundCreate:
+      allOf:
+      - $ref: '#/components/schemas/JudgingRoundConfig'
+      - type: object
+        required: [name, position, startAt, deadlineAt, advanceCount]
+    JudgingRound:
+      allOf:
+      - $ref: '#/components/schemas/JudgingRoundConfig'
+      - type: object
+        properties:
+          id: {type: string, format: uuid}
+          contestId: {type: string, format: uuid}
+          startedAt: {type: string, format: date-time, nullable: true}
+          lockedAt: {type: string, format: date-time, nullable: true}
+    RoundJudgeInput:
+      type: object
+      required: [roundId, categoryId, judgeId]
+      properties:
+        roundId: {type: string, format: uuid}
+        categoryId: {type: string, format: uuid}
+        judgeId: {type: string, format: uuid}
+    RoundJudge:
+      allOf:
+      - $ref: '#/components/schemas/RoundJudgeInput'
+      - type: object
+        properties:
+          id: {type: string, format: uuid}
     Contest:
       type: object
       properties:

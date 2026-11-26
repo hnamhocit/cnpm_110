@@ -18,6 +18,7 @@ import {
   evaluations,
   evaluationScores,
   filmMetadata,
+  judgingRounds,
   scoringCriteria,
   submissions,
   roles,
@@ -383,6 +384,10 @@ export async function updateContest(
       throw AppError.conflict("Submission window has not closed");
     }
     if (nextStatus === "judging" && currentStatus !== "judging") {
+      const [round] = await tx.select({ id: judgingRounds.id }).from(judgingRounds)
+        .where(eq(judgingRounds.contestId, id)).limit(1);
+      if (round) throw AppError.conflict("Start the configured judging round through its round endpoint");
+
       if ((currentStatus !== "under_review" && !(judgingStartAt && ["scheduled", "open", "ongoing"].includes(currentStatus))) ||
           (judgingStartAt && judgingDeadlineAt && (now < judgingStartAt || now >= judgingDeadlineAt))) {
         throw AppError.conflict("Only contests under review can enter judging");
@@ -413,6 +418,10 @@ export async function updateContest(
     }
 
     if (nextStatus === "published") {
+      const [round] = await tx.select({ id: judgingRounds.id }).from(judgingRounds)
+        .where(eq(judgingRounds.contestId, id)).limit(1);
+      if (round) throw AppError.conflict("Use official results publication for round-based contests");
+
       const publicationTime = publishedAt ?? endAt;
       if (currentStatus !== "judging" || (publicationTime && publicationTime > now)) {
         throw AppError.conflict("Contest is not ready for publication");
