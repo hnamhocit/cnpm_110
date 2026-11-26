@@ -4,7 +4,7 @@ Các ghi nhận và trạng thái Jira phản ánh thời điểm rà soát. Xem
 
 ## Tổng quan trước khi tổ chức lại
 
-Đối chiếu với [SRS PDF mới](../SRS_Film_Photography_Contest_Platform_Full.pdf) và [SRS Markdown](../srs.md).
+Đối chiếu với SRS tại [Confluence của dự án](https://hnamhocit.atlassian.net/wiki/x/BAAF) và [SRS Markdown](../srs.md).
 
 | Phân loại | Kết quả rà soát |
 | --- | --- |

@@ -49,6 +49,7 @@ film-contest/
 
 ## Tài liệu dự án
 
+- [Confluence của dự án](https://hnamhocit.atlassian.net/wiki/x/BAAF) lưu tài liệu SRS, sơ đồ và mô tả màn hình chi tiết.
 - [SRS](docs/srs.md) quy định nghiệp vụ, quyền và mã thông báo. [Chỉ mục module trong SRS](docs/srs.md#4-module-specifications-mapping-chỉ-mục-ánh-xạ-module-chi-tiết) dẫn tới từng đặc tả kỹ thuật.
 - [Hợp đồng API](docs/ai/09-api-contracts.md) và [OpenAPI](docs/openapi.yaml) ghi DTO, endpoint và trạng thái triển khai.
 - [Checklist nghiệm thu](docs/progress/checklist.md) ghi trạng thái theo FR và UC. [Bảng sprint](docs/progress/sprints.md) ghi công việc và phân công. [Bằng chứng kỹ thuật](docs/progress/technical-evidence.md) lưu kết quả rà soát.
