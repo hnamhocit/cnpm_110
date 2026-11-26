@@ -123,9 +123,9 @@ Mã FPC là mã công việc nội bộ, đánh số liên tục; không phải 
 | FPC-093 | Backend | M05 · UC-21–22: Yêu cầu đối chứng có hạn, xác minh và duyệt bài | Nam Nguyễn | DONE |
 | FPC-094 | Web | M05 · UC-21–22: Tích hợp yêu cầu đối chứng và duyệt bài | Vĩ Nguyễn | TODO |
 | FPC-095 | Mobile | M05 · UC-21: Hiển thị yêu cầu đối chứng và deadline | Huỳnh Trần Gia Bảo | TODO |
-| FPC-096 | Backend | M05 · UC-37,39: Nộp ảnh, liên kết đăng ký/cuộn/frame, chỉnh sửa và rút bài | Dương Nguyễn | TODO |
-| FPC-097 | Web | M05 · UC-37,39: Tích hợp nộp, sửa và rút bài nếu áp dụng theo SRS | Dương Nguyễn | TODO |
-| FPC-098 | Mobile | M05 · UC-37,39: Hoàn thiện nộp, sửa và rút bài | Dương Nguyễn | TODO |
+| FPC-096 | Backend | M05 · UC-37,39: Nộp ảnh, liên kết đăng ký/cuộn/frame, chỉnh sửa và rút bài | Dương Nguyễn | DONE |
+| FPC-097 | Web | M05 · UC-37,39: Tích hợp nộp, sửa và rút bài nếu áp dụng theo SRS | Dương Nguyễn | DONE |
+| FPC-098 | Mobile | M05 · UC-37,39: Hoàn thiện nộp, sửa và rút bài | Dương Nguyễn | DONE |
 | FPC-099 | Backend | M05 · UC-38: API upload đối chứng và kiểm tra quyền | Huỳnh Trần Gia Bảo | TODO |
 | FPC-100 | Web | M05 · UC-38: Upload đối chứng nếu áp dụng theo SRS | Huỳnh Trần Gia Bảo | TODO |
 | FPC-101 | Mobile | M05 · UC-38: Upload âm bản/contact sheet | Huỳnh Trần Gia Bảo | TODO |
@@ -139,19 +139,19 @@ Mã FPC là mã công việc nội bộ, đánh số liên tục; không phải 
 | FPC-109 | Backend | M08 · UC-27: Quản lý triển lãm và preview công khai | Nam Nguyễn | DONE |
 | FPC-110 | Web | M08 · UC-26: Chốt và công bố kết quả theo SRS | Vĩ Nguyễn | TODO |
 | FPC-111 | Web | M08 · UC-27: Quản lý triển lãm và tác phẩm công khai | Vĩ Nguyễn | TODO |
-| FPC-112 | Backend | M08 · UC-43: API Public Digital Archive, chi tiết tác phẩm công khai và phân trang | Dương Nguyễn | TODO |
+| FPC-112 | Backend | M08 · UC-43: API Public Digital Archive, chi tiết tác phẩm công khai và phân trang | Dương Nguyễn | DONE |
 | FPC-113 | Backend | M08 · UC-41: API kết quả, điểm và nhận xét cá nhân | Nam Nguyễn | DONE |
-| FPC-114 | Backend | M08 · UC-43: Bộ lọc Archive theo film stock, camera và năm | Dương Nguyễn | TODO |
-| FPC-115 | Backend | M08 · UC-43: Index truy vấn kho ảnh | Dương Nguyễn | TODO |
+| FPC-114 | Backend | M08 · UC-43: Bộ lọc Archive theo film stock, camera và năm | Dương Nguyễn | DONE |
+| FPC-115 | Backend | M08 · UC-43: Index truy vấn kho ảnh | Dương Nguyễn | DONE |
 | FPC-116 | Web | M08 · UC-43: Tích hợp Digital Archive dạng masonry | Phạm Tiến Thành Nhân | IN REVIEW |
 | FPC-117 | Web | M08 · UC-43: Tích hợp chi tiết tác phẩm đạt giải | Phạm Tiến Thành Nhân | IN REVIEW |
 | FPC-118 | Web | M08 · UC-43: Bộ lọc kho ảnh theo phim, định dạng và năm | Phạm Tiến Thành Nhân | IN REVIEW |
-| FPC-119 | Web | M08 · UC-41: Kết quả và feedback cá nhân nếu áp dụng theo SRS | Dương Nguyễn | TODO |
+| FPC-119 | Web | M08 · UC-41: Kết quả và feedback cá nhân nếu áp dụng theo SRS | Dương Nguyễn | DONE |
 | FPC-120 | Mobile | M08 · UC-41: Hoàn thiện bảng vàng, kết quả và feedback thật | Dương Nguyễn | DONE |
 | FPC-121 | Backend | M08 · UC-42: API portfolio và lịch sử giải thưởng | Huỳnh Trần Gia Bảo | TODO |
 | FPC-122 | Web | M08 · UC-42: Portfolio nếu áp dụng theo SRS | Huỳnh Trần Gia Bảo | TODO |
 | FPC-123 | Mobile | M08 · UC-42: Tích hợp portfolio cá nhân và lịch sử giải thưởng | Huỳnh Trần Gia Bảo | IN REVIEW |
-| FPC-124 | Mobile | M08 · UC-43: Tích hợp Digital Archive và bộ lọc | Dương Nguyễn | TODO |
+| FPC-124 | Mobile | M08 · UC-43: Tích hợp Digital Archive và bộ lọc | Dương Nguyễn | DONE |
 | FPC-125 | Backend | M11 · UC-10: API tra cứu Audit Log | Huỳnh Trần Gia Bảo | TODO |
 | FPC-126 | Web | M11 · UC-10: Giao diện tra cứu Audit Log | Vĩ Nguyễn | TODO |
 | FPC-127 | Backend/AI | M11 · UC-28: Kiểm chứng thống kê phim, ISO, lab theo phạm vi SRS; không viết lại Backend đã nghiệm thu | Hà Đức Bình | TODO |
