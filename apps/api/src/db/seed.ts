@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "./index";
 import { seedDemoSubmissions } from "./seed-demo-submissions";
+import { seedMasterData } from "./seed-master-data";
 import {
   categories,
   contests,
@@ -297,6 +298,7 @@ export async function seed() {
     return;
   }
 
+  await seedMasterData();
   await seedOngoingContest(organizerUserId, participantUserId);
   await seedPublishedContest(organizerUserId, participantUserId);
   if (isLocalDatabase) await seedDemoSubmissions();

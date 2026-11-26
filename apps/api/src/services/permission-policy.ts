@@ -27,6 +27,9 @@ export const permissionRoles = {
   "submissions:moderate": ["Organizer"],
   "submissions:read_ai": ["Organizer", "Admin"],
   "portfolio:read_own": ["Participant"],
+  "film-rolls:manage": ["Participant"],
+  "master-data:manage": ["Admin"],
+  "audit-logs:read": ["Admin"],
   "storage:upload": signedIn,
 } as const satisfies Record<string, readonly Role[]>;
 

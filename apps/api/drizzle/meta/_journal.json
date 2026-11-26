@@ -43,6 +43,13 @@
       "when": 1795687801114,
       "tag": "0005_exhibition_images",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795691476921,
+      "tag": "0006_woozy_miss_america",
+      "breakpoints": true
     }
   ]
 }
