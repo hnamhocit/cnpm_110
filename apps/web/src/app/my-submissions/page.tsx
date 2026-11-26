@@ -1,10 +1,22 @@
 "use client";
 
-import { AlertCircle, ArrowLeft, Award, Eye, FilePlus2, Pencil, Search, Trash2, Upload } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Award,
+  Eye,
+  FilePlus2,
+  Pencil,
+  Search,
+  Trash2,
+  Trophy,
+  Upload,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Footer } from "@/components/home/footer";
 import { Navbar } from "@/components/home/navbar";
+import { SubmissionResultDialog } from "@/components/results/submission-result-dialog";
 import { LiveCountdown48h } from "@/components/submission/live-countdown-48h";
 import { ModerationPipelineTimeline } from "@/components/submission/moderation-pipeline-timeline";
 import { RejectionDetailsModal } from "@/components/submission/rejection-details-modal";
@@ -26,12 +38,24 @@ import { http } from "@/lib/http/client";
 import type { MySubmissionItem } from "@/types/my-submission";
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
-  PENDING_AI: { label: "Đang quét AI", className: "bg-slate-100 text-slate-700" },
+  PENDING_AI: {
+    label: "Đang quét AI",
+    className: "bg-slate-100 text-slate-700",
+  },
   AI_VERIFIED: { label: "AI hợp lệ", className: "bg-blue-100 text-blue-700" },
-  AI_FLAGGED: { label: "Cảnh báo AI", className: "bg-amber-100 text-amber-800" },
-  PROOF_REQUESTED: { label: "Chờ nộp âm bản", className: "bg-orange-100 text-orange-800" },
+  AI_FLAGGED: {
+    label: "Cảnh báo AI",
+    className: "bg-amber-100 text-amber-800",
+  },
+  PROOF_REQUESTED: {
+    label: "Chờ nộp âm bản",
+    className: "bg-orange-100 text-orange-800",
+  },
   APPROVED: { label: "Đã duyệt", className: "bg-emerald-100 text-emerald-700" },
-  JUDGING: { label: "Đang chấm thi", className: "bg-indigo-100 text-indigo-700" },
+  JUDGING: {
+    label: "Đang chấm thi",
+    className: "bg-indigo-100 text-indigo-700",
+  },
   REJECTED: { label: "Bị từ chối", className: "bg-red-100 text-red-700" },
   DISQUALIFIED: { label: "Bị loại", className: "bg-red-100 text-red-700" },
 };
@@ -48,6 +72,10 @@ export default function MySubmissionsPage() {
   const [editItem, setEditItem] = useState<MySubmissionItem | null>(null);
   const [withdrawItem, setWithdrawItem] = useState<MySubmissionItem | null>(null);
   const [feedbackItem, setFeedbackItem] = useState<MySubmissionItem | null>(null);
+  const [resultTarget, setResultTarget] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
 
   const fetchMySubmissions = useCallback(async () => {
     try {
@@ -94,112 +122,128 @@ export default function MySubmissionsPage() {
           <ArrowLeft className="size-4" />
           Về trang chủ
         </Link>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Bài thi của tôi
-          </h1>
-          <p className="text-sm text-slate-500">
-            Theo dõi trạng thái bài dự thi và yêu cầu bổ sung bằng chứng.
-          </p>
-        </div>
-        <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
-          <Link href="/submissions/new">
-            <FilePlus2 className="mr-1.5 h-4 w-4" />
-            Nộp bài mới
-          </Link>
-        </Button>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Tìm theo tên tác phẩm hoặc cuộc thi..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
-        >
-          <option value="ALL">Tất cả trạng thái</option>
-          <option value="PENDING_AI">Đang quét AI</option>
-          <option value="PROOF_REQUESTED">Chờ nộp âm bản</option>
-          <option value="APPROVED">Đã duyệt</option>
-          <option value="JUDGING">Đang chấm thi</option>
-          <option value="DISQUALIFIED">Bị loại</option>
-        </select>
-      </div>
-
-      {loading ? (
-        <Card>
-          <CardContent className="p-8 text-center text-sm text-slate-500">
-            Đang tải danh sách bài dự thi...
-          </CardContent>
-        </Card>
-      ) : filtered.length === 0 ? (
-        <Card>
-          <CardContent className="p-10 text-center space-y-3">
-            <p className="text-sm text-slate-600">
-              Bạn chưa có bài dự thi nào (hoặc chưa đăng nhập tài khoản Thí sinh).
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Bài thi của tôi
+            </h1>
+            <p className="text-sm text-slate-500">
+              Theo dõi trạng thái bài dự thi và yêu cầu bổ sung bằng chứng.
             </p>
-            <Button asChild variant="outline">
-              <Link href="/submissions/new">Nộp tác phẩm đầu tiên</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {filtered.map((item) => {
-            const badge = STATUS_BADGE[item.status] ?? {
-              label: item.status,
-              className: "bg-slate-100 text-slate-700",
-            };
-            const isRejected =
-              item.status === "REJECTED" || item.status === "DISQUALIFIED";
-            const needsProof =
-              item.status === "PROOF_REQUESTED" || Boolean(item.proofDeadline);
+          </div>
+          <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Link href="/submissions/new">
+              <FilePlus2 className="mr-1.5 h-4 w-4" />
+              Nộp bài mới
+            </Link>
+          </Button>
+        </div>
 
-            return (
-              <Card key={item.id} className="overflow-hidden">
-                <CardContent className="p-5 space-y-4">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-lg font-semibold text-slate-900">
-                          {item.title}
-                        </h2>
-                        <Badge className={badge.className}>{badge.label}</Badge>
-                        {item.aiFlagged ? (
-                          <Badge className="bg-amber-100 text-amber-800">
-                            Cờ AI / Trùng lặp
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder="Tìm theo tên tác phẩm hoặc cuộc thi..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
+          >
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="PENDING_AI">Đang quét AI</option>
+            <option value="PROOF_REQUESTED">Chờ nộp âm bản</option>
+            <option value="APPROVED">Đã duyệt</option>
+            <option value="JUDGING">Đang chấm thi</option>
+            <option value="DISQUALIFIED">Bị loại</option>
+          </select>
+        </div>
+
+        {loading ? (
+          <Card>
+            <CardContent className="p-8 text-center text-sm text-slate-500">
+              Đang tải danh sách bài dự thi...
+            </CardContent>
+          </Card>
+        ) : filtered.length === 0 ? (
+          <Card>
+            <CardContent className="p-10 text-center space-y-3">
+              <p className="text-sm text-slate-600">
+                Bạn chưa có bài dự thi nào (hoặc chưa đăng nhập tài khoản Thí
+                sinh).
+              </p>
+              <Button asChild variant="outline">
+                <Link href="/submissions/new">Nộp tác phẩm đầu tiên</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {filtered.map((item) => {
+              const badge = STATUS_BADGE[item.status] ?? {
+                label: item.status,
+                className: "bg-slate-100 text-slate-700",
+              };
+              const isRejected =
+                item.status === "REJECTED" || item.status === "DISQUALIFIED";
+              const needsProof =
+                item.status === "PROOF_REQUESTED" ||
+                Boolean(item.proofDeadline);
+
+              return (
+                <Card key={item.id} className="overflow-hidden">
+                  <CardContent className="p-5 space-y-4">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h2 className="text-lg font-semibold text-slate-900">
+                            {item.title}
+                          </h2>
+                          <Badge className={badge.className}>
+                            {badge.label}
                           </Badge>
-                        ) : null}
+                          {item.aiFlagged ? (
+                            <Badge className="bg-amber-100 text-amber-800">
+                              Cờ AI / Trùng lặp
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          Cuộc thi: {item.contestTitle || item.contestId}
+                          {item.filmMetadata?.filmStock
+                            ? ` • ${item.filmMetadata.filmStock}`
+                            : ""}
+                        </p>
                       </div>
-                      <p className="text-xs text-slate-500">
-                        Cuộc thi: {item.contestTitle || item.contestId}
-                        {item.filmMetadata?.filmStock
-                          ? ` • ${item.filmMetadata.filmStock}`
-                          : ""}
-                      </p>
-                    </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      {item.imagePreviewPath || item.imageOriginalPath ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {item.imagePreviewPath || item.imageOriginalPath ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setZoomItem(item)}
+                          >
+                            <Eye className="mr-1.5 h-3.5 w-3.5" />
+                            Xem ảnh
+                          </Button>
+                        ) : null}
+
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => setZoomItem(item)}
+                          onClick={() =>
+                            setResultTarget({ id: item.id, title: item.title })
+                          }
                         >
-                          <Eye className="mr-1.5 h-3.5 w-3.5" />
-                          Xem ảnh
+                          <Trophy className="mr-1.5 h-3.5 w-3.5" />
+                          Xem kết quả
                         </Button>
-                      ) : null}
 
                       {!isRejected && item.status !== "APPROVED" && item.status !== "JUDGING" ? (
                         <>
@@ -250,101 +294,114 @@ export default function MySubmissionsPage() {
                         </Button>
                       ) : null}
 
-                      {isRejected ? (
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => setRejectItem(item)}
-                        >
-                          <AlertCircle className="mr-1.5 h-3.5 w-3.5" />
-                          Xem lý do từ chối
-                        </Button>
-                      ) : null}
+                        {isRejected ? (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setRejectItem(item)}
+                          >
+                            <AlertCircle className="mr-1.5 h-3.5 w-3.5" />
+                            Xem lý do từ chối
+                          </Button>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
 
-                  {needsProof && item.proofDeadline ? (
-                    <LiveCountdown48h proofDeadline={item.proofDeadline} />
-                  ) : null}
+                    {needsProof && item.proofDeadline ? (
+                      <LiveCountdown48h proofDeadline={item.proofDeadline} />
+                    ) : null}
 
-                  <ModerationPipelineTimeline status={item.status} />
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                    <ModerationPipelineTimeline status={item.status} />
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
-      {/* Modal phóng to ảnh */}
-      <Dialog open={Boolean(zoomItem)} onOpenChange={(open) => !open && setZoomItem(null)}>
-        <DialogContent className="max-w-3xl bg-white">
-          <DialogHeader>
-            <DialogTitle>{zoomItem?.title}</DialogTitle>
-          </DialogHeader>
-          {zoomItem ? (
-            <img
-              src={zoomItem.imagePreviewPath || zoomItem.imageOriginalPath || ""}
-              alt={zoomItem.title}
-              className="max-h-[70vh] w-full rounded object-contain"
-            />
-          ) : null}
-        </DialogContent>
-      </Dialog>
+        {/* Modal phóng to ảnh */}
+        <Dialog
+          open={Boolean(zoomItem)}
+          onOpenChange={(open) => !open && setZoomItem(null)}
+        >
+          <DialogContent className="max-w-3xl bg-white">
+            <DialogHeader>
+              <DialogTitle>{zoomItem?.title}</DialogTitle>
+            </DialogHeader>
+            {zoomItem ? (
+              <img
+                src={
+                  zoomItem.imagePreviewPath || zoomItem.imageOriginalPath || ""
+                }
+                alt={zoomItem.title}
+                className="max-h-[70vh] w-full rounded object-contain"
+              />
+            ) : null}
+          </DialogContent>
+        </Dialog>
 
-      {/* Modal nộp âm bản */}
-      {proofItem ? (
-        <UploadNegativeProofModal
-          open={Boolean(proofItem)}
-          onOpenChange={(open) => !open && setProofItem(null)}
-          submissionId={proofItem.id}
-          submissionTitle={proofItem.title}
-          onSuccess={fetchMySubmissions}
-        />
-      ) : null}
+        {/* Modal nộp âm bản */}
+        {proofItem ? (
+          <UploadNegativeProofModal
+            open={Boolean(proofItem)}
+            onOpenChange={(open) => !open && setProofItem(null)}
+            submissionId={proofItem.id}
+            submissionTitle={proofItem.title}
+            onSuccess={fetchMySubmissions}
+          />
+        ) : null}
 
-      {/* Modal chi tiết lý do từ chối */}
-      {rejectItem ? (
-        <RejectionDetailsModal
-          open={Boolean(rejectItem)}
-          onOpenChange={(open) => !open && setRejectItem(null)}
-          submissionTitle={rejectItem.title}
-          rejectionReason={rejectItem.rejectionReason}
-          aiFlagged={rejectItem.aiFlagged}
-        />
-      ) : null}
+        {/* Modal chi tiết lý do từ chối */}
+        {rejectItem ? (
+          <RejectionDetailsModal
+            open={Boolean(rejectItem)}
+            onOpenChange={(open) => !open && setRejectItem(null)}
+            submissionTitle={rejectItem.title}
+            rejectionReason={rejectItem.rejectionReason}
+            aiFlagged={rejectItem.aiFlagged}
+          />
+        ) : null}
 
-      {/* Modal chỉnh sửa bài thi (BR-24) */}
-      {editItem ? (
-        <EditSubmissionModal
-          open={Boolean(editItem)}
-          onOpenChange={(open) => !open && setEditItem(null)}
-          submission={editItem}
-          onSuccess={fetchMySubmissions}
-        />
-      ) : null}
+        {resultTarget ? (
+          <SubmissionResultDialog
+            open={Boolean(resultTarget)}
+            onOpenChange={(open) => !open && setResultTarget(null)}
+            submissionId={resultTarget.id}
+            title={resultTarget.title}
+          />
+        ) : null}
 
-      {/* Modal rút bài thi (BR-24) */}
-      {withdrawItem ? (
-        <WithdrawSubmissionModal
-          open={Boolean(withdrawItem)}
-          onOpenChange={(open) => !open && setWithdrawItem(null)}
-          submission={withdrawItem}
-          onSuccess={fetchMySubmissions}
-        />
-      ) : null}
+        {/* Modal chỉnh sửa bài thi (BR-24) */}
+        {editItem ? (
+          <EditSubmissionModal
+            open={Boolean(editItem)}
+            onOpenChange={(open) => !open && setEditItem(null)}
+            submission={editItem}
+            onSuccess={fetchMySubmissions}
+          />
+        ) : null}
 
-      {/* Modal kết quả & nhận xét BGK (UC-41) */}
-      {feedbackItem ? (
-        <SubmissionFeedbackModal
-          open={Boolean(feedbackItem)}
-          onOpenChange={(open) => !open && setFeedbackItem(null)}
-          submission={feedbackItem}
-        />
-      ) : null}
+        {/* Modal rút bài thi (BR-24) */}
+        {withdrawItem ? (
+          <WithdrawSubmissionModal
+            open={Boolean(withdrawItem)}
+            onOpenChange={(open) => !open && setWithdrawItem(null)}
+            submission={withdrawItem}
+            onSuccess={fetchMySubmissions}
+          />
+        ) : null}
+
+        {/* Modal kết quả & nhận xét BGK (UC-41) */}
+        {feedbackItem ? (
+          <SubmissionFeedbackModal
+            open={Boolean(feedbackItem)}
+            onOpenChange={(open) => !open && setFeedbackItem(null)}
+            submission={feedbackItem}
+          />
+        ) : null}
       </main>
       <Footer />
     </div>
   );
 }
-
