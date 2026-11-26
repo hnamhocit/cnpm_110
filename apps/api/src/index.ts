@@ -11,6 +11,7 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import aiWebhookRoute from "./routes/ai-webhook.route";
 import authRoute from "./routes/auth.route";
 import contestsRoute from "./routes/contests.route";
+import exhibitionsRoute from "./routes/exhibitions.route";
 import rbacRoute from "./routes/rbac.route";
 import usersRoute from "./routes/users.route";
 import healthRoute from "./routes/health.route";
@@ -20,6 +21,7 @@ import uploadRoute from "./routes/upload.route";
 import { AppError } from "./utils/errors";
 import { attachResponseHelpers, errorResponse } from "./utils/result";
 import { seed } from "./db/seed";
+import { startNotificationDelivery } from "./services/notification-delivery";
 
 const app = new Hono();
 
@@ -51,18 +53,13 @@ app.notFound((c) => errorResponse(c, "Route not found", 404));
 // 3. Health Check
 app.route("/health", healthRoute);
 
-seed()
-  .catch((error) => {
-    console.error("Failed to seed database:", error);
-    process.exitCode = 1;
-  });
-
 // 4. API v1 Route Group
 const v1 = new Hono();
 
 v1.route("/auth", authRoute);
 v1.route("/users", usersRoute);
 v1.route("/contests", contestsRoute);
+v1.route("/exhibitions", exhibitionsRoute);
 v1.route("/judge", judgeRoute);
 v1.route("/submissions", submissionRoute);
 v1.route("/organizer/submissions", submissionRoute);
@@ -75,6 +72,8 @@ app.route("/api/v1", v1);
 // 5. Server & Graceful Shutdown
 const port = Number(process.env.PORT) || 8080;
 
+await seed();
+
 const server = Bun.serve({
   port,
   fetch: app.fetch,
@@ -82,6 +81,7 @@ const server = Bun.serve({
 
 console.log(`Server running on http://localhost:${server.port}`);
 
+const stopNotificationDelivery = startNotificationDelivery();
 let isShuttingDown = false;
 
 const shutdown = async (signal: string) => {
@@ -91,6 +91,7 @@ const shutdown = async (signal: string) => {
   console.log(`\nReceived ${signal}, shutting down gracefully...`);
 
   try {
+    await stopNotificationDelivery();
     await server.stop();
     console.log("HTTP server closed.");
     process.exit(0);

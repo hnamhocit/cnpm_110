@@ -6,7 +6,7 @@ export interface IdentityDelivery {
   passwordReset(to: string, token: string): Promise<void>;
 }
 
-async function sendEmail(to: string, subject: string, message: string) {
+export async function sendEmail(to: string, subject: string, message: string) {
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM } = Bun.env;
   const port = Number(SMTP_PORT || 587);
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASSWORD || !SMTP_FROM) {
@@ -35,10 +35,13 @@ export const identityDelivery: IdentityDelivery = {
   },
   async passwordReset(to, token) {
     const resetPage = Bun.env.PASSWORD_RESET_URL;
-    if (!resetPage || !URL.canParse(resetPage) || new URL(resetPage).protocol !== "https:") {
+    const url = resetPage ? URL.parse(resetPage) : null;
+    const isLocalDevelopment = Bun.env.NODE_ENV !== "production" &&
+      url?.protocol === "http:" &&
+      ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+    if (!url || (url.protocol !== "https:" && !isLocalDevelopment)) {
       throw new AppError("Password recovery is temporarily unavailable", 503);
     }
-    const url = new URL(resetPage);
     url.searchParams.set("token", token);
     await sendEmail(to, "CINEGEN · Đặt lại mật khẩu",
       `Mở liên kết sau để đặt lại mật khẩu CINEGEN. Liên kết có hiệu lực trong 15 phút.\n${url.href}`);

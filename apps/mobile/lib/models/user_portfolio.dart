@@ -163,6 +163,7 @@ class UserPortfolio {
     required this.email,
     required this.role,
     this.createdAt,
+    this.avatarUrl,
     required this.stats,
     required this.awards,
     required this.curatedWorks,
@@ -173,6 +174,7 @@ class UserPortfolio {
   final String email;
   final String role;
   final DateTime? createdAt;
+  final String? avatarUrl;
   final PortfolioStats stats;
   final List<UserAward> awards;
   final List<CuratedWork> curatedWorks;
@@ -188,6 +190,7 @@ class UserPortfolio {
       fullName: (user['fullName'] ?? user['full_name'] ?? 'Nhiếp ảnh gia') as String,
       email: (user['email'] ?? '') as String,
       role: (user['role'] ?? 'Participant') as String,
+      avatarUrl: user['avatarUrl'] as String?,
       createdAt: user['createdAt'] != null || user['created_at'] != null
           ? DateTime.tryParse((user['createdAt'] ?? user['created_at']) as String)?.toLocal()
           : null,

@@ -45,7 +45,7 @@ export function LiveCountdown48h({ proofDeadline }: LiveCountdown48hProps) {
       )}
       <span>
         {state.expired
-          ? "Đã hết hạn nộp âm bản (48h)"
+          ? "Đã hết hạn nộp bằng chứng"
           : `Hạn nộp âm bản (BR-19): ${state.formatted}`}
       </span>
     </div>

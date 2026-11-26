@@ -4,7 +4,7 @@ import { ChevronDown, Globe, LogOut, Menu, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,7 @@ type CurrentUser = {
   id?: string;
   fullName?: string;
   email?: string;
+  avatarUrl?: string | null;
   role?: string;
 };
 
@@ -58,11 +59,13 @@ export default function Header({ onMenuClick }: HeaderProps) {
       ? "Contests"
       : pathname === "/portal/reports"
         ? "Reports"
-        : pathname.startsWith("/portal/contests/judges")
-          ? "Judges Management"
-          : pathname.startsWith("/portal/contests/")
-            ? "Contest Detail"
-            : "Dashboard";
+        : pathname.startsWith("/portal/master-data")
+          ? "Master Data"
+          : pathname.startsWith("/portal/contests/judges")
+            ? "Judges Management"
+            : pathname.startsWith("/portal/contests/")
+              ? "Contest Detail"
+              : "Dashboard";
 
   async function handleLogout() {
     try {
@@ -142,6 +145,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
               </span>
 
               <Avatar className="size-8 ring-1 ring-border">
+                <AvatarImage src={user?.avatarUrl ?? undefined} alt="" referrerPolicy="no-referrer" />
                 <AvatarFallback className="bg-brand-solid text-white text-xs font-bold shadow-xs">
                   {initials}
                 </AvatarFallback>
@@ -179,10 +183,17 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 </Link>
               </DropdownMenuItem>
 
-              <DropdownMenuItem className="flex items-center gap-2">
-                <User className="size-4 text-muted-foreground" />
-                <span>Hồ sơ cá nhân</span>
+              <DropdownMenuItem asChild>
+                <Link href="/profile" className="flex items-center gap-2">
+                  <User className="size-4" />
+                  Hồ sơ cá nhân
+                </Link>
               </DropdownMenuItem>
+              {user?.role === "Admin" && (
+                <DropdownMenuItem asChild>
+                  <Link href="/portal/users">Quản lý tài khoản</Link>
+                </DropdownMenuItem>
+              )}
             </div>
 
             <DropdownMenuSeparator />

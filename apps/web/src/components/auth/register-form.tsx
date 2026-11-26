@@ -97,7 +97,6 @@ export function RegisterForm() {
       <form
         className="flex flex-col items-center gap-6"
         onSubmit={handleSubmit}
-        noValidate
       >
         <Link
           href="/"
@@ -138,7 +137,6 @@ export function RegisterForm() {
                   className={fieldInputClassName}
                   type="text"
                   autoComplete="name"
-                  placeholder="Nguyễn Văn A"
                   value={fullName}
                   onChange={(event) => setFullName(event.target.value)}
                 />
@@ -149,7 +147,6 @@ export function RegisterForm() {
                   className={fieldInputClassName}
                   type="email"
                   autoComplete="email"
-                  placeholder="ban@example.com"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                 />
@@ -160,7 +157,6 @@ export function RegisterForm() {
                   className={fieldInputClassName}
                   type="password"
                   autoComplete="new-password"
-                  placeholder="••••••••"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                 />
@@ -171,7 +167,6 @@ export function RegisterForm() {
                   className={fieldInputClassName}
                   type="password"
                   autoComplete="new-password"
-                  placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
                 />
@@ -198,9 +193,11 @@ export function RegisterForm() {
             {isLoading ? "Đang xử lý..." : verifying ? "Xác thực email" : "Tạo tài khoản"}
           </Button>
 
-          <Button type="button" variant="outline" disabled={isLoading} onClick={() => void request("resend-verification")}>
-            {verifying ? "Gửi lại mã" : "Xác thực tài khoản đã đăng ký"}
-          </Button>
+          {verifying && (
+            <Button type="button" variant="outline" disabled={isLoading} onClick={() => void request("resend-verification")}>
+              Gửi lại mã
+            </Button>
+          )}
           <p className="text-xs sm:text-sm text-muted-foreground">
             Đã có tài khoản?{" "}
             <Link

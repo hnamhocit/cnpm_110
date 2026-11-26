@@ -11,8 +11,13 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { users } from "./module-1.schema";
-import { scoringCriteria } from "./module-3.schema";
+import { judgingRounds, scoringCriteria } from "./module-3.schema";
 import { submissions } from "./module-5.schema";
+
+export const judgingRoundEntries = pgTable("judging_round_entries", {
+  roundId: uuid("round_id").notNull().references(() => judgingRounds.id, { onDelete: "restrict" }),
+  submissionId: uuid("submission_id").notNull().references(() => submissions.id, { onDelete: "restrict" }),
+}, (table) => [primaryKey({ columns: [table.roundId, table.submissionId] })]);
 
 export const evaluations = pgTable(
   "evaluations",
@@ -27,6 +32,7 @@ export const evaluations = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
 
+    roundId: uuid("round_id").references(() => judgingRounds.id, { onDelete: "restrict" }),
     comment: text("comment"),
 
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -41,7 +47,9 @@ export const evaluations = pgTable(
     uniqueIndex("uq_evaluations_submission_judge").on(
       table.submissionId,
       table.judgeId,
-    ),
+    ).where(sql`${table.roundId} is null`),
+    uniqueIndex("uq_evaluations_round_submission_judge").on(table.roundId, table.submissionId, table.judgeId)
+      .where(sql`${table.roundId} is not null`),
     index("idx_evaluations_judge_id").on(table.judgeId),
     index("idx_evaluations_submission_id").on(table.submissionId),
   ],

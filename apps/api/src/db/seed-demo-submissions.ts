@@ -1,8 +1,8 @@
-import { and, eq, like } from "drizzle-orm";
-import { db, pool } from "./index";
+import { and, eq, inArray, like, sql } from "drizzle-orm";
+import { db } from "./index";
 import { categories, contests, filmMetadata, roles, submissionAiAnalyses, submissions, userRoles, users } from "./schema";
-import { seed } from "./seed";
 
+const demoEmails = Array.from({ length: 5 }, (_, index) => `participant.demo${index + 2}@example.com`);
 const demoName = "CINEGEN Demo · Theo dõi bài dự thi";
 const statuses = ["PENDING_AI", "VERIFIED", "SUSPICIOUS", "FLAGGED", "APPROVED", "DISQUALIFIED"] as const;
 const photoIds = [
@@ -11,20 +11,11 @@ const photoIds = [
   "1507525428034-b723cf961d3e",
 ];
 
-try {
-  const database = new URL(Bun.env.DATABASE_URL ?? "");
-  if (
-    Bun.env.NODE_ENV === "production" ||
-    !["localhost", "127.0.0.1", "[::1]"].includes(database.hostname) ||
-    database.pathname !== "/cinegen_demo"
-  ) {
-    throw new Error("Demo seed requires the local cinegen_demo database");
-  }
-
-  await seed();
-  const added = await db.transaction(async (tx) => {
+export async function seedDemoSubmissions() {
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${demoName}))`);
     const [existing] = await tx.select({ id: contests.id }).from(contests).where(eq(contests.name, demoName));
-    if (existing) return 0;
+    if (existing) return;
 
     const [organizer] = await tx.select({ id: users.id }).from(users)
       .where(eq(users.email, "organizer.test@example.com"));
@@ -35,9 +26,9 @@ try {
 
     const passwordHash = await Bun.password.hash("password123");
     const otherParticipants = await tx.insert(users).values(
-      Array.from({ length: 5 }, (_, index) => ({
+      demoEmails.map((email, index) => ({
         fullName: `Thí sinh Demo ${index + 2}`,
-        email: `participant.demo${index + 2}@example.com`,
+        email,
         passwordHash,
       })),
     ).returning({ id: users.id });
@@ -87,7 +78,6 @@ try {
     );
     await tx.insert(submissions).values(entries.map(({ submission }) => submission));
     await tx.insert(filmMetadata).values(entries.map(({ metadata }) => metadata));
-    return entries.length;
   });
 
   const demoEntries = await db.select({
@@ -113,13 +103,13 @@ try {
     }];
   });
   if (sampleReports.length > 0) {
-    const inserted = await db.insert(submissionAiAnalyses).values(sampleReports)
-      .onConflictDoNothing({ target: submissionAiAnalyses.submissionId })
-      .returning({ id: submissionAiAnalyses.id });
-    console.log(`Added ${inserted.length} demo-only AI comparison reports.`);
+    await db.insert(submissionAiAnalyses).values(sampleReports)
+      .onConflictDoNothing({ target: submissionAiAnalyses.submissionId });
   }
 
-  console.log(added ? `Added ${added} demo submissions.` : "Demo submissions already exist.");
-} finally {
-  await pool.end();
+  const demoAccounts = await db.select({ email: users.email }).from(users)
+    .where(inArray(users.email, demoEmails)).orderBy(users.email);
+  for (const { email } of demoAccounts) {
+    console.log(`[Seed] Participant: ${email}`);
+  }
 }

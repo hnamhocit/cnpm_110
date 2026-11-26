@@ -13,12 +13,14 @@ import {
 import { db } from "../db";
 import {
   categories,
+  contestPublications,
   contests,
   contestJudges,
   contestRegistrations,
   evaluations,
   evaluationScores,
   filmMetadata,
+  judgingRounds,
   scoringCriteria,
   submissions,
   roles,
@@ -26,9 +28,11 @@ import {
   users,
 } from "../db/schema";
 
+import { contestDto, isClosed, validateSchedule, type Schedule, type Settings } from "./contest-configuration";
 import { aggregateScores } from "./score-aggregation";
 import { assignCompetitionRanks } from "./scoreboard-ranking";
 import type { AuthEnv } from "../middlewares/auth";
+import { getOfficialContestResults } from "./contest-publication";
 import { AppError } from "../utils/errors";
 
 const AWARDS_METADATA = [
@@ -68,6 +72,15 @@ const AWARDS_METADATA = [
 const contestSelection = {
   id: contests.id,
   name: contests.name,
+  code: contests.code,
+  theme: contests.theme,
+  rules: contests.rules,
+  coverImageUrl: contests.coverImageUrl,
+  judgingStartAt: contests.judgingStartAt,
+  judgingDeadlineAt: contests.judgingDeadlineAt,
+  publishedAt: contests.publishedAt,
+  rounds: contests.rounds,
+  awards: contests.awards,
   description: contests.description,
   startAt: contests.startAt,
   endAt: contests.endAt,
@@ -122,7 +135,7 @@ export async function listContests(query: ListContestsQuery) {
   ]);
 
   return {
-    items,
+    items: items.map((contest) => contestDto(contest)),
     pagination: {
       page,
       limit,
@@ -143,7 +156,7 @@ export async function getContestById(id: string) {
     throw AppError.notFound("Contest not found");
   }
 
-  return contest;
+  return contestDto(contest);
 }
 
 export async function getContestCategories(contestId: string) {
@@ -153,11 +166,14 @@ export async function getContestCategories(contestId: string) {
       contestId: categories.contestId,
       name: categories.name,
       description: categories.description,
+      isActive: categories.isActive,
+      requireNegativeProof: categories.requireNegativeProof,
       createdAt: categories.createdAt,
       updatedAt: categories.updatedAt,
     })
     .from(categories)
-    .where(eq(categories.contestId, contestId))
+    .innerJoin(contests, eq(categories.contestId, contests.id))
+    .where(and(eq(categories.contestId, contestId), eq(contests.isDeleted, false)))
     .orderBy(asc(categories.createdAt));
 }
 
@@ -176,6 +192,8 @@ export async function getContestResults(contestId: string) {
     throw AppError.notFound("Contest not found");
   }
 
+  if (contest.status.toLowerCase() === "results_published") return getOfficialContestResults(contestId);
+
   const isPublished = ["published", "completed", "archived"].includes(
     (contest.status || "").toLowerCase(),
   );
@@ -183,6 +201,13 @@ export async function getContestResults(contestId: string) {
   if (!isPublished) {
     throw AppError.badRequest("Contest results have not been published yet");
   }
+
+  const [official] = await db
+    .select({ contestId: contestPublications.contestId })
+    .from(contestPublications)
+    .where(eq(contestPublications.contestId, contestId))
+    .limit(1);
+  if (official) return getOfficialContestResults(contestId);
 
   const winnerRows = await db
     .select({
@@ -288,10 +313,10 @@ export async function createContest(input: CreateContestInput) {
     })
     .returning(contestSelection);
 
-  return created;
+  return contestDto(created);
 }
 
-export interface UpdateContestInput {
+export interface UpdateContestInput extends Partial<Schedule>, Settings {
   name?: string;
   description?: string | null;
   startAt?: Date | null;
@@ -307,15 +332,7 @@ export async function updateContest(
   return db.transaction(async (tx) => {
     // BR-03: Kiểm tra cuộc thi còn tồn tại và chưa bị xóa mềm
     const [current] = await tx
-      .select({
-        id: contests.id,
-        name: contests.name,
-        description: contests.description,
-        startAt: contests.startAt,
-        endAt: contests.endAt,
-        status: contests.status,
-        createdBy: contests.createdBy,
-      })
+      .select()
       .from(contests)
       .where(and(eq(contests.id, id), eq(contests.isDeleted, false)))
       .for("update")
@@ -330,32 +347,62 @@ export async function updateContest(
     }
 
     // BR-16: Tính bất biến của kết quả sau khi công bố
-    const immutableStatuses = ["published", "archived", "completed"];
+    const immutableStatuses = ["published", "results_published", "archived", "completed", "cancelled"];
     if (immutableStatuses.includes(String(current.status).toLowerCase())) {
       throw AppError.forbidden(
         "Cannot modify contest after results have been published (BR-16: Result Immutability)",
       );
     }
 
-    const name = input.name ?? current.name;
-    const description =
-      input.description !== undefined ? input.description : current.description;
-    const startAt =
-      input.startAt !== undefined ? input.startAt : current.startAt;
-    const endAt = input.endAt !== undefined ? input.endAt : current.endAt;
-    const status = input.status ?? current.status;
-
-    // BR-08: Ràng buộc tuần tự mốc thời gian
-    if (startAt && endAt && new Date(startAt) >= new Date(endAt)) {
-      throw AppError.badRequest(
-        "startAt must be strictly before endAt (BR-08: Sequential Schedule)",
-      );
+    const now = new Date();
+    const { status: requestedStatus, ...configuration } = input;
+    if (Object.keys(configuration).length &&
+        (isClosed(current.status) || (current.judgingStartAt && current.endAt && current.endAt <= now))) {
+      throw AppError.forbidden("Contest configuration is closed");
+    }
+    const schedule = {
+      startAt: input.startAt !== undefined ? input.startAt : current.startAt,
+      endAt: input.endAt !== undefined ? input.endAt : current.endAt,
+      judgingStartAt: input.judgingStartAt ?? current.judgingStartAt,
+      judgingDeadlineAt: input.judgingDeadlineAt ?? current.judgingDeadlineAt,
+      publishedAt: input.publishedAt ?? current.publishedAt,
+    };
+    const { startAt, endAt, judgingStartAt, judgingDeadlineAt, publishedAt } = schedule;
+    if (judgingStartAt || judgingDeadlineAt || publishedAt) {
+      validateSchedule(schedule);
+    } else if (startAt && endAt && startAt >= endAt) {
+      throw AppError.badRequest("MSG008: startAt must be strictly before endAt");
     }
 
+    // Keep the stored values understood by existing judging and results services.
+    const aliases: Record<string, string> = { in_judging: "judging", results_published: "published", verifying: "under_review" };
     const currentStatus = current.status.toLowerCase();
-    const nextStatus = status.toLowerCase();
+    const requested = requestedStatus?.toLowerCase() ?? currentStatus;
+    const nextStatus = aliases[requested] ?? requested;
+    const status = requestedStatus === undefined ? current.status : aliases[requested] ?? requestedStatus;
+    if (judgingStartAt && nextStatus !== currentStatus) {
+      const transitions: Record<string, string[]> = {
+        draft: ["scheduled", "open", "cancelled"],
+        scheduled: ["open", "under_review", "judging", "cancelled"],
+        open: ["under_review", "judging", "cancelled"],
+        ongoing: ["under_review", "judging", "cancelled"],
+        under_review: ["judging", "cancelled"],
+        judging: ["published"],
+      };
+      if (!transitions[currentStatus]?.includes(nextStatus)) {
+        throw AppError.conflict("Invalid contest status transition");
+      }
+    }
+    if (judgingStartAt && nextStatus === "under_review" && endAt && endAt > now) {
+      throw AppError.conflict("Submission window has not closed");
+    }
     if (nextStatus === "judging" && currentStatus !== "judging") {
-      if (currentStatus !== "under_review") {
+      const [round] = await tx.select({ id: judgingRounds.id }).from(judgingRounds)
+        .where(eq(judgingRounds.contestId, id)).limit(1);
+      if (round) throw AppError.conflict("Start the configured judging round through its round endpoint");
+
+      if ((currentStatus !== "under_review" && !(judgingStartAt && ["scheduled", "open", "ongoing"].includes(currentStatus))) ||
+          (judgingStartAt && judgingDeadlineAt && (now < judgingStartAt || now >= judgingDeadlineAt))) {
         throw AppError.conflict("Only contests under review can enter judging");
       }
       const categoryWeights = await tx.select({
@@ -363,7 +410,7 @@ export async function updateContest(
         valid: sql<boolean>`COALESCE(sum(${scoringCriteria.weight}) = 1.0000, false)`,
       }).from(categories)
         .leftJoin(scoringCriteria, eq(scoringCriteria.categoryId, categories.id))
-        .where(eq(categories.contestId, id))
+        .where(and(eq(categories.contestId, id), eq(categories.isActive, true)))
         .groupBy(categories.id);
       const activeJudges = await tx
         .select({ categoryId: contestJudges.categoryId, total: count() })
@@ -384,17 +431,7 @@ export async function updateContest(
     }
 
     if (nextStatus === "published") {
-      if (currentStatus !== "judging" || (endAt && endAt > new Date())) {
-        throw AppError.conflict("Contest is not ready for publication");
-      }
-      const scoreboard = await getContestScoreboard(id, actor, tx);
-      const assignments = await tx.select({ lockedAt: contestJudges.lockedAt })
-        .from(contestJudges)
-        .where(and(eq(contestJudges.contestId, id), eq(contestJudges.isActive, true)));
-      if (assignments.length === 0 || assignments.some(({ lockedAt }) => !lockedAt) ||
-          scoreboard.entries.some(({ finalScore }) => finalScore === null)) {
-        throw AppError.conflict("All scorecards must be complete and locked before publication");
-      }
+      throw AppError.conflict("Use the official results publication endpoint");
     }
     if (nextStatus !== currentStatus && ["archived", "completed"].includes(nextStatus)) {
       throw AppError.conflict("Use the contest publication workflow to publish results");
@@ -403,17 +440,15 @@ export async function updateContest(
     const [updated] = await tx
       .update(contests)
       .set({
-        name,
-        description,
-        startAt,
-        endAt,
+        ...configuration,
+        ...schedule,
         status,
-        updatedAt: new Date(),
+        updatedAt: now,
       })
       .where(and(eq(contests.id, id), eq(contests.isDeleted, false)))
       .returning(contestSelection);
 
-    return updated;
+    return contestDto(updated, now);
   });
 }
 
@@ -430,7 +465,7 @@ export async function softDeleteContest(id: string, actor: AuthEnv["Variables"][
       eq(contests.id, id),
       eq(contests.isDeleted, false),
       eq(contests.createdBy, actor.id),
-      sql`lower(${contests.status}) not in ('published', 'completed', 'archived')`,
+      sql`lower(${contests.status}) not in ('published', 'results_published', 'completed', 'archived')`,
     ))
     .returning({ id: contests.id });
 
@@ -890,3 +925,5 @@ export async function getContestRegistrations(
     },
   };
 }
+
+export { getRoundProgress as getJudgingProgress, finalizeRound as closeJudgingRound } from "./judging-rounds";

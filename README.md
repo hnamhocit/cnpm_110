@@ -41,7 +41,7 @@ film-contest/
 
 ### Các Ứng dụng Thành phần:
 
-*   **[`apps/api`](apps/api/README.md)**: RESTful API service hiệu năng cao với **Hono**, chạy native trên **Bun runtime**, tích hợp **PostgreSQL 16+**, **`pgvector`** và **Drizzle ORM**.
+*   **[`apps/api`](apps/api/README.md)**: RESTful API service hiệu năng cao với **Hono**, chạy native trên **Bun runtime**, dùng **PostgreSQL** và **Drizzle ORM**. Hàng đợi AI hiện lưu trong PostgreSQL.
 *   **[`apps/web`](apps/web/README.md)**: Ứng dụng Web dành cho Quản trị viên, Ban tổ chức, Giám khảo và Thí sinh xây dựng trên **Next.js 16 (App Router)**, **React 19**, **Tailwind CSS v4** và **Biome**.
 *   **[`apps/mobile`](apps/mobile/README.md)**: Ứng dụng Flutter (iOS / Android) để xem cuộc thi, nộp ảnh kèm thông số phim và theo dõi trạng thái bài thi.
 
@@ -51,9 +51,17 @@ film-contest/
 
 - [SRS](docs/srs.md) quy định nghiệp vụ, quyền và mã thông báo. [Chỉ mục module trong SRS](docs/srs.md#4-module-specifications-mapping-chỉ-mục-ánh-xạ-module-chi-tiết) dẫn tới từng đặc tả kỹ thuật.
 - [Hợp đồng API](docs/ai/09-api-contracts.md) và [OpenAPI](docs/openapi.yaml) ghi DTO, endpoint và trạng thái triển khai.
-- [Tổng quan tiến độ](docs/progress/overview.md) và [bảng sprint](docs/progress/sprints.md) ghi phần đã có và phần còn thiếu.
+- [Checklist nghiệm thu](docs/progress/checklist.md) ghi trạng thái theo FR và UC. [Bảng sprint](docs/progress/sprints.md) ghi công việc và phân công. [Bằng chứng kỹ thuật](docs/progress/technical-evidence.md) lưu kết quả rà soát.
 
 ---
+
+## Tóm tắt báo cáo và hỏi đáp
+
+CINEGEN quản lý cuộc thi nhiếp ảnh phim từ lập kế hoạch, đăng ký, nộp ảnh và metadata, thẩm định, chấm điểm đến công bố và triển lãm. Phạm vi đề xuất gồm **4 vai trò hệ thống**, **5 luồng nghiệp vụ**, **4 ứng dụng AI** và **4 nhóm yêu cầu phi chức năng cấp cao**. Public Visitor là tác nhân truy cập công khai. Phân tích SRS tổ chức **43 Use Case** thành **10 nhóm FR cấp cao**. Hệ thống được triển khai theo **11 module**. [Ma trận FR–UC và luồng nghiệp vụ](docs/srs.md#23-phân-cấp-yêu-cầu-và-truy-vết-chức-năng)
+
+- **Đã hoàn thành bao nhiêu yêu cầu?** Xem [tổng hợp nghiệm thu theo nhóm FR](docs/progress/checklist.md#tổng-hợp-nghiệm-thu-theo-nhóm-fr).
+- **AI làm gì?** Phát hiện ảnh trùng hoặc tương tự, cảnh báo ảnh tạo sinh, gợi ý từ khóa và hạng mục, hỗ trợ phân tích số liệu cuộc thi. Organizer quyết định duyệt hoặc loại. [Checklist nghiệm thu](docs/progress/checklist.md)
+- **Stack hiện dùng và phương án đề xuất?** Web dùng Next.js/React, Mobile dùng Flutter, Backend dùng Hono/Bun, Drizzle và PostgreSQL với hàng đợi AI trong PostgreSQL. Lưu trữ đối tượng tích hợp R2. Redis và pgvector là lựa chọn thiết kế trong SRS. Docker Compose hỗ trợ chạy PostgreSQL local. Push notification là tùy chọn. [SRS](docs/srs.md) · [Đặc tả lưu trữ](docs/ai/10-database-and-storage.md) · [Docker Compose](apps/api/docker-compose.yml)
 
 ## Yêu cầu môi trường
 
@@ -89,8 +97,16 @@ cp apps/web/.env.example apps/web/.env.local
 Tạo database và thiết lập `DATABASE_URL` theo [hướng dẫn PostgreSQL](apps/api/README-DATABASE.md).
 ```bash
 bun --filter api db:migrate
-bun --filter api db:seed
 ```
+
+Mỗi máy dùng PostgreSQL local riêng. Khi khởi động ở môi trường phát triển, API kiểm tra dữ liệu mẫu và tự nạp nếu chưa có. Chọn tên database trong `apps/api/.env` trước khi migrate:
+
+| Database local | Dữ liệu được nạp |
+| --- | --- |
+| `film_contest` hoặc tên DB dev đang dùng | Bộ demo với 3 cuộc thi |
+| `cinegen_acceptance_test` | Bộ nghiệm thu với 2 cuộc thi và 7 tài khoản phân vai |
+
+Log khởi động có email đăng nhập và mật khẩu mặc định. Xem [cách tạo database local](apps/api/README-DATABASE.md#5-apply-migrations) và [fixture nghiệm thu](apps/api/README.md#fixture-nghiệm-thu).
 
 ### 4. Chạy Môi trường Phát triển (Development)
 
@@ -148,3 +164,7 @@ cd apps/mobile && flutter pub add <package-name>
 ## 🤖 Quy chuẩn AI Coding Assistant
 
 [`AGENTS.md`](AGENTS.md) là chỉ dẫn chung. Các tệp cho [Cursor](.cursor/rules/srs-context.mdc) và [Claude Code](CLAUDE.md) trỏ về tài liệu này. Các yêu cầu riêng cho Next.js được ghi trong [`apps/web/AGENTS.md`](apps/web/AGENTS.md).
+
+- Trước khi sửa mã, schema hoặc API, đọc [SRS](docs/srs.md) và đặc tả module liên quan. Đối chiếu thay đổi với UC và BR trong SRS.
+- Khi sửa API, kiểm tra [Module 09](docs/ai/09-api-contracts.md), [OpenAPI](docs/openapi.yaml) và [route đã đăng ký trong Hono](apps/api/src/index.ts). OpenAPI dùng `mounted` cho operation đã đăng ký và `planned` cho hợp đồng dự kiến.
+- Khi sửa cấu hình hoặc lệnh Turborepo, đọc tài liệu trong package `turbo` đã cài theo AGENTS.md. Trước khi sửa mã Web, đọc hướng dẫn tương ứng trong `next/dist/docs/` theo chỉ dẫn riêng của workspace.

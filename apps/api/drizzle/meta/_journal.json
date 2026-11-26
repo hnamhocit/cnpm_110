@@ -8,6 +8,48 @@
       "when": 1795606798211,
       "tag": "0000_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795685816017,
+      "tag": "0001_contest_configuration",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795687006944,
+      "tag": "0002_judging_rounds",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795687238631,
+      "tag": "0003_submission_proof",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795687701114,
+      "tag": "0004_contest_publication",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795687801114,
+      "tag": "0005_exhibition_images",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795687901114,
+      "tag": "0006_audit_notification_delivery",
+      "breakpoints": true
     }
   ]
 }

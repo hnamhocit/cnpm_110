@@ -36,6 +36,23 @@ export async function POST(request: Request) {
   const refreshToken = data?.refreshToken ?? rawData?.refreshToken;
   const user = data?.user ?? rawData?.user;
 
+  if (response.status === 401 && rawData?.message === "EMAIL_VERIFICATION_REQUIRED") {
+    return Response.json({
+      emailVerificationRequired: true,
+      error: "Email chưa được xác minh. Tiếp tục tại trang đăng nhập CINEGEN.",
+    }, { status: 401 });
+  }
+
+  if (response.status === 403 && rawData?.message === "ACCOUNT_LOCKED") {
+    return Response.json({
+      error: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.",
+    }, { status: 403 });
+  }
+
+  if (response.status === 401 && rawData?.message === "Invalid email or password") {
+    return Response.json({ error: "Email hoặc mật khẩu không chính xác." }, { status: 401 });
+  }
+
   if (!response.ok || !accessToken || !refreshToken) {
     return Response.json(
       { error: data?.error ?? rawData?.error ?? rawData?.message ?? "Đăng nhập thất bại." },

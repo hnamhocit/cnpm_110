@@ -1,6 +1,6 @@
 # Bằng chứng kỹ thuật CINEGEN
 
-Các ghi nhận và trạng thái Jira phản ánh thời điểm rà soát. Xem [dashboard](overview.md) để biết trạng thái nghiệm thu hiện hành.
+Các ghi nhận và trạng thái Jira phản ánh thời điểm rà soát. Xem [checklist nghiệm thu](checklist.md) để biết trạng thái nghiệm thu hiện hành.
 
 ## Tổng quan trước khi tổ chức lại
 
@@ -186,7 +186,7 @@ Migration sửa schema áp dụng thành công trên PostgreSQL 18 tạm. API ty
 | Mã | Phạm vi | Công việc | Người phụ trách | Trạng thái | Ghi chú |
 | --- | --- | --- | --- | --- | --- |
 | FPC-126 | Tài liệu | Module 01 Auth & RBAC | Huỳnh Trần Gia Bảo | DONE | Đã đồng bộ tài liệu với Backend và biến môi trường SMTP/Twilio. |
-| FPC-127 | Tài liệu | Module 02 Analog Master Data | Huỳnh Trần Gia Bảo | DONE | Đã có đặc tả. Theo dõi phần quản trị và tra cứu danh mục tại [overview](overview.md#độ-phủ-theo-module). |
+| FPC-127 | Tài liệu | Module 02 Analog Master Data | Huỳnh Trần Gia Bảo | DONE | Đã có đặc tả. Theo dõi phần quản trị và tra cứu danh mục tại [checklist M02](checklist.md#m02-analog-master-data). |
 | FPC-128 | Tài liệu | Module 03 Contest Lifecycle | Dương Nguyễn | DONE | — |
 | FPC-129 | Tài liệu | Module 07 Blind Judging | Dương Nguyễn | DONE | — |
 | FPC-130 | Tài liệu | Module 04 Film Logbook | Vĩ Nguyễn | DONE | — |
@@ -228,6 +228,17 @@ Baseline [0000_baseline.sql](../../apps/api/drizzle/0000_baseline.sql) có 314 d
 | M08 | Cần lưu kết quả chính thức từ vòng cuối và dữ liệu cho kho ảnh công khai. | Làm sau khi chốt được vòng chấm. |
 
 Giữ baseline hiện tại. Khi triển khai các thay đổi schema được chốt, sinh migration bổ sung và kiểm thử với dữ liệu cũ trước khi triển khai.
+
+### Đối chiếu ERD thiết kế với PostgreSQL local
+
+ERD trong SRS PDF §3.1.11 mô tả mô hình mục tiêu. PostgreSQL local có **20 bảng ứng dụng trong `public`** và bảng theo dõi `__drizzle_migrations` riêng. Đối chiếu danh sách tên bảng và tên khóa ngoại với baseline cho kết quả **20/20 bảng và 29/29 khóa ngoại**, không có mục dư hoặc thiếu. Kết quả áp dụng cho database local được cấu hình lúc kiểm tra.
+
+| Phạm vi | Bảng hiện có trong PostgreSQL local | Khác biệt đáng chú ý với ERD |
+| --- | --- | --- |
+| Tài khoản và phân quyền | `users`, `roles`, `user_roles`, `permissions`, `role_permissions`, `refresh_tokens`, `account_challenges`, `account_audit_logs` | `users` gộp thông tin tài khoản và hồ sơ. Hiện chưa có `audit_logs` tập trung hoặc `notifications`. |
+| Cuộc thi và chấm điểm | `contests`, `categories`, `contest_judges`, `scoring_criteria`, `evaluations`, `evaluation_scores` | Chưa có bảng đăng ký, vòng chấm và bài đi tiếp. Phân công hiện tại chưa có quan hệ theo vòng như `judge_assignments` trong ERD. |
+| Phim, bài thi và thẩm định | `film_rolls`, `film_metadata`, `submissions`, `submission_moderation_logs`, `ai_analysis_jobs`, `submission_ai_analyses` | Danh mục film stock, camera, lens và lab, `film_frames` và `negative_proofs` chưa có bảng độc lập. Metadata và thông tin ảnh nằm trong các bảng đang triển khai. |
+| Kết quả và triển lãm | Chưa có bảng riêng | Chưa có `awards`, `contest_results` hoặc `archive_entries` theo ERD. |
 
 ## Nghiệm thu bổ sung trên dữ liệu demo
 

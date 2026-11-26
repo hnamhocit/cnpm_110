@@ -2,7 +2,7 @@
 
 ## Phạm vi theo SRS hiện hành
 
-**Hợp đồng hiện hành.** Đối chiếu [OpenAPI](../openapi.yaml) và [route Hono](../../apps/api/src/index.ts) trước khi tích hợp client. `mounted` cho route đã đăng ký và `planned` cho hợp đồng chưa triển khai. Các hợp đồng cần cập nhật cho UC-11, UC-15/25, UC-17/34 gồm sao chép cấu hình, đăng ký hạng mục và khóa/chuyển vòng. UC-28 đã có GET/POST `/api/v1/contests/{id}/analytics`. Các DTO/trạng thái kỹ thuật bên dưới có thể còn phản ánh phiên bản cũ.
+**Hợp đồng hiện hành.** Đối chiếu [OpenAPI](../openapi.yaml) và [route Hono](../../apps/api/src/index.ts) trước khi tích hợp client. `mounted` cho route đã đăng ký và `planned` cho hợp đồng chưa triển khai. FPC-083 chốt hợp đồng UC-11–14 ở mục 4.7. Đăng ký hạng mục và khóa/chuyển vòng thuộc các hợp đồng UC-15/25 và UC-17/34. UC-28 đã có GET/POST `/api/v1/contests/{id}/analytics`. Các DTO/trạng thái kỹ thuật bên dưới có thể còn phản ánh phiên bản cũ.
 
 ## Thiết kế trước lần cập nhật SRS
 
@@ -596,7 +596,20 @@ Các trường hợp lỗi sẽ được ánh xạ với mã thông báo `MSG001
 
 #### 4.7.1. Contest DTO Overview
 
-Mục này mô tả DTO của các route đang chạy. Backend hiện nhận `startAt` và `endAt`. Thiết kế đủ năm mốc theo BR-08 nằm trong [Module 03](03-contest-lifecycle.md), mục 4.2.
+Mục này mô tả hợp đồng UC-11–14 theo [SRS](../srs.md) và [Module 03](03-contest-lifecycle.md). Các thao tác ghi yêu cầu Organizer. Chỉ Organizer sở hữu cuộc thi được sao chép hoặc sửa cấu hình, hạng mục và tiêu chí.
+
+| Method và path (dưới `/api/v1`) | Đầu vào và kết quả |
+| --- | --- |
+| `POST /contests` | Tạo DRAFT, sinh mã CON duy nhất. Payload đầy đủ gồm `name`, năm mốc bắt buộc và các trường tùy chọn `description`, `theme`, `rules`, `coverImageUrl`, `categories`, `rounds`, `awards`. Mỗi hạng mục có thể gửi kèm `criteria`. Lưu toàn bộ trong một transaction. |
+| `POST /contests/{id}/duplicate` | Năm mốc mới và `name` tùy chọn. Sinh ID/mã CON mới, trạng thái DRAFT. Sao chép thể lệ, hạng mục, tiêu chí, cấu hình vòng và giải. ID hạng mục và tiêu chí mới thuộc bản sao. Bản sao bắt đầu với dữ liệu đăng ký, bài, phân công, điểm và kết quả rỗng. |
+| `PUT /contests/{id}` | Gửi các trường cấu hình cần đổi. Các mốc gửi lên được kiểm tra cùng các mốc đang lưu. Chỉnh sửa cấu hình đóng khi hết hạn nộp hoặc cuộc thi đã vào chấm. |
+| `GET/POST /contests/{id}/categories` | GET đọc hạng mục và `isActive`. POST tạo bằng `name`, `description` và `isActive` tùy chọn. |
+| `PATCH/DELETE /contests/{id}/categories/{categoryId}` | PATCH nhận `name`, `description` hoặc `isActive`. DELETE chuyển `isActive` sang false. ID và dữ liệu đã liên kết được giữ. Hạng mục tắt chặn nộp bài mới. |
+| `GET/PUT /contests/{id}/categories/{categoryId}/criteria` | GET đọc bộ tiêu chí của hạng mục. PUT gửi `criteria: [{name, description?, weight, maxScore?}]` để thay nguyên bộ một cách nguyên tử. Weight là số từ 0.0001 đến 1, tối đa bốn chữ số thập phân. Tổng phải đúng 1.0000, sai tổng trả HTTP 400 với `MSG007`. Bộ tiêu chí đã có điểm tham chiếu được giữ nguyên. |
+
+Năm mốc là `registrationStartAt`, `submissionDeadlineAt`, `judgingStartAt`, `judgingDeadlineAt`, `publishedAt`, theo đúng thứ tự BR-08. Gửi ISO 8601 có múi giờ. Payload sai hoặc thiếu mốc trả HTTP 400 với `MSG008`. API trả kèm `startAt` và `endAt` làm alias của hai mốc đầu. Payload cũ ở ví dụ dưới dùng để lưu nháp. Đưa DRAFT sang SCHEDULED hoặc OPEN kích hoạt lịch. API đọc theo đồng hồ để trả SCHEDULED, OPEN hoặc VERIFYING. Vào chấm và công bố vẫn qua điều kiện của workflow.
+
+`rounds` lưu cấu hình `[{name, order, advanceCount?}]` theo cuộc thi. `awards` lưu `[{code, name, rankOrder, prizeValueVnd?, quota?}]`. Các thao tác điều phối vòng, gán giải và đăng ký hạng mục có task riêng.
 
 Các chức năng bao gồm:
 
@@ -611,6 +624,10 @@ Các chức năng bao gồm:
 - Delete Contest – Xóa cuộc thi.
 
 Các endpoint hiện được khai báo trong OpenAPI gồm `/contests` và `/contests/{id}`.
+
+**UC-15–16 (FPC-085).** Organizer sở hữu cuộc thi dùng `GET/POST /contests/{id}/rounds` và `PATCH /contests/{id}/rounds/{roundId}`. Cấu hình gồm `name`, `position`, `startAt`, `deadlineAt`, `advanceCount` (null cho vòng cuối), `requiredJudges` (mặc định 1 trên mỗi hạng mục). Các vòng nằm trong cửa sổ chấm của cuộc thi và có thứ tự thời gian không chồng lấn. Vòng đã khóa giữ nguyên cấu hình.
+
+`POST /contests/{id}/judges` nhận `roundId`, `categoryId` và `judgeId`. `GET /contests/{id}/rounds/{roundId}/judges` đọc phân công hiệu lực. `POST /contests/{id}/rounds/{roundId}/start` kiểm tra thời hạn, vòng trước đã khóa và đủ Judge hoạt động theo BR-20. Phân công bị đóng băng khi vòng bắt đầu. Điểm và phiếu khóa của Judge được gắn vòng theo phân công đang chạy. BR-21 chặn Judge có bài dự thi cùng cuộc thi. Đăng ký áp dụng quy tắc tương ứng khi triển khai FPC-087; chốt và chọn bài đi tiếp thuộc FPC-104.
 
 #### 4.7.2. Create Contest Request DTO
 
@@ -664,11 +681,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/contests` và `/co
 
 - Backend phải kiểm tra quyền tạo cuộc thi.
 
-- Trạng thái cuộc thi phải thuộc danh sách được hỗ trợ.
-
-**Allowed Status Values theo OpenAPI hiện tại:**
-
-`draft`, `published`, `ongoing`, `completed`, `cancelled`.
+- Cuộc thi mới bắt đầu ở `DRAFT`.
 
 #### 4.7.3. Create Contest Response DTO
 
@@ -1402,7 +1415,7 @@ Các chức năng chính bao gồm:
 
 - Get Processing Status – Kiểm tra trạng thái xử lý ảnh.
 
-**Implementation Status:** Các endpoint trong mục này là đề xuất dựa trên SRS và tài liệu `08-archive-and-exhibition.md`. Chúng chưa được khai báo trong OpenAPI hiện tại và cần được nhóm thống nhất trước khi triển khai.
+**Implementation Status:** UC-26, UC-27 và UC-41 đã mount Backend (xem [Module 08](08-archive-and-exhibition.md#phạm-vi-nghiệm-thu-và-trạng-thái-hiện-tại)). Các DTO trong mục này vẫn mang tính mô tả và cần đồng bộ với [OpenAPI](../openapi.yaml) theo FPC-130 trước khi client tích hợp. UC-43 có route công khai `GET /api/v1/exhibitions`, `GET /api/v1/exhibitions/{id}` và `GET /api/v1/exhibitions/{id}/image`; bộ lọc nâng cao và index truy vấn thuộc FPC-112/114/115.
 
 #### 4.9.2. Publish Official Results DTO
 
@@ -2815,13 +2828,26 @@ Các nội dung cần được nhóm xác nhận trước khi triển khai chín
 8. Quy ước tiền tố và phiên bản API.
 
 Sau khi được phê duyệt, tài liệu cần được đồng bộ với OpenAPI và mã nguồn Backend để đảm bảo các Client sử dụng cùng một hợp đồng API.
+### Hợp đồng đối chứng UC-21–22
+
+- `POST /api/v1/submissions/{id}/request-proof` nhận `{proofType, proofDeadlineAt, reason?}`. `proofType` là `negative` hoặc `contact_sheet`. Organizer nhập hạn tương lai theo ISO 8601 có múi giờ. Yêu cầu, audit và thông báo trong ứng dụng được lưu cùng transaction.
+- Participant đọc thông báo của mình tại `GET /api/v1/submissions/my/notifications`. Chi tiết `GET /api/v1/submissions/{id}` và ảnh `GET /api/v1/submissions/{id}/proof/image` giới hạn cho Participant sở hữu bài hoặc Organizer sở hữu cuộc thi.
+- `POST /api/v1/submissions/{id}/proof` nhận multipart field `proof`, tối đa 20 MiB. `POST /api/v1/submissions/{id}/verify-proof` lưu xác minh của Organizer. Hết hạn không tự loại. `proofStatus` phản ánh `REQUESTED`, `OVERDUE`, `UPLOADED` hoặc `VERIFIED`.
+- Các route duyệt dùng chung kiểm tra proof. Hạng mục có thể đặt `requireNegativeProof`. Khi cần proof, phải tải lên và xác minh trước khi bài chuyển `APPROVED`. Hai quyết định duyệt và loại cạnh tranh chỉ có một quyết định thành công.
+
+### Hợp đồng công bố kết quả UC-26
+
+`POST /api/v1/contests/{id}/publish-results` nhận `{confirm: true, tieBreaks?: [{categoryId, submissionIds, reason}]}`. Organizer sở hữu phải đợi mốc công bố, vòng cuối đã khóa, mọi phiếu bắt buộc đầy đủ và proof bắt buộc đã xác minh. `submissionIds` là toàn bộ nhóm đồng điểm theo thứ tự do Organizer xác nhận, kèm lý do. API xếp hạng theo hạng mục, lấy điểm trung bình có trọng số chỉ từ vòng cuối, làm tròn hai chữ số. Giải áp dụng theo `rankOrder` và `quota` trong từng hạng mục. Khoảng thứ hạng giải không được chồng lấn.
+
+`GET /api/v1/contests/{id}/results` trả bản kết quả bất biến gồm `entries`, `winners`, `roundId`, `publishedAt`, `status: RESULTS_PUBLISHED`, và `resultsLocked: true`. Với cùng cuộc thi, gọi công bố lại trả bản đã lưu. Audit ghi Organizer, cuộc thi, vòng cuối và lý do đồng điểm. Thông báo trong ứng dụng gửi một lần cho mỗi Participant có bài trong vòng cuối. Dữ liệu công khai chỉ dùng URL preview khi đã có.
+
 ## 6. Danh mục endpoint
 
-[OpenAPI](../openapi.yaml) liệt kê **51** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **28** thao tác dự kiến đã có method và path. Dùng `x-implementation` để tra trạng thái và [đăng ký Hono](../../apps/api/src/index.ts) để lần tới route thực tế.
+[OpenAPI](../openapi.yaml) liệt kê **91** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **19** thao tác dự kiến đã có method và path. Dùng `x-implementation` để tra trạng thái và [đăng ký Hono](../../apps/api/src/index.ts) để lần tới route thực tế.
 
-Các chức năng còn thiếu method/path trong đặc tả gồm tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, quản lý hạng mục và vòng chấm, sửa metadata hoặc rút bài thi, đọc bảng điểm cá nhân, điều phối lệch điểm và xuất thống kê cuộc thi (UC-28, [Module 11](11-cross-cutting-services.md)). Xem yêu cầu nghiệp vụ tương ứng tại [SRS](../srs.md#22-use-case-catalog).
+Các chức năng còn thiếu method/path trong đặc tả gồm tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, điều phối vòng chấm, sửa metadata hoặc rút bài thi, đọc bảng điểm cá nhân, điều phối lệch điểm và xuất thống kê cuộc thi (UC-28, [Module 11](11-cross-cutting-services.md)). Xem yêu cầu nghiệp vụ tương ứng tại [SRS](../srs.md#22-use-case-catalog).
 
-Route công khai `GET /api/v1/contests/{id}/results` hiện dùng dữ liệu giải và điểm mẫu. DTO lịch trình của `POST /api/v1/contests` hiện dùng hai mốc `startAt` và `endAt`. Quy tắc công bố kết quả và lịch trình đích được mô tả trong Module 03 và 08.
+Route công khai `GET /api/v1/contests/{id}/results` đọc snapshot kết quả chính thức của cuộc thi `RESULTS_PUBLISHED`. DTO lịch trình đầy đủ được mô tả ở mục 4.7. Quy tắc công bố kết quả và lịch trình đích được mô tả trong Module 03 và 08.
 
 
 ### 6.1. Hợp đồng Judging
@@ -2840,7 +2866,7 @@ Bảng điểm xếp hạng riêng từng hạng mục. Đồng điểm dùng c�
 
 ## 7. Truy vết SRS theo module
 
-Bảng ánh xạ toàn bộ 43 UC về nơi mô tả chính. Khi nghiệm thu một UC, kiểm tra thêm BR, CR và màn hình tương ứng trong [SRS](../srs.md). Trình tự phụ thuộc nằm trong [overview](../progress/overview.md#thứ-tự-triển-khai).
+Bảng ánh xạ toàn bộ 43 UC về nơi mô tả chính. Khi nghiệm thu một UC, kiểm tra thêm BR, CR và màn hình tương ứng trong [SRS](../srs.md). Trình tự phụ thuộc nằm trong [kế hoạch Sprint 5](../progress/sprints.md#sprint-5--feature-complete).
 
 | Module | UC chính |
 | --- | --- |

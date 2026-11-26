@@ -2,7 +2,7 @@
 
 Ứng dụng di động đa nền tảng (Android, iOS) cho dự án CINEGEN, được xây dựng bằng **[Flutter](https://flutter.dev/)**, sử dụng **[Riverpod](https://riverpod.dev/)** quản lý state và **[GoRouter](https://pub.dev/packages/go_router)** điều hướng.
 
-Xem [SRS](../../docs/srs.md), [đặc tả nộp bài và đối chứng](../../docs/ai/05-submission-and-proof.md) và [độ phủ hiện tại trên Mobile](../../docs/progress/overview.md#độ-phủ-theo-module).
+Xem [SRS](../../docs/srs.md), [đặc tả nộp bài và đối chứng](../../docs/ai/05-submission-and-proof.md) và [checklist nghiệm thu](../../docs/progress/checklist.md).
 
 ---
 

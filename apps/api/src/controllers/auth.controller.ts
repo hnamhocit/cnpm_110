@@ -9,6 +9,7 @@ import {
   logoutUser,
   refreshUserTokens,
   updateAccountProfile,
+  updateAccountRole,
   updateAccountStatus,
 } from "../services/auth.service";
 import { identityDelivery, type IdentityDelivery } from "../services/identity-delivery";
@@ -265,6 +266,17 @@ export async function handleUpdateAccountStatus(c: Context<AuthEnv>) {
   return c.ok(await updateAccountStatus(
     c.get("user").id, userId, status, boundedString(reason, "reason", 500, 10),
   ));
+}
+
+export async function handleUpdateAccountRole(c: Context<AuthEnv>) {
+  const userId = c.req.param("id") ?? "";
+  if (!UUID_PATTERN.test(userId)) throw AppError.badRequest("Invalid account id");
+  const { role } = await parseJsonBody(c);
+  const roles = { ADMIN: "Admin", ORGANIZER: "Organizer", JUDGE: "Judge", PARTICIPANT: "Participant" } as const;
+  if (role !== "ADMIN" && role !== "ORGANIZER" && role !== "JUDGE" && role !== "PARTICIPANT") {
+    throw AppError.badRequest("Invalid account role");
+  }
+  return c.ok(await updateAccountRole(c.get("user").id, userId, roles[role]));
 }
 
 export async function handleListAccounts(c: Context<AuthEnv>) {

@@ -38,13 +38,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _submit({bool resend = false}) async {
     if (_isLoading || (!resend && !_formKey.currentState!.validate())) return;
-    if (resend && (Validators.email(_emailController.text) != null ||
-        _passwordController.text.isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nhập email và mật khẩu đã dùng khi đăng ký.')),
-      );
-      return;
-    }
     setState(() => _isLoading = true);
 
     try {
@@ -120,8 +113,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         keyboardType: TextInputType.number,
                         validator: (value) =>
                             RegExp(r'^\d{6}$').hasMatch(value?.trim() ?? '')
-                                ? null
-                                : 'Nhập mã xác thực gồm 6 chữ số',
+                            ? null
+                            : 'Nhập mã xác thực gồm 6 chữ số',
                       ),
                     ] else ...[
                       CustomInputField(
@@ -172,10 +165,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       isLoading: _isLoading,
                       onPressed: () => _submit(),
                     ),
-                    TextButton(
-                      onPressed: _isLoading ? null : () => _submit(resend: true),
-                      child: Text(_verifying ? 'Gửi lại mã' : 'Xác thực tài khoản đã đăng ký'),
-                    ),
+                    if (_verifying)
+                      TextButton(
+                        onPressed: _isLoading
+                            ? null
+                            : () => _submit(resend: true),
+                        child: const Text('Gửi lại mã'),
+                      ),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
