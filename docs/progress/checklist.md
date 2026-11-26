@@ -50,45 +50,11 @@ Phân định UC-01–05 theo xác nhận cập nhật của trưởng nhóm ng�
 
 ### Ghi nhận điều phối và trách nhiệm Sprint 5 — 26/11/2026
 
-Hai ảnh trao đổi nhóm do trưởng nhóm cung cấp ghi nhận bảng phân công theo module/UC và yêu cầu bàn giao. Ảnh đầu hiển thị tin nhắn của Huỳnh Bảo lúc 11:31 đề nghị nhận thêm việc. Ảnh thứ hai ghi nội dung giải thích phạm vi module và yêu cầu push, tự kiểm thử, bàn giao checklist. Không suy ra mọi thành viên đã xác nhận nhận việc hoặc thời gian gửi không hiển thị trong ảnh.
-
 ![Trao đổi và bảng phân công Sprint 5](evidence/sprint-5-assignment-chat.png)
 
 ![Quy định bàn giao và kiểm thử Sprint 5](evidence/sprint-5-handover-rules-chat.png)
 
-### Quy định thực hiện và bàn giao theo trao đổi nhóm
-
-- Thực hiện phần module/UC được phân công để luồng nghiệp vụ hoạt động và tích hợp được với các phần liên quan. Khi báo cáo, mỗi thành viên cần chỉ rõ UC mình đóng góp và giải thích được cách hoạt động.
-- Tập trung hoàn thành phần được giao; mỗi UC hoàn tất thì push một lần để có thể kiểm tra và tích hợp.
-- Mỗi UC bàn giao phải có checklist kiểm thử: ca kiểm tra, kết quả thực tế, bằng chứng và phần còn thiếu. Người thực hiện tự cập nhật tiến độ của mình.
-- Người review kiểm tra theo checklist. Nếu báo dùng được nhưng kiểm thử không chạy hoặc không đạt thì chưa đạt task; ghi rõ lỗi và trả lại người thực hiện sửa, không mặc định trưởng nhóm sửa thay.
-- Mục tiêu tiến độ được nhắc trong tin nhắn là khoảng 40–50% thay vì mức khoảng 18% lúc trao đổi. Đây là mục tiêu điều phối; chỉ cập nhật tỷ lệ đạt từ kết quả nghiệm thu thực tế, không tự nâng số liệu.
-
-| Thành viên | Xác nhận nhận việc | Cập nhật tiến độ gần nhất | Blocker / phần chưa hoàn thành | Bằng chứng |
-| --- | --- | --- | --- | --- |
-| Nam Nguyễn | Chờ đối chiếu | Chờ ghi nhận | | |
-| Hà Đức Bình | Chờ đối chiếu | Chờ ghi nhận | | |
-| Vĩ Nguyễn | Chờ đối chiếu | Chờ ghi nhận | | |
-| Phạm Tiến Thành Nhân | Chờ đối chiếu | Chờ ghi nhận | | |
-| Dương Nguyễn | Chờ đối chiếu | Chờ ghi nhận | | |
-| Huỳnh Trần Gia Bảo | Chờ đối chiếu | Chờ ghi nhận | | |
-
 **Nguyên tắc trách nhiệm:** Mỗi thành viên chịu trách nhiệm thực hiện, cập nhật tiến độ và báo cáo blocker của phần việc được giao. Trường hợp không thực hiện hoặc không cập nhật dù đã được phân công và nhắc nhở, cần ghi nhận riêng theo cá nhân và bằng chứng; không mặc định quy phần việc đó thành lỗi triển khai của trưởng nhóm. Trưởng nhóm vẫn chịu trách nhiệm điều phối, theo dõi, hỗ trợ xử lý blocker và nghiệm thu chung. Không kết luận cá nhân vi phạm chỉ vì chưa có dữ liệu cập nhật trong tài liệu này.
-
-Bằng chứng hiện có: hai ảnh trao đổi phía trên; thành viên bổ sung phản hồi, PR và kết quả kiểm thử của mình khi bàn giao.
-
-### Công việc đã ghi nhận theo từng thành viên
-
-| Thành viên | Đóng góp đã ghi nhận | Công việc đang review / cần xác minh |
-| --- | --- | --- |
-| Nam Nguyễn | Backend UC-11–16, 21–22, 26–27, 41 DONE; UC-18/23 đã nghiệm thu; UC-04–05 do Nam thực hiện; phối hợp UC-01–03, đóng góp UC-20, 29–33, 37/40 và kỹ thuật. [Hồ sơ commit chi tiết](nam-nguyen-evidence.md). | FPC-130 TODO; 132/134 IN REVIEW; nghiệm thu client và ca còn thiếu. |
-| Hà Đức Bình | Task lịch sử DONE: RBAC/test Auth (005–006), schema Submission/Roll (024), validation ảnh (026), phát hiện trùng/AI (045–046), tổng hợp điểm/xếp hạng/đồng điểm (065–067). Liên quan nền tảng Auth/RBAC, UC-01–03, 19, 25, 26, 37; chưa xác nhận từng UC cá nhân. | FPC-004/025/044/047 đã chuyển DONE theo xác nhận trưởng nhóm ngày 26/11/2026; Sprint 5 còn AI, Judging, M10 và UC-28. |
-| Vĩ Nguyễn | Task lịch sử DONE: Web nền tảng/Auth (007–009), cấu hình cuộc thi (027–029), kiểm duyệt/đối sánh (048–050). Liên quan UC-01, 11–14, 18, 20, 22–23; chưa nghiệm thu từng phần cá nhân. | FPC-068/069 đã chuyển DONE theo xác nhận trưởng nhóm ngày 26/11/2026; Sprint 5 còn Master Data, Organizer, AI, kết quả và báo cáo. |
-| Phạm Tiến Thành Nhân | Task lịch sử DONE: portal/Auth (010–012), discovery (030–032), phân công Judge (051–053), workspace/viewer/scoring (071–073). Liên quan UC-01, 16, 24, 29–31, 34. | FPC-116–118 IN REVIEW: Web UC-43; còn vòng chấm, danh sách đăng ký và Judging. |
-| Dương Nguyễn | Task lịch sử DONE: Mobile danh sách/trạng thái bài, lý do từ chối, chỉnh metadata, cache/nén ảnh (054–059). Liên quan UC-37–40; UC-40 toàn luồng đã đạt, chưa xác minh riêng commit. | FPC-074/075 đã chuyển DONE theo xác nhận trưởng nhóm ngày 26/11/2026; FPC-120 IN REVIEW (UC-41 Mobile); còn đăng ký, nộp/sửa/rút bài, kho ảnh. |
-| Huỳnh Trần Gia Bảo | Task lịch sử DONE: Mobile client/components/profile (016–018), form metadata/scan/proof (036–038), cache/phân trang (076–077). Liên quan UC-03, 35–38; chưa xác nhận từng UC cá nhân. | FPC-123 IN REVIEW (UC-42 Mobile); còn Master Data, Logbook, proof, portfolio, Audit Log. |
-
-Lịch sử Sprint 1–2 có Hoài Bảo Từ; không chuyển công việc của người này sang Dương hoặc Bảo. Các thành viên còn lại bổ sung link commit/PR/video và xác nhận phần UC thực tế ngay tại bảng trên; không suy diễn từ task DONE thành UC DONE.
 
 ## 3. Checklist theo Module Owner và từng UC
 
