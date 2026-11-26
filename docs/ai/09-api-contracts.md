@@ -2835,13 +2835,19 @@ Sau khi được phê duyệt, tài liệu cần được đồng bộ với Ope
 - `POST /api/v1/submissions/{id}/proof` nhận multipart field `proof`, tối đa 20 MiB. `POST /api/v1/submissions/{id}/verify-proof` lưu xác minh của Organizer. Hết hạn không tự loại. `proofStatus` phản ánh `REQUESTED`, `OVERDUE`, `UPLOADED` hoặc `VERIFIED`.
 - Các route duyệt dùng chung kiểm tra proof. Hạng mục có thể đặt `requireNegativeProof`. Khi cần proof, phải tải lên và xác minh trước khi bài chuyển `APPROVED`. Hai quyết định duyệt và loại cạnh tranh chỉ có một quyết định thành công.
 
+### Hợp đồng công bố kết quả UC-26
+
+`POST /api/v1/contests/{id}/publish-results` nhận `{confirm: true, tieBreaks?: [{categoryId, submissionIds, reason}]}`. Organizer sở hữu phải đợi mốc công bố, vòng cuối đã khóa, mọi phiếu bắt buộc đầy đủ và proof bắt buộc đã xác minh. `submissionIds` là toàn bộ nhóm đồng điểm theo thứ tự do Organizer xác nhận, kèm lý do. API xếp hạng theo hạng mục, lấy điểm trung bình có trọng số chỉ từ vòng cuối, làm tròn hai chữ số. Giải áp dụng theo `rankOrder` và `quota` trong từng hạng mục. Khoảng thứ hạng giải không được chồng lấn.
+
+`GET /api/v1/contests/{id}/results` trả bản kết quả bất biến gồm `entries`, `winners`, `roundId`, `publishedAt`, `status: RESULTS_PUBLISHED`, và `resultsLocked: true`. Với cùng cuộc thi, gọi công bố lại trả bản đã lưu. Audit ghi Organizer, cuộc thi, vòng cuối và lý do đồng điểm. Thông báo trong ứng dụng gửi một lần cho mỗi Participant có bài trong vòng cuối. Dữ liệu công khai chỉ dùng URL preview khi đã có.
+
 ## 6. Danh mục endpoint
 
-[OpenAPI](../openapi.yaml) liệt kê **58** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **28** thao tác dự kiến đã có method và path. Dùng `x-implementation` để tra trạng thái và [đăng ký Hono](../../apps/api/src/index.ts) để lần tới route thực tế.
+[OpenAPI](../openapi.yaml) liệt kê **77** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **24** thao tác dự kiến đã có method và path. Dùng `x-implementation` để tra trạng thái và [đăng ký Hono](../../apps/api/src/index.ts) để lần tới route thực tế.
 
 Các chức năng còn thiếu method/path trong đặc tả gồm tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, điều phối vòng chấm, sửa metadata hoặc rút bài thi, đọc bảng điểm cá nhân, điều phối lệch điểm và xuất thống kê cuộc thi (UC-28, [Module 11](11-cross-cutting-services.md)). Xem yêu cầu nghiệp vụ tương ứng tại [SRS](../srs.md#22-use-case-catalog).
 
-Route công khai `GET /api/v1/contests/{id}/results` hiện dùng dữ liệu giải và điểm mẫu. DTO lịch trình đầy đủ được mô tả ở mục 4.7. Quy tắc công bố kết quả và lịch trình đích được mô tả trong Module 03 và 08.
+Route công khai `GET /api/v1/contests/{id}/results` đọc snapshot kết quả chính thức của cuộc thi `RESULTS_PUBLISHED`. DTO lịch trình đầy đủ được mô tả ở mục 4.7. Quy tắc công bố kết quả và lịch trình đích được mô tả trong Module 03 và 08.
 
 
 ### 6.1. Hợp đồng Judging

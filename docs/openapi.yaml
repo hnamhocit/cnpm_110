@@ -1237,27 +1237,48 @@ paths:
         '409':
           description: Xung đột trạng thái hoặc dữ liệu
   /api/v1/contests/{id}/publish-results:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
     post:
-      summary: POST /api/v1/contests/{id}/publish-results
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
-        được đăng ký trong Hono.
+      summary: Công bố kết quả chính thức của vòng cuối
       tags:
-      - Planned · 08
-      x-implementation: planned
-      responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
-      parameters:
-      - name: id
-        in: path
+      - Contests
+      x-implementation: mounted
+      operationId: publishContestResults
+      security:
+      - BearerAuth: []
+      requestBody:
         required: true
-        schema:
-          type: string
-          format: uuid
-      operationId: postContestsByIdPublishResults
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublishContestResultsInput'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/OfficialContestResults'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
   /api/v1/contests/{id}/results:
     get:
       summary: Kết quả cuộc thi đã công bố
+      description: Cuộc thi RESULTS_PUBLISHED trả snapshot OfficialContestResults bất biến. Cuộc thi demo cũ có thể trả định dạng Winners Showcase.
       tags:
       - Contests
       responses:
@@ -1274,21 +1295,14 @@ paths:
                       type: integer
                       example: 200
                     data:
-                      type: object
-                      properties:
-                        contestId:
-                          type: string
-                          format: uuid
-                        contestName:
-                          type: string
-                        status:
-                          type: string
-                        resultsLocked:
-                          type: boolean
-                        winners:
-                          type: array
-                          items:
-                            type: object
+                      anyOf:
+                      - $ref: '#/components/schemas/OfficialContestResults'
+                      - type: object
+                        required: [winners]
+                        properties:
+                          winners:
+                            type: array
+                            items: {type: object}
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -3563,6 +3577,65 @@ components:
       - type: object
         properties:
           id: {type: string, format: uuid}
+    PublishContestResultsInput:
+      type: object
+      required: [confirm]
+      properties:
+        confirm: {type: boolean, enum: [true]}
+        tieBreaks:
+          type: array
+          items:
+            type: object
+            required: [categoryId, submissionIds, reason]
+            properties:
+              categoryId: {type: string, format: uuid}
+              submissionIds:
+                description: ID của tất cả bài đồng điểm trong nhóm, theo thứ tự Organizer xác nhận.
+                type: array
+                minItems: 2
+                uniqueItems: true
+                items: {type: string, format: uuid}
+              reason: {type: string, minLength: 1, maxLength: 1000}
+    OfficialResultEntry:
+      type: object
+      properties:
+        submissionId: {type: string, format: uuid}
+        categoryId: {type: string, format: uuid}
+        categoryName: {type: string}
+        title: {type: string}
+        authorName: {type: string}
+        rank: {type: integer}
+        finalScore: {type: number, multipleOf: 0.01}
+        award: {type: string, nullable: true}
+        awardTitle: {type: string, nullable: true}
+        awardRank: {type: integer, nullable: true}
+        prizeValueVnd: {type: integer, nullable: true}
+        photoUrl: {type: string, nullable: true}
+        isProofVerified: {type: boolean}
+        isResultsLocked: {type: boolean}
+    OfficialContestResults:
+      type: object
+      required: [contestId, roundId, publishedAt, status, resultsLocked, entries, winners]
+      properties:
+        contestId: {type: string, format: uuid}
+        contestName: {type: string}
+        roundId: {type: string, format: uuid}
+        publishedAt: {type: string, format: date-time}
+        status: {type: string, enum: [RESULTS_PUBLISHED]}
+        resultsLocked: {type: boolean, enum: [true]}
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfficialResultEntry'
+        winners:
+          type: array
+          items:
+            allOf:
+            - $ref: '#/components/schemas/OfficialResultEntry'
+            - type: object
+              properties:
+                contestId: {type: string, format: uuid}
+                contestName: {type: string}
     Contest:
       type: object
       properties:

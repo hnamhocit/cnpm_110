@@ -30,6 +30,7 @@ import { contestDto, isClosed, validateSchedule, type Schedule, type Settings } 
 import { aggregateScores } from "./score-aggregation";
 import { assignCompetitionRanks } from "./scoreboard-ranking";
 import type { AuthEnv } from "../middlewares/auth";
+import { getOfficialContestResults } from "./contest-publication";
 import { AppError } from "../utils/errors";
 
 const AWARDS_METADATA = [
@@ -188,6 +189,8 @@ export async function getContestResults(contestId: string) {
   if (!contest) {
     throw AppError.notFound("Contest not found");
   }
+
+  if (contest.status.toLowerCase() === "results_published") return getOfficialContestResults(contestId);
 
   const isPublished = ["published", "completed", "archived"].includes(
     (contest.status || "").toLowerCase(),
@@ -419,22 +422,7 @@ export async function updateContest(
     }
 
     if (nextStatus === "published") {
-      const [round] = await tx.select({ id: judgingRounds.id }).from(judgingRounds)
-        .where(eq(judgingRounds.contestId, id)).limit(1);
-      if (round) throw AppError.conflict("Use official results publication for round-based contests");
-
-      const publicationTime = publishedAt ?? endAt;
-      if (currentStatus !== "judging" || (publicationTime && publicationTime > now)) {
-        throw AppError.conflict("Contest is not ready for publication");
-      }
-      const scoreboard = await getContestScoreboard(id, actor, tx);
-      const assignments = await tx.select({ lockedAt: contestJudges.lockedAt })
-        .from(contestJudges)
-        .where(and(eq(contestJudges.contestId, id), eq(contestJudges.isActive, true)));
-      if (assignments.length === 0 || assignments.some(({ lockedAt }) => !lockedAt) ||
-          scoreboard.entries.some(({ finalScore }) => finalScore === null)) {
-        throw AppError.conflict("All scorecards must be complete and locked before publication");
-      }
+      throw AppError.conflict("Use the official results publication endpoint");
     }
     if (nextStatus !== currentStatus && ["archived", "completed"].includes(nextStatus)) {
       throw AppError.conflict("Use the contest publication workflow to publish results");
@@ -468,7 +456,7 @@ export async function softDeleteContest(id: string, actor: AuthEnv["Variables"][
       eq(contests.id, id),
       eq(contests.isDeleted, false),
       eq(contests.createdBy, actor.id),
-      sql`lower(${contests.status}) not in ('published', 'completed', 'archived')`,
+      sql`lower(${contests.status}) not in ('published', 'results_published', 'completed', 'archived')`,
     ))
     .returning({ id: contests.id });
 

@@ -28,6 +28,7 @@ import {
   settingsPatch,
   type Body,
 } from "./contest-configuration.input";
+import { publishContestResults } from "../services/contest-publication";
 import { AppError } from "../utils/errors";
 
 const VALID_STATUSES = [
@@ -135,7 +136,7 @@ export async function handleGetContestCategories(c: Context) {
 
 export async function handleGetContestResults(c: Context) {
   const { id } = c.req.param();
-  const data = await getContestResults(id);
+  const data = await getContestResults(resourceId(id));
   return c.ok(data, "Published results retrieved successfully");
 }
 export async function handleGetContestScoreboard(
@@ -313,4 +314,28 @@ export async function handleCategoryCriteria(c: Context<AuthEnv>) {
   const replacement = c.req.method === "PUT" ? parseCriteria((await parseJsonBody<Body>(c)).criteria) : undefined;
   const data = await categoryCriteria(resourceId(c.req.param("id")), resourceId(c.req.param("categoryId")), c.get("user").id, replacement);
   return c.ok(data, replacement ? "Category criteria replaced successfully" : "Category criteria retrieved successfully");
+}
+
+export async function handlePublishContestResults(c: Context<AuthEnv>) {
+  const body = await parseJsonBody<Body>(c);
+  if (body.confirm !== true) throw AppError.badRequest("confirm must be true");
+  const decisions = body.tieBreaks ?? [];
+  if (!Array.isArray(decisions)) throw AppError.badRequest("Invalid tieBreaks");
+  const tieBreaks = decisions.map((decision) => {
+    if (!decision || typeof decision !== "object" || !Array.isArray(decision.submissionIds)) {
+      throw AppError.badRequest("Invalid tie break");
+    }
+    const submissionIds = decision.submissionIds.map((id: unknown) =>
+      resourceId(typeof id === "string" ? id : undefined));
+    if (submissionIds.length < 2 || new Set(submissionIds).size !== submissionIds.length) {
+      throw AppError.badRequest("Tie break requires distinct submission IDs");
+    }
+    return {
+      categoryId: resourceId(typeof decision.categoryId === "string" ? decision.categoryId : undefined),
+      submissionIds,
+      reason: requiredText(decision.reason, "tie-break reason", 1000),
+    };
+  });
+  const data = await publishContestResults(resourceId(c.req.param("id")), c.get("user").id, tieBreaks);
+  return c.ok(data);
 }

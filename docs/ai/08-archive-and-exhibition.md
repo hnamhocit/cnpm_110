@@ -10,8 +10,10 @@
 
 ## Phạm vi nghiệm thu và trạng thái hiện tại
 
-UC-26–27 và UC-41–43 gồm công bố, xuất bản triển lãm, kết quả/phản hồi cá nhân, portfolio và tra cứu công khai. API kết quả và portfolio hiện có, nhưng route kết quả còn dùng điểm và giải mẫu. Nghiệm thu bằng dữ liệu chấm thật, toàn bộ phiếu cần thiết đã khóa, cờ lệch điểm đã giải quyết, bài chung kết/xét giải có đối chứng đã duyệt và kết quả bất biến sau công bố. Chỉ xuất bản bản ảnh hiển thị đã xử lý, bảo vệ bản gốc theo BR-17. Báo cáo UC-28 được mô tả tại [Module 11](11-cross-cutting-services.md).
+UC-26–27 và UC-41–43 gồm công bố, xuất bản triển lãm, kết quả/phản hồi cá nhân, portfolio và tra cứu công khai. API kết quả chính thức lấy dữ liệu vòng cuối. Một số cuộc thi demo đã công bố từ trước vẫn dùng phần hiển thị mẫu. Nghiệm thu bằng dữ liệu chấm thật, toàn bộ phiếu cần thiết đã khóa, cờ lệch điểm đã giải quyết, bài chung kết/xét giải có đối chứng đã duyệt và kết quả bất biến sau công bố. Chỉ xuất bản bản ảnh hiển thị đã xử lý, bảo vệ bản gốc theo BR-17. Báo cáo UC-28 được mô tả tại [Module 11](11-cross-cutting-services.md).
 
+
+Backend đã mount `POST /api/v1/contests/{id}/publish-results` cho Organizer sở hữu. API dùng mục chấm của vòng cuối đã khóa, lưu snapshot kết quả và audit công bố trong một transaction, rồi trả lại cùng snapshot nếu gửi lại yêu cầu. `GET /api/v1/contests/{id}/results` đọc snapshot chính thức. Xem hợp đồng hiện hành trong [Module 09](09-api-contracts.md#hợp-đồng-công-bố-kết-quả-uc-26).
 
 ## 1. Domain Entities & Database Mapping
 
