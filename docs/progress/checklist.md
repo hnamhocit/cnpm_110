@@ -1,6 +1,4 @@
-# CINEGEN
-
-## Functional Acceptance Checklist
+# Checklist nghiệm thu CINEGEN
 
 AI-powered Film Photography Contest Management Platform
 

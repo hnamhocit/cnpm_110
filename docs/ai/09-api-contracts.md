@@ -2840,7 +2840,7 @@ Bảng điểm xếp hạng riêng từng hạng mục. Đồng điểm dùng c�
 
 ## 7. Truy vết SRS theo module
 
-Bảng ánh xạ toàn bộ 43 UC về nơi mô tả chính. Khi nghiệm thu một UC, kiểm tra thêm BR, CR và màn hình tương ứng trong [SRS](../srs.md). Trình tự phụ thuộc nằm trong [overview](../progress/overview.md#thứ-tự-triển-khai).
+Bảng ánh xạ toàn bộ 43 UC về nơi mô tả chính. Khi nghiệm thu một UC, kiểm tra thêm BR, CR và màn hình tương ứng trong [SRS](../srs.md). Trình tự phụ thuộc nằm trong [kế hoạch Sprint 5](../progress/sprints.md#sprint-5--feature-complete).
 
 | Module | UC chính |
 | --- | --- |

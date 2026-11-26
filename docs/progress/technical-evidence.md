@@ -1,6 +1,6 @@
 # Bằng chứng kỹ thuật CINEGEN
 
-Các ghi nhận và trạng thái Jira phản ánh thời điểm rà soát. Xem [dashboard](overview.md) để biết trạng thái nghiệm thu hiện hành.
+Các ghi nhận và trạng thái Jira phản ánh thời điểm rà soát. Xem [checklist nghiệm thu](checklist.md) để biết trạng thái nghiệm thu hiện hành.
 
 ## Tổng quan trước khi tổ chức lại
 
@@ -186,7 +186,7 @@ Migration sửa schema áp dụng thành công trên PostgreSQL 18 tạm. API ty
 | Mã | Phạm vi | Công việc | Người phụ trách | Trạng thái | Ghi chú |
 | --- | --- | --- | --- | --- | --- |
 | FPC-126 | Tài liệu | Module 01 Auth & RBAC | Huỳnh Trần Gia Bảo | DONE | Đã đồng bộ tài liệu với Backend và biến môi trường SMTP/Twilio. |
-| FPC-127 | Tài liệu | Module 02 Analog Master Data | Huỳnh Trần Gia Bảo | DONE | Đã có đặc tả. Theo dõi phần quản trị và tra cứu danh mục tại [overview](overview.md#độ-phủ-theo-module). |
+| FPC-127 | Tài liệu | Module 02 Analog Master Data | Huỳnh Trần Gia Bảo | DONE | Đã có đặc tả. Theo dõi phần quản trị và tra cứu danh mục tại [checklist M02](checklist.md#m02-analog-master-data). |
 | FPC-128 | Tài liệu | Module 03 Contest Lifecycle | Dương Nguyễn | DONE | — |
 | FPC-129 | Tài liệu | Module 07 Blind Judging | Dương Nguyễn | DONE | — |
 | FPC-130 | Tài liệu | Module 04 Film Logbook | Vĩ Nguyễn | DONE | — |
