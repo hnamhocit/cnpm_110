@@ -402,4 +402,3 @@ export async function handleGetMyContestResults(c: Context<AuthEnv>) {
   const data = await getMyContestResults(resourceId(c.req.param("id")), c.get("user").id);
   return c.ok(data, "Participant contest results retrieved successfully");
 }
->>>>>>> origin/main
