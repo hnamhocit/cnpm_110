@@ -5,7 +5,6 @@ import {
   ExternalLink,
   Film,
   Layers,
-  Medal,
   Settings,
   Users,
 } from "lucide-react";
@@ -83,7 +82,8 @@ export default async function PortalContestOverviewPage({
             href="/portal/contests"
             className="inline-flex items-center text-xs text-gray-500 hover:text-black mb-2"
           >
-            <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Quay lại danh sách cuộc thi
+            <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Quay lại danh sách cuộc
+            thi
           </Link>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
@@ -103,13 +103,27 @@ export default async function PortalContestOverviewPage({
             contestId={contest.id}
             currentStatus={contest.status}
           />
+          <Link href={`/portal/contests/${contest.id}/edit`}>
+            <Button variant="outline" size="sm" className="text-xs">
+              <Settings className="w-3.5 h-3.5 mr-1.5" /> Chỉnh sửa cấu hình
+            </Button>
+          </Link>
+          <Link href={`/portal/contests/${contest.id}/categories`}>
+            <Button variant="outline" size="sm" className="text-xs">
+              <Layers className="w-3.5 h-3.5 mr-1.5" /> Hạng mục
+            </Button>
+          </Link>
           <Link href={`/contests/${contest.id}`} target="_blank">
             <Button variant="outline" size="sm" className="text-xs">
-              <ExternalLink className="w-3.5 h-3.5 mr-1.5" /> Xem trang công khai
+              <ExternalLink className="w-3.5 h-3.5 mr-1.5" /> Xem trang công
+              khai
             </Button>
           </Link>
           <Link href={`/portal/contests/${contest.id}/submissions`}>
-            <Button size="sm" className="bg-brand-solid hover:bg-brand-hover text-white text-xs">
+            <Button
+              size="sm"
+              className="bg-brand-solid hover:bg-brand-hover text-white text-xs"
+            >
               <Film className="w-3.5 h-3.5 mr-1.5" /> Quản lý bài dự thi
             </Button>
           </Link>
@@ -130,8 +144,12 @@ export default async function PortalContestOverviewPage({
                 <Film className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">Bài dự thi</p>
-                <p className="text-xs text-gray-500">Thẩm định AI & Duyệt bài</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  Bài dự thi
+                </p>
+                <p className="text-xs text-gray-500">
+                  Thẩm định AI & Duyệt bài
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -144,8 +162,12 @@ export default async function PortalContestOverviewPage({
                 <Settings className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">Tiêu chí chấm điểm</p>
-                <p className="text-xs text-gray-500">Cấu hình 100% trọng số BR-15</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  Tiêu chí chấm điểm
+                </p>
+                <p className="text-xs text-gray-500">
+                  Cấu hình 100% trọng số BR-15
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -158,8 +180,12 @@ export default async function PortalContestOverviewPage({
                 <Users className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">Ban giám khảo</p>
-                <p className="text-xs text-gray-500">Mời & quản lý túc số BR-20</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  Ban giám khảo
+                </p>
+                <p className="text-xs text-gray-500">
+                  Mời & quản lý túc số BR-20
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -172,8 +198,12 @@ export default async function PortalContestOverviewPage({
                 <Layers className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">Phân công chấm</p>
-                <p className="text-xs text-gray-500">Chống xung đột lợi ích BR-21</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  Phân công chấm
+                </p>
+                <p className="text-xs text-gray-500">
+                  Chống xung đột lợi ích BR-21
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -186,11 +216,16 @@ export default async function PortalContestOverviewPage({
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Thông tin & Thể lệ cuộc thi</CardTitle>
-              <CardDescription>Chi tiết chủ đề và quy định cho thí sinh</CardDescription>
+              <CardTitle className="text-lg">
+                Thông tin & Thể lệ cuộc thi
+              </CardTitle>
+              <CardDescription>
+                Chi tiết chủ đề và quy định cho thí sinh
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {contest.description || "Chưa có mô tả chi tiết cho cuộc thi này."}
+              {contest.description ||
+                "Chưa có mô tả chi tiết cho cuộc thi này."}
             </CardContent>
           </Card>
         </div>
@@ -212,7 +247,9 @@ export default async function PortalContestOverviewPage({
               </div>
 
               <div className="border-l-2 border-emerald-500 pl-3 py-1">
-                <p className="font-semibold text-gray-900">Kết thúc & Công bố</p>
+                <p className="font-semibold text-gray-900">
+                  Kết thúc & Công bố
+                </p>
                 <p className="text-gray-500 mt-0.5">
                   {formatContestDate(contest.endAt ?? contest.end_at)}
                 </p>
