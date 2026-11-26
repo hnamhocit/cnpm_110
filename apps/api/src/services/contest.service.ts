@@ -164,6 +164,7 @@ export async function getContestCategories(contestId: string) {
       name: categories.name,
       description: categories.description,
       isActive: categories.isActive,
+      requireNegativeProof: categories.requireNegativeProof,
       createdAt: categories.createdAt,
       updatedAt: categories.updatedAt,
     })

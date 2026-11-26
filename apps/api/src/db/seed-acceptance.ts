@@ -29,7 +29,7 @@ const accounts = [
 const contestFixtures = [["C1", "O1"], ["C2", "O2"]] as const;
 const categoryFixtures = [["K1", "C1"], ["K2", "C1"], ["K3", "C2"]] as const;
 const submissionFixtures = [
-  ["S1", "P1", "K1", "APPROVED", "#346d85"],
+  ["S1", "P1", "K1", "VERIFIED", "#346d85"],
   ["S2", "P2", "K2", "VERIFIED", "#95643c"],
 ] as const;
 

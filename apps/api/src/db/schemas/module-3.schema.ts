@@ -81,6 +81,7 @@ export const categories = pgTable(
     name: varchar("name", { length: 100 }).notNull(),
     description: text("description"),
     isActive: boolean("is_active").notNull().default(true),
+    requireNegativeProof: boolean("require_negative_proof").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

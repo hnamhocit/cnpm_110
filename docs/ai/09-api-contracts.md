@@ -2828,6 +2828,13 @@ Các nội dung cần được nhóm xác nhận trước khi triển khai chín
 8. Quy ước tiền tố và phiên bản API.
 
 Sau khi được phê duyệt, tài liệu cần được đồng bộ với OpenAPI và mã nguồn Backend để đảm bảo các Client sử dụng cùng một hợp đồng API.
+### Hợp đồng đối chứng UC-21–22
+
+- `POST /api/v1/submissions/{id}/request-proof` nhận `{proofType, proofDeadlineAt, reason?}`. `proofType` là `negative` hoặc `contact_sheet`. Organizer nhập hạn tương lai theo ISO 8601 có múi giờ. Yêu cầu, audit và thông báo trong ứng dụng được lưu cùng transaction.
+- Participant đọc thông báo của mình tại `GET /api/v1/submissions/my/notifications`. Chi tiết `GET /api/v1/submissions/{id}` và ảnh `GET /api/v1/submissions/{id}/proof/image` giới hạn cho Participant sở hữu bài hoặc Organizer sở hữu cuộc thi.
+- `POST /api/v1/submissions/{id}/proof` nhận multipart field `proof`, tối đa 20 MiB. `POST /api/v1/submissions/{id}/verify-proof` lưu xác minh của Organizer. Hết hạn không tự loại. `proofStatus` phản ánh `REQUESTED`, `OVERDUE`, `UPLOADED` hoặc `VERIFIED`.
+- Các route duyệt dùng chung kiểm tra proof. Hạng mục có thể đặt `requireNegativeProof`. Khi cần proof, phải tải lên và xác minh trước khi bài chuyển `APPROVED`. Hai quyết định duyệt và loại cạnh tranh chỉ có một quyết định thành công.
+
 ## 6. Danh mục endpoint
 
 [OpenAPI](../openapi.yaml) liệt kê **58** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **28** thao tác dự kiến đã có method và path. Dùng `x-implementation` để tra trạng thái và [đăng ký Hono](../../apps/api/src/index.ts) để lần tới route thực tế.

@@ -14,7 +14,7 @@ Organizer đặt hạn đối chứng, kiểm tra âm bản hoặc contact sheet
 
 UC-18, UC-21–23 và UC-37–40 bao gồm nộp, kiểm duyệt, đối chứng, sửa/rút và theo dõi. Khi nghiệm thu UC-37, kiểm tra hạng mục, giới hạn bài, liên kết Logbook, ảnh scan, năm trường metadata và thông điệp tác phẩm. Mobile đã có [form thông số chụp FPC-43 và form tráng/scan FPC-44](../../apps/mobile/lib/screens/submission/submission_upload_screen.dart). Còn thiếu liên kết Logbook và tra cứu [danh mục dùng chung](02-analog-master-data.md) trong các form này.
 
-Khi yêu cầu đối chứng, Backend xác lập hạn từ thời điểm yêu cầu cộng đúng 48 giờ, trả hạn để client hiển thị và tự động loại bài quá hạn chưa nộp đối chứng. Kiểm tra tải ảnh thành công trước hạn, yêu cầu gửi đúng hoặc sau hạn và xử lý đồng thời với tác vụ hết hạn. Âm bản/Contact Sheet đã nhận cần được xác minh trước khi gỡ cờ AI hoặc công bố các bài thuộc BR-06. Sửa metadata/rút bài tuân thủ cả hạn nộp lẫn trạng thái chấm (BR-24).
+Organizer đặt loại proof và hạn ISO 8601 có múi giờ qua `POST /api/v1/submissions/{id}/request-proof`. Hạn phải ở tương lai. Quá hạn hiển thị `OVERDUE`; bản ghi vẫn ở trạng thái yêu cầu để Organizer xử lý thủ công theo BR-19. Participant sở hữu bài mới được tải một ảnh qua multipart `proof` trước hạn. Organizer sở hữu cuộc thi đọc ảnh qua route riêng tư và gọi `verify-proof` để ghi xác minh. Một quyết định duyệt chỉ thành công khi ảnh dự thi đạt BR-07 và mọi proof bắt buộc đã được xác minh.
 
 
 > **Module Name**: Contest Submission & Negative Proof Verification (Nộp Bài Dự Thi & Xác Thực Bằng Chứng Âm Bản)  

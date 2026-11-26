@@ -111,6 +111,6 @@ Sau khi migrate hoặc reset PostgreSQL local, khởi động API để tự t�
 Sau khi migrate PostgreSQL local, trỏ `DATABASE_URL` vào database `cinegen_acceptance_test` rồi chạy `bun --filter api dev`. API tự nạp fixture nghiệm thu khi khởi động. Docker Compose mặc định mở PostgreSQL ở cổng `5433`. Bỏ các biến cấu hình R2 khi chạy API với database này để dùng ảnh JPEG tổng hợp trong `apps/api/uploads`.
 
 - Log khởi động liệt kê email và vai trò của từng tài khoản. Mật khẩu mặc định là `password123`. Tra ID cố định theo alias trong [seed-acceptance.ts](src/db/seed-acceptance.ts).
-- S1 thuộc P1/C1/K1 và đã được duyệt. S2 thuộc P2/C1/K2 và đang ở trạng thái `VERIFIED`. J1 và J2 cùng được phân công K1 để kiểm tra chấm độc lập.
+- S1 thuộc P1/C1/K1 và S2 thuộc P2/C1/K2. Cả hai bắt đầu ở trạng thái `VERIFIED` để thử kiểm duyệt. J1 và J2 cùng được phân công K1 để kiểm tra chấm độc lập.
 - Lịch seed theo UTC+7. Database lưu giờ mở đăng ký và hạn nộp. Dùng lịch trong mã seed để đặt đồng hồ test theo từng ca, gồm giờ bắt đầu chấm, kết thúc chấm và công bố.
 - Nếu ca kiểm thử làm thay đổi dữ liệu, có thể reset riêng database này bằng `bun --filter api db:reset --confirm=cinegen_acceptance_test` rồi khởi động lại API.

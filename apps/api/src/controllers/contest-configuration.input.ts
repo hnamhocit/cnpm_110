@@ -133,6 +133,10 @@ export function categoryPatch(body: Body): Partial<CategoryInput> {
     if (typeof body.isActive !== "boolean") throw AppError.badRequest("Invalid isActive");
     input.isActive = body.isActive;
   }
+  if (body.requireNegativeProof !== undefined) {
+    if (typeof body.requireNegativeProof !== "boolean") throw AppError.badRequest("Invalid requireNegativeProof");
+    input.requireNegativeProof = body.requireNegativeProof;
+  }
   return input;
 }
 
