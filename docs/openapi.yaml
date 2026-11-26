@@ -731,24 +731,93 @@ paths:
       x-implementation: mounted
       operationId: putContestsById
   /api/v1/contests/{id}/archive:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
     post:
-      summary: POST /api/v1/contests/{id}/archive
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
-        được đăng ký trong Hono.
+      summary: Đưa tác phẩm vào kho lưu trữ và phòng triển lãm
+      description: Organizer sở hữu cuộc thi. Chỉ nhận bài APPROVED thuộc snapshot công bố, có đối chứng xác minh khi hạng mục yêu cầu.
+        Luôn tạo bản WebP có watermark theo BR-17. Trả 202 kèm trạng thái archiveStatus và danh sách item.
       tags:
-      - Planned · 08
-      x-implementation: planned
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                submissionIds:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: string
+                    format: uuid
+                includeFinalists: { type: boolean, default: true }
+                generateWebp: { type: boolean, enum: [true] }
+                applyWatermark: { type: boolean, enum: [true] }
+                publish: { type: boolean, default: true }
       responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+        '202':
+          description: Đã xử lý ảnh và ghi nhận tác phẩm triển lãm
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
       operationId: postContestsByIdArchive
+  /api/v1/contests/{id}/exhibitions:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    get:
+      summary: Danh sách tác phẩm triển lãm của cuộc thi
+      description: Organizer sở hữu cuộc thi đọc lại các tác phẩm đã đưa vào triển lãm, gồm trạng thái xử lý và thông tin bản quyền.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Danh sách tác phẩm triển lãm
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      operationId: getContestsByIdExhibitions
+  /api/v1/contests/{id}/my-results:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    get:
+      summary: Kết quả chính thức và nhận xét của tôi trong cuộc thi
+      description: Participant đọc kết quả và nhận xét riêng cho bài của mình sau khi cuộc thi công bố.
+        Bài không có trong snapshot trả result null và feedback rỗng.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Kết quả của người gọi trong cuộc thi
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+      operationId: getContestsByIdMyResults
   /api/v1/contests/{id}/categories:
     get:
       summary: Hạng mục cuộc thi
@@ -1339,27 +1408,74 @@ paths:
       operationId: patchContestsByIdStatus
   /api/v1/exhibitions:
     get:
-      summary: GET /api/v1/exhibitions
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
-        được đăng ký trong Hono.
+      summary: Duyệt phòng triển lãm công khai
+      description: Chỉ trả tác phẩm PUBLISHED, chưa xóa mềm, đã watermark WebP và thuộc cuộc thi đã công bố.
+        Lọc theo contestId, year, award, filmStock, camera, filmFormat và aiTag. Không trả đường dẫn ảnh gốc.
       tags:
-      - Planned · 08
-      x-implementation: planned
+      - Archive & Exhibition
+      x-implementation: mounted
+      parameters:
+      - name: contestId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: year
+        in: query
+        schema:
+          type: integer
+          minimum: 1900
+      - name: award
+        in: query
+        schema:
+          type: string
+      - name: filmStock
+        in: query
+        schema:
+          type: string
+      - name: camera
+        in: query
+        schema:
+          type: string
+      - name: filmFormat
+        in: query
+        schema:
+          type: string
+      - name: aiTag
+        in: query
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
       responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
+        '200':
+          description: Danh sách tác phẩm triển lãm kèm phân trang
+        '400':
+          $ref: '#/components/responses/BadRequest'
       operationId: getExhibitions
   /api/v1/exhibitions/{id}:
     get:
-      summary: GET /api/v1/exhibitions/{id}
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
-        được đăng ký trong Hono.
+      summary: Chi tiết tác phẩm triển lãm công khai
+      description: Trả metadata, giải chính thức và thông tin bản quyền của bản xem trước. Không trả master key hay âm bản.
       tags:
-      - Planned · 08
-      x-implementation: planned
+      - Archive & Exhibition
+      x-implementation: mounted
       responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
+        '200':
+          description: Chi tiết tác phẩm triển lãm
+        '404':
+          $ref: '#/components/responses/NotFound'
       parameters:
       - name: id
         in: path
@@ -1368,17 +1484,63 @@ paths:
           type: string
           format: uuid
       operationId: getExhibitionsById
+  /api/v1/exhibitions/{id}/image:
+    get:
+      summary: Ảnh WebP công khai của tác phẩm triển lãm
+      description: Chỉ trả bản WebP đã watermark và đã loại EXIF. Ảnh gốc luôn riêng tư theo BR-17.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      responses:
+        '200':
+          description: Ảnh WebP
+          content:
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: getExhibitionsByIdImage
   /api/v1/exhibitions/{id}/process:
     post:
-      summary: POST /api/v1/exhibitions/{id}/process
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
-        được đăng ký trong Hono.
+      summary: Tạo lại bản xem trước WebP có watermark
+      description: Organizer sở hữu cuộc thi. generateWebp và applyWatermark bắt buộc true theo BR-17.
       tags:
-      - Planned · 08
-      x-implementation: planned
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                generateWebp: { type: boolean }
+                applyWatermark: { type: boolean }
+                publish: { type: boolean }
       responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
+        '200':
+          description: Trạng thái xử lý và URL ảnh xem trước
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
       parameters:
       - name: id
         in: path
@@ -1389,15 +1551,22 @@ paths:
       operationId: postExhibitionsByIdProcess
   /api/v1/exhibitions/{id}/status:
     get:
-      summary: GET /api/v1/exhibitions/{id}/status
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
-        được đăng ký trong Hono.
+      summary: Trạng thái xử lý tác phẩm triển lãm
+      description: Organizer sở hữu cuộc thi đọc trạng thái PENDING, READY, PUBLISHED, FAILED hoặc ARCHIVED.
       tags:
-      - Planned · 08
-      x-implementation: planned
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
       responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
+        '200':
+          description: Trạng thái xử lý
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
       parameters:
       - name: id
         in: path
@@ -1406,6 +1575,58 @@ paths:
           type: string
           format: uuid
       operationId: getExhibitionsByIdStatus
+    patch:
+      summary: Đổi trạng thái tác phẩm triển lãm
+      description: Organizer sở hữu cuộc thi chuyển trạng thái giữa PUBLISHED, READY và ARCHIVED. PUBLISHED yêu cầu đã có bản WebP watermark.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [PUBLISHED, READY, ARCHIVED]
+      responses:
+        '200':
+          description: Trạng thái mới của tác phẩm
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+      operationId: patchExhibitionsById
+    delete:
+      summary: Xóa mềm tác phẩm triển lãm
+      description: Bản ghi được giữ với status ARCHIVED và isDeleted true theo BR-03; tác phẩm biến mất khỏi gallery công khai.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Đã xóa mềm
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      operationId: deleteExhibitionsById
+
   /api/v1/film-rolls:
     get:
       summary: GET /api/v1/film-rolls
@@ -2533,6 +2754,37 @@ paths:
           type: string
           format: uuid
       operationId: postSubmissionsByIdModerate
+  /api/v1/submissions/{id}/feedback:
+    get:
+      summary: Kết quả và nhận xét giám khảo cho bài của tôi
+      description: Participant sở hữu bài thi (submissions:read_own). Chỉ trả điểm, thứ hạng, giải và nhận xét riêng
+        sau khi cuộc thi công bố; bài của người khác trả 403 (MSG005), chưa công bố trả 409. Route alias là /result.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Kết quả chính thức và nhận xét của giám khảo
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+      operationId: getSubmissionsByIdFeedback
   /api/v1/submissions/{id}/proof:
     parameters:
     - name: id

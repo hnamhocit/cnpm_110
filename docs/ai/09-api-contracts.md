@@ -1415,7 +1415,7 @@ Các chức năng chính bao gồm:
 
 - Get Processing Status – Kiểm tra trạng thái xử lý ảnh.
 
-**Implementation Status:** Các endpoint trong mục này là đề xuất dựa trên SRS và tài liệu `08-archive-and-exhibition.md`. Chúng chưa được khai báo trong OpenAPI hiện tại và cần được nhóm thống nhất trước khi triển khai.
+**Implementation Status:** UC-26, UC-27 và UC-41 đã mount Backend (xem [Module 08](08-archive-and-exhibition.md#phạm-vi-nghiệm-thu-và-trạng-thái-hiện-tại)). Các DTO trong mục này vẫn mang tính mô tả và cần đồng bộ với [OpenAPI](../openapi.yaml) theo FPC-130 trước khi client tích hợp. UC-43 có route công khai `GET /api/v1/exhibitions`, `GET /api/v1/exhibitions/{id}` và `GET /api/v1/exhibitions/{id}/image`; bộ lọc nâng cao và index truy vấn thuộc FPC-112/114/115.
 
 #### 4.9.2. Publish Official Results DTO
 
