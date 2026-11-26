@@ -15,6 +15,20 @@
       "when": 1795685816017,
       "tag": "0001_contest_configuration",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795687006944,
+      "tag": "0002_judging_rounds",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795687238631,
+      "tag": "0003_submission_proof",
+      "breakpoints": true
     }
   ]
 }

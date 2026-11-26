@@ -12,7 +12,7 @@ export type Settings = Partial<Pick<typeof contests.$inferInsert,
   "theme" | "rules" | "coverImageUrl" | "rounds" | "awards">>;
 export type Criterion = Pick<typeof scoringCriteria.$inferInsert,
   "name" | "description" | "weight" | "maxScore" | "sortOrder">;
-export type CategoryInput = Pick<typeof categories.$inferInsert, "name" | "description" | "isActive">;
+export type CategoryInput = Pick<typeof categories.$inferInsert, "name" | "description" | "isActive" | "requireNegativeProof">;
 export type CategoryConfig = CategoryInput & { criteria: Criterion[] };
 
 export const scheduleFields = {
@@ -102,8 +102,8 @@ export async function duplicateContest(id: string, ownerId: string, schedule: Sc
       status: "DRAFT",
     }).returning();
     const sections = await tx.select().from(categories).where(eq(categories.contestId, id));
-    for (const { id: sectionId, name, description, isActive } of sections) {
-      const section = await insertCategory(tx, copy.id, { name, description, isActive });
+    for (const { id: sectionId, name, description, isActive, requireNegativeProof } of sections) {
+      const section = await insertCategory(tx, copy.id, { name, description, isActive, requireNegativeProof });
       const criteria = await readCriteria(tx, sectionId);
       await insertCriteria(tx, section.id, criteria.map(({ name, description, weight, maxScore, sortOrder }) => ({
         name, description, weight, maxScore, sortOrder,
