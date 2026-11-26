@@ -4,6 +4,7 @@ import { generateContestAnalytics, getContestAnalytics } from "../services/conte
 import { AppError } from "../utils/errors";
 import {
   handleCategoryCriteria,
+  handlePublishContestResults,
   handleCreateCategory,
   handleDuplicateContest,
   handleUpdateCategory,
@@ -31,6 +32,7 @@ contests.get("/", handleListContests);
 contests.get("/:id", handleGetContest);
 contests.get("/:id/categories", handleGetContestCategories);
 contests.get("/:id/results", handleGetContestResults);
+contests.post("/:id/publish-results", authenticate, requirePermission("contests:update"), handlePublishContestResults);
 contests.get(
   "/:id/scoreboard",
   authenticate,
@@ -77,6 +79,7 @@ contests.on(
   authenticate,
   requirePermission("contests:update"),
   handleCategoryCriteria,
+  handlePublishContestResults,
 );
 contests.post(
   "/",

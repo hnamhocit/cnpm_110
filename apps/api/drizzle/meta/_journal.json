@@ -29,6 +29,13 @@
       "when": 1795687238631,
       "tag": "0003_submission_proof",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795687701114,
+      "tag": "0004_contest_publication",
+      "breakpoints": true
     }
   ]
 }
