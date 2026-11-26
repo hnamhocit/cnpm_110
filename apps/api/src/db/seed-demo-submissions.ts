@@ -1,7 +1,8 @@
-import { and, eq, like, sql } from "drizzle-orm";
+import { and, eq, inArray, like, sql } from "drizzle-orm";
 import { db } from "./index";
 import { categories, contests, filmMetadata, roles, submissionAiAnalyses, submissions, userRoles, users } from "./schema";
 
+const demoEmails = Array.from({ length: 5 }, (_, index) => `participant.demo${index + 2}@example.com`);
 const demoName = "CINEGEN Demo · Theo dõi bài dự thi";
 const statuses = ["PENDING_AI", "VERIFIED", "SUSPICIOUS", "FLAGGED", "APPROVED", "DISQUALIFIED"] as const;
 const photoIds = [
@@ -11,10 +12,10 @@ const photoIds = [
 ];
 
 export async function seedDemoSubmissions() {
-  const added = await db.transaction(async (tx) => {
+  await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${demoName}))`);
     const [existing] = await tx.select({ id: contests.id }).from(contests).where(eq(contests.name, demoName));
-    if (existing) return 0;
+    if (existing) return;
 
     const [organizer] = await tx.select({ id: users.id }).from(users)
       .where(eq(users.email, "organizer.test@example.com"));
@@ -25,9 +26,9 @@ export async function seedDemoSubmissions() {
 
     const passwordHash = await Bun.password.hash("password123");
     const otherParticipants = await tx.insert(users).values(
-      Array.from({ length: 5 }, (_, index) => ({
+      demoEmails.map((email, index) => ({
         fullName: `Thí sinh Demo ${index + 2}`,
-        email: `participant.demo${index + 2}@example.com`,
+        email,
         passwordHash,
       })),
     ).returning({ id: users.id });
@@ -77,7 +78,6 @@ export async function seedDemoSubmissions() {
     );
     await tx.insert(submissions).values(entries.map(({ submission }) => submission));
     await tx.insert(filmMetadata).values(entries.map(({ metadata }) => metadata));
-    return entries.length;
   });
 
   const demoEntries = await db.select({
@@ -103,11 +103,13 @@ export async function seedDemoSubmissions() {
     }];
   });
   if (sampleReports.length > 0) {
-    const inserted = await db.insert(submissionAiAnalyses).values(sampleReports)
-      .onConflictDoNothing({ target: submissionAiAnalyses.submissionId })
-      .returning({ id: submissionAiAnalyses.id });
-    console.log(`Added ${inserted.length} demo-only AI comparison reports.`);
+    await db.insert(submissionAiAnalyses).values(sampleReports)
+      .onConflictDoNothing({ target: submissionAiAnalyses.submissionId });
   }
 
-  console.log(added ? `Added ${added} demo submissions.` : "Demo submissions already exist.");
+  const demoAccounts = await db.select({ email: users.email }).from(users)
+    .where(inArray(users.email, demoEmails)).orderBy(users.email);
+  for (const { email } of demoAccounts) {
+    console.log(`[Seed] Participant: ${email}`);
+  }
 }

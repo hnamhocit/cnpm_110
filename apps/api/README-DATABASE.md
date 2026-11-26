@@ -55,11 +55,16 @@ Kiểm tra file SQL được sinh ra trước khi áp dụng.
 
 ## 5. Apply migrations
 
-Để tạo các bảng trên một database mới:
+Khi mới clone, tạo database trên PostgreSQL local bằng công cụ quản trị bạn đang dùng. Dùng `film_contest` cho bộ demo hoặc `cinegen_acceptance_test` cho bộ nghiệm thu. Hai bộ dùng database riêng. Cập nhật `DATABASE_URL` trong `apps/api/.env` theo đúng host, cổng, tài khoản và tên database đã tạo.
+
+Từ thư mục gốc, tạo các bảng rồi khởi động API:
 
 ```bash
-bun run --filter api db:migrate
+bun --filter api db:migrate
+bun --filter api dev
 ```
+
+API tự nạp dữ liệu mẫu còn thiếu trước khi mở cổng. Khi đổi sang bộ còn lại, cập nhật `DATABASE_URL` rồi chạy lại hai lệnh trên. Với bộ nghiệm thu, để trống cấu hình R2 để dùng ảnh tổng hợp trong local storage.
 
 [Baseline `0000_baseline.sql`](drizzle/0000_baseline.sql) tạo toàn bộ 20 bảng hiện tại. Cách áp dụng phụ thuộc vào lịch sử của database.
 

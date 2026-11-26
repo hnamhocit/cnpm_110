@@ -51,12 +51,6 @@ app.notFound((c) => errorResponse(c, "Route not found", 404));
 // 3. Health Check
 app.route("/health", healthRoute);
 
-seed()
-  .catch((error) => {
-    console.error("Failed to seed database:", error);
-    process.exitCode = 1;
-  });
-
 // 4. API v1 Route Group
 const v1 = new Hono();
 
@@ -74,6 +68,8 @@ app.route("/api/v1", v1);
 
 // 5. Server & Graceful Shutdown
 const port = Number(process.env.PORT) || 8080;
+
+await seed();
 
 const server = Bun.serve({
   port,

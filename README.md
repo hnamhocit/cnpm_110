@@ -99,7 +99,14 @@ Tạo database và thiết lập `DATABASE_URL` theo [hướng dẫn PostgreSQL]
 bun --filter api db:migrate
 ```
 
-Backend tự nạp vai trò và dữ liệu mẫu khi khởi động ở môi trường phát triển.
+Mỗi máy dùng PostgreSQL local riêng. Khi khởi động ở môi trường phát triển, API kiểm tra dữ liệu mẫu và tự nạp nếu chưa có. Chọn tên database trong `apps/api/.env` trước khi migrate:
+
+| Database local | Dữ liệu được nạp |
+| --- | --- |
+| `film_contest` hoặc tên DB dev đang dùng | Bộ demo với 3 cuộc thi |
+| `cinegen_acceptance_test` | Bộ nghiệm thu với 2 cuộc thi và 7 tài khoản phân vai |
+
+Log khởi động có email đăng nhập và mật khẩu mặc định. Xem [cách tạo database local](apps/api/README-DATABASE.md#5-apply-migrations) và [fixture nghiệm thu](apps/api/README.md#fixture-nghiệm-thu).
 
 ### 4. Chạy Môi trường Phát triển (Development)
 

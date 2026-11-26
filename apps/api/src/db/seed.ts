@@ -51,7 +51,7 @@ async function seedRoles() {
     .select({ id: roles.id, name: roles.name })
     .from(roles);
 
-  console.log("Default roles ready.");
+  console.log("[Seed] Vai trò hệ thống: Admin, Organizer, Judge, Participant.");
   return new Map(allRoles.map((r) => [r.name, r.id]));
 }
 
@@ -99,14 +99,14 @@ async function seedUsers(
         .onConflictDoNothing();
 
       userIdsByRole.set(acc.roleName, userId);
-      console.log(`Account ready: ${acc.email} / password123`);
+      console.log(`[Seed] ${acc.roleName}: ${acc.email}`);
     }
   }
 
   return userIdsByRole;
 }
 
-async function contestExistsByName(name: string): Promise<boolean> {
+async function contestExistsByName(name: string) {
   const [found] = await db
     .select({ id: contests.id })
     .from(contests)
@@ -121,10 +121,7 @@ async function seedOngoingContest(
   participantUserId: string,
 ) {
   const contestName = "Sắc Màu Phim Analog 2026 - Mùa 1";
-  if (await contestExistsByName(contestName)) {
-    console.log(`Skipped (already exists): ${contestName}`);
-    return;
-  }
+  if (await contestExistsByName(contestName)) return;
 
   const now = new Date();
   const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -141,7 +138,7 @@ async function seedOngoingContest(
       status: "ongoing",
       createdBy: organizerUserId,
     })
-    .returning({ id: contests.id, name: contests.name });
+    .returning({ id: contests.id });
 
   const [catStreet, catLandscape] = await db
     .insert(categories)
@@ -222,8 +219,6 @@ async function seedOngoingContest(
       status: "PENDING_AI",
     },
   ]);
-
-  console.log("Seeded:", ongoingContest.name);
 }
 
 async function seedPublishedContest(
@@ -231,10 +226,7 @@ async function seedPublishedContest(
   participantUserId: string,
 ) {
   const contestName = "Khoảnh Khắc Di Sản Việt Nam 2025";
-  if (await contestExistsByName(contestName)) {
-    console.log(`Skipped (already exists): ${contestName}`);
-    return;
-  }
+  if (await contestExistsByName(contestName)) return;
 
   const now = new Date();
   const twoMonthsAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
@@ -251,7 +243,7 @@ async function seedPublishedContest(
       status: "published",
       createdBy: organizerUserId,
     })
-    .returning({ id: contests.id, name: contests.name });
+    .returning({ id: contests.id });
 
   const [catHeritage] = await db
     .insert(categories)
@@ -278,13 +270,23 @@ async function seedPublishedContest(
     height: 2133,
     status: "APPROVED",
   });
-
-  console.log("Seeded:", publishedContest.name);
 }
 
 export async function seed() {
+  if (Bun.env.NODE_ENV === "production") {
+    await seedRoles();
+    return;
+  }
+
+  const database = URL.parse(Bun.env.DATABASE_URL ?? "");
+  const isLocalDatabase = database && ["localhost", "127.0.0.1", "[::1]"].includes(database.hostname);
+  if (isLocalDatabase && database.pathname === "/cinegen_acceptance_test") {
+    const { seedAcceptance } = await import("./seed-acceptance");
+    await seedAcceptance();
+    return;
+  }
+
   const roleMap = await seedRoles();
-  if (Bun.env.NODE_ENV === "production") return;
   const userIdsByRole = await seedUsers(roleMap);
 
   const organizerUserId = userIdsByRole.get("Organizer");
@@ -297,9 +299,8 @@ export async function seed() {
 
   await seedOngoingContest(organizerUserId, participantUserId);
   await seedPublishedContest(organizerUserId, participantUserId);
+  if (isLocalDatabase) await seedDemoSubmissions();
 
-  const database = URL.parse(Bun.env.DATABASE_URL ?? "");
-  if (database && ["localhost", "127.0.0.1", "[::1]"].includes(database.hostname)) {
-    await seedDemoSubmissions();
-  }
+  console.log(`[Seed] Dữ liệu mẫu: ${isLocalDatabase ? 3 : 2} cuộc thi.`);
+  console.log("[Seed] Mật khẩu mặc định: password123.");
 }
