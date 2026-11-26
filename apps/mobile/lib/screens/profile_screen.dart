@@ -510,6 +510,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
 
+          const SizedBox(height: 8),
+
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: colorScheme.secondaryContainer,
+                foregroundColor: colorScheme.onSecondaryContainer,
+                radius: 18,
+                child: const Icon(Icons.camera_roll_outlined, size: 18),
+              ),
+              title: const Text(
+                'Sổ tay cuộn phim (Logbook)',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              subtitle: const Text(
+                'Quản lý cuộn phim & nhật ký khung hình cá nhân',
+                style: TextStyle(fontSize: 12),
+              ),
+              trailing: const Icon(Icons.chevron_right, size: 20),
+              onTap: () => context.push('/film-logbook'),
+            ),
+          ),
+
           const SizedBox(height: 12),
 
           // 3. Menu Cài Đặt & Quản Lý Tài Khoản
