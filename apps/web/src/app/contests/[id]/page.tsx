@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import {
   ArrowLeft,
   Award,
@@ -9,6 +8,7 @@ import {
   Upload,
   UserCheck,
 } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ContestCtaButton } from "@/components/contest/contest-cta-button";
@@ -107,6 +107,12 @@ export default async function ContestDetailPage({
               <span>Quay lại Trang chủ</span>
             </Link>
             <div className="flex items-center gap-2">
+              <Link
+                href={`/contests/${resolvedParams.id}/results`}
+                className="font-medium text-blue-600 transition-colors hover:text-blue-800"
+              >
+                Xem kết quả chính thức
+              </Link>
               <span className="text-slate-400">Cuộc thi</span>
               <span className="text-slate-400">/</span>
               <span className="font-semibold text-slate-800 line-clamp-1 max-w-[200px] sm:max-w-xs">
