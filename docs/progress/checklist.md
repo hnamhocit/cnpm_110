@@ -329,7 +329,7 @@ UC-24 ghi Backend DONE trong phạm vi test này. UC-25 giữ PARTIAL vì trư�
 
 ## FPC-132 · Email, Notification, Audit · 2026-11-26
 
-Nhánh feature/FPC-132-email-notification-audit bao gồm sửa chốt vòng chưa push và dịch vụ dùng chung. Migration 0006 thêm AuditLog, outbox email và trigger cùng transaction. Middleware ghi actor cho request xác thực; webhook/worker AI có actor hệ thống null. SMTP dùng cấu hình hiện có, worker tự xử lý mỗi 30 giây hoặc chạy bun --filter api notifications:deliver.
+Nhánh feature/FPC-132-email-notification-audit bao gồm sửa chốt vòng chưa push và dịch vụ dùng chung. Migration 0006 thêm AuditLog, outbox email và trigger cùng transaction. Middleware ghi actor cho request xác thực; webhook/worker AI có actor hệ thống null. SMTP dùng cấu hình hiện có, worker trong API tự xử lý và retry, không cần lệnh gửi riêng.
 
 | Test | Kết quả | Bằng chứng |
 | --- | --- | --- |
@@ -353,3 +353,29 @@ Nhánh feature/FPC-132-email-notification-audit bao gồm sửa chốt vòng ch�
 Bộ regression cuối đạt 16 test, 120 assertions, 1 ca live SMTP bỏ qua mặc định để tránh gửi lại thư. Ca SMTP thật đã chạy riêng thành công trong lượt có LIVE_SMTP_TO. 39 test API hiện có, TypeScript, db:check và git diff --check đạt. Migration đã áp dụng trên cinegen_acceptance_test. Đã xác nhận Inbox bằng Gmail connector, không chỉ dựa vào kết quả SMTP.
 
 FPC-132 Backend đã triển khai các kênh email/in-app và audit ghi dùng chung. Giữ PARTIAL nghiệm thu do N132-16 cần tích hợp route UC-10 của FPC-125. Push notification không bắt buộc. FPC-130 để sau theo quyết định chủ sở hữu.
+
+
+## FPC-134 · Seed demo và smoke test API · 2026-11-26
+
+Nhánh feature/FPC-134-acceptance-seed. Đã sửa seed v2 và luồng vận hành theo yêu cầu chủ sở hữu. Đồng bộ DB bằng bun --filter api db:migrate sẽ tự seed; API tự kiểm tra seed khi khởi động. Đã bỏ script seed riêng và script gửi notification. Worker trong API tự gửi/retry. Ảnh fixture nằm chung dưới uploads/acceptance/<database>/, gồm submissions, proofs và exhibitions.
+
+| Test | Kết quả | Bằng chứng |
+| --- | --- | --- |
+| N134-01 | PASS | Migrate và tự seed trên DB local mới cinegen_acceptance_verify_fpc134d/e. Guard từ chối production, host remote và cấu hình R2. |
+| N134-02 | PASS | A/O1/O2/P1/P2/J1/J2 đăng nhập bằng API thật, đúng role, kiểm tra hash mật khẩu. Seed không in mật khẩu. |
+| N134-03 | PASS | API đọc C1/C2/C3 và K1/K2/K3/K4 đúng owner; code CON duy nhất và FK được PostgreSQL kiểm soát. |
+| N134-04 | PASS | Năm mốc tăng dần, trọng số mỗi hạng mục đúng 1.0; R1/R2 và assignment đúng vòng/hạng mục, đã xác nhận; cơ cấu GOLD/SILVER hợp lệ. |
+| N134-05 | PARTIAL / phụ thuộc | ROLL1/ROLL2 là bản ghi thật đúng Participant. Metadata có roll ID và frame 1/2 riêng, không trùng tuple. Registration và Frame chưa có schema/API tương ứng để tạo/đọc bằng API thật; không dựng bảng giả trong seed thay phần việc UC-17/34/35/36. |
+| N134-06 | PASS | Scan JPEG 3000x2000, proof tồn tại; preview WebP qua API, master không có trong payload công khai; P1 đọc proof được, P2 bị chặn. Ảnh mới gom theo DB trong acceptance/. |
+| N134-07 | PASS | Hai Judge, hai tiêu chí 0.5/0.5, điểm S1/S3=8.50 và S2/S4=7.50 tính từ evaluation_scores. Đã bỏ tiêu chí mặc định khiến tổng K1 thành 200% trong seed cũ. |
+| N134-08 | PASS | C1 công bố bằng service nghiệp vụ thật và có hai feedback mỗi bài; C3 trước công bố không lộ kết quả. Seed không tạo response mock. |
+| N134-09 | PASS | Test tạm mở khóa phiếu hoặc bỏ xác minh proof trong C3, API công bố trả 409, sau đó khôi phục trong finally. O2 bị 403. Không chèn dữ liệu vi phạm constraint để tạo lỗi. |
+| N134-10 | PASS | Chạy lại seed giữ dữ liệu và trạng thái hiện tại, không tạo trùng fixture. Có advisory lock tránh hai lượt seed chạy chồng. |
+| N134-11 | PASS | Smoke test API từ đăng nhập đến contest, category, bài, proof, preview, kết quả và feedback. Request proof thông thường được worker tự xử lý mà không chạy lệnh gửi. |
+| N134-12 | PASS | Alias UUID xuất trong acceptanceIds; hướng dẫn môi trường tại README API. Đã tạo lại fixture trên nhiều DB verify riêng, không dùng secret thật trong tài liệu. |
+
+Sprints đã đồng bộ FPC-083, FPC-085, FPC-093, FPC-108 thành DONE theo bằng chứng Backend của các UC tương ứng. FPC-134 giữ IN REVIEW do phụ thuộc N134-05. FPC-132 giữ IN REVIEW do quyền HTTP tra cứu AuditLog còn phụ thuộc UC-10/FPC-125.
+
+Database fixture v1 được giữ nguyên. Seed từ chối ghi đè v1 đã có kết quả và hướng dẫn dùng một DB verify mới cho v2. Lịch tương đối được tạo tại lần seed đầu, sau đó đọc bằng API và giữ nguyên khi seed lại. Bộ smoke test khôi phục các lỗi tạm thời để C3 tiếp tục dùng được trước công bố.
+
+Kết quả kiểm chứng cuối FPC-134: 9 smoke test đạt với 91 assertions, 1 ca registration/Frame được skip có lý do; regression 11 UC/audit đạt 16 test với 120 assertions và 1 ca SMTP thật không gửi lại. 39 test hiện có, TypeScript, db:check và diff check đạt. Hai DB verify mới đã được migrate và tự seed; lượt seed tiếp theo không tăng số bản ghi hay sinh thêm file.

@@ -99,7 +99,7 @@ API Server lắng nghe tại cổng: **[http://localhost:8080](http://localhost:
 
 ## Dữ liệu demo UC-40
 
-Sau khi migrate hoặc reset PostgreSQL local, khởi động API để tự tạo cuộc thi **CINEGEN Demo · Theo dõi bài dự thi**. Cuộc thi có 72 bài với sáu trạng thái, metadata phim, lý do bị loại và nhiều thí sinh để kiểm tra phạm vi truy cập. Có thể dùng `bun --filter api db:seed:demo` để chuẩn bị dữ liệu trước khi bật API nếu database local có tên `cinegen_demo`. Demo dùng ảnh minh họa công khai. Các bài bị gắn cờ có thêm kết quả đối sánh giả lập để trình diễn UC-20, và giao diện ghi rõ dữ liệu demo. Seed không tạo ảnh âm bản hay contact sheet.
+Sau khi migrate hoặc reset PostgreSQL local, khởi động API để tự tạo cuộc thi **CINEGEN Demo · Theo dõi bài dự thi**. Cuộc thi có 72 bài với sáu trạng thái, metadata phim, lý do bị loại và nhiều thí sinh để kiểm tra phạm vi truy cập. Dữ liệu tự tạo sau `bun --filter api db:migrate` và khi API khởi động. Demo dùng ảnh minh họa công khai. Các bài bị gắn cờ có thêm kết quả đối sánh giả lập để trình diễn UC-20, và giao diện ghi rõ dữ liệu demo. Seed không tạo ảnh âm bản hay contact sheet.
 
 - Organizer dùng `organizer.test@example.com` để duyệt bài **DEMO · Bài chờ Organizer duyệt**.
 - Participant dùng `participant.test@example.com` để xem bài, làm mới trạng thái và xem lý do bị loại. `participant.demo2@example.com` dùng để kiểm tra bài thuộc một thí sinh khác.
@@ -108,10 +108,16 @@ Sau khi migrate hoặc reset PostgreSQL local, khởi động API để tự t�
 
 ## Fixture nghiệm thu
 
-Sau khi migrate PostgreSQL local, trỏ `DATABASE_URL` vào database `cinegen_acceptance_test` rồi chạy `bun --filter api dev`. API tự nạp fixture nghiệm thu khi khởi động. Docker Compose mặc định mở PostgreSQL ở cổng `5433`. Bỏ các biến cấu hình R2 khi chạy API với database này để dùng ảnh JPEG tổng hợp trong `apps/api/uploads`.
+`bun --filter api db:migrate` áp dụng migration rồi tự seed. API cũng gọi seed khi khởi động, giữ dữ liệu fixture đã có. Không cần chạy lệnh seed riêng. Email nghiệp vụ tự xử lý bởi worker trong API khi ứng dụng chạy, gồm gửi lại các lượt thất bại.
 
-- Log khởi động liệt kê email và vai trò của từng tài khoản. Mật khẩu mặc định là `password123`. Tra ID cố định theo alias trong [seed-acceptance.ts](src/db/seed-acceptance.ts).
-- Alias: O1/O2 (Organizer), P1/P2 (Participant), J1/J2 (Judge), A (Admin). C1 thuộc O1 và C2 thuộc O2; K1/K2 thuộc C1, K3 thuộc C2. S1 thuộc P1/K1 và S2 thuộc P2/K2 trong C1.
-- Lịch seed theo UTC+7: mở 01/12 09:00, hạn nộp 05/12 18:00, chấm 06/12 09:00, kết thúc chấm 07/12 18:00, công bố 08/12 09:00. Dùng lịch này để đặt đồng hồ test theo từng ca.
-- Dữ liệu M08 có sẵn: C1 đã ở trạng thái đã công bố với vòng chung kết đã khóa. S1 đạt 8.50 (Giải Nhất) kèm nhận xét riêng của J1 và J2, có ảnh âm bản đã xác minh nên có thể đưa thẳng vào triển lãm; S2 chưa có trong kết quả công bố.
-- Nếu ca kiểm thử làm thay đổi dữ liệu, có thể reset riêng database này bằng `bun --filter api db:reset --confirm=cinegen_acceptance_test` rồi khởi động lại API.
+Fixture v2 dùng database local `cinegen_acceptance_test` hoặc `cinegen_acceptance_verify_<suffix>`. Tắt cấu hình R2 cho các database này. Mọi ảnh scan, proof và preview nằm chung trong `apps/api/uploads/acceptance/<database>/`. Database và storage production bị từ chối trong acceptance seed. Fixture v1 được giữ nguyên; dùng một database kiểm chứng mới để tạo v2 đầy đủ.
+
+- Tài khoản A, O1/O2, P1/P2, J1/J2 có email `acceptance.<alias viết thường>@example.com`, mật khẩu test `password123`. Database lưu hash và seed không in mật khẩu. Đây là địa chỉ mẫu; kiểm thử SMTP thật dùng hộp thư test được cho phép.
+- C1 thuộc O1, đã công bố bằng service công bố thật. K1/K2 chứa S1/P1 và S2/P2 với điểm cuối 8.50/7.50. Ảnh preview được tạo bằng service triển lãm thật.
+- C2 thuộc O2, đang mở; K3 dùng cho kiểm tra owner và cấu hình. C3 thuộc O1, có K4 và S3/P1, S4/P2; vòng R2 đã khóa, đủ proof, sẵn sàng cho API công bố. C3 giữ trạng thái trước công bố sau smoke test.
+- R1 thuộc C1, R2 thuộc C3. Mỗi hạng mục đã chấm có hai tiêu chí 0.5/0.5 và hai Judge đã xác nhận. S1/S3 có phiếu 8/9 và 9/8; S2/S4 có phiếu 7/8 và 8/7. Seed không chép điểm vào response giả.
+- ROLL1 thuộc P1, ROLL2 thuộc P2. Metadata dùng roll ID thật và số frame riêng 1/2. Schema/API registration và Frame chưa có, được ghi rõ là phụ thuộc N134-05 trong checklist.
+- Năm mốc được tạo tương đối tại lần seed đầu. Đọc thời gian thật từ API. Chạy lại seed giữ trạng thái hiện tại, không đổi lịch hay công bố lại.
+- Alias UUID được xuất qua `acceptanceIds` trong [seed-acceptance.ts](src/db/seed-acceptance.ts). Các alias gốc giữ UUID, alias mới được nối cuối danh sách.
+
+Smoke test dùng DB kiểm chứng riêng đã migrate. Chạy `bun --filter api test:all tests/acceptance-seed.integration.test.ts` với DATABASE_URL trỏ vào DB đó. Bộ test đăng nhập qua API thật, đọc contest/bài/kết quả, kiểm tra storage và điều kiện công bố, rồi khôi phục các điều kiện lỗi tạm thời. Không cần chỉnh DB thủ công.
