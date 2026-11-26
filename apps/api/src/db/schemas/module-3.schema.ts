@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   pgTable,
+  pgSequence,
   uuid,
   varchar,
   text,
@@ -9,6 +10,7 @@ import {
   primaryKey,
   index,
   integer,
+  jsonb,
   check,
   numeric,
   uniqueIndex,
@@ -16,11 +18,26 @@ import {
 } from "drizzle-orm/pg-core";
 import { users } from "./module-1.schema";
 
+export const contestCodeSequence = pgSequence("contest_code_seq");
+const contestCodeDefault = sql`'CON-' || to_char(now() AT TIME ZONE 'UTC', 'YYYY') || '-' || to_char(nextval('contest_code_seq'), 'FM9999999999999999900')`;
+
+export type ContestRound = { name: string; order: number; advanceCount: number | null };
+export type ContestAward = { code: string; name: string; rankOrder: number; prizeValueVnd: number; quota: number };
+
 export const contests = pgTable(
   "contests",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     name: varchar("name", { length: 150 }).notNull(),
+    code: varchar("code", { length: 50 }).notNull().default(contestCodeDefault),
+    theme: varchar("theme", { length: 255 }),
+    rules: text("rules"),
+    coverImageUrl: text("cover_image_url"),
+    judgingStartAt: timestamp("judging_start_at", { withTimezone: true }),
+    judgingDeadlineAt: timestamp("judging_deadline_at", { withTimezone: true }),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    rounds: jsonb("rounds").$type<ContestRound[]>().notNull().default([]),
+    awards: jsonb("awards").$type<ContestAward[]>().notNull().default([]),
     description: text("description"),
     startAt: timestamp("start_at", { withTimezone: true }),
     endAt: timestamp("end_at", { withTimezone: true }),
@@ -39,6 +56,15 @@ export const contests = pgTable(
       .defaultNow(),
   },
   (table) => [
+    uniqueIndex("uq_contests_code").on(table.code),
+    check("contests_configuration_schedule", sql`
+      (${table.judgingStartAt} IS NULL AND ${table.judgingDeadlineAt} IS NULL AND ${table.publishedAt} IS NULL)
+      OR (${table.startAt} IS NOT NULL AND ${table.endAt} IS NOT NULL
+        AND ${table.judgingStartAt} IS NOT NULL AND ${table.judgingDeadlineAt} IS NOT NULL
+        AND ${table.publishedAt} IS NOT NULL
+        AND ${table.startAt} < ${table.endAt} AND ${table.endAt} < ${table.judgingStartAt}
+        AND ${table.judgingStartAt} < ${table.judgingDeadlineAt} AND ${table.judgingDeadlineAt} < ${table.publishedAt})
+    `),
     index("idx_contests_created_by").on(table.createdBy),
     index("idx_contests_status").on(table.status),
     index("idx_contests_is_deleted").on(table.isDeleted),
@@ -54,6 +80,7 @@ export const categories = pgTable(
       .references(() => contests.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 100 }).notNull(),
     description: text("description"),
+    isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

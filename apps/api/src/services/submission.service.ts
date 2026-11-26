@@ -267,6 +267,61 @@ export interface CreateSubmissionInput {
   negativeProof: File | null;
 }
 
+async function checkSubmissionWindow(
+  executor: typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0],
+  contestId: string,
+  categoryId: string,
+  lock = false,
+) {
+  const contestQuery = executor
+    .select({
+      id: contests.id,
+      createdBy: contests.createdBy,
+      startAt: contests.startAt,
+      endAt: contests.endAt,
+      status: contests.status,
+      isDeleted: contests.isDeleted,
+    })
+    .from(contests)
+    .where(eq(contests.id, contestId))
+    .limit(1);
+  const [contest] = await (lock ? contestQuery.for("share") : contestQuery);
+
+  if (!contest || contest.isDeleted) {
+    throw AppError.notFound("Contest not found or unavailable");
+  }
+
+  const [category] = await executor
+    .select({ id: categories.id })
+    .from(categories)
+    .where(
+      and(
+        eq(categories.id, categoryId),
+        eq(categories.contestId, contestId),
+        eq(categories.isActive, true),
+      ),
+    )
+    .limit(1);
+
+  if (!category) {
+    throw AppError.badRequest("Category is inactive or does not belong to this contest");
+  }
+
+  if (!["scheduled", "open", "ongoing"].includes(contest.status.toLowerCase())) {
+    throw AppError.badRequest("Contest is not accepting submissions");
+  }
+
+  const now = new Date();
+  if (contest.startAt && now < contest.startAt) {
+    throw AppError.badRequest("Contest has not started yet");
+  }
+  if (contest.endAt && now >= contest.endAt) {
+    throw AppError.badRequest("MSG014: Submission deadline has passed");
+  }
+
+  return contest;
+}
+
 export async function createSubmission(input: CreateSubmissionInput) {
   const {
     participantId,
@@ -323,49 +378,7 @@ export async function createSubmission(input: CreateSubmissionInput) {
     throw AppError.forbidden("Account is unavailable");
   }
 
-  const [category] = await db
-    .select({ id: categories.id })
-    .from(categories)
-    .where(
-      and(
-        eq(categories.id, categoryId),
-        eq(categories.contestId, contestId),
-      ),
-    )
-    .limit(1);
-
-  if (!category) {
-    throw AppError.badRequest("Category does not belong to this contest");
-  }
-
-  const [contest] = await db
-    .select({
-      id: contests.id,
-      createdBy: contests.createdBy,
-      startAt: contests.startAt,
-      endAt: contests.endAt,
-      status: contests.status,
-      isDeleted: contests.isDeleted,
-    })
-    .from(contests)
-    .where(eq(contests.id, contestId))
-    .limit(1);
-
-  if (!contest || contest.isDeleted) {
-    throw AppError.notFound("Contest not found or unavailable");
-  }
-
-  if (!["open", "ongoing"].includes(contest.status.toLowerCase())) {
-    throw AppError.badRequest("Contest is not accepting submissions");
-  }
-
-  const now = new Date();
-  if (contest.startAt && now < contest.startAt) {
-    throw AppError.badRequest("Contest has not started yet");
-  }
-  if (contest.endAt && now >= contest.endAt) {
-    throw AppError.badRequest("Submission deadline has passed");
-  }
+  const contest = await checkSubmissionWindow(db, contestId, categoryId);
 
   const [assignment] = await db.select({ id: contestJudges.id })
     .from(contestJudges)
@@ -407,6 +420,7 @@ export async function createSubmission(input: CreateSubmissionInput) {
     }
 
     await db.transaction(async (tx) => {
+      await checkSubmissionWindow(tx, contestId, categoryId, true);
       const frameKey = JSON.stringify([contestId, participantId, metadata.rollId, metadata.frameNumber]);
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${frameKey}, 0))`);
 

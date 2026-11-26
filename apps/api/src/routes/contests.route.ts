@@ -2,6 +2,10 @@ import { Hono } from "hono";
 import { generateContestAnalytics, getContestAnalytics } from "../services/contest-analytics";
 import { AppError } from "../utils/errors";
 import {
+  handleCategoryCriteria,
+  handleCreateCategory,
+  handleDuplicateContest,
+  handleUpdateCategory,
   handleCreateContest,
   handleDeleteContest,
   handleGetContest,
@@ -43,6 +47,32 @@ contests.on(
     const report = c.req.method === "POST" ? await generateContestAnalytics(statistics) : null;
     return c.ok({ ...statistics, report });
   },
+);
+contests.post(
+  "/:id/duplicate",
+  authenticate,
+  requirePermission("contests:create"),
+  handleDuplicateContest,
+);
+contests.post(
+  "/:id/categories",
+  authenticate,
+  requirePermission("contests:update"),
+  handleCreateCategory,
+);
+contests.on(
+  ["PATCH", "DELETE"],
+  "/:id/categories/:categoryId",
+  authenticate,
+  requirePermission("contests:update"),
+  handleUpdateCategory,
+);
+contests.on(
+  ["GET", "PUT"],
+  "/:id/categories/:categoryId/criteria",
+  authenticate,
+  requirePermission("contests:update"),
+  handleCategoryCriteria,
 );
 contests.post(
   "/",

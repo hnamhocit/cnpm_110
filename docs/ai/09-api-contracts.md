@@ -2,7 +2,7 @@
 
 ## Phạm vi theo SRS hiện hành
 
-**Hợp đồng hiện hành.** Đối chiếu [OpenAPI](../openapi.yaml) và [route Hono](../../apps/api/src/index.ts) trước khi tích hợp client. `mounted` cho route đã đăng ký và `planned` cho hợp đồng chưa triển khai. Các hợp đồng cần cập nhật cho UC-11, UC-15/25, UC-17/34 gồm sao chép cấu hình, đăng ký hạng mục và khóa/chuyển vòng. UC-28 đã có GET/POST `/api/v1/contests/{id}/analytics`. Các DTO/trạng thái kỹ thuật bên dưới có thể còn phản ánh phiên bản cũ.
+**Hợp đồng hiện hành.** Đối chiếu [OpenAPI](../openapi.yaml) và [route Hono](../../apps/api/src/index.ts) trước khi tích hợp client. `mounted` cho route đã đăng ký và `planned` cho hợp đồng chưa triển khai. FPC-083 chốt hợp đồng UC-11–14 ở mục 4.7. Đăng ký hạng mục và khóa/chuyển vòng thuộc các hợp đồng UC-15/25 và UC-17/34. UC-28 đã có GET/POST `/api/v1/contests/{id}/analytics`. Các DTO/trạng thái kỹ thuật bên dưới có thể còn phản ánh phiên bản cũ.
 
 ## Thiết kế trước lần cập nhật SRS
 
@@ -596,7 +596,20 @@ Các trường hợp lỗi sẽ được ánh xạ với mã thông báo `MSG001
 
 #### 4.7.1. Contest DTO Overview
 
-Mục này mô tả DTO của các route đang chạy. Backend hiện nhận `startAt` và `endAt`. Thiết kế đủ năm mốc theo BR-08 nằm trong [Module 03](03-contest-lifecycle.md), mục 4.2.
+Mục này mô tả hợp đồng UC-11–14 theo [SRS](../srs.md) và [Module 03](03-contest-lifecycle.md). Các thao tác ghi yêu cầu Organizer. Chỉ Organizer sở hữu cuộc thi được sao chép hoặc sửa cấu hình, hạng mục và tiêu chí.
+
+| Method và path (dưới `/api/v1`) | Đầu vào và kết quả |
+| --- | --- |
+| `POST /contests` | Tạo DRAFT, sinh mã CON duy nhất. Payload đầy đủ gồm `name`, năm mốc bắt buộc và các trường tùy chọn `description`, `theme`, `rules`, `coverImageUrl`, `categories`, `rounds`, `awards`. Mỗi hạng mục có thể gửi kèm `criteria`. Lưu toàn bộ trong một transaction. |
+| `POST /contests/{id}/duplicate` | Năm mốc mới và `name` tùy chọn. Sinh ID/mã CON mới, trạng thái DRAFT. Sao chép thể lệ, hạng mục, tiêu chí, cấu hình vòng và giải. ID hạng mục và tiêu chí mới thuộc bản sao. Bản sao bắt đầu với dữ liệu đăng ký, bài, phân công, điểm và kết quả rỗng. |
+| `PUT /contests/{id}` | Gửi các trường cấu hình cần đổi. Các mốc gửi lên được kiểm tra cùng các mốc đang lưu. Chỉnh sửa cấu hình đóng khi hết hạn nộp hoặc cuộc thi đã vào chấm. |
+| `GET/POST /contests/{id}/categories` | GET đọc hạng mục và `isActive`. POST tạo bằng `name`, `description` và `isActive` tùy chọn. |
+| `PATCH/DELETE /contests/{id}/categories/{categoryId}` | PATCH nhận `name`, `description` hoặc `isActive`. DELETE chuyển `isActive` sang false. ID và dữ liệu đã liên kết được giữ. Hạng mục tắt chặn nộp bài mới. |
+| `GET/PUT /contests/{id}/categories/{categoryId}/criteria` | GET đọc bộ tiêu chí của hạng mục. PUT gửi `criteria: [{name, description?, weight, maxScore?}]` để thay nguyên bộ một cách nguyên tử. Weight là số từ 0.0001 đến 1, tối đa bốn chữ số thập phân. Tổng phải đúng 1.0000, sai tổng trả HTTP 400 với `MSG007`. Bộ tiêu chí đã có điểm tham chiếu được giữ nguyên. |
+
+Năm mốc là `registrationStartAt`, `submissionDeadlineAt`, `judgingStartAt`, `judgingDeadlineAt`, `publishedAt`, theo đúng thứ tự BR-08. Gửi ISO 8601 có múi giờ. Payload sai hoặc thiếu mốc trả HTTP 400 với `MSG008`. API trả kèm `startAt` và `endAt` làm alias của hai mốc đầu. Payload cũ ở ví dụ dưới dùng để lưu nháp. Đưa DRAFT sang SCHEDULED hoặc OPEN kích hoạt lịch. API đọc theo đồng hồ để trả SCHEDULED, OPEN hoặc VERIFYING. Vào chấm và công bố vẫn qua điều kiện của workflow.
+
+`rounds` lưu cấu hình `[{name, order, advanceCount?}]` theo cuộc thi. `awards` lưu `[{code, name, rankOrder, prizeValueVnd?, quota?}]`. Các thao tác điều phối vòng, gán giải và đăng ký hạng mục có task riêng.
 
 Các chức năng bao gồm:
 
@@ -664,11 +677,7 @@ Các endpoint hiện được khai báo trong OpenAPI gồm `/contests` và `/co
 
 - Backend phải kiểm tra quyền tạo cuộc thi.
 
-- Trạng thái cuộc thi phải thuộc danh sách được hỗ trợ.
-
-**Allowed Status Values theo OpenAPI hiện tại:**
-
-`draft`, `published`, `ongoing`, `completed`, `cancelled`.
+- Cuộc thi mới bắt đầu ở `DRAFT`.
 
 #### 4.7.3. Create Contest Response DTO
 
@@ -2817,11 +2826,11 @@ Các nội dung cần được nhóm xác nhận trước khi triển khai chín
 Sau khi được phê duyệt, tài liệu cần được đồng bộ với OpenAPI và mã nguồn Backend để đảm bảo các Client sử dụng cùng một hợp đồng API.
 ## 6. Danh mục endpoint
 
-[OpenAPI](../openapi.yaml) liệt kê **51** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **28** thao tác dự kiến đã có method và path. Dùng `x-implementation` để tra trạng thái và [đăng ký Hono](../../apps/api/src/index.ts) để lần tới route thực tế.
+[OpenAPI](../openapi.yaml) liệt kê **58** cặp HTTP method và path đang mount, gồm các alias dưới `/api/v1/organizer/submissions`, và **28** thao tác dự kiến đã có method và path. Dùng `x-implementation` để tra trạng thái và [đăng ký Hono](../../apps/api/src/index.ts) để lần tới route thực tế.
 
-Các chức năng còn thiếu method/path trong đặc tả gồm tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, quản lý hạng mục và vòng chấm, sửa metadata hoặc rút bài thi, đọc bảng điểm cá nhân, điều phối lệch điểm và xuất thống kê cuộc thi (UC-28, [Module 11](11-cross-cutting-services.md)). Xem yêu cầu nghiệp vụ tương ứng tại [SRS](../srs.md#22-use-case-catalog).
+Các chức năng còn thiếu method/path trong đặc tả gồm tra cứu audit log, cấu hình ngưỡng AI, đăng ký cuộc thi, điều phối vòng chấm, sửa metadata hoặc rút bài thi, đọc bảng điểm cá nhân, điều phối lệch điểm và xuất thống kê cuộc thi (UC-28, [Module 11](11-cross-cutting-services.md)). Xem yêu cầu nghiệp vụ tương ứng tại [SRS](../srs.md#22-use-case-catalog).
 
-Route công khai `GET /api/v1/contests/{id}/results` hiện dùng dữ liệu giải và điểm mẫu. DTO lịch trình của `POST /api/v1/contests` hiện dùng hai mốc `startAt` và `endAt`. Quy tắc công bố kết quả và lịch trình đích được mô tả trong Module 03 và 08.
+Route công khai `GET /api/v1/contests/{id}/results` hiện dùng dữ liệu giải và điểm mẫu. DTO lịch trình đầy đủ được mô tả ở mục 4.7. Quy tắc công bố kết quả và lịch trình đích được mô tả trong Module 03 và 08.
 
 
 ### 6.1. Hợp đồng Judging
