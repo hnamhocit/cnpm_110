@@ -8,6 +8,7 @@ import {
   primaryKey,
   index,
   integer,
+  jsonb,
   check,
   foreignKey,
   bigint,
@@ -41,6 +42,11 @@ export const submissions = pgTable(
     imagePreviewPath: text("image_preview_path"),
 
     negativeProofPath: text("negative_proof_path"),
+    proofType: varchar("proof_type", { length: 20 }).$type<"negative" | "contact_sheet">(),
+    proofRequestedAt: timestamp("proof_requested_at", { withTimezone: true }),
+    proofDeadlineAt: timestamp("proof_deadline_at", { withTimezone: true }),
+    proofVerifiedAt: timestamp("proof_verified_at", { withTimezone: true }),
+    proofVerifiedBy: uuid("proof_verified_by").references(() => users.id, { onDelete: "restrict" }),
 
     fileSizeBytes: bigint("file_size_bytes", { mode: "bigint" }),
 
@@ -66,6 +72,7 @@ export const submissions = pgTable(
       columns: [table.categoryId, table.contestId],
       foreignColumns: [categories.id, categories.contestId],
     }).onDelete("restrict"),
+    check("submission_proof_type_valid", sql`${table.proofType} is null or ${table.proofType} in ('negative', 'contact_sheet')`),
     index("idx_submissions_contest_id").on(table.contestId),
     index("idx_submissions_category_id").on(table.categoryId),
     index("idx_submissions_participant_id").on(table.participantId),
@@ -74,6 +81,8 @@ export const submissions = pgTable(
       "submissions_status_valid",
       sql`${table.status} IN (
     'PENDING_AI',
+    'PROOF_REQUESTED',
+    'PROOF_SUBMITTED',
     'VERIFIED',
     'SUSPICIOUS',
     'FLAGGED',
@@ -182,3 +191,12 @@ export const submissionModerationLogs = pgTable(
     index("idx_moderation_logs_moderator_id").on(table.moderatorId),
   ],
 );
+
+export const contestNotifications = pgTable("contest_notifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  recipientId: uuid("recipient_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  contestId: uuid("contest_id").notNull().references(() => contests.id, { onDelete: "restrict" }),
+  kind: varchar("kind", { length: 40 }).notNull(),
+  data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("idx_contest_notifications_recipient").on(table.recipientId, table.createdAt)]);

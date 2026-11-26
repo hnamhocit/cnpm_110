@@ -6,10 +6,14 @@ import {
   getSubmissionComparison,
   listAllSubmissions,
   listMySubmissions,
-  moderateSubmission,
   rejectSubmission,
   type ModerationAction,
 } from "../services/submission.service";
+import {
+  getSubmissionProofDetail, getSubmissionProofImage, listContestNotifications, requestProof, uploadProof,
+  verifyProof, type ProofType,
+} from "../services/submission-proof";
+import { getMySubmissionResultAndFeedback } from "../services/contest-results-feedback";
 import { AppError } from "../utils/errors";
 
 const UUID_REGEX =
@@ -299,9 +303,9 @@ export async function handleModerateSubmission(c: Context<AuthEnv>) {
   const id = c.req.param("id");
   assertUuid(id!, "submission ID");
 
-  let body: { action?: unknown; reason?: unknown };
+  let body: { action?: unknown; reason?: unknown; proofType?: unknown; proofDeadlineAt?: unknown };
   try {
-    body = await c.req.json<{ action?: unknown; reason?: unknown }>();
+    body = await c.req.json<typeof body>();
   } catch {
     throw AppError.badRequest("Invalid JSON body");
   }
@@ -328,12 +332,13 @@ export async function handleModerateSubmission(c: Context<AuthEnv>) {
     );
   }
 
-  const updated = await moderateSubmission(
-    id!,
-    c.get("user"),
-    action,
-    reasonText,
-  );
+  const actor = c.get("user");
+  const updated = action === "REQUEST_PROOF"
+    ? await requestProof(id!, actor, ...proofRequestFields(body))
+    : action === "DISQUALIFY"
+      ? await rejectSubmission(id!, actor, reasonText)
+      : await approveSubmission(id!, actor, reasonText);
+
   return c.ok(updated, "Submission moderation updated successfully");
 }
 
@@ -343,4 +348,64 @@ export async function handleGetSubmissionComparison(c: Context<AuthEnv>) {
 
   const data = await getSubmissionComparison(id!, c.get("user"));
   return c.ok(data, "Flagged submission comparison retrieved successfully");
+}
+
+function proofRequestFields(body: { proofType?: unknown; proofDeadlineAt?: unknown; reason?: unknown }): [ProofType, Date, string] {
+  if (!body || (body.proofType !== "negative" && body.proofType !== "contact_sheet")) {
+    throw AppError.badRequest("proofType must be negative or contact_sheet");
+  }
+  const deadline = body.proofDeadlineAt;
+  if (typeof deadline !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d(?::\d\d(?:\.\d{1,3})?)?(?:Z|[+-]\d\d:\d\d)$/.test(deadline)
+      || !Number.isFinite(Date.parse(deadline))) {
+    throw AppError.badRequest("proofDeadlineAt must be a timestamp with a timezone");
+  }
+  if (body.reason !== undefined && (typeof body.reason !== "string" || body.reason.length > 1000)) {
+    throw AppError.badRequest("Proof reason must be a string of at most 1000 characters");
+  }
+  return [body.proofType, new Date(deadline), body.reason?.trim() || "Organizer requested film proof"];
+}
+
+export async function handleRequestSubmissionProof(c: Context<AuthEnv>) {
+  const id = c.req.param("id") ?? "";
+  assertUuid(id, "submission ID");
+  const body = await c.req.json<Parameters<typeof proofRequestFields>[0]>().catch(() => {
+    throw AppError.badRequest("Invalid JSON body");
+  });
+  return c.ok(await requestProof(id, c.get("user"), ...proofRequestFields(body)), "MSG018: Proof requested");
+}
+
+export async function handleUploadSubmissionProof(c: Context<AuthEnv>) {
+  const id = c.req.param("id") ?? "";
+  assertUuid(id, "submission ID");
+  const form = await c.req.formData().catch(() => { throw AppError.badRequest("Invalid multipart form"); });
+  return c.created(await uploadProof(id, c.get("user"), fileField(form, "proof", true)!), "MSG019: Proof uploaded");
+}
+
+export async function handleVerifySubmissionProof(c: Context<AuthEnv>) {
+  const id = c.req.param("id") ?? "";
+  assertUuid(id, "submission ID");
+  return c.ok(await verifyProof(id, c.get("user")));
+}
+
+export async function handleGetSubmissionProofDetail(c: Context<AuthEnv>) {
+  const id = c.req.param("id") ?? "";
+  assertUuid(id, "submission ID");
+  return c.ok(await getSubmissionProofDetail(id, c.get("user")));
+}
+
+export async function handleGetContestNotifications(c: Context<AuthEnv>) {
+  return c.ok(await listContestNotifications(c.get("user").id));
+}
+
+export async function handleGetSubmissionProofImage(c: Context<AuthEnv>) {
+  const id = c.req.param("id") ?? "";
+  assertUuid(id, "submission ID");
+  return getSubmissionProofImage(id, c.get("user"));
+}
+
+export async function handleGetSubmissionFeedback(c: Context<AuthEnv>) {
+  const id = c.req.param("id") ?? "";
+  assertUuid(id, "submission ID");
+  const data = await getMySubmissionResultAndFeedback(id, c.get("user").id);
+  return c.ok(data, "Submission results and feedback retrieved successfully");
 }

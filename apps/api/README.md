@@ -111,6 +111,7 @@ Sau khi migrate hoặc reset PostgreSQL local, khởi động API để tự t�
 Sau khi migrate PostgreSQL local, trỏ `DATABASE_URL` vào database `cinegen_acceptance_test` rồi chạy `bun --filter api dev`. API tự nạp fixture nghiệm thu khi khởi động. Docker Compose mặc định mở PostgreSQL ở cổng `5433`. Bỏ các biến cấu hình R2 khi chạy API với database này để dùng ảnh JPEG tổng hợp trong `apps/api/uploads`.
 
 - Log khởi động liệt kê email và vai trò của từng tài khoản. Mật khẩu mặc định là `password123`. Tra ID cố định theo alias trong [seed-acceptance.ts](src/db/seed-acceptance.ts).
-- S1 thuộc P1/C1/K1 và đã được duyệt. S2 thuộc P2/C1/K2 và đang ở trạng thái `VERIFIED`. J1 và J2 cùng được phân công K1 để kiểm tra chấm độc lập.
-- Lịch seed theo UTC+7. Database lưu giờ mở đăng ký và hạn nộp. Dùng lịch trong mã seed để đặt đồng hồ test theo từng ca, gồm giờ bắt đầu chấm, kết thúc chấm và công bố.
+- Alias: O1/O2 (Organizer), P1/P2 (Participant), J1/J2 (Judge), A (Admin). C1 thuộc O1 và C2 thuộc O2; K1/K2 thuộc C1, K3 thuộc C2. S1 thuộc P1/K1 và S2 thuộc P2/K2 trong C1.
+- Lịch seed theo UTC+7: mở 01/12 09:00, hạn nộp 05/12 18:00, chấm 06/12 09:00, kết thúc chấm 07/12 18:00, công bố 08/12 09:00. Dùng lịch này để đặt đồng hồ test theo từng ca.
+- Dữ liệu M08 có sẵn: C1 đã ở trạng thái đã công bố với vòng chung kết đã khóa. S1 đạt 8.50 (Giải Nhất) kèm nhận xét riêng của J1 và J2, có ảnh âm bản đã xác minh nên có thể đưa thẳng vào triển lãm; S2 chưa có trong kết quả công bố.
 - Nếu ca kiểm thử làm thay đổi dữ liệu, có thể reset riêng database này bằng `bun --filter api db:reset --confirm=cinegen_acceptance_test` rồi khởi động lại API.

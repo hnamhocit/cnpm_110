@@ -623,7 +623,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-      description: Request hiện hành dùng startAt và endAt. Module 03 mô tả thiết kế đủ năm mốc theo BR-08.
+      description: Tạo cấu hình đầy đủ bằng năm mốc BR-08. Payload startAt/endAt chỉ tạo bản nháp tương thích.
       x-implementation: mounted
       operationId: postContests
   /api/v1/contests/{id}:
@@ -731,24 +731,93 @@ paths:
       x-implementation: mounted
       operationId: putContestsById
   /api/v1/contests/{id}/archive:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
     post:
-      summary: POST /api/v1/contests/{id}/archive
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
-        được đăng ký trong Hono.
+      summary: Đưa tác phẩm vào kho lưu trữ và phòng triển lãm
+      description: Organizer sở hữu cuộc thi. Chỉ nhận bài APPROVED thuộc snapshot công bố, có đối chứng xác minh khi hạng mục yêu cầu.
+        Luôn tạo bản WebP có watermark theo BR-17. Trả 202 kèm trạng thái archiveStatus và danh sách item.
       tags:
-      - Planned · 08
-      x-implementation: planned
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                submissionIds:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: string
+                    format: uuid
+                includeFinalists: { type: boolean, default: true }
+                generateWebp: { type: boolean, enum: [true] }
+                applyWatermark: { type: boolean, enum: [true] }
+                publish: { type: boolean, default: true }
       responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+        '202':
+          description: Đã xử lý ảnh và ghi nhận tác phẩm triển lãm
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
       operationId: postContestsByIdArchive
+  /api/v1/contests/{id}/exhibitions:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    get:
+      summary: Danh sách tác phẩm triển lãm của cuộc thi
+      description: Organizer sở hữu cuộc thi đọc lại các tác phẩm đã đưa vào triển lãm, gồm trạng thái xử lý và thông tin bản quyền.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Danh sách tác phẩm triển lãm
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      operationId: getContestsByIdExhibitions
+  /api/v1/contests/{id}/my-results:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    get:
+      summary: Kết quả chính thức và nhận xét của tôi trong cuộc thi
+      description: Participant đọc kết quả và nhận xét riêng cho bài của mình sau khi cuộc thi công bố.
+        Bài không có trong snapshot trả result null và feedback rỗng.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Kết quả của người gọi trong cuộc thi
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+      operationId: getContestsByIdMyResults
   /api/v1/contests/{id}/categories:
     get:
       summary: Hạng mục cuộc thi
@@ -770,13 +839,7 @@ paths:
                     data:
                       type: array
                       items:
-                        type: object
-                        properties:
-                          id:
-                            type: string
-                            format: uuid
-                          name:
-                            type: string
+                        $ref: '#/components/schemas/ContestCategory'
         '400':
           $ref: '#/components/responses/BadRequest'
       x-implementation: mounted
@@ -788,47 +851,503 @@ paths:
           type: string
           format: uuid
       operationId: getContestsByIdCategories
+    post:
+      summary: Tạo hạng mục
+      tags:
+      - Contests
+      security:
+      - BearerAuth: []
+      x-implementation: mounted
+      operationId: postContestCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContestCategoryCreate'
+      responses:
+        '201':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/ContestCategory'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột với cấu hình hoặc dữ liệu hiện có
+  /api/v1/contests/{id}/duplicate:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    post:
+      summary: Sao chép cấu hình sang cuộc thi DRAFT
+      tags:
+      - Contests
+      security:
+      - BearerAuth: []
+      x-implementation: mounted
+      operationId: duplicateContest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DuplicateContestInput'
+      responses:
+        '201':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/Contest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột với cấu hình hoặc dữ liệu hiện có
+  /api/v1/contests/{id}/categories/{categoryId}:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    - name: categoryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    patch:
+      summary: Sửa hoặc bật/tắt hạng mục
+      tags:
+      - Contests
+      security:
+      - BearerAuth: []
+      x-implementation: mounted
+      operationId: patchContestCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContestCategoryInput'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/ContestCategory'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột với cấu hình hoặc dữ liệu hiện có
+    delete:
+      summary: Vô hiệu hóa hạng mục và giữ dữ liệu liên quan
+      tags:
+      - Contests
+      security:
+      - BearerAuth: []
+      x-implementation: mounted
+      operationId: deleteContestCategory
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/ContestCategory'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/contests/{id}/categories/{categoryId}/criteria:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    - name: categoryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      summary: Đọc tiêu chí hạng mục
+      tags:
+      - Contests
+      security:
+      - BearerAuth: []
+      x-implementation: mounted
+      operationId: getContestCategoryCriteria
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/ContestCriterion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Thay nguyên bộ tiêu chí có tổng trọng số 1.0000
+      tags:
+      - Contests
+      security:
+      - BearerAuth: []
+      x-implementation: mounted
+      operationId: putContestCategoryCriteria
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContestCriteriaInput'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/ContestCriterion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột với cấu hình hoặc dữ liệu hiện có
   /api/v1/contests/{id}/judges:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
     post:
-      summary: POST /api/v1/contests/{id}/judges
-      description: Hợp đồng dự kiến trong [03-contest-lifecycle.md](ai/03-contest-lifecycle.md). Route chưa được đăng
-        ký trong Hono.
+      summary: Phân công Judge vào hạng mục và vòng
       tags:
-      - Planned · 03
-      x-implementation: planned
-      responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
-      parameters:
-      - name: id
-        in: path
+      - Contests
+      x-implementation: mounted
+      operationId: assignRoundJudge
+      security:
+      - BearerAuth: []
+      requestBody:
         required: true
-        schema:
-          type: string
-          format: uuid
-      operationId: postContestsByIdJudges
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoundJudgeInput'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/RoundJudge'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/contests/{id}/rounds:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    get:
+      summary: Danh sách vòng chấm
+      tags:
+      - Contests
+      x-implementation: mounted
+      operationId: getJudgingRounds
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/JudgingRound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+    post:
+      summary: Tạo vòng chấm
+      tags:
+      - Contests
+      x-implementation: mounted
+      operationId: createJudgingRound
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JudgingRoundCreate'
+      responses:
+        '201':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/JudgingRound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/contests/{id}/rounds/{roundId}:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    - name: roundId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    patch:
+      summary: Sửa cấu hình vòng chấm
+      tags:
+      - Contests
+      x-implementation: mounted
+      operationId: updateJudgingRound
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JudgingRoundConfig'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/JudgingRound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/contests/{id}/rounds/{roundId}/judges:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    - name: roundId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    get:
+      summary: Danh sách phân công theo vòng
+      tags:
+      - Contests
+      x-implementation: mounted
+      operationId: getRoundJudges
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/RoundJudge'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/contests/{id}/rounds/{roundId}/start:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    - name: roundId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    post:
+      summary: Bắt đầu vòng chấm
+      tags:
+      - Contests
+      x-implementation: mounted
+      operationId: startJudgingRound
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/JudgingRound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
   /api/v1/contests/{id}/publish-results:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
     post:
-      summary: POST /api/v1/contests/{id}/publish-results
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
-        được đăng ký trong Hono.
+      summary: Công bố kết quả chính thức của vòng cuối
       tags:
-      - Planned · 08
-      x-implementation: planned
-      responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
-      parameters:
-      - name: id
-        in: path
+      - Contests
+      x-implementation: mounted
+      operationId: publishContestResults
+      security:
+      - BearerAuth: []
+      requestBody:
         required: true
-        schema:
-          type: string
-          format: uuid
-      operationId: postContestsByIdPublishResults
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublishContestResultsInput'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/OfficialContestResults'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
   /api/v1/contests/{id}/results:
     get:
       summary: Kết quả cuộc thi đã công bố
+      description: Cuộc thi RESULTS_PUBLISHED trả snapshot OfficialContestResults bất biến. Cuộc thi demo cũ có thể trả định dạng Winners Showcase.
       tags:
       - Contests
       responses:
@@ -845,21 +1364,14 @@ paths:
                       type: integer
                       example: 200
                     data:
-                      type: object
-                      properties:
-                        contestId:
-                          type: string
-                          format: uuid
-                        contestName:
-                          type: string
-                        status:
-                          type: string
-                        resultsLocked:
-                          type: boolean
-                        winners:
-                          type: array
-                          items:
-                            type: object
+                      anyOf:
+                      - $ref: '#/components/schemas/OfficialContestResults'
+                      - type: object
+                        required: [winners]
+                        properties:
+                          winners:
+                            type: array
+                            items: {type: object}
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -896,27 +1408,81 @@ paths:
       operationId: patchContestsByIdStatus
   /api/v1/exhibitions:
     get:
-      summary: GET /api/v1/exhibitions
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
-        được đăng ký trong Hono.
+      summary: Duyệt phòng triển lãm công khai
+      description: Chỉ trả tác phẩm PUBLISHED, chưa xóa mềm, đã watermark WebP và thuộc cuộc thi đã công bố.
+        Lọc theo contestId, year, award, filmStock, camera, filmFormat và aiTag. Không trả đường dẫn ảnh gốc.
       tags:
-      - Planned · 08
-      x-implementation: planned
+      - Archive & Exhibition
+      x-implementation: mounted
+      parameters:
+      - name: contestId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: year
+        in: query
+        schema:
+          type: integer
+          minimum: 1900
+      - name: award
+        in: query
+        schema:
+          type: string
+      - name: filmStock
+        in: query
+        schema:
+          type: string
+      - name: camera
+        in: query
+        schema:
+          type: string
+      - name: filmFormat
+        in: query
+        schema:
+          type: string
+      - name: aiTag
+        in: query
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
       responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
+        '200':
+          description: Danh sách tác phẩm triển lãm kèm phân trang
+        '400':
+          $ref: '#/components/responses/BadRequest'
       operationId: getExhibitions
   /api/v1/exhibitions/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     get:
-      summary: GET /api/v1/exhibitions/{id}
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
-        được đăng ký trong Hono.
+      summary: Chi tiết tác phẩm triển lãm công khai
+      description: Trả metadata, giải chính thức và thông tin bản quyền của bản xem trước. Không trả master key hay âm bản.
       tags:
-      - Planned · 08
-      x-implementation: planned
+      - Archive & Exhibition
+      x-implementation: mounted
       responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
+        '200':
+          description: Chi tiết tác phẩm triển lãm
+        '404':
+          $ref: '#/components/responses/NotFound'
       parameters:
       - name: id
         in: path
@@ -925,17 +1491,115 @@ paths:
           type: string
           format: uuid
       operationId: getExhibitionsById
+    patch:
+      summary: Đổi trạng thái tác phẩm triển lãm
+      description: Organizer sở hữu cuộc thi chuyển trạng thái giữa PUBLISHED, READY và ARCHIVED. PUBLISHED yêu cầu đã có bản WebP watermark.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [PUBLISHED, READY, ARCHIVED]
+      responses:
+        '200':
+          description: Trạng thái mới của tác phẩm
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+      operationId: patchExhibitionsById
+    delete:
+      summary: Xóa mềm tác phẩm triển lãm
+      description: Bản ghi được giữ với status ARCHIVED và isDeleted true theo BR-03; tác phẩm biến mất khỏi gallery công khai.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Đã xóa mềm
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      operationId: deleteExhibitionsById
+
+  /api/v1/exhibitions/{id}/image:
+    get:
+      summary: Ảnh WebP công khai của tác phẩm triển lãm
+      description: Chỉ trả bản WebP đã watermark và đã loại EXIF. Ảnh gốc luôn riêng tư theo BR-17.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      responses:
+        '200':
+          description: Ảnh WebP
+          content:
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      operationId: getExhibitionsByIdImage
   /api/v1/exhibitions/{id}/process:
     post:
-      summary: POST /api/v1/exhibitions/{id}/process
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
-        được đăng ký trong Hono.
+      summary: Tạo lại bản xem trước WebP có watermark
+      description: Organizer sở hữu cuộc thi. generateWebp và applyWatermark bắt buộc true theo BR-17.
       tags:
-      - Planned · 08
-      x-implementation: planned
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                generateWebp: { type: boolean }
+                applyWatermark: { type: boolean }
+                publish: { type: boolean }
       responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
+        '200':
+          description: Trạng thái xử lý và URL ảnh xem trước
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
       parameters:
       - name: id
         in: path
@@ -946,15 +1610,22 @@ paths:
       operationId: postExhibitionsByIdProcess
   /api/v1/exhibitions/{id}/status:
     get:
-      summary: GET /api/v1/exhibitions/{id}/status
-      description: Hợp đồng dự kiến trong [08-archive-and-exhibition.md](ai/08-archive-and-exhibition.md). Route chưa
-        được đăng ký trong Hono.
+      summary: Trạng thái xử lý tác phẩm triển lãm
+      description: Organizer sở hữu cuộc thi đọc trạng thái PENDING, READY, PUBLISHED, FAILED hoặc ARCHIVED.
       tags:
-      - Planned · 08
-      x-implementation: planned
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
       responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
+        '200':
+          description: Trạng thái xử lý
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
       parameters:
       - name: id
         in: path
@@ -2090,17 +2761,16 @@ paths:
           type: string
           format: uuid
       operationId: postSubmissionsByIdModerate
-  /api/v1/submissions/{id}/proof:
-    post:
-      summary: POST /api/v1/submissions/{id}/proof
-      description: Hợp đồng dự kiến trong [05-submission-and-proof.md](ai/05-submission-and-proof.md). Route chưa được
-        đăng ký trong Hono.
+  /api/v1/submissions/{id}/feedback:
+    get:
+      summary: Kết quả và nhận xét giám khảo cho bài của tôi
+      description: Participant sở hữu bài thi (submissions:read_own). Chỉ trả điểm, thứ hạng, giải và nhận xét riêng
+        sau khi cuộc thi công bố; bài của người khác trả 403 (MSG005), chưa công bố trả 409. Route alias là /result.
       tags:
-      - Planned · 05
-      x-implementation: planned
-      responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
       parameters:
       - name: id
         in: path
@@ -2108,7 +2778,65 @@ paths:
         schema:
           type: string
           format: uuid
-      operationId: postSubmissionsByIdProof
+      responses:
+        '200':
+          description: Kết quả chính thức và nhận xét của giám khảo
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+      operationId: getSubmissionsByIdFeedback
+  /api/v1/submissions/{id}/proof:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    post:
+      summary: Thí sinh bổ sung ảnh đối chứng
+      tags:
+      - Submissions
+      x-implementation: mounted
+      operationId: submitRequestedProof
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [proof]
+              properties:
+                proof: {type: string, format: binary}
+      responses:
+        '201':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/SubmissionProof'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
   /api/v1/submissions/{id}/reject:
     post:
       summary: Loại bài thi
@@ -2175,24 +2903,47 @@ paths:
           format: uuid
       operationId: postSubmissionsByIdReject
   /api/v1/submissions/{id}/request-proof:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
     post:
-      summary: POST /api/v1/submissions/{id}/request-proof
-      description: Hợp đồng dự kiến trong [05-submission-and-proof.md](ai/05-submission-and-proof.md). Route chưa được
-        đăng ký trong Hono.
+      summary: Organizer yêu cầu bổ sung proof với hạn cụ thể
       tags:
-      - Planned · 05
-      x-implementation: planned
-      responses:
-        default:
-          description: Xem hợp đồng request và response trong module liên kết.
-      parameters:
-      - name: id
-        in: path
+      - Submissions
+      x-implementation: mounted
+      operationId: requestSubmissionProof
+      security:
+      - BearerAuth: []
+      requestBody:
         required: true
-        schema:
-          type: string
-          format: uuid
-      operationId: postSubmissionsByIdRequestProof
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmissionProofRequest'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/SubmissionProof'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
   /api/v1/upload:
     post:
       summary: Upload ảnh lên Cloudflare R2
@@ -2660,6 +3411,443 @@ paths:
           description: Thiếu vai trò Judge.
         '404':
           description: Không tìm thấy bài được phân công hoặc ảnh.
+  /api/v1/submissions/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    get:
+      summary: Đọc chi tiết bài và yêu cầu proof
+      tags:
+      - Submissions
+      x-implementation: mounted
+      operationId: getSubmissionProofDetail
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/SubmissionProof'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/organizer/submissions/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    get:
+      summary: Đọc chi tiết bài và yêu cầu proof
+      tags:
+      - Submissions
+      x-implementation: mounted
+      operationId: organizer_getSubmissionProofDetail
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/SubmissionProof'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/organizer/submissions/{id}/proof:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    post:
+      summary: Thí sinh bổ sung ảnh đối chứng
+      tags:
+      - Submissions
+      x-implementation: mounted
+      operationId: organizer_submitRequestedProof
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [proof]
+              properties:
+                proof: {type: string, format: binary}
+      responses:
+        '201':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/SubmissionProof'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/submissions/{id}/proof/image:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    get:
+      summary: Đọc ảnh proof riêng tư
+      tags: [Submissions]
+      x-implementation: mounted
+      operationId: getSubmissionProofImage
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Ảnh proof từ storage local
+        '302':
+          description: Chuyển hướng tới URL có thời hạn trên R2
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/organizer/submissions/{id}/proof/image:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    get:
+      summary: Đọc ảnh proof riêng tư
+      tags: [Submissions]
+      x-implementation: mounted
+      operationId: organizer_getSubmissionProofImage
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Ảnh proof từ storage local
+        '302':
+          description: Chuyển hướng tới URL có thời hạn trên R2
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/organizer/submissions/{id}/request-proof:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    post:
+      summary: Organizer yêu cầu bổ sung proof với hạn cụ thể
+      tags:
+      - Submissions
+      x-implementation: mounted
+      operationId: organizer_requestSubmissionProof
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmissionProofRequest'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/SubmissionProof'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/submissions/{id}/verify-proof:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    post:
+      summary: Organizer xác minh proof đã tải lên
+      tags:
+      - Submissions
+      x-implementation: mounted
+      operationId: verifySubmissionProof
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/SubmissionProof'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/organizer/submissions/{id}/verify-proof:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    post:
+      summary: Organizer xác minh proof đã tải lên
+      tags:
+      - Submissions
+      x-implementation: mounted
+      operationId: organizer_verifySubmissionProof
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/SubmissionProof'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/submissions/my/notifications:
+    get:
+      summary: Đọc thông báo của tài khoản hiện tại
+      tags:
+      - Submissions
+      x-implementation: mounted
+      operationId: getOwnContestNotifications
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/ContestNotification'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/organizer/submissions/my/notifications:
+    get:
+      summary: Đọc thông báo của tài khoản hiện tại
+      tags:
+      - Submissions
+      x-implementation: mounted
+      operationId: organizer_getOwnContestNotifications
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/ContestNotification'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+  /api/v1/submissions/{id}/result:
+    get:
+      summary: Kết quả và nhận xét giám khảo cho bài của tôi
+      description: Participant sở hữu bài thi (submissions:read_own). Chỉ trả điểm,
+        thứ hạng, giải và nhận xét riêng sau khi cuộc thi công bố; bài của người khác
+        trả 403 (MSG005), chưa công bố trả 409. Route alias là /result.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Kết quả chính thức và nhận xét của giám khảo
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+      operationId: getSubmissionResult
+  /api/v1/organizer/submissions/{id}/feedback:
+    get:
+      summary: Kết quả và nhận xét giám khảo cho bài của tôi
+      description: Participant sở hữu bài thi (submissions:read_own). Chỉ trả điểm,
+        thứ hạng, giải và nhận xét riêng sau khi cuộc thi công bố; bài của người khác
+        trả 403 (MSG005), chưa công bố trả 409. Route alias là /result.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Kết quả chính thức và nhận xét của giám khảo
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+      operationId: getOrganizerSubmissionFeedback
+  /api/v1/organizer/submissions/{id}/result:
+    get:
+      summary: Kết quả và nhận xét giám khảo cho bài của tôi
+      description: Participant sở hữu bài thi (submissions:read_own). Chỉ trả điểm,
+        thứ hạng, giải và nhận xét riêng sau khi cuộc thi công bố; bài của người khác
+        trả 403 (MSG005), chưa công bố trả 409. Route alias là /result.
+      tags:
+      - Archive & Exhibition
+      x-implementation: mounted
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Kết quả chính thức và nhận xét của giám khảo
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột trạng thái hoặc dữ liệu
+      operationId: getOrganizerSubmissionResult
 components:
   securitySchemes:
     BearerAuth:
@@ -2679,9 +3867,173 @@ components:
         byStatus:
           type: object
           additionalProperties: { type: integer, minimum: 0 }
+    SubmissionProofRequest:
+      type: object
+      required: [proofType, proofDeadlineAt]
+      properties:
+        proofType: {type: string, enum: [negative, contact_sheet]}
+        proofDeadlineAt: {type: string, format: date-time}
+        reason: {type: string, maxLength: 1000}
+    SubmissionProof:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        status: {type: string}
+        proofType: {type: string, nullable: true}
+        proofStatus: {type: string, nullable: true, enum: [REQUESTED, UPLOADED, VERIFIED, OVERDUE]}
+        proofRequestedAt: {type: string, format: date-time, nullable: true}
+        proofDeadlineAt: {type: string, format: date-time, nullable: true}
+        proofVerifiedAt: {type: string, format: date-time, nullable: true}
+        proofUrl: {type: string, nullable: true}
+        contestId: {type: string, format: uuid}
+        categoryId: {type: string, format: uuid}
+        title: {type: string}
+    ContestNotification:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        contestId: {type: string, format: uuid}
+        kind: {type: string}
+        data: {type: object}
+        createdAt: {type: string, format: date-time}
+    JudgingRoundConfig:
+      type: object
+      properties:
+        name: {type: string, maxLength: 150}
+        position: {type: integer, minimum: 1}
+        startAt: {type: string, format: date-time}
+        deadlineAt: {type: string, format: date-time}
+        advanceCount: {type: integer, minimum: 1, nullable: true}
+        requiredJudges: {type: integer, minimum: 1, default: 1}
+    JudgingRoundCreate:
+      allOf:
+      - $ref: '#/components/schemas/JudgingRoundConfig'
+      - type: object
+        required: [name, position, startAt, deadlineAt, advanceCount]
+    JudgingRound:
+      allOf:
+      - $ref: '#/components/schemas/JudgingRoundConfig'
+      - type: object
+        properties:
+          id: {type: string, format: uuid}
+          contestId: {type: string, format: uuid}
+          startedAt: {type: string, format: date-time, nullable: true}
+          lockedAt: {type: string, format: date-time, nullable: true}
+    RoundJudgeInput:
+      type: object
+      required: [roundId, categoryId, judgeId]
+      properties:
+        roundId: {type: string, format: uuid}
+        categoryId: {type: string, format: uuid}
+        judgeId: {type: string, format: uuid}
+    RoundJudge:
+      allOf:
+      - $ref: '#/components/schemas/RoundJudgeInput'
+      - type: object
+        properties:
+          id: {type: string, format: uuid}
+    PublishContestResultsInput:
+      type: object
+      required: [confirm]
+      properties:
+        confirm: {type: boolean, enum: [true]}
+        tieBreaks:
+          type: array
+          items:
+            type: object
+            required: [categoryId, submissionIds, reason]
+            properties:
+              categoryId: {type: string, format: uuid}
+              submissionIds:
+                description: ID của tất cả bài đồng điểm trong nhóm, theo thứ tự Organizer xác nhận.
+                type: array
+                minItems: 2
+                uniqueItems: true
+                items: {type: string, format: uuid}
+              reason: {type: string, minLength: 1, maxLength: 1000}
+    OfficialResultEntry:
+      type: object
+      properties:
+        submissionId: {type: string, format: uuid}
+        categoryId: {type: string, format: uuid}
+        categoryName: {type: string}
+        title: {type: string}
+        authorName: {type: string}
+        rank: {type: integer}
+        finalScore: {type: number, multipleOf: 0.01}
+        award: {type: string, nullable: true}
+        awardTitle: {type: string, nullable: true}
+        awardRank: {type: integer, nullable: true}
+        prizeValueVnd: {type: integer, nullable: true}
+        photoUrl: {type: string, nullable: true}
+        isProofVerified: {type: boolean}
+        isResultsLocked: {type: boolean}
+    OfficialContestResults:
+      type: object
+      required: [contestId, roundId, publishedAt, status, resultsLocked, entries, winners]
+      properties:
+        contestId: {type: string, format: uuid}
+        contestName: {type: string}
+        roundId: {type: string, format: uuid}
+        publishedAt: {type: string, format: date-time}
+        status: {type: string, enum: [RESULTS_PUBLISHED]}
+        resultsLocked: {type: boolean, enum: [true]}
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfficialResultEntry'
+        winners:
+          type: array
+          items:
+            allOf:
+            - $ref: '#/components/schemas/OfficialResultEntry'
+            - type: object
+              properties:
+                contestId: {type: string, format: uuid}
+                contestName: {type: string}
     Contest:
       type: object
       properties:
+        code:
+          type: string
+          example: CON-2026-01
+        registrationStartAt:
+          type: string
+          format: date-time
+          nullable: true
+        submissionDeadlineAt:
+          type: string
+          format: date-time
+          nullable: true
+        judgingStartAt:
+          type: string
+          format: date-time
+          nullable: true
+        judgingDeadlineAt:
+          type: string
+          format: date-time
+          nullable: true
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        theme:
+          type: string
+          nullable: true
+        rules:
+          type: string
+          nullable: true
+        coverImageUrl:
+          type: string
+          nullable: true
+        rounds:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContestRound'
+        awards:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContestAward'
         id:
           type: string
           format: uuid
@@ -2713,6 +4065,50 @@ components:
     ContestInput:
       type: object
       properties:
+        registrationStartAt:
+          type: string
+          format: date-time
+        submissionDeadlineAt:
+          type: string
+          format: date-time
+        judgingStartAt:
+          type: string
+          format: date-time
+        judgingDeadlineAt:
+          type: string
+          format: date-time
+        publishedAt:
+          type: string
+          format: date-time
+        theme:
+          type: string
+          nullable: true
+        rules:
+          type: string
+          nullable: true
+        coverImageUrl:
+          type: string
+          nullable: true
+        rounds:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContestRound'
+        awards:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContestAward'
+        categories:
+          description: Hạng mục và tiêu chí tùy chọn khi tạo cấu hình đầy đủ.
+          type: array
+          items:
+            allOf:
+            - $ref: '#/components/schemas/ContestCategoryCreate'
+            - type: object
+              properties:
+                criteria:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ContestCriterionInput'
         name:
           type: string
           maxLength: 150
@@ -2731,6 +4127,109 @@ components:
         status:
           type: string
           default: draft
+    DuplicateContestInput:
+      type: object
+      required: [registrationStartAt, submissionDeadlineAt, judgingStartAt, judgingDeadlineAt, publishedAt]
+      properties:
+        name:
+          type: string
+          maxLength: 150
+        registrationStartAt:
+          type: string
+          format: date-time
+        submissionDeadlineAt:
+          type: string
+          format: date-time
+        judgingStartAt:
+          type: string
+          format: date-time
+        judgingDeadlineAt:
+          type: string
+          format: date-time
+        publishedAt:
+          type: string
+          format: date-time
+    ContestCategoryInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        requireNegativeProof:
+          type: boolean
+    ContestCategoryCreate:
+      allOf:
+      - $ref: '#/components/schemas/ContestCategoryInput'
+      - type: object
+        required: [name]
+    ContestCategory:
+      allOf:
+      - $ref: '#/components/schemas/ContestCategoryCreate'
+      - type: object
+        properties:
+          id: {type: string, format: uuid}
+          contestId: {type: string, format: uuid}
+          createdAt: {type: string, format: date-time}
+          updatedAt: {type: string, format: date-time}
+    ContestCriteriaInput:
+      type: object
+      required: [criteria]
+      properties:
+        criteria:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ContestCriterionInput'
+    ContestCriterionInput:
+      type: object
+      required: [name, weight]
+      properties:
+        name: {type: string, maxLength: 150}
+        description: {type: string, nullable: true}
+        weight:
+          type: number
+          minimum: 0.0001
+          maximum: 1
+          multipleOf: 0.0001
+        maxScore:
+          type: number
+          default: 10
+          minimum: 0.01
+          maximum: 999.99
+          multipleOf: 0.01
+    ContestCriterion:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        categoryId: {type: string, format: uuid}
+        name: {type: string}
+        description: {type: string, nullable: true}
+        weight: {type: string, example: "0.4000"}
+        maxScore: {type: string, example: "10.00"}
+        sortOrder: {type: integer}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    ContestRound:
+      type: object
+      required: [name, order]
+      properties:
+        name: {type: string}
+        order: {type: integer, minimum: 1}
+        advanceCount: {type: integer, minimum: 1, nullable: true}
+    ContestAward:
+      type: object
+      required: [code, name, rankOrder]
+      properties:
+        code: {type: string}
+        name: {type: string}
+        rankOrder: {type: integer, minimum: 1}
+        prizeValueVnd: {type: integer, minimum: 0, default: 0}
+        quota: {type: integer, minimum: 1, default: 1}
     Pagination:
       type: object
       properties:

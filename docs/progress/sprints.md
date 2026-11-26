@@ -136,11 +136,11 @@ Mã FPC là mã công việc nội bộ, đánh số liên tục; không phải 
 | FPC-106 | Backend | M07 · UC-29,31–33: Kiểm chứng API hiện có, bổ sung logic theo vòng và khóa phiếu | Hà Đức Bình | TODO |
 | FPC-107 | Web | M07 · UC-29–33: Nối workspace Judge, viewer UC-30 và gửi/sửa/khóa phiếu | Phạm Tiến Thành Nhân | TODO |
 | FPC-108 | Backend | M08 · UC-26: API công bố kết quả và vinh danh người thắng | Nam Nguyễn | TODO |
-| FPC-109 | Backend | M08 · UC-27: Quản lý triển lãm và preview công khai | Nam Nguyễn | TODO |
+| FPC-109 | Backend | M08 · UC-27: Quản lý triển lãm và preview công khai | Nam Nguyễn | DONE |
 | FPC-110 | Web | M08 · UC-26: Chốt và công bố kết quả theo SRS | Vĩ Nguyễn | TODO |
 | FPC-111 | Web | M08 · UC-27: Quản lý triển lãm và tác phẩm công khai | Vĩ Nguyễn | TODO |
 | FPC-112 | Backend | M08 · UC-43: API Public Digital Archive, chi tiết tác phẩm công khai và phân trang | Dương Nguyễn | TODO |
-| FPC-113 | Backend | M08 · UC-41: API kết quả, điểm và nhận xét cá nhân | Nam Nguyễn | TODO |
+| FPC-113 | Backend | M08 · UC-41: API kết quả, điểm và nhận xét cá nhân | Nam Nguyễn | DONE |
 | FPC-114 | Backend | M08 · UC-43: Bộ lọc Archive theo film stock, camera và năm | Dương Nguyễn | TODO |
 | FPC-115 | Backend | M08 · UC-43: Index truy vấn kho ảnh | Dương Nguyễn | TODO |
 | FPC-116 | Web | M08 · UC-43: Tích hợp Digital Archive dạng masonry | Phạm Tiến Thành Nhân | IN REVIEW |
