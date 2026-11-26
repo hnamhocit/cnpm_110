@@ -3,8 +3,9 @@
 import { CheckCircle2, Play } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PublishResultsDialog } from "@/components/results/publish-results-dialog";
 import { Button } from "@/components/ui/button";
-import { http } from "@/lib/http";
+import { http } from "@/lib/http/client";
 
 export function ContestStatusActions({
   contestId,
@@ -16,12 +17,15 @@ export function ContestStatusActions({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [publishOpen, setPublishOpen] = useState(false);
 
   const status = (currentStatus ?? "").toLowerCase();
+  const isJudging =
+    status === "judging" || status === "in_judging" || status.includes("judg");
+  const isPublished = status === "results_published";
 
   async function handleUpdateStatus(newStatus: string) {
-    const statusLabel =
-      newStatus === "ongoing" ? "Mở nộp bài (OPEN/ONGOING)" : "Công bố kết quả (PUBLISHED)";
+    const statusLabel = "Mở nộp bài (OPEN/ONGOING)";
 
     if (
       !window.confirm(
@@ -41,10 +45,17 @@ export function ContestStatusActions({
       window.location.reload();
     } catch (err: unknown) {
       const apiErr = err as { response?: { data?: { message?: string } } };
-      setError(apiErr?.response?.data?.message || "Không thể chuyển trạng thái");
+      setError(
+        apiErr?.response?.data?.message || "Không thể chuyển trạng thái",
+      );
     } finally {
       setLoading(false);
     }
+  }
+
+  function handlePublishSuccess() {
+    router.refresh();
+    window.location.reload();
   }
 
   return (
@@ -61,20 +72,39 @@ export function ContestStatusActions({
         </Button>
       )}
 
-      {(status === "ongoing" || status === "open") && (
+      {isJudging && (
         <Button
           size="sm"
-          variant="outline"
-          className="border-blue-300 text-blue-700 hover:bg-blue-50 text-xs font-semibold"
-          onClick={() => handleUpdateStatus("published")}
-          disabled={loading}
+          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm"
+          onClick={() => setPublishOpen(true)}
         >
-          <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-blue-600" />
-          {loading ? "Đang xử lý..." : "Công bố giải (PUBLISHED)"}
+          <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+          Chốt & công bố kết quả
         </Button>
       )}
 
-      {error && <span className="text-xs text-red-600 font-medium">{error}</span>}
+      {isPublished && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="border-emerald-200 text-emerald-700 text-xs font-semibold"
+          disabled
+        >
+          <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+          Đã công bố (khóa)
+        </Button>
+      )}
+
+      {error && (
+        <span className="text-xs text-red-600 font-medium">{error}</span>
+      )}
+
+      <PublishResultsDialog
+        open={publishOpen}
+        onOpenChange={setPublishOpen}
+        contestId={contestId}
+        onSuccess={handlePublishSuccess}
+      />
     </div>
   );
 }
