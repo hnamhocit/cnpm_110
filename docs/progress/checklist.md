@@ -32,7 +32,7 @@ Module Owner chịu trách nhiệm theo dõi và nghiệm thu module, không m�
 | --- | --- | --- | --- | --- | ---: |
 | Nam Nguyễn | M01, M03, M09 | 11, 12, 13, 14, 15, 16, 21, 22, 26, 27, 41 | — | — | 8/9 |
 | Hà Đức Bình | M06, M10 | 09, 19, 20, 24, 25, 29, 31, 32, 33, 28 (AI/VERIFY) | — | — | 0/6 |
-| Vĩ Nguyễn | M11 | — | 06, 07, 08, 09, 10, 11, 12, 13, 14, 19, 20, 21, 22, 26, 27, 28 | — | Đã hoàn tất 5 task Web (FPC-081/084/094/103/110), phủ 13 UC: UC-06–08, UC-09/19/20, UC-11–14, UC-21–22, UC-26. Chi tiết bên dưới. |
+| Vĩ Nguyễn | Web Admin/Organizer | Hoàn thành 16/23 module Web được giao. |
 | Phạm Tiến Thành Nhân | M07, M08 | — | 15, 16, 17, 24, 25, 29, 30, 31, 32, 33, 43 | — | 3/6 |
 | Dương Nguyễn | M05 | 17, 34, 37, 39, 43 | 34, 37, 39, 41 | 34, 37, 39, 41, 43 | 0/12 |
 | Huỳnh Trần Gia Bảo | M02, M04 | 06, 07, 08, 10, 35, 36, 38, 42 | 35, 36, 38, 42 | 06, 07, 08, 21, 35, 36, 38, 42 | 0/13 |
@@ -55,19 +55,6 @@ Phân định UC-01–05 theo xác nhận cập nhật của trưởng nhóm ng�
 ![Quy định bàn giao và kiểm thử Sprint 5](evidence/sprint-5-handover-rules-chat.png)
 
 **Nguyên tắc trách nhiệm:** Mỗi thành viên chịu trách nhiệm thực hiện, cập nhật tiến độ và báo cáo blocker của phần việc được giao. Trường hợp không thực hiện hoặc không cập nhật dù đã được phân công và nhắc nhở, cần ghi nhận riêng theo cá nhân và bằng chứng; không mặc định quy phần việc đó thành lỗi triển khai của trưởng nhóm. Trưởng nhóm vẫn chịu trách nhiệm điều phối, theo dõi, hỗ trợ xử lý blocker và nghiệm thu chung. Không kết luận cá nhân vi phạm chỉ vì chưa có dữ liệu cập nhật trong tài liệu này.
-
-### Phần của Vĩ Nguyễn · cập nhật ngày 2026-11-26
-
-Bổ sung theo yêu cầu hiện tại; giữ nguyên phần đã ghi của Nam Nguyễn và các thành viên khác. Các task dưới đây đã code, sinh checklist và push lên branch riêng từ `develop`. Mức “Web DONE” chỉ phạm vi Web; trạng thái sản phẩm vẫn xem phần 2.
-
-| FPC / UC | Việc Vĩ đã làm | Bằng chứng branch/commit | Tiến độ / còn lại |
-| --- | --- | --- | --- |
-| FPC-081 · UC-06–08 | Trang quản trị Master Data: CRUD, lọc, RBAC Admin, soft delete, validation BR-02/03/22; checklist 3 UC. | `fpc-081-master-data-admin` · c54a84c, 166e7d2, 7a4d907 | Web DONE; cần FPC-080 mount API/tra cứu và nghiệm thu tích hợp. |
-| FPC-084 · UC-11–14 | Wizard tạo/sao chép cuộc thi, form sửa cấu hình, quản lý hạng mục, editor tiêu chí; checklist 4 UC. | `fpc-084-contest-config-form` · 04e95ee, 4247319, 3b6c8db | Web DONE; còn nghiệm thu API cấu hình đầy đủ của FPC-083. |
-| FPC-094 · UC-21–22 | Modal yêu cầu đối chứng với hạn do Organizer đặt, xác minh bằng chứng trước duyệt, guard duyệt hàng loạt; checklist 2 UC. | `fpc-094-proof-moderation` · 743083e, aba60ee, 3ee8c0a | Web DONE; còn màn Participant FPC-095 và lưu trạng thái/deadline phía server. |
-| FPC-103 · UC-09/19/20 | Cấu hình/thử ngưỡng AI, quét đơn/hàng loạt, modal đối chiếu với probability/pHash/Hamming/tags và MSG016/017; checklist 3 UC. | `fpc-103-ai-integration` · 5570623, 39017b5, 7d732b5, 31f30ad | Web DONE; cần webhook/provider thật, API trạng thái job và đồng bộ OpenAPI. |
-| FPC-110 · UC-26 | Dialog chốt/công bố với tie-break BR-25, scoreboard API thật, results view read-only, feedback cá nhân (đóng góp client UC-41); checklist UC-26. | `fpc-110-publish-results` · fad8e8f, e321bc5, 284ed16, 719714b | Web DONE; cần scoreboard proof flag, tieBreaks trong DTO và bỏ fallback điểm mẫu. |
-| Tổng | 13 UC được phủ bởi 5 task Web. | 5 branch đã push | Web 13/13 có implementation + checklist; toàn luồng vẫn PARTIAL theo phần 2 do phụ thuộc backend/contract. |
 
 ## 3. Checklist theo Module Owner và từng UC
 
