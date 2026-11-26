@@ -1,5 +1,6 @@
 import {
   ArrowLeft,
+  Award,
   Calendar,
   ClipboardCheck,
   ExternalLink,
@@ -70,6 +71,8 @@ export default async function PortalContestOverviewPage({
   }
 
   const status = (contest.status ?? "").toLowerCase() || "draft";
+  const resultsPublished =
+    status === "published" || status === "results_published";
   const statusBadgeClass =
     STATUS_STYLES[status] ?? "bg-blue-100 text-blue-700 border-blue-200";
 
@@ -103,6 +106,18 @@ export default async function PortalContestOverviewPage({
             contestId={contest.id}
             currentStatus={contest.status}
           />
+          <Link href={`/portal/contests/scoreboard?contestId=${contest.id}`}>
+            <Button variant="outline" size="sm" className="text-xs">
+              <Layers className="w-3.5 h-3.5 mr-1.5" /> Bảng điểm
+            </Button>
+          </Link>
+          {resultsPublished && (
+            <Link href={`/contests/${contest.id}/results`}>
+              <Button variant="outline" size="sm" className="text-xs">
+                <Award className="w-3.5 h-3.5 mr-1.5" /> Kết quả chính thức
+              </Button>
+            </Link>
+          )}
           <Link href={`/portal/contests/${contest.id}/edit`}>
             <Button variant="outline" size="sm" className="text-xs">
               <Settings className="w-3.5 h-3.5 mr-1.5" /> Chỉnh sửa cấu hình

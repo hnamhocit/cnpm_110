@@ -116,9 +116,9 @@ Mã FPC là mã công việc nội bộ, đánh số liên tục; không phải 
 | FPC-084 | Web | M03 · UC-11–14: Hoàn thiện và tích hợp form cấu hình | Vĩ Nguyễn | TODO |
 | FPC-085 | Backend | M03 · UC-15–16: Vòng chấm và phân công Judge | Nam Nguyễn | DONE |
 | FPC-086 | Web | M03 · UC-15–17: Vòng chấm, phân công Judge, danh sách đăng ký | Phạm Tiến Thành Nhân | DONE |
-| FPC-087 | Backend | M03 · UC-17,34: API đăng ký hạng mục và danh sách đăng ký | Dương Nguyễn | TODO |
-| FPC-088 | Web | M03 · UC-34: Tìm kiếm, chi tiết và đăng ký cuộc thi | Dương Nguyễn | TODO |
-| FPC-089 | Mobile | M03 · UC-34: Hoàn thiện đăng ký và lưu trạng thái | Dương Nguyễn | TODO |
+| FPC-087 | Backend | M03 · UC-17,34: API đăng ký hạng mục và danh sách đăng ký | Dương Nguyễn | DONE |
+| FPC-088 | Web | M03 · UC-34: Tìm kiếm, chi tiết và đăng ký cuộc thi | Dương Nguyễn | DONE |
+| FPC-089 | Mobile | M03 · UC-34: Hoàn thiện đăng ký và lưu trạng thái | Dương Nguyễn | DONE |
 | FPC-090 | Backend | M04 · UC-35–36: CRUD cuộn phim, frame, metadata và quyền sở hữu | Huỳnh Trần Gia Bảo | TODO |
 | FPC-091 | Web | M04 · UC-35–36: Tích hợp Film Logbook nếu áp dụng theo SRS | Huỳnh Trần Gia Bảo | TODO |
 | FPC-092 | Mobile | M04 · UC-35–36: Quản lý cuộn/frame, nối danh mục | Huỳnh Trần Gia Bảo | TODO |
@@ -149,7 +149,7 @@ Mã FPC là mã công việc nội bộ, đánh số liên tục; không phải 
 | FPC-117 | Web | M08 · UC-43: Tích hợp chi tiết tác phẩm đạt giải | Phạm Tiến Thành Nhân | IN REVIEW |
 | FPC-118 | Web | M08 · UC-43: Bộ lọc kho ảnh theo phim, định dạng và năm | Phạm Tiến Thành Nhân | IN REVIEW |
 | FPC-119 | Web | M08 · UC-41: Kết quả và feedback cá nhân nếu áp dụng theo SRS | Dương Nguyễn | TODO |
-| FPC-120 | Mobile | M08 · UC-41: Hoàn thiện bảng vàng, kết quả và feedback thật | Dương Nguyễn | IN REVIEW |
+| FPC-120 | Mobile | M08 · UC-41: Hoàn thiện bảng vàng, kết quả và feedback thật | Dương Nguyễn | DONE |
 | FPC-121 | Backend | M08 · UC-42: API portfolio và lịch sử giải thưởng | Huỳnh Trần Gia Bảo | TODO |
 | FPC-122 | Web | M08 · UC-42: Portfolio nếu áp dụng theo SRS | Huỳnh Trần Gia Bảo | TODO |
 | FPC-123 | Mobile | M08 · UC-42: Tích hợp portfolio cá nhân và lịch sử giải thưởng | Huỳnh Trần Gia Bảo | IN REVIEW |
@@ -161,9 +161,9 @@ Mã FPC là mã công việc nội bộ, đánh số liên tục; không phải 
 | FPC-129 | AI | M06/M11 · UC-09,19,20,28: Kiểm thử ảnh thật, AI Analytics thật và xử lý lỗi | Hà Đức Bình | TODO |
 | FPC-130 | Lead | M09: Đồng bộ OpenAPI và kiểm soát thay đổi hợp đồng | Nam Nguyễn | TODO |
 | FPC-131 | Backend | M10: Hoàn thiện schema, migration, storage và quyền truy cập theo UC | Hà Đức Bình | TODO |
-| FPC-132 | Backend | M11: Hoàn thiện email/thông báo và audit dùng chung theo SRS | Nam Nguyễn | IN REVIEW |
+| FPC-132 | Backend | M11: Hoàn thiện email/thông báo và audit dùng chung theo SRS | Nam Nguyễn | DONE |
 | FPC-133 | Integration | Nghiệm thu toàn bộ 35 UC còn lại và hồi quy 8 UC đã đạt; Feature Freeze | Cả nhóm | TODO |
-| FPC-134 | Backend | Chuẩn bị và kiểm chứng dữ liệu mẫu phục vụ demo (seed, không dùng mock thay API) | Nam Nguyễn | IN REVIEW |
+| FPC-134 | Backend | Chuẩn bị và kiểm chứng dữ liệu mẫu phục vụ demo (seed, không dùng mock thay API) | Nam Nguyễn | DONE |
 
 ### Module Owner
 
