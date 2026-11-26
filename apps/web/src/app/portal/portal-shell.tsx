@@ -20,6 +20,12 @@ const menuItems = [
   { label: "Dashboard", href: "/portal", icon: LayoutDashboard },
   { label: "Contests", href: "/portal/contests", icon: Trophy },
   { label: "Judges", href: "/portal/contests/judges", icon: Users },
+  { label: "Rounds", href: "/portal/contests/rounds", icon: Database },
+  {
+    label: "Registrations",
+    href: "/portal/contests/registrations",
+    icon: Users,
+  },
   {
     label: "Tiến độ chấm thi",
     href: "/portal/contests/judging-progress",
