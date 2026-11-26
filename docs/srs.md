@@ -1,6 +1,6 @@
 # Software Requirements Specification (SRS) — CINEGEN
 
-Bản Markdown đồng bộ theo [SRS PDF đã cập nhật](SRS_Film_Photography_Contest_Platform_Full.pdf). Xem PDF mục 3 để đối chiếu sơ đồ và mô tả màn hình chi tiết.
+Bản Markdown phục vụ triển khai trong repository. Tài liệu SRS, sơ đồ và mô tả màn hình chi tiết được quản lý tại [Confluence của dự án](https://hnamhocit.atlassian.net/wiki/x/BAAF).
 
 ## 1. Product Overview
 
