@@ -196,7 +196,7 @@ class ApiSubmissionRepository
       }
 
       final formData = FormData.fromMap({
-        'negativeProof': file,
+        'proof': file,
       });
 
       await _dio.post<Map<String, dynamic>>(
