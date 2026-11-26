@@ -94,19 +94,16 @@ cp apps/web/.env.example apps/web/.env.local
 
 ### 3. Khởi tạo cơ sở dữ liệu
 
-Tạo database và thiết lập `DATABASE_URL` theo [hướng dẫn PostgreSQL](apps/api/README-DATABASE.md).
-```bash
-bun --filter api db:migrate
-```
+Tạo database PostgreSQL và thiết lập `DATABASE_URL` theo [hướng dẫn PostgreSQL](apps/api/README-DATABASE.md). API tự áp dụng migration còn thiếu và nạp dữ liệu mẫu trước khi mở cổng.
 
-Mỗi máy dùng PostgreSQL local riêng. Khi khởi động ở môi trường phát triển, API kiểm tra dữ liệu mẫu và tự nạp nếu chưa có. Chọn tên database trong `apps/api/.env` trước khi migrate:
+Mỗi máy dùng PostgreSQL local riêng. Khi khởi động ở môi trường phát triển, API kiểm tra dữ liệu mẫu và tự nạp nếu chưa có. Chọn tên database trong `apps/api/.env` trước khi khởi động:
 
 | Database local | Dữ liệu được nạp |
 | --- | --- |
 | `film_contest` hoặc tên DB dev đang dùng | Bộ demo với 3 cuộc thi |
 | `cinegen_acceptance_test` | Bộ nghiệm thu với 2 cuộc thi và 7 tài khoản phân vai |
 
-Log khởi động có email đăng nhập và mật khẩu mặc định. Xem [cách tạo database local](apps/api/README-DATABASE.md#5-apply-migrations) và [fixture nghiệm thu](apps/api/README.md#fixture-nghiệm-thu).
+Log khởi động có email đăng nhập và mật khẩu mặc định. Xem [cách tạo database local](apps/api/README-DATABASE.md#5-khởi-động-api-và-áp-dụng-migration) và [fixture nghiệm thu](apps/api/README.md#fixture-nghiệm-thu).
 
 ### 4. Chạy Môi trường Phát triển (Development)
 
