@@ -8,6 +8,10 @@ End of Sprint 4 · Ngày xuất báo cáo 26/11/2026
 
 ## 1. Tổng quan
 
+### Functional Requirements đã hoàn thành — 8/43 (18,6%)
+
+Mỗi Use Case trong danh mục SRS §2.2 được tính là một yêu cầu chức năng. Có 8 UC đã nghiệm thu toàn luồng và 35 UC chưa nghiệm thu toàn luồng, gồm 30 PARTIAL và 5 TODO.
+
 | Chỉ số | Kết quả |
 | --- | --- |
 | Tổng số module | 11 |
