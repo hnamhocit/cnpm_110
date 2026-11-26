@@ -165,7 +165,7 @@ export async function getSubmissionProofDetail(id: string, actor: Actor) {
 
 export async function getSubmissionProofImage(id: string, actor: Actor) {
   const { negativeProofPath: key } = await readSubmissionForProof(id, actor);
-  if (!key || !/^proofs\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.(?:jpg|jpeg|png|tif|tiff)$/i.test(key)) {
+  if (!key || !/^(?:acceptance\/cinegen_acceptance_[a-z0-9_]+\/)?proofs\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.(?:jpg|jpeg|png|tif|tiff)$/i.test(key)) {
     throw AppError.notFound("Proof image not found");
   }
   const file = Bun.file(`uploads/${key}`);

@@ -45,15 +45,19 @@ export async function deliverNotificationEmails(send: BusinessEmailSender = send
   }
 }
 
-export function startNotificationDelivery() {
+export function startNotificationDelivery(
+  send: BusinessEmailSender = sendEmail,
+  intervalMs = 30_000,
+) {
   let active: Promise<unknown> | undefined;
   const tick = () => {
     if (active) return;
-    active = deliverNotificationEmails().catch(() => {
+    active = deliverNotificationEmails(send).catch(() => {
       console.error("Notification delivery worker unavailable");
     }).finally(() => { active = undefined; });
   };
-  const timer = setInterval(tick, 30_000);
+  const timer = setInterval(tick, intervalMs);
+  tick();
   return async () => {
     clearInterval(timer);
     await active;
