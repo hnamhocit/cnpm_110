@@ -113,6 +113,7 @@ paths:
   /api/v1/auth/login:
     post:
       summary: Đăng nhập hệ thống
+      description: Trả 401 với message EMAIL_VERIFICATION_REQUIRED khi mật khẩu đúng và email chưa xác minh. Client có thể hiện bước nhập mã hoặc gửi lại mã theo yêu cầu.
       tags:
       - Authentication
       requestBody:
@@ -159,7 +160,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          description: Tài khoản đã bị khoá
+          description: Mật khẩu đúng và tài khoản bị khóa. Trường message có giá trị ACCOUNT_LOCKED.
           content:
             application/json:
               schema:
@@ -2389,6 +2390,52 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /api/v1/users/{id}/role:
+    patch:
+      summary: Gán vai trò cố định cho tài khoản
+      description: Chỉ Admin được đổi vai trò của tài khoản khác. Khi đổi thành công, API thu hồi phiên và ghi audit.
+      operationId: patchUserRole
+      x-implementation: mounted
+      tags: [Authentication]
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role: { type: string, enum: [ADMIN, ORGANIZER, JUDGE, PARTICIPANT] }
+      responses:
+        '200':
+          description: Vai trò hiện tại của tài khoản
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        userId: { type: string, format: uuid }
+                        role: { type: string, enum: [Admin, Organizer, Judge, Participant] }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Không tìm thấy tài khoản
   /api/v1/users/{id}/status:
     patch:
       summary: "Khóa, mở khóa hoặc cấm tài khoản"

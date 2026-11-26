@@ -4,6 +4,7 @@ import {
   handleGetMe,
   handleListAccounts,
   handleUpdateAccountStatus,
+  handleUpdateAccountRole,
   handleUpdateProfile,
   identityHandlers,
 } from "../controllers/auth.controller";
@@ -20,6 +21,7 @@ export function createUserRoutes(delivery?: IdentityDelivery) {
   users.patch("/me/password", requirePermission("users:change_password"), handleChangePassword);
   users.put("/me/profile", requirePermission("users:update_own_profile"), handleUpdateProfile);
   users.patch("/:id/status", requirePermission("users:lock_unlock"), handleUpdateAccountStatus);
+  users.patch("/:id/role", requirePermission("users:assign_role"), handleUpdateAccountRole);
   return users;
 }
 

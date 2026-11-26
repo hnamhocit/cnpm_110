@@ -4,7 +4,9 @@
 
 **UC-01–05, BR-01/02/04.** Participant tự đăng ký bằng email duy nhất và mật khẩu; email phải được xác minh trước khi đăng nhập. Số điện thoại tùy chọn. Admin tạo tài khoản nội bộ hoặc gán một trong bốn vai trò cố định. Giữ JWT access/refresh, logout, reset qua email, khóa tài khoản và kiểm tra quyền tài nguyên.
 
-Backend dùng `POST /auth/register`, `/auth/verify-email`, `/auth/resend-verification`, `/auth/login`, `/auth/logout`, `/auth/forgot-password` và `/auth/reset-password` dưới `/api/v1`. Xác minh email thành công trả `data.status: ACTIVE`. Các tài khoản cũ được miễn xác minh theo cờ hiện có. Web và Mobile có bước nhập/gửi lại mã email. API đọc quyền từ ma trận cố định; bảng grant cũ được giữ để bảo toàn dữ liệu. Web và Mobile yêu cầu khôi phục qua email. Liên kết mở màn đặt lại mật khẩu trên Web.
+Backend dùng `POST /auth/register`, `/auth/verify-email`, `/auth/resend-verification`, `/auth/login`, `/auth/logout`, `/auth/forgot-password` và `/auth/reset-password` dưới `/api/v1`. Xác minh email thành công trả `data.status: ACTIVE`. Các tài khoản cũ được miễn xác minh theo cờ hiện có. Web và Mobile có bước nhập mã sau đăng ký. Nếu đăng nhập đúng mật khẩu khi email chưa xác minh, người dùng có thể nhập mã cũ hoặc chủ động yêu cầu gửi lại. API đọc quyền từ ma trận cố định; bảng grant cũ được giữ để bảo toàn dữ liệu. Web và Mobile yêu cầu khôi phục qua email. Liên kết mở màn đặt lại mật khẩu trên Web.
+
+UC-05 dùng `PATCH /api/v1/users/{id}/role` với mã `ADMIN`, `ORGANIZER`, `JUDGE` hoặc `PARTICIPANT`. Admin gán vai trò cho tài khoản khác. API thay các liên kết vai trò trong transaction, thu hồi phiên và ghi audit khi có thay đổi.
 
 ## Thiết kế trước lần cập nhật SRS
 

@@ -55,10 +55,11 @@ class AuthNotifier extends Notifier<AuthState> {
   }) async {
     try {
       final dio = ref.read(apiClientProvider).dio;
-      final response = await dio.post('/api/v1/auth/login', data: {
-        'email': email,
-        'password': password,
-      });
+      final response = await dio.post(
+        '/api/v1/auth/login',
+        data: {'email': email, 'password': password},
+        options: Options(extra: {'skipAuth': true}),
+      );
 
       final body = response.data as Map<String, dynamic>;
       final data = (body['data'] is Map<String, dynamic>)
@@ -124,6 +125,7 @@ class AuthNotifier extends Notifier<AuthState> {
       final response = await dio.post(
         '/api/v1/auth/$operation',
         data: payload,
+        options: Options(extra: {'skipAuth': true}),
       );
       return response.data['data']?['deliveryStatus'] as String?;
     } on DioException catch (error) {

@@ -5,6 +5,8 @@ import { ArrowLeft, CheckCircle2, AlertCircle, Lock, User as UserIcon } from "lu
 import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
 import { AuthField } from "@/components/auth/auth-field";
+import { Footer } from "@/components/home/footer";
+import { Navbar } from "@/components/home/navbar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,7 +73,9 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6">
+    <div className="flex min-h-screen flex-col bg-muted/30">
+      <Navbar />
+      <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8 sm:px-6">
       <div className="space-y-2">
         <Link
           href="/"
@@ -249,6 +253,8 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
-    </main>
+      </main>
+      <Footer />
+    </div>
   );
 }

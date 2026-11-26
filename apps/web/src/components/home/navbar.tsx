@@ -1,10 +1,10 @@
 "use client";
 
-import { ChevronDown, Layers, LogOut, Menu, Shield, X } from "lucide-react";
+import { ChevronDown, FileText, Layers, LogOut, Menu, Shield, User, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BrandMark } from "@/components/brand-mark";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,7 @@ type CurrentUser = {
   id?: string;
   fullName?: string;
   email?: string;
+  avatarUrl?: string | null;
   role?: string;
 };
 
@@ -128,6 +129,7 @@ export function Navbar() {
                     className="group flex items-center gap-2 rounded-full border border-white/15 bg-white/10 py-1 pl-1 pr-2.5 text-xs font-medium text-white transition-all hover:border-white/30 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 cursor-pointer"
                   >
                     <Avatar className="size-6.5 ring-1 ring-white/20">
+                      <AvatarImage src={user.avatarUrl ?? undefined} alt="" referrerPolicy="no-referrer" />
                       <AvatarFallback className="bg-brand-solid text-white text-[11px] font-bold">
                         {userInitial}
                       </AvatarFallback>
@@ -142,6 +144,7 @@ export function Navbar() {
                 <DropdownMenuContent align="end" className="w-60 p-1.5">
                   <div className="flex items-center gap-2.5 px-2.5 py-2">
                     <Avatar className="size-8 ring-1 ring-border">
+                      <AvatarImage src={user.avatarUrl ?? undefined} alt="" referrerPolicy="no-referrer" />
                       <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                         {userInitial}
                       </AvatarFallback>
@@ -157,6 +160,29 @@ export function Navbar() {
                   </div>
 
                   <DropdownMenuSeparator />
+
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="flex items-center gap-2">
+                      <User className="size-4 text-muted-foreground" />
+                      <span>Hồ sơ cá nhân</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  {user.role === "Participant" && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/my-submissions" className="flex items-center gap-2">
+                        <FileText className="size-4 text-muted-foreground" />
+                        <span>Bài thi của tôi</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  {user.role === "Admin" && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/portal/users" className="flex items-center gap-2">
+                        <Users className="size-4 text-muted-foreground" />
+                        <span>Quản lý tài khoản</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
 
                   {isManagementRole && (
                     <DropdownMenuItem asChild>
@@ -228,6 +254,15 @@ export function Navbar() {
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden border-b border-border bg-background px-6 pt-3 pb-6 space-y-3">
+          {user?.role === "Participant" && (
+            <Link
+              href="/my-submissions"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
+            >
+              Bài thi của tôi
+            </Link>
+          )}
           <Link
             href="/#ongoing-contests"
             onClick={() => setMobileMenuOpen(false)}
@@ -262,7 +297,8 @@ export function Navbar() {
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2.5 rounded-lg border border-border p-2.5 bg-muted/30">
                   <Avatar className="size-8 ring-1 ring-border">
-                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                    <AvatarImage src={user.avatarUrl ?? undefined} alt="" referrerPolicy="no-referrer" />
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                       {userInitial}
                     </AvatarFallback>
                   </Avatar>
@@ -282,6 +318,15 @@ export function Navbar() {
                     )}
                   </div>
                 </div>
+
+                <Button variant="outline" asChild onClick={() => setMobileMenuOpen(false)}>
+                  <Link href="/profile">Hồ sơ cá nhân</Link>
+                </Button>
+                {user.role === "Admin" && (
+                  <Button variant="outline" asChild onClick={() => setMobileMenuOpen(false)}>
+                    <Link href="/portal/users">Quản lý tài khoản</Link>
+                  </Button>
+                )}
 
                 {isManagementRole && (
                   <Button
