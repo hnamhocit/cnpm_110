@@ -33,7 +33,7 @@ Module dùng chung cho Auth, cuộc thi, nộp bài, AI, chấm thi và công b�
 
 ## Quyết định cần chốt trước khi triển khai
 
-Thống nhất cấu trúc sự kiện audit, chính sách lưu và trường cần ẩn, kênh gửi theo sự kiện, và phạm vi/mẫu số/định dạng xuất báo cáo. Sau khi chốt, ghi DTO và quyền truy cập vào [Module 09](09-api-contracts.md), cập nhật OpenAPI và kiểm thử bằng route thực tế. Thứ tự triển khai nằm trong [overview](../progress/overview.md#thứ-tự-triển-khai).
+Thống nhất cấu trúc sự kiện audit, chính sách lưu và trường cần ẩn, kênh gửi theo sự kiện, và phạm vi/mẫu số/định dạng xuất báo cáo. Sau khi chốt, ghi DTO và quyền truy cập vào [Module 09](09-api-contracts.md), cập nhật OpenAPI và kiểm thử bằng route thực tế. Thứ tự triển khai nằm trong [kế hoạch Sprint 5](../progress/sprints.md#sprint-5--feature-complete).
 
 ## Hợp đồng UC-28
 
