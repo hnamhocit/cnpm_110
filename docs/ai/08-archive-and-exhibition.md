@@ -10,8 +10,44 @@
 
 ## Phạm vi nghiệm thu và trạng thái hiện tại
 
-UC-26–27 và UC-41–43 gồm công bố, xuất bản triển lãm, kết quả/phản hồi cá nhân, portfolio và tra cứu công khai. API kết quả và portfolio hiện có, nhưng route kết quả còn dùng điểm và giải mẫu. Nghiệm thu bằng dữ liệu chấm thật, toàn bộ phiếu cần thiết đã khóa, cờ lệch điểm đã giải quyết, bài chung kết/xét giải có đối chứng đã duyệt và kết quả bất biến sau công bố. Chỉ xuất bản bản ảnh hiển thị đã xử lý, bảo vệ bản gốc theo BR-17. Báo cáo UC-28 được mô tả tại [Module 11](11-cross-cutting-services.md).
+UC-26–27 và UC-41–43 gồm công bố, xuất bản triển lãm, kết quả/phản hồi cá nhân, portfolio và tra cứu công khai. API kết quả chính thức lấy dữ liệu vòng cuối. Một số cuộc thi demo đã công bố từ trước vẫn dùng phần hiển thị mẫu. Nghiệm thu bằng dữ liệu chấm thật, toàn bộ phiếu cần thiết đã khóa, cờ lệch điểm đã giải quyết, bài chung kết/xét giải có đối chứng đã duyệt và kết quả bất biến sau công bố. Chỉ xuất bản bản ảnh hiển thị đã xử lý, bảo vệ bản gốc theo BR-17. Báo cáo UC-28 được mô tả tại [Module 11](11-cross-cutting-services.md).
 
+
+Backend đã mount `POST /api/v1/contests/{id}/publish-results` cho Organizer sở hữu. API dùng mục chấm của vòng cuối đã khóa, lưu snapshot kết quả và audit công bố trong một transaction, rồi trả lại cùng snapshot nếu gửi lại yêu cầu. `GET /api/v1/contests/{id}/results` đọc snapshot chính thức. Xem hợp đồng hiện hành trong [Module 09](09-api-contracts.md#hợp-đồng-công-bố-kết-quả-uc-26).
+
+### UC-27 (FPC-109) đã mount
+
+| Method và path | Quyền | Ghi chú |
+| --- | --- | --- |
+| `POST /api/v1/contests/{id}/archive` | Organizer sở hữu, `contests:update` | Nhận `submissionIds?`, `includeFinalists?`, `generateWebp?`, `applyWatermark?`, `publish?`. Trả `202`. Chặn `applyWatermark`/`generateWebp` bằng `false` (BR-17), cuộc thi chưa công bố, bài không `APPROVED`, bài ngoài snapshot chính thức và đối chứng bắt buộc chưa xác minh. |
+| `GET /api/v1/contests/{id}/exhibitions` | Organizer sở hữu | Đọc lại danh sách tác phẩm triển lãm của cuộc thi. |
+| `GET /api/v1/exhibitions` | Công khai | Chỉ bài `PUBLISHED`, chưa xóa mềm, đã watermark, `webp_key` có giá trị và cuộc thi đã công bố. Hỗ trợ lọc `contestId`, `year`, `award`, `filmStock`, `camera`, `filmFormat`, `aiTag` cùng phân trang. |
+| `GET /api/v1/exhibitions/{id}` | Công khai | Chi tiết tác phẩm, metadata, giải và thông tin bản quyền. Không trả `master_key` hay đường dẫn gốc. |
+| `GET /api/v1/exhibitions/{id}/image` | Công khai | Chỉ trả WebP xem trước đã watermark và đã loại EXIF. |
+| `POST /api/v1/exhibitions/{id}/process` | Organizer sở hữu | Tạo lại bản xem trước WebP có watermark. |
+| `GET /api/v1/exhibitions/{id}/status` | Organizer sở hữu | Trạng thái `PENDING`, `READY`, `PUBLISHED`, `FAILED`, `ARCHIVED`. |
+| `PATCH /api/v1/exhibitions/{id}` | Organizer sở hữu | Đổi `status` giữa `PUBLISHED`, `READY`, `ARCHIVED`. |
+| `DELETE /api/v1/exhibitions/{id}` | Organizer sở hữu | Xóa mềm theo BR-03; bản ghi giữ lại với `status = ARCHIVED`. |
+
+Bảng `exhibition_images` (migration `0005_exhibition_images.sql`) lưu `master_key` trong vùng riêng tư, `webp_key` cho bản công khai, `copyright_text`, `watermark_applied`, trạng thái xử lý và dấu xóa mềm. Ràng buộc `exhibition_images_published_ready` không cho đặt `PUBLISHED` khi thiếu bản WebP hoặc thiếu watermark.
+
+### UC-41 (FPC-113) đã mount
+
+| Method và path | Quyền | Ghi chú |
+| --- | --- | --- |
+| `GET /api/v1/submissions/{id}/feedback` | Participant sở hữu, `submissions:read_own` | Alias `GET /api/v1/submissions/{id}/result`. Chỉ trả điểm, thứ hạng, giải và nhận xét riêng sau khi cuộc thi công bố. Bài của người khác trả `MSG005` (403); chưa công bố trả `409`. |
+| `GET /api/v1/contests/{id}/my-results` | Participant, `submissions:read_own` | Danh sách bài của chính người gọi trong cuộc thi kèm kết quả chính thức và nhận xét. Bài không có trong snapshot trả `result: null`, `feedback: []`. |
+
+Hai route đọc từ snapshot `contest_publications`, không tính lại điểm và không dùng dữ liệu mẫu. Điểm cuối là trung bình có trọng số của vòng cuối, làm tròn hai chữ số (BR-25); nhận xét lấy từ `evaluations` và `evaluation_scores` của chính vòng công bố. Kết quả bất biến theo BR-16.
+
+### Fixture Backend M08
+
+Fixture nằm trong `src/db/seed-acceptance.ts`, tự tạo sau migrate và khi API khởi động với database acceptance local. Hướng dẫn môi trường và alias tại [README API](../../apps/api/README.md#fixture-nghiệm-thu).
+
+- C1 thuộc O1, đã công bố với S1/P1/K1 = 8.50 và S2/P2/K2 = 7.50, hai phiếu cuối đã xác nhận, proof đã xác minh. Snapshot và preview được tạo bằng service nghiệp vụ.
+- C3 thuộc O1 có S3/P1 và S4/P2 trong K4, điểm 8.50/7.50. Vòng R2 đã khóa, chưa công bố, phục vụ luồng công bố qua API. C2/K3 thuộc O2 dùng để kiểm tra phạm vi quyền.
+- Đọc năm mốc thời gian thật từ API. Seed tạo lịch tương đối ở lần đầu và giữ trạng thái trong lần chạy tiếp.
+- Ảnh test nằm trong `uploads/acceptance/<database>/`, gồm scan, proof và WebP xem trước. Seed acceptance từ chối cấu hình R2.
 
 ## 1. Domain Entities & Database Mapping
 

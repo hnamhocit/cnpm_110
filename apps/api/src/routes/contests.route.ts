@@ -1,8 +1,18 @@
 import { Hono } from "hono";
+import judgingRounds, { handleAssignRoundJudge } from "./judging-rounds.route";
 import { generateContestAnalytics, getContestAnalytics } from "../services/contest-analytics";
 import { AppError } from "../utils/errors";
 import {
+  handleArchiveContest,
+  handleListContestExhibitions,
+} from "../controllers/exhibition.controller";
+import {
   handleCloseJudgingRound,
+  handleCategoryCriteria,
+  handlePublishContestResults,
+  handleCreateCategory,
+  handleDuplicateContest,
+  handleUpdateCategory,
   handleCreateContest,
   handleDeleteContest,
   handleGetContest,
@@ -10,6 +20,7 @@ import {
   handleGetContestResults,
   handleGetContestScoreboard,
   handleGetJudgingProgress,
+  handleGetMyContestResults,
   handleListContests,
   handleUpdateContest,
 } from "../controllers/contest.controller";
@@ -21,10 +32,17 @@ import {
 
 const contests = new Hono<AuthEnv>();
 
+contests.route("/:id/rounds", judgingRounds);
+contests.post("/:id/judges", authenticate, requirePermission("contests:update"), handleAssignRoundJudge);
+
 contests.get("/", handleListContests);
 contests.get("/:id", handleGetContest);
 contests.get("/:id/categories", handleGetContestCategories);
 contests.get("/:id/results", handleGetContestResults);
+contests.get("/:id/my-results", authenticate, requirePermission("submissions:read_own"), handleGetMyContestResults);
+contests.post("/:id/publish-results", authenticate, requirePermission("contests:update"), handlePublishContestResults);
+contests.post("/:id/archive", authenticate, requirePermission("contests:update"), handleArchiveContest);
+contests.get("/:id/exhibitions", authenticate, requirePermission("contests:update"), handleListContestExhibitions);
 contests.get(
   "/:id/scoreboard",
   authenticate,
@@ -57,6 +75,32 @@ contests.on(
     const report = c.req.method === "POST" ? await generateContestAnalytics(statistics) : null;
     return c.ok({ ...statistics, report });
   },
+);
+contests.post(
+  "/:id/duplicate",
+  authenticate,
+  requirePermission("contests:create"),
+  handleDuplicateContest,
+);
+contests.post(
+  "/:id/categories",
+  authenticate,
+  requirePermission("contests:update"),
+  handleCreateCategory,
+);
+contests.on(
+  ["PATCH", "DELETE"],
+  "/:id/categories/:categoryId",
+  authenticate,
+  requirePermission("contests:update"),
+  handleUpdateCategory,
+);
+contests.on(
+  ["GET", "PUT"],
+  "/:id/categories/:categoryId/criteria",
+  authenticate,
+  requirePermission("contests:update"),
+  handleCategoryCriteria,
 );
 contests.post(
   "/",

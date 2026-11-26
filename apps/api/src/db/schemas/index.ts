@@ -4,3 +4,5 @@ export * from "./module-4.schema";
 export * from "./module-5.schema";
 export * from "./module-6.schema";
 export * from "./module-7.schema";
+export * from "./module-8.schema";
+export * from "./module-11.schema";

@@ -97,7 +97,7 @@ bun --filter api db:reset --confirm=cinegen
 
 Ví dụ Docker Compose mặc định dùng database `cinegen` tại `127.0.0.1:5433`. Database phải tồn tại và tài khoản kết nối cần quyền quản lý schema `public`. Lệnh kiểm tra tên xác nhận, chỉ chấp nhận địa chỉ loopback và từ chối khi `NODE_ENV=production`.
 
-Reset và chạy lại toàn bộ migration có trong journal diễn ra trong một transaction. Nếu migration lỗi, PostgreSQL hoàn tác việc xóa schema. Sau khi thành công, chạy `bun --filter api dev`. API tự nạp vai trò hệ thống và dữ liệu mẫu khi khởi động ở môi trường phát triển. Với PostgreSQL local, API còn tự tạo cuộc thi **CINEGEN Demo · Theo dõi bài dự thi** với 72 bài và dữ liệu đối sánh giả lập. Lệnh `db:seed:demo` vẫn dùng được nếu cần chuẩn bị trước trên `cinegen_demo`.
+Reset và chạy lại toàn bộ migration có trong journal diễn ra trong một transaction. Nếu migration lỗi, PostgreSQL hoàn tác việc xóa schema. Sau khi thành công, chạy `bun --filter api dev`. API tự nạp vai trò hệ thống và dữ liệu mẫu khi khởi động ở môi trường phát triển. Với PostgreSQL local, API còn tự tạo cuộc thi **CINEGEN Demo · Theo dõi bài dự thi** với 72 bài và dữ liệu đối sánh giả lập. Lệnh `db:migrate` tự seed sau khi áp dụng migration; API cũng kiểm tra seed khi khởi động.
 
 ### Xử lý lỗi thường gặp
 

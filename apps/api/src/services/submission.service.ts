@@ -26,6 +26,7 @@ import {
   users,
 } from "../db/schema";
 import { deleteFromR2, getR2SignedReadUrl, uploadToR2 } from "../r2";
+import { assertApprovalProof, lockSubmission, requireReviewable } from "./submission-proof";
 import { AppError } from "../utils/errors";
 import {
   ImageValidationError,
@@ -267,6 +268,81 @@ export interface CreateSubmissionInput {
   negativeProof: File | null;
 }
 
+async function checkSubmissionWindow(
+  executor: typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0],
+  contestId: string,
+  categoryId: string,
+  lock = false,
+) {
+  const contestQuery = executor
+    .select({
+      id: contests.id,
+      createdBy: contests.createdBy,
+      startAt: contests.startAt,
+      endAt: contests.endAt,
+      status: contests.status,
+      isDeleted: contests.isDeleted,
+    })
+    .from(contests)
+    .where(eq(contests.id, contestId))
+    .limit(1);
+  const [contest] = await (lock ? contestQuery.for("share") : contestQuery);
+
+  if (!contest || contest.isDeleted) {
+    throw AppError.notFound("Contest not found or unavailable");
+  }
+
+  const [category] = await executor
+    .select({ id: categories.id })
+    .from(categories)
+    .where(
+      and(
+        eq(categories.id, categoryId),
+        eq(categories.contestId, contestId),
+        eq(categories.isActive, true),
+      ),
+    )
+    .limit(1);
+
+  if (!category) {
+    throw AppError.badRequest("Category is inactive or does not belong to this contest");
+  }
+
+  if (!["scheduled", "open", "ongoing"].includes(contest.status.toLowerCase())) {
+    throw AppError.badRequest("Contest is not accepting submissions");
+  }
+
+  const now = new Date();
+  if (contest.startAt && now < contest.startAt) {
+    throw AppError.badRequest("Contest has not started yet");
+  }
+  if (contest.endAt && now >= contest.endAt) {
+    throw AppError.badRequest("MSG014: Submission deadline has passed");
+  }
+
+  return contest;
+}
+
+async function requireNoContestRole(
+  executor: typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0],
+  contestId: string,
+  participantId: string,
+  organizerId: string,
+) {
+  const [assignment] = await executor.select({ id: contestJudges.id })
+    .from(contestJudges)
+    .where(and(
+      eq(contestJudges.contestId, contestId),
+      eq(contestJudges.judgeId, participantId),
+      eq(contestJudges.isActive, true),
+    ))
+    .limit(1);
+
+  if (organizerId === participantId || assignment) {
+    throw AppError.forbidden("A contest organizer or assigned judge cannot submit to the same contest");
+  }
+}
+
 export async function createSubmission(input: CreateSubmissionInput) {
   const {
     participantId,
@@ -323,62 +399,9 @@ export async function createSubmission(input: CreateSubmissionInput) {
     throw AppError.forbidden("Account is unavailable");
   }
 
-  const [category] = await db
-    .select({ id: categories.id })
-    .from(categories)
-    .where(
-      and(
-        eq(categories.id, categoryId),
-        eq(categories.contestId, contestId),
-      ),
-    )
-    .limit(1);
+  const contest = await checkSubmissionWindow(db, contestId, categoryId);
 
-  if (!category) {
-    throw AppError.badRequest("Category does not belong to this contest");
-  }
-
-  const [contest] = await db
-    .select({
-      id: contests.id,
-      createdBy: contests.createdBy,
-      startAt: contests.startAt,
-      endAt: contests.endAt,
-      status: contests.status,
-      isDeleted: contests.isDeleted,
-    })
-    .from(contests)
-    .where(eq(contests.id, contestId))
-    .limit(1);
-
-  if (!contest || contest.isDeleted) {
-    throw AppError.notFound("Contest not found or unavailable");
-  }
-
-  if (!["open", "ongoing"].includes(contest.status.toLowerCase())) {
-    throw AppError.badRequest("Contest is not accepting submissions");
-  }
-
-  const now = new Date();
-  if (contest.startAt && now < contest.startAt) {
-    throw AppError.badRequest("Contest has not started yet");
-  }
-  if (contest.endAt && now >= contest.endAt) {
-    throw AppError.badRequest("Submission deadline has passed");
-  }
-
-  const [assignment] = await db.select({ id: contestJudges.id })
-    .from(contestJudges)
-    .where(and(
-      eq(contestJudges.contestId, contestId),
-      eq(contestJudges.judgeId, participantId),
-      eq(contestJudges.isActive, true),
-    ))
-    .limit(1);
-
-  if (contest.createdBy === participantId || assignment) {
-    throw AppError.forbidden("A contest organizer or assigned judge cannot submit to the same contest");
-  }
+  await requireNoContestRole(db, contestId, participantId, contest.createdBy);
 
   const id = crypto.randomUUID();
   const imageKey = `submissions/${participantId}/${id}.${validatedImage.extension}`;
@@ -407,6 +430,8 @@ export async function createSubmission(input: CreateSubmissionInput) {
     }
 
     await db.transaction(async (tx) => {
+      const currentContest = await checkSubmissionWindow(tx, contestId, categoryId, true);
+      await requireNoContestRole(tx, contestId, participantId, currentContest.createdBy);
       const frameKey = JSON.stringify([contestId, participantId, metadata.rollId, metadata.frameNumber]);
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${frameKey}, 0))`);
 
@@ -440,6 +465,7 @@ export async function createSubmission(input: CreateSubmissionInput) {
         description,
         imageOriginalPath: imageKey,
         negativeProofPath: proofKey,
+        proofType: proofKey ? "negative" : null,
         fileSizeBytes: BigInt(image.size),
         width: validatedImage.width,
         height: validatedImage.height,
@@ -491,16 +517,6 @@ export async function createSubmission(input: CreateSubmissionInput) {
 
 type ModerationActor = AuthEnv["Variables"]["user"];
 
-function requireMutableContest(contest: typeof contests.$inferSelect, actor: ModerationActor) {
-  if (contest.isDeleted || actor.role !== "Organizer" || contest.createdBy !== actor.id) {
-    throw AppError.notFound("Submission not found");
-  }
-
-  if (["published", "completed", "archived"].includes(contest.status.toLowerCase())) {
-    throw AppError.forbidden("Published submissions are read-only");
-  }
-}
-
 async function verifyApprovalReason(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   submission: { id: string; status: string },
@@ -525,24 +541,12 @@ export async function approveSubmission(
   reason?: string,
 ) {
   return db.transaction(async (tx) => {
-    const [submission] = await tx
-      .select({ id: submissions.id, status: submissions.status, contest: contests })
-      .from(submissions)
-      .innerJoin(contests, eq(contests.id, submissions.contestId))
-      .where(eq(submissions.id, submissionId))
-      .for("update")
-      .limit(1);
-
-    if (!submission) {
-      throw AppError.notFound("Submission not found");
-    }
-    requireMutableContest(submission.contest, actor);
-
-    if (
-      submission.status === "APPROVED" ||
-      submission.status === "APPROVED_FOR_JUDGING"
-    ) {
-      throw AppError.conflict("Submission has already been processed");
+    const submission = await lockSubmission(tx, submissionId);
+    requireReviewable(submission, actor);
+    await assertApprovalProof(tx, submission);
+    if (!submission.fileSizeBytes || submission.fileSizeBytes > BigInt(25 * MiB) ||
+        (submission.width ?? 0) < 2000 || (submission.height ?? 0) < 2000) {
+      throw AppError.conflict("BR-07: Submission does not meet the image requirements");
     }
 
     const approvalReason = reason?.trim() ?? "";
@@ -590,25 +594,8 @@ export async function rejectSubmission(
   reason: string,
 ) {
   return db.transaction(async (tx) => {
-    const [submission] = await tx
-      .select({ id: submissions.id, status: submissions.status, contest: contests })
-      .from(submissions)
-      .innerJoin(contests, eq(contests.id, submissions.contestId))
-      .where(eq(submissions.id, submissionId))
-      .for("update")
-      .limit(1);
-
-    if (!submission) {
-      throw AppError.notFound("Submission not found");
-    }
-    requireMutableContest(submission.contest, actor);
-
-    if (
-      submission.status === "DISQUALIFIED" ||
-      submission.status === "DISQUALIFIED_NO_PROOF"
-    ) {
-      throw AppError.conflict("Submission has already been processed");
-    }
+    const submission = await lockSubmission(tx, submissionId);
+    requireReviewable(submission, actor);
 
     const [updated] = await tx
       .update(submissions)
@@ -647,78 +634,7 @@ export async function rejectSubmission(
   });
 }
 
-export type ModerationAction =
-  | "APPROVE_FOR_JUDGING"
-  | "DISQUALIFY"
-  | "REQUEST_PROOF"
-  | "OVERRIDE_AI_FLAG";
-
-export async function moderateSubmission(
-  submissionId: string,
-  actor: ModerationActor,
-  action: ModerationAction,
-  reasonText: string,
-) {
-  return db.transaction(async (tx) => {
-    const [submission] = await tx
-      .select({ id: submissions.id, status: submissions.status, contest: contests })
-      .from(submissions)
-      .innerJoin(contests, eq(contests.id, submissions.contestId))
-      .where(eq(submissions.id, submissionId))
-      .for("update")
-      .limit(1);
-
-    if (!submission) {
-      throw AppError.notFound("Submission not found");
-    }
-    requireMutableContest(submission.contest, actor);
-
-    let loggedAction = action;
-    let newStatus = submission.status;
-    let rejectionReason: string | undefined;
-
-    if (action === "APPROVE_FOR_JUDGING" || action === "OVERRIDE_AI_FLAG") {
-      if (await verifyApprovalReason(tx, submission, reasonText)) loggedAction = "OVERRIDE_AI_FLAG";
-      newStatus = "APPROVED";
-      rejectionReason = undefined;
-    } else if (action === "DISQUALIFY") {
-      newStatus = "DISQUALIFIED";
-      rejectionReason = reasonText;
-    } else if (action === "REQUEST_PROOF") {
-      newStatus = "PROOF_REQUESTED";
-    }
-
-    const [updated] = await tx
-      .update(submissions)
-      .set({
-        status: newStatus,
-        ...(action === "APPROVE_FOR_JUDGING" ||
-          action === "OVERRIDE_AI_FLAG" ||
-          action === "DISQUALIFY"
-          ? { rejectionReason: rejectionReason ?? null }
-          : {}),
-        updatedAt: new Date(),
-      })
-      .where(eq(submissions.id, submissionId))
-      .returning({
-        id: submissions.id,
-        status: submissions.status,
-        rejectionReason: submissions.rejectionReason,
-        updatedAt: submissions.updatedAt,
-      });
-
-    await tx.insert(submissionModerationLogs).values({
-      submissionId,
-      moderatorId: actor.id,
-      action: loggedAction,
-      reason: reasonText || "Action performed by organizer",
-      previousStatus: submission.status,
-      newStatus,
-    });
-
-    return updated;
-  });
-}
+export type ModerationAction = "APPROVE_FOR_JUDGING" | "DISQUALIFY" | "REQUEST_PROOF" | "OVERRIDE_AI_FLAG";
 
 function reviewPreviewUrl(path: string) {
   const url = URL.parse(path);

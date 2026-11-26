@@ -280,7 +280,7 @@ export async function seed() {
 
   const database = URL.parse(Bun.env.DATABASE_URL ?? "");
   const isLocalDatabase = database && ["localhost", "127.0.0.1", "[::1]"].includes(database.hostname);
-  if (isLocalDatabase && database.pathname === "/cinegen_acceptance_test") {
+  if (isLocalDatabase && /^\/cinegen_acceptance_(?:test|verify(?:_[a-z0-9]+)?)$/.test(database.pathname)) {
     const { seedAcceptance } = await import("./seed-acceptance");
     await seedAcceptance();
     return;
@@ -302,5 +302,4 @@ export async function seed() {
   if (isLocalDatabase) await seedDemoSubmissions();
 
   console.log(`[Seed] Dữ liệu mẫu: ${isLocalDatabase ? 3 : 2} cuộc thi.`);
-  console.log("[Seed] Mật khẩu mặc định: password123.");
 }

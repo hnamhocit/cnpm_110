@@ -3,6 +3,13 @@ import { bodyLimit } from "hono/body-limit";
 
 import {
   handleApproveSubmission,
+  handleGetContestNotifications,
+  handleGetSubmissionFeedback,
+  handleGetSubmissionProofDetail,
+  handleGetSubmissionProofImage,
+  handleRequestSubmissionProof,
+  handleUploadSubmissionProof,
+  handleVerifySubmissionProof,
   handleCreateSubmission,
   handleGetMySubmissions,
   handleGetSubmissionComparison,
@@ -41,6 +48,18 @@ route.post(
   }),
   handleCreateSubmission,
 );
+
+route.get("/my/notifications", authenticate, requirePermission("submissions:read_own"), handleGetContestNotifications);
+route.get("/:id/feedback", authenticate, requirePermission("submissions:read_own"), handleGetSubmissionFeedback);
+route.get("/:id/result", authenticate, requirePermission("submissions:read_own"), handleGetSubmissionFeedback);
+route.get("/:id", authenticate, handleGetSubmissionProofDetail);
+route.get("/:id/proof/image", authenticate, handleGetSubmissionProofImage);
+route.post("/:id/request-proof", authenticate, requirePermission("submissions:moderate"), handleRequestSubmissionProof);
+route.post("/:id/proof", authenticate, requirePermission("submissions:read_own"), bodyLimit({
+  maxSize: 21 * MiB,
+  onError: () => { throw new AppError("Proof request exceeds 21 MiB", 413); },
+}), handleUploadSubmissionProof);
+route.post("/:id/verify-proof", authenticate, requirePermission("submissions:moderate"), handleVerifySubmissionProof);
 
 route.post(
   "/:id/approve",

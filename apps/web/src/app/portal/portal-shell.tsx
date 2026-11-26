@@ -5,6 +5,7 @@ import {
   ClipboardCheck,
   Database,
   LayoutDashboard,
+  Sparkles,
   Trophy,
   Users,
 } from "lucide-react";
@@ -15,8 +16,15 @@ import { useEffect, useState } from "react";
 import { BrandMark } from "@/components/brand-mark";
 import Header from "../components/portal/Header";
 
+type MenuItem = {
+  label: string;
+  href: string;
+  icon: typeof Sparkles;
+  roles?: string[];
+};
+
 // Các mục điều hướng của Portal
-const menuItems = [
+const menuItems: MenuItem[] = [
   { label: "Dashboard", href: "/portal", icon: LayoutDashboard },
   { label: "Contests", href: "/portal/contests", icon: Trophy },
   { label: "Judges", href: "/portal/contests/judges", icon: Users },
@@ -26,10 +34,16 @@ const menuItems = [
     icon: ClipboardCheck,
   },
   { label: "Reports", href: "/portal/reports", icon: BarChart3 },
+  {
+    label: "Cấu hình AI",
+    href: "/portal/ai-settings",
+    icon: Sparkles,
+    roles: ["Admin", "Organizer"],
+  },
 ];
 
 // Master Data chỉ dành cho Administrator (BR-02).
-const adminMenuItems = [
+const adminMenuItems: MenuItem[] = [
   { label: "Master Data", href: "/portal/master-data", icon: Database },
 ];
 
@@ -41,24 +55,30 @@ type SidebarProps = {
 // Component Sidebar phong cách SaaS hiện đại đồng bộ theme
 function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     fetch("/api/auth/me", { cache: "no-store" })
       .then((response) => (response.ok ? response.json() : null))
       .then((data: { user?: { role?: string | null } } | null) => {
-        if (active) setIsAdmin(data?.user?.role === "Admin");
+        if (active) setRole(data?.user?.role ?? null);
       })
       .catch(() => {
-        if (active) setIsAdmin(false);
+        if (active) setRole(null);
       });
     return () => {
       active = false;
     };
   }, []);
 
-  const visibleItems = isAdmin ? [...menuItems, ...adminMenuItems] : menuItems;
+  const isAdmin = role === "Admin";
+  const visibleItems = [
+    ...menuItems.filter(
+      (item) => !item.roles || item.roles.includes(role ?? ""),
+    ),
+    ...(isAdmin ? adminMenuItems : []),
+  ];
 
   return (
     <aside className="flex h-full w-full flex-col overflow-y-auto bg-brand-ink px-4 py-6 text-white border-r border-slate-800">
