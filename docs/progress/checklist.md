@@ -33,7 +33,7 @@ Module Owner chịu trách nhiệm theo dõi và nghiệm thu module, không m�
 | Nam Nguyễn | M01, M03, M09 | 11, 12, 13, 14, 15, 16, 21, 22, 26, 27, 41 | — | — | 6/9 |
 | Hà Đức Bình | M06, M10 | 09, 19, 20, 24, 25, 29, 31, 32, 33, 28 (AI/VERIFY) | — | — | 0/6 |
 | Vĩ Nguyễn | M11 | — | 06, 07, 08, 09, 10, 11, 12, 13, 14, 19, 20, 21, 22, 26, 27, 28 | — | 0/8 |
-| Phạm Tiến Thành Nhân | M07, M08 | — | 15, 16, 17, 24, 25, 29, 30, 31, 32, 33, 43 | — | 0/6 |
+| Phạm Tiến Thành Nhân | M07, M08 | — | 15, 16, 17, 24, 25, 29, 30, 31, 32, 33, 43 | — | 3/6 |
 | Dương Nguyễn | M05 | 17, 34, 37, 39, 43 | 34, 37, 39, 41 | 34, 37, 39, 41, 43 | 0/12 |
 | Huỳnh Trần Gia Bảo | M02, M04 | 06, 07, 08, 10, 35, 36, 38, 42 | 35, 36, 38, 42 | 06, 07, 08, 21, 35, 36, 38, 42 | 0/13 |
 
@@ -100,9 +100,9 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 | UC-12 | Update Contest Configuration | Nam / Vĩ / — | DONE | PARTIAL | | |
 | UC-13 | Manage Contest Categories | Nam / Vĩ / — | DONE | PARTIAL | | |
 | UC-14 | Configure Judging Criteria | Nam / Vĩ / — | DONE | PARTIAL | | |
-| UC-15 | Manage Judging Rounds | Nam / Nhân / — | DONE | PARTIAL | | |
-| UC-16 | Assign Judges to Categories | Nam / Nhân / — | DONE | PARTIAL | | |
-| UC-17 | View Participant Registrations | Dương / Nhân / — | TODO | TODO | | |
+| UC-15 | Manage Judging Rounds | Nam / Nhân / — | DONE | DONE | | |
+| UC-16 | Assign Judges to Categories | Nam / Nhân / — | DONE | DONE | | |
+| UC-17 | View Participant Registrations | Dương / Nhân / — | TODO | DONE | | |
 | UC-34 | Browse & Register for Contests | Dương / Dương / Dương | PARTIAL | PARTIAL | | |
 
 | UC | Tiêu chí PASS | Còn cần nghiệm thu |
@@ -170,13 +170,13 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 
 | UC | Chức năng | Backend / Web / Mobile | Backend đạt | Toàn luồng | GV đạt | GV chưa đạt |
 | --- | --- | --- | --- | --- | --- | --- |
-| UC-24 | Monitor Judging Progress | Bình / Nhân / — | DONE | PARTIAL | | |
-| UC-25 | Finalize Judging Round | Bình / Nhân / — | PARTIAL | PARTIAL | | |
-| UC-29 | View Assigned Submissions | Bình / Nhân / — | PARTIAL | PARTIAL | | |
-| UC-30 | Inspect High-Res Image & Film Metadata | DONE (chủ API chưa xác minh) / Nhân / — | DONE | PARTIAL | | |
-| UC-31 | Score & Comment on Submission | Bình / Nhân / — | PARTIAL | PARTIAL | | |
-| UC-32 | Update Evaluation Score | Bình / Nhân / — | PARTIAL | PARTIAL | | |
-| UC-33 | Lock & Confirm Final Evaluations | Bình / Nhân / — | PARTIAL | PARTIAL | | |
+| UC-24 | Monitor Judging Progress | Bình / Nhân / — | DONE | DONE | | |
+| UC-25 | Finalize Judging Round | Bình / Nhân / — | PARTIAL | DONE | | |
+| UC-29 | View Assigned Submissions | Bình / Nhân / — | PARTIAL | DONE | | |
+| UC-30 | Inspect High-Res Image & Film Metadata | DONE (chủ API chưa xác minh) / Nhân / — | DONE | DONE | | |
+| UC-31 | Score & Comment on Submission | Bình / Nhân / — | PARTIAL | DONE | | |
+| UC-32 | Update Evaluation Score | Bình / Nhân / — | PARTIAL | DONE | | |
+| UC-33 | Lock & Confirm Final Evaluations | Bình / Nhân / — | PARTIAL | DONE | | |
 
 | UC | Tiêu chí PASS | Còn cần nghiệm thu |
 | --- | --- | --- |
