@@ -159,7 +159,7 @@ Mã FPC là mã công việc nội bộ, đánh số liên tục; không phải 
 | FPC-129 | AI | M06/M11 · UC-09,19,20,28: Kiểm thử ảnh thật, AI Analytics thật và xử lý lỗi | Hà Đức Bình | TODO |
 | FPC-130 | Lead | M09: Đồng bộ OpenAPI và kiểm soát thay đổi hợp đồng | Nam Nguyễn | TODO |
 | FPC-131 | Backend | M10: Hoàn thiện schema, migration, storage và quyền truy cập theo UC | Hà Đức Bình | TODO |
-| FPC-132 | Backend | M11: Hoàn thiện email/thông báo và audit dùng chung theo SRS | Nam Nguyễn | TODO |
+| FPC-132 | Backend | M11: Hoàn thiện email/thông báo và audit dùng chung theo SRS | Nam Nguyễn | IN REVIEW |
 | FPC-133 | Integration | Nghiệm thu toàn bộ 35 UC còn lại và hồi quy 8 UC đã đạt; Feature Freeze | Cả nhóm | TODO |
 | FPC-134 | Backend | Chuẩn bị và kiểm chứng dữ liệu mẫu phục vụ demo (seed, không dùng mock thay API) | Nam Nguyễn | IN REVIEW |
 

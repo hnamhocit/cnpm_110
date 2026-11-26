@@ -128,8 +128,8 @@ Phân phối bài ẩn danh, chấm độc lập, khóa phiếu và chốt vòng
 
 | UC ID | Chức năng | Tiêu chí nghiệm thu | Trạng thái nhóm | GV đạt | GV chưa đạt | Ghi chú |
 | --- | --- | --- | --- | --- | --- | --- |
-| UC-24 | Monitor Judging Progress | Theo từng vòng và Judge, đối chiếu số bài được giao, số bài đã chấm và trạng thái xác nhận điểm. (SRS §2.2) | PARTIAL |  |  |  |
-| UC-25 | Finalize Judging Round | Thử chốt khi còn phiếu bắt buộc chưa xác nhận. Khi đủ, khóa vòng, xếp theo điểm trung bình có trọng số và chọn đúng số bài đi tiếp. (BR-14/25) | PARTIAL |  |  |  |
+| UC-24 | Monitor Judging Progress | Theo từng vòng và Judge, đối chiếu số bài được giao, số bài đã chấm và trạng thái xác nhận điểm. (SRS §2.2) | PARTIAL (Backend DONE) |  |  | Đã sửa owner và tách tiến độ theo vòng, regression 2026-11-26 đạt. |
+| UC-25 | Finalize Judging Round | Thử chốt khi còn phiếu bắt buộc chưa xác nhận. Khi đủ, khóa vòng, xếp theo điểm trung bình có trọng số và chọn đúng số bài đi tiếp. (BR-14/25) | PARTIAL |  |  | Chốt/chuyển vòng và transaction đã sửa, regression đạt. Còn hợp đồng xác nhận đồng điểm tại ranh giới đi tiếp. |
 | UC-29 | View Assigned Submissions | Judge chỉ thấy bài được giao. Kiểm tra cả UI lẫn phản hồi API đều ẩn tên, email, avatar, ID và dữ liệu định danh tác giả. (BR-12, CR-03) | PARTIAL |  |  |  |
 | UC-30 | Inspect High-Res Image & Film Metadata | Judge phóng to ảnh scan độ phân giải cao và xem metadata chụp/tráng/scan. Kiểm tra ảnh và dữ liệu giữ ẩn danh. (SRS §2.2–3, BR-12) | PARTIAL (Backend DONE) |  |  |  |
 | UC-31 | Score & Comment on Submission | Chấm theo từng tiêu chí và lưu nhận xét. Đối chiếu tổng điểm có trọng số. Thử xem điểm/nhận xét của Judge khác trước khi vòng kết thúc. (BR-13/15) | PARTIAL |  |  |  |
@@ -307,3 +307,49 @@ Theo xác nhận của chủ sở hữu, nhánh gộp FPC-109/FPC-113 bàn giao 
 
 
 Backend 11 UC đã có bằng chứng 13 test integration đạt ngày 2026-11-26, xem bảng bằng chứng trong checklist. FPC-130 để sau theo quyết định chủ sở hữu.
+
+### Review tích hợp develop theo SRS ngày 2026-11-26
+
+Kiểm tra trên commit 9a30725. Bộ 13 test cho 11 UC của Nam chưa bao phủ route UC-24/25 được đưa vào từ develop. Các phát hiện bên dưới đã được sửa trong phiên tiếp theo, xem kết quả xác minh sau bảng.
+
+| Mức độ | Phạm vi | Phát hiện và căn cứ |
+| --- | --- | --- |
+| Cao | UC-24, BR-02, CR-03 | GET /contests/{id}/judging-progress chỉ kiểm tra permission chung. getJudgingProgress không nhận actor và không kiểm tra createdBy nên Organizer khác có thể đọc tiến độ và danh tính Judge của cuộc thi. |
+| Cao | UC-25/26, BR-06/14/16/25 | closeJudgingRound ghi contests.status=PUBLISHED trực tiếp, bỏ qua publishContestResults. Không khóa judgingRounds, không chọn bài đi tiếp, không lưu snapshot kết quả, không kiểm tra hạn công bố và proof. Có thể làm luồng publish-results bị chặn do trạng thái đã đổi. |
+| Cao | UC-24/25, BR-14/25 | getJudgingProgress gom assignment, bài APPROVED và evaluation toàn cuộc thi, không lọc roundId. Cuộc thi nhiều vòng có thể đếm lặp điểm vòng cũ, sai số bài được giao và trạng thái hoàn tất. |
+| Vừa | UC-25, BR-14 | closeJudgingRound yêu cầu xử lý DISCREPANCY_CONFLICT theo thiết kế lịch sử. SRS hiện hành và Module 07 mục Phạm vi theo SRS dùng chốt/chuyển vòng, không yêu cầu quy trình phúc khảo độ lệch. |
+| Cao | UC-25, SRS §5 | Kiểm tra phiếu và cập nhật trạng thái trong closeJudgingRound chạy ngoài transaction/row lock nên có khoảng trống đồng thời giữa kiểm tra và ghi. |
+
+Kết quả sau sửa: tiến độ và chốt vòng kiểm tra owner, nhận roundId tùy chọn, mặc định chọn vòng đang chạy hoặc vòng cuối. Chỉ đếm entry/evaluation của vòng, kiểm tra đủ tiêu chí và phiếu xác nhận. Chốt vòng và chọn bài đi tiếp chạy trong một transaction với row lock cuộc thi. Vòng cuối chỉ khóa judgingRounds, không đổi cuộc thi sang PUBLISHED và không tạo snapshot. API UC-26 tiếp tục chịu trách nhiệm công bố, hạn công bố và proof. Đã bỏ điều kiện DISCREPANCY_CONFLICT khỏi chốt vòng.
+
+Regression đạt 14/14 integration test với 77 assertions, 39 test hiện có, TypeScript và git diff --check. Test xác nhận O2 bị chặn ở cả hai route, chặn phiếu chưa xác nhận, retry chốt vòng giữ nguyên, không công bố sớm, chọn đúng bài điểm cao nhất và vòng tiếp theo không đếm điểm vòng cũ.
+
+UC-24 ghi Backend DONE trong phạm vi test này. UC-25 giữ PARTIAL vì trường hợp đồng điểm ngay ranh giới đi tiếp đang trả 409 để Organizer xử lý, còn thiếu hợp đồng xác nhận thứ hạng kèm lý do cho ranh giới này. Không tự chọn ngẫu nhiên bài đồng điểm. FPC-130 để sau theo yêu cầu chủ sở hữu.
+
+
+## FPC-132 · Email, Notification, Audit · 2026-11-26
+
+Nhánh feature/FPC-132-email-notification-audit bao gồm sửa chốt vòng chưa push và dịch vụ dùng chung. Migration 0006 thêm AuditLog, outbox email và trigger cùng transaction. Middleware ghi actor cho request xác thực; webhook/worker AI có actor hệ thống null. SMTP dùng cấu hình hiện có, worker tự xử lý mỗi 30 giây hoặc chạy bun --filter api notifications:deliver.
+
+| Test | Kết quả | Bằng chứng |
+| --- | --- | --- |
+| N132-01 | PASS SMTP thật | Gửi đến hnamhocit@gmail.com theo cho phép của chủ sở hữu. Gmail Inbox có message 1a2181114edc720b lúc 2026-11-26 13:35 UTC. Đúng bài 39524ad4-1a3a-4a3d-a95d-4765e0d476ff, contact_sheet, hạn 2026-11-27T13:35:00.550Z. Fixture riêng dùng hạn tương lai thay ngày ví dụ trong checklist ảnh. |
+| N132-02 | PASS Backend | API đọc thông báo của P1 có đúng submissionId và hạn đã lưu; đọc chi tiết bài theo ID có kiểm tra owner. |
+| N132-03 | PASS | P2 không nhận notification riêng của P1; tài khoản Judge bị 403 khi gọi endpoint Participant. |
+| N132-04 | PASS | O2 bị 404, deadline quá khứ bị 400; không có notification/outbox thành công cho request bị từ chối. |
+| N132-05 | PASS | Đẩy deadline fixture về quá khứ, API trả OVERDUE và vẫn PROOF_REQUESTED. Không tự tạo sự kiện DISQUALIFIED. |
+| N132-06 | PASS | Duyệt và loại có notification SUBMISSION_STATUS đúng P1, trạng thái đã lưu và lý do loại. |
+| N132-07 | PASS Backend | Công bố snapshot 8.55 từ điểm thật, notification chỉ có P1 trong vòng cuối của C1; retry snapshot không tạo thêm sự kiện. |
+| N132-08 | PASS | Sender lỗi có kiểm soát lưu FAILED với last_error cố định, không chứa chuỗi secret từ provider; nghiệp vụ và notification vẫn đã lưu. |
+| N132-09 | PASS | Retry chuyển FAILED sang SENT; lượt sau không gửi lại và không tạo thêm notification. SMTP crash sau khi nhận nhưng trước commit có thể gửi email lặp, đã mô tả rõ cơ chế at-least-once. |
+| N132-10 | PASS | Audit INSERT/UPDATE Contest đúng O1, old name UC integration và new name updated. |
+| N132-11 | PASS | Audit đổi trạng thái proof, xác minh và duyệt đúng actor; moderation log có reason và trạng thái trước/sau. |
+| N132-12 | PASS | Loại thiếu lý do trả 422 đúng OpenAPI và không thêm audit thành công. Loại hợp lệ lưu Missing requested proof trong AuditLog và notification. |
+| N132-13 | PASS | Audit contest_publications đúng O1, C1 và entries[0].finalScore=8.55. Snapshot lưu tie_breaks cho quyết định đồng điểm theo UC-26. |
+| N132-14 | PASS tích hợp | Gọi API AI webhook thật bằng secret test và API Judge chấm điểm. Trigger AuditLog ghi phân tích AI và phiếu Judge đúng nội dung, Judge có actor J1. Không viết lại API của owner khác. |
+| N132-15 | PASS | Request sai owner bị chặn và không có audit mutation thành công của O2; rollback request lỗi giữ dữ liệu nhất quán. |
+| N132-16 | PARTIAL | Notification kiểm tra RBAC/recipient; audit_safe_json loại khóa bí mật đệ quy, lỗi SMTP không lộ secret. Nghiệm thu quyền HTTP đọc AuditLog chờ UC-10/FPC-125 vì route tra cứu thuộc công việc khác. |
+
+Bộ regression cuối đạt 16 test, 120 assertions, 1 ca live SMTP bỏ qua mặc định để tránh gửi lại thư. Ca SMTP thật đã chạy riêng thành công trong lượt có LIVE_SMTP_TO. 39 test API hiện có, TypeScript, db:check và git diff --check đạt. Migration đã áp dụng trên cinegen_acceptance_test. Đã xác nhận Inbox bằng Gmail connector, không chỉ dựa vào kết quả SMTP.
+
+FPC-132 Backend đã triển khai các kênh email/in-app và audit ghi dùng chung. Giữ PARTIAL nghiệm thu do N132-16 cần tích hợp route UC-10 của FPC-125. Push notification không bắt buộc. FPC-130 để sau theo quyết định chủ sở hữu.

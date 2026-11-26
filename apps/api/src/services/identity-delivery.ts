@@ -6,7 +6,7 @@ export interface IdentityDelivery {
   passwordReset(to: string, token: string): Promise<void>;
 }
 
-async function sendEmail(to: string, subject: string, message: string) {
+export async function sendEmail(to: string, subject: string, message: string) {
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM } = Bun.env;
   const port = Number(SMTP_PORT || 587);
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASSWORD || !SMTP_FROM) {

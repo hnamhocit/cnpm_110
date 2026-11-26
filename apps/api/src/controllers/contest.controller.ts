@@ -287,14 +287,14 @@ export async function handleDeleteContest(c: Context<AuthEnv>) {
 
 export async function handleGetJudgingProgress(c: Context<AuthEnv>) {
   const { id } = c.req.param();
-  const data = await getJudgingProgress(id);
+  const data = await getJudgingProgress(resourceId(id), c.get("user").id, c.req.query("roundId") ? resourceId(c.req.query("roundId")) : undefined);
   return c.ok(data, "Judging progress retrieved successfully");
 }
 
 export async function handleCloseJudgingRound(c: Context<AuthEnv>) {
   const { id } = c.req.param();
-  const data = await closeJudgingRound(id, c.get("user"));
-  return c.ok(data, "Judging round closed and results published (BR-16)");
+  const data = await closeJudgingRound(resourceId(id), c.get("user").id, c.req.query("roundId") ? resourceId(c.req.query("roundId")) : undefined);
+  return c.ok(data, "Judging round finalized");
 }
 
 function resourceId(value: string | undefined) {

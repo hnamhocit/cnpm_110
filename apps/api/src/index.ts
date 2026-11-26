@@ -21,6 +21,7 @@ import uploadRoute from "./routes/upload.route";
 import { AppError } from "./utils/errors";
 import { attachResponseHelpers, errorResponse } from "./utils/result";
 import { seed } from "./db/seed";
+import { startNotificationDelivery } from "./services/notification-delivery";
 
 const app = new Hono();
 
@@ -80,6 +81,7 @@ const server = Bun.serve({
 
 console.log(`Server running on http://localhost:${server.port}`);
 
+const stopNotificationDelivery = startNotificationDelivery();
 let isShuttingDown = false;
 
 const shutdown = async (signal: string) => {
@@ -89,6 +91,7 @@ const shutdown = async (signal: string) => {
   console.log(`\nReceived ${signal}, shutting down gracefully...`);
 
   try {
+    await stopNotificationDelivery();
     await server.stop();
     console.log("HTTP server closed.");
     process.exit(0);
