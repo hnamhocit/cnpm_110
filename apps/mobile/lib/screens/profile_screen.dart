@@ -340,9 +340,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final authState = ref.watch(authProvider);
     final portfolioAsync = ref.watch(userPortfolioProvider);
 
-    final displayName = authState.fullName?.trim().isNotEmpty == true
+    final portfolio = portfolioAsync.asData?.value;
+    final avatarUrl = portfolio?.avatarUrl;
+    final displayName = portfolio?.fullName ?? (authState.fullName?.trim().isNotEmpty == true
         ? authState.fullName!.trim()
-        : (authState.email?.split('@').first ?? 'Người dùng');
+        : (authState.email?.split('@').first ?? 'Người dùng'));
     final email = authState.email ?? 'Chưa cập nhật email';
     final avatarLetter = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
 
@@ -388,6 +390,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       radius: 38,
                       backgroundColor: colorScheme.primary,
                       foregroundColor: colorScheme.onPrimary,
+                      foregroundImage: avatarUrl == null ? null : NetworkImage(avatarUrl),
+                      onForegroundImageError: avatarUrl == null ? null : (_, _) {},
                       child: Text(
                         avatarLetter,
                         style: const TextStyle(

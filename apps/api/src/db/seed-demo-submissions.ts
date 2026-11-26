@@ -1,7 +1,6 @@
-import { and, eq, like } from "drizzle-orm";
-import { db, pool } from "./index";
+import { and, eq, like, sql } from "drizzle-orm";
+import { db } from "./index";
 import { categories, contests, filmMetadata, roles, submissionAiAnalyses, submissions, userRoles, users } from "./schema";
-import { seed } from "./seed";
 
 const demoName = "CINEGEN Demo · Theo dõi bài dự thi";
 const statuses = ["PENDING_AI", "VERIFIED", "SUSPICIOUS", "FLAGGED", "APPROVED", "DISQUALIFIED"] as const;
@@ -11,18 +10,9 @@ const photoIds = [
   "1507525428034-b723cf961d3e",
 ];
 
-try {
-  const database = new URL(Bun.env.DATABASE_URL ?? "");
-  if (
-    Bun.env.NODE_ENV === "production" ||
-    !["localhost", "127.0.0.1", "[::1]"].includes(database.hostname) ||
-    database.pathname !== "/cinegen_demo"
-  ) {
-    throw new Error("Demo seed requires the local cinegen_demo database");
-  }
-
-  await seed();
+export async function seedDemoSubmissions() {
   const added = await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${demoName}))`);
     const [existing] = await tx.select({ id: contests.id }).from(contests).where(eq(contests.name, demoName));
     if (existing) return 0;
 
@@ -120,6 +110,4 @@ try {
   }
 
   console.log(added ? `Added ${added} demo submissions.` : "Demo submissions already exist.");
-} finally {
-  await pool.end();
 }

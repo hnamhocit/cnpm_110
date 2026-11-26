@@ -52,10 +52,11 @@ Các lệnh cơ bản:
 ```bash
 # Áp dụng migrations tạo các bảng users, roles, permissions...
 bun --filter api db:migrate
-
-# Seed dữ liệu mặc định (Admin, Organizer, Judge, Participant)
-bun --filter api db:seed
 ```
+
+API tự nạp vai trò hệ thống khi khởi động. Môi trường phát triển cũng tự nạp tài khoản và cuộc thi mẫu.
+
+Nếu database local cũ lệch schema và có thể xóa, chạy `bun --filter api db:reset --confirm=cinegen` với tên database thực tế. Lệnh xóa dữ liệu trong schema `public` và chạy lại migration. Xem [hướng dẫn reset và xử lý lỗi](./README-DATABASE.md#6-reset-và-migrate-database-local).
 
 ### 4. Khởi chạy Development Server
 
@@ -85,13 +86,22 @@ API Server lắng nghe tại cổng: **[http://localhost:8080](http://localhost:
 | `bun --filter api test:integration` | Chạy integration test Auth trên PostgreSQL |
 | `bun --filter api db:generate`      | Sinh file SQL migration mới từ schema                |
 | `bun --filter api db:migrate`       | Áp dụng migration vào PostgreSQL                     |
-| `bun --filter api db:seed`          | Nạp dữ liệu vai trò ban đầu                          |
+| `bun --filter api db:reset --confirm=cinegen` | Xóa schema `public` của database local rồi chạy lại migration |
 
 ## Xác thực định danh và khôi phục mật khẩu
 
 Áp dụng migration trước khi chạy API. Với môi trường triển khai, đặt `NODE_ENV=production` để chỉ seed role hệ thống khi khởi động.
 
 - Email dùng Nodemailer với `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` và địa chỉ gửi `SMTP_FROM`. Cổng 465 dùng TLS ngay khi kết nối. Cổng khác yêu cầu STARTTLS. [Nodemailer SMTP](https://nodemailer.com/smtp)
-- `PASSWORD_RESET_URL` là URL HTTPS của màn đặt lại mật khẩu. Backend thêm tham số `token` vào link. Màn client gửi token, mật khẩu mới và xác nhận đến `POST /api/v1/auth/reset-password`.
+- `PASSWORD_RESET_URL` trỏ đến màn đặt lại mật khẩu, ví dụ `http://localhost:3000/auth/reset-password` khi phát triển cục bộ. Production yêu cầu HTTPS. Backend thêm tham số `token` vào link. Màn client gửi token, mật khẩu mới và xác nhận đến `POST /api/v1/auth/reset-password`.
 
 Đăng ký tạo tài khoản chờ xác thực. Client xác thực mã email rồi đăng nhập. Số điện thoại là tùy chọn. Xem [Module 01](../../docs/ai/01-auth-and-rbac.md#4-shared-api-contracts-dùng-chung-cho-web--mobile). Integration test inject bộ gửi giả và cần PostgreSQL test có migration. Dùng `bun --filter api test:integration` với `DATABASE_URL` và `TEST_DB_NAME` trỏ vào database test.
+
+## Dữ liệu demo UC-40
+
+Sau khi migrate hoặc reset PostgreSQL local, khởi động API để tự tạo cuộc thi **CINEGEN Demo · Theo dõi bài dự thi**. Cuộc thi có 72 bài với sáu trạng thái, metadata phim, lý do bị loại và nhiều thí sinh để kiểm tra phạm vi truy cập. Có thể dùng `bun --filter api db:seed:demo` để chuẩn bị dữ liệu trước khi bật API nếu database local có tên `cinegen_demo`. Demo dùng ảnh minh họa công khai. Các bài bị gắn cờ có thêm kết quả đối sánh giả lập để trình diễn UC-20, và giao diện ghi rõ dữ liệu demo. Seed không tạo ảnh âm bản hay contact sheet.
+
+- Organizer dùng `organizer.test@example.com` để duyệt bài **DEMO · Bài chờ Organizer duyệt**.
+- Participant dùng `participant.test@example.com` để xem bài, làm mới trạng thái và xem lý do bị loại. `participant.demo2@example.com` dùng để kiểm tra bài thuộc một thí sinh khác.
+- Mật khẩu tài khoản demo là `password123`. Database demo chỉ dùng trên máy local.
+- Khi chuyển database, khởi động lại API để tạo kết nối theo cấu hình mới.

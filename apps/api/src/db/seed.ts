@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "./index";
+import { seedDemoSubmissions } from "./seed-demo-submissions";
 import {
   categories,
   contests,
@@ -296,16 +297,9 @@ export async function seed() {
 
   await seedOngoingContest(organizerUserId, participantUserId);
   await seedPublishedContest(organizerUserId, participantUserId);
-}
 
-if (import.meta.main) {
-  seed()
-    .then(() => {
-      console.log("Seed completed.");
-      process.exit(0);
-    })
-    .catch((err) => {
-      console.error("Seed failed:", err);
-      process.exit(1);
-    });
+  const database = URL.parse(Bun.env.DATABASE_URL ?? "");
+  if (database && ["localhost", "127.0.0.1", "[::1]"].includes(database.hostname)) {
+    await seedDemoSubmissions();
+  }
 }

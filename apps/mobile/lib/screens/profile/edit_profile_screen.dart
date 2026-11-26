@@ -6,6 +6,7 @@ import '../../core/components/custom_button.dart';
 import '../../core/components/custom_input_field.dart';
 import '../../core/providers/api_client_provider.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/portfolio_provider.dart';
 import '../../core/utils/validators.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -18,18 +19,43 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
+  final _avatarController = TextEditingController();
   bool _isLoading = false;
+  bool _loadingAvatar = true;
+  bool _avatarLoaded = false;
 
   @override
   void initState() {
     super.initState();
     final authState = ref.read(authProvider);
     _nameController = TextEditingController(text: authState.fullName ?? '');
+    _loadAvatar();
+  }
+
+  Future<void> _loadAvatar() async {
+    try {
+      final response = await ref.read(apiClientProvider).dio.get<Map<String, dynamic>>(
+        '/api/v1/users/me',
+      );
+      if (!mounted) return;
+      final user = response.data?['data']?['user'] as Map<String, dynamic>?;
+      if (user == null) return;
+      _avatarController.text = user['avatarUrl'] as String? ?? '';
+      if (_nameController.text.isEmpty) {
+        _nameController.text = user['fullName'] as String? ?? '';
+      }
+      _avatarLoaded = true;
+    } on DioException {
+      // The name form remains available if the avatar cannot be loaded.
+    } finally {
+      if (mounted) setState(() => _loadingAvatar = false);
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _avatarController.dispose();
     super.dispose();
   }
 
@@ -44,10 +70,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         '/api/v1/users/me/profile',
         data: <String, dynamic>{
           'fullName': _nameController.text.trim(),
+          if (_avatarLoaded)
+            'avatarUrl': _avatarController.text.trim().isEmpty
+                ? null
+                : _avatarController.text.trim(),
         },
       );
 
       if (!mounted) return;
+      ref.invalidate(userPortfolioProvider);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Cập nhật thông tin thành công'),
@@ -133,6 +164,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
+              if (_loadingAvatar)
+                const LinearProgressIndicator()
+              else if (_avatarLoaded)
+                CustomInputField(
+                  controller: _avatarController,
+                  labelText: 'Đường dẫn ảnh đại diện (HTTPS)',
+                  keyboardType: TextInputType.url,
+                  validator: (value) {
+                    final text = value?.trim() ?? '';
+                    if (text.isEmpty) return null;
+                    final url = Uri.tryParse(text);
+                    return text.length <= 255 && url?.scheme == 'https' &&
+                            url?.host.isNotEmpty == true
+                        ? null
+                        : 'Nhập đường dẫn HTTPS hợp lệ (tối đa 255 ký tự)';
+                  },
+                )
+              else
+                const Text('Không thể tải ảnh đại diện. Bạn vẫn có thể lưu họ tên.'),
               const SizedBox(height: 16),
               TextFormField(
                 initialValue: authState.email ?? '',

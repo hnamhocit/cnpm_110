@@ -80,7 +80,31 @@ LIMIT 1;
 
 Cách chuyển tiếp giữ nguyên dữ liệu nghiệp vụ và bảng lịch sử. Baseline dùng cho DB trống, còn DB cũ được nhận diện theo mốc đã chạy.
 
-## 6. Important notes
+## 6. Reset và migrate database local
+
+**Lệnh này xóa toàn bộ schema `public`**, gồm bảng, dữ liệu và lịch sử migration. Chỉ dùng cho database local dành riêng cho CINEGEN có thể xóa. Với database cần giữ dữ liệu, dùng cách chuyển tiếp ở mục 5.
+
+Dừng API và các tác vụ đang dùng database. Từ thư mục gốc, thay `cinegen` bằng đúng tên database trong `apps/api/.env`:
+
+```bash
+bun --filter api db:reset --confirm=cinegen
+```
+
+Ví dụ Docker Compose mặc định dùng database `cinegen` tại `127.0.0.1:5433`. Database phải tồn tại và tài khoản kết nối cần quyền quản lý schema `public`. Lệnh kiểm tra tên xác nhận, chỉ chấp nhận địa chỉ loopback và từ chối khi `NODE_ENV=production`.
+
+Reset và chạy lại toàn bộ migration có trong journal diễn ra trong một transaction. Nếu migration lỗi, PostgreSQL hoàn tác việc xóa schema. Sau khi thành công, chạy `bun --filter api dev`. API tự nạp vai trò hệ thống và dữ liệu mẫu khi khởi động ở môi trường phát triển. Với PostgreSQL local, API còn tự tạo cuộc thi **CINEGEN Demo · Theo dõi bài dự thi** với 72 bài và dữ liệu đối sánh giả lập. Lệnh `db:seed:demo` vẫn dùng được nếu cần chuẩn bị trước trên `cinegen_demo`.
+
+### Xử lý lỗi thường gặp
+
+| Triệu chứng | Cách xử lý |
+| --- | --- |
+| `Script not found "db:migrate"` | Từ root dùng `bun --filter api db:migrate` vì script nằm trong workspace `api`. |
+| `ECONNREFUSED` | Kiểm tra PostgreSQL đang chạy và cổng trong `DATABASE_URL`. Docker Compose mặc định ánh xạ cổng máy host `5433`. |
+| `relation ... already exists` | Kiểm tra lịch sử theo mục 5. Nếu đây là database local có thể xóa, dùng `db:reset`. |
+| Dữ liệu mẫu xuất hiện lại sau reset | API tự tạo lại tài khoản, cuộc thi và bài thi mẫu khi khởi động ở môi trường phát triển. Để đối chiếu, kiểm tra dữ liệu ngay sau reset trước khi bật API. Nếu vẫn thấy dữ liệu do nhóm tự tạo, kiểm tra API đang dùng đúng host/cổng/tên database trong `DATABASE_URL` và Web đang trỏ đúng API qua `NEXT_PUBLIC_API_URL`. |
+| Conflict trong file SQL hoặc `drizzle/meta/_journal.json` sau khi pull | Giải quyết conflict Git trong migration và metadata rồi chạy `bun --filter api db:check` trước khi migrate hoặc reset. |
+
+## 7. Important notes
 
 - Không commit `apps/api/.env`.
 - Không tự ý xóa bảng hoặc lịch sử migration trên database dùng chung.

@@ -8,6 +8,7 @@ export const permissionRoles = {
   "users:read_all": ["Admin"],
   "users:create_internal": ["Admin"],
   "users:lock_unlock": ["Admin"],
+  "users:assign_role": ["Admin"],
   "users:read_own_profile": signedIn,
   "users:update_own_profile": signedIn,
   "users:change_password": signedIn,

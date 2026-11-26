@@ -1,8 +1,10 @@
 "use client";
 
-import { AlertCircle, Eye, FilePlus2, Search, Upload } from "lucide-react";
+import { AlertCircle, ArrowLeft, Eye, FilePlus2, Search, Upload } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { Footer } from "@/components/home/footer";
+import { Navbar } from "@/components/home/navbar";
 import { LiveCountdown48h } from "@/components/submission/live-countdown-48h";
 import { ModerationPipelineTimeline } from "@/components/submission/moderation-pipeline-timeline";
 import { RejectionDetailsModal } from "@/components/submission/rejection-details-modal";
@@ -64,7 +66,10 @@ export default function MySubmissionsPage() {
   }, [fetchMySubmissions]);
 
   const filtered = items.filter((item) => {
-    const matchStatus = statusFilter === "ALL" || item.status === statusFilter;
+    const matchStatus =
+      statusFilter === "ALL" ||
+      item.status === statusFilter ||
+      (statusFilter === "DISQUALIFIED" && item.status === "REJECTED");
     const matchSearch =
       !search.trim() ||
       item.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -73,14 +78,23 @@ export default function MySubmissionsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
+    <div className="flex min-h-screen flex-col bg-muted/30">
+      <Navbar />
+      <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" />
+          Về trang chủ
+        </Link>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Bài thi của tôi
           </h1>
           <p className="text-sm text-slate-500">
-            Theo dõi tiến trình kiểm duyệt AI, hạn chót 48h nộp âm bản và kết quả chấm thi.
+            Theo dõi trạng thái bài dự thi và yêu cầu bổ sung bằng chứng.
           </p>
         </div>
         <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
@@ -111,7 +125,7 @@ export default function MySubmissionsPage() {
           <option value="PROOF_REQUESTED">Chờ nộp âm bản</option>
           <option value="APPROVED">Đã duyệt</option>
           <option value="JUDGING">Đang chấm thi</option>
-          <option value="REJECTED">Bị từ chối</option>
+          <option value="DISQUALIFIED">Bị loại</option>
         </select>
       </div>
 
@@ -133,7 +147,7 @@ export default function MySubmissionsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2">
           {filtered.map((item) => {
             const badge = STATUS_BADGE[item.status] ?? {
               label: item.status,
@@ -256,6 +270,8 @@ export default function MySubmissionsPage() {
           aiFlagged={rejectItem.aiFlagged}
         />
       ) : null}
+      </main>
+      <Footer />
     </div>
   );
 }

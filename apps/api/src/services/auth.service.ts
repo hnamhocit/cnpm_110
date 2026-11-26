@@ -180,7 +180,7 @@ export async function loginUser(input: { email: string; password: string }) {
       .where(eq(sql`LOWER(${users.email})`, email))
       .for("update")
       .limit(1);
-    if (!user || !user.isActive || (user.verificationRequired && !user.emailVerifiedAt) || (user.lockedUntil && user.lockedUntil > new Date())) {
+    if (!user || (user.lockedUntil && user.lockedUntil > new Date())) {
       return null;
     }
 
@@ -194,6 +194,9 @@ export async function loginUser(input: { email: string; password: string }) {
       if (lockedUntil) await revokeAccountSessions(tx, user.id);
       return null;
     }
+
+    if (!user.isActive) return "ACCOUNT_LOCKED" as const;
+    if (user.verificationRequired && !user.emailVerifiedAt) return "EMAIL_VERIFICATION_REQUIRED" as const;
 
     const role = await getPrimaryRole(user.id, tx);
     if (!role) return null;
@@ -210,6 +213,8 @@ export async function loginUser(input: { email: string; password: string }) {
     };
   });
 
+  if (result === "ACCOUNT_LOCKED") throw AppError.forbidden(result);
+  if (result === "EMAIL_VERIFICATION_REQUIRED") throw AppError.unauthorized(result);
   if (!result) throw AppError.unauthorized("Invalid email or password");
   return result;
 }
@@ -270,20 +275,20 @@ export async function listAccounts(input: {
   page: number; limit: number; status?: AccountStatus; role?: string; search: string;
 }) {
   const { page, limit, status, role, search } = input;
-  const primaryRole = sql<string>`(
-    select ${roles.name} from ${userRoles}
-    inner join ${roles} on ${roles.id} = ${userRoles.roleId}
-    where ${userRoles.userId} = ${users.id}
-    order by ${rolePriorityOrder}
-    limit 1
-  )`;
+  const primaryRole = db.select({ name: roles.name })
+    .from(userRoles)
+    .innerJoin(roles, eq(roles.id, userRoles.roleId))
+    .where(eq(userRoles.userId, users.id))
+    .orderBy(rolePriorityOrder)
+    .limit(1)
+    .as("primary_role");
   const term = search.toLowerCase();
   const condition = and(
     status ? eq(users.isActive, status === "ACTIVE" || status === "PENDING_VERIFICATION") : undefined,
     status === "LOCKED" || status === "BANNED" ? eq(users.isBanned, status === "BANNED") : undefined,
     status === "ACTIVE" ? or(eq(users.verificationRequired, false), sql`${users.emailVerifiedAt} is not null`) : undefined,
     status === "PENDING_VERIFICATION" ? and(eq(users.verificationRequired, true), isNull(users.emailVerifiedAt)) : undefined,
-    role ? eq(sql`UPPER(${primaryRole})`, role) : undefined,
+    role ? eq(sql`UPPER(${primaryRole.name})`, role) : undefined,
     term ? or(
       sql`strpos(lower(${users.email}), ${term}) > 0`,
       sql`strpos(lower(${users.fullName}), ${term}) > 0`,
@@ -291,13 +296,14 @@ export async function listAccounts(input: {
   );
   const [accounts, [total]] = await Promise.all([
     db.select({
-      id: users.id, fullName: users.fullName, email: users.email, role: primaryRole,
+      id: users.id, fullName: users.fullName, email: users.email, role: primaryRole.name,
       isActive: users.isActive, isBanned: users.isBanned, tokenVersion: users.tokenVersion,
       lastLoginAt: users.lastLoginAt, createdAt: users.createdAt, phoneNumber: users.phoneNumber,
       verificationRequired: users.verificationRequired, emailVerifiedAt: users.emailVerifiedAt,
-    }).from(users).where(condition).orderBy(desc(users.createdAt), users.id)
+    }).from(users).leftJoinLateral(primaryRole, sql`true`)
+      .where(condition).orderBy(desc(users.createdAt), users.id)
       .limit(limit).offset((page - 1) * limit),
-    db.select({ value: count() }).from(users).where(condition),
+    db.select({ value: count() }).from(users).leftJoinLateral(primaryRole, sql`true`).where(condition),
   ]);
   const items = accounts.map(({ isActive, isBanned, verificationRequired, emailVerifiedAt, role, ...account }) => ({
     ...account, role: role ? { code: role.toUpperCase(), name: role } : null,
@@ -345,6 +351,33 @@ export async function updateAccountStatus(
     });
     return { userId, previousStatus, currentStatus, tokenVersion,
       revokedSessionsCount, updatedAt };
+  });
+}
+
+export async function updateAccountRole(actorId: string, userId: string, role: Role) {
+  if (actorId === userId) throw AppError.forbidden("You cannot change your own role");
+
+  return db.transaction(async (tx) => {
+    const [account] = await tx.select({ id: users.id }).from(users)
+      .where(eq(users.id, userId)).for("update");
+    if (!account) throw AppError.notFound("User not found");
+
+    const [assigned] = await tx.select({ id: roles.id }).from(roles).where(eq(roles.name, role));
+    if (!assigned) throw new AppError("Requested role is unavailable", 503);
+    const previous = await tx.select({ id: roles.id, name: roles.name })
+      .from(userRoles).innerJoin(roles, eq(roles.id, userRoles.roleId))
+      .where(eq(userRoles.userId, userId));
+
+    if (previous.length === 1 && previous[0]?.id === assigned.id) return { userId, role };
+
+    await tx.delete(userRoles).where(eq(userRoles.userId, userId));
+    await tx.insert(userRoles).values({ userId, roleId: assigned.id });
+    await revokeAccountSessions(tx, userId);
+    await tx.insert(accountAuditLogs).values({
+      actorId, accountId: userId, action: "ACCOUNT_ROLE_CHANGED",
+      changes: { previous: previous.map(({ name }) => name), current: role },
+    });
+    return { userId, role };
   });
 }
 

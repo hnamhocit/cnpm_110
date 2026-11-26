@@ -115,7 +115,12 @@ describe("Integration test xác thực và refresh token", () => {
 
     expect(data.user.id).toBeString();
     expect(data.accessToken).toBeUndefined();
-    expect((await post("login", { email, password: PASSWORD })).status).toBe(401);
+    const pending = await post("login", { email, password: PASSWORD });
+    expect(pending.status).toBe(401);
+    expect(await pending.json()).toMatchObject({ message: "EMAIL_VERIFICATION_REQUIRED" });
+    const wrongPassword = await post("login", { email, password: "Wrong-password-1!" });
+    expect(wrongPassword.status).toBe(401);
+    expect(await wrongPassword.json()).toMatchObject({ message: "Invalid email or password" });
     const code = emailCodes.get(email);
     const verification = await post("verify-email", { email, code });
     expect(verification.status).toBe(200);
@@ -354,6 +359,12 @@ describe("Integration test xác thực và refresh token", () => {
       post("refresh", { refreshToken: registered.refreshToken }),
     ]);
     expect(locked.status).toBe(200);
+    const lockedLogin = await post("login", { email, password: PASSWORD });
+    expect(lockedLogin.status).toBe(403);
+    expect(await lockedLogin.json()).toMatchObject({ message: "ACCOUNT_LOCKED", data: null });
+    const invalidLogin = await post("login", { email, password: "Wrong-password-1!" });
+    expect(invalidLogin.status).toBe(401);
+    expect(await invalidLogin.json()).toMatchObject({ message: "Invalid email or password" });
     const refreshedTokens = refreshed.status === 200 ? (await refreshed.json()).data : null;
     expect((await signedRequest("/auth/me", registered.accessToken)).status).toBe(401);
     expect((await signedRequest(path, admin, "PATCH",
@@ -406,6 +417,50 @@ describe("Integration test xác thực và refresh token", () => {
     expect((await post("login", { email, password: PASSWORD })).status).toBe(401);
     expect((await signedRequest("/auth/me", registered.accessToken)).status).toBe(401);
     expect((await post("refresh", { refreshToken: registered.refreshToken })).status).toBe(401);
+  });
+
+  test("Admin đổi vai trò, thu hồi phiên cũ và áp dụng quyền mới", async () => {
+    const registered = await registerUser();
+    const admin = await adminSession();
+    await pool.query("INSERT INTO roles (name) VALUES ('Organizer') ON CONFLICT DO NOTHING");
+    const url = `/users/${registered.user.id}/role`;
+    expect((await signedRequest("/rbac/manage-contest", registered.accessToken)).status).toBe(403);
+    expect((await signedRequest(url, registered.accessToken, "PATCH", { role: "ADMIN" })).status).toBe(403);
+    expect((await signedRequest(url, admin, "PATCH", { role: "CUSTOM" })).status).toBe(400);
+
+    const before = await signedRequest(`/users?search=${encodeURIComponent(email)}&role=PARTICIPANT`, admin);
+    expect(before.status).toBe(200);
+    expect((await before.json()).data).toMatchObject({
+      items: [{ id: registered.user.id, role: { code: "PARTICIPANT", name: "Participant" } }],
+      totalRecords: 1,
+    });
+    const admins = await signedRequest(`/users?search=${encodeURIComponent(adminEmail)}`, admin);
+    expect(admins.status).toBe(200);
+    expect((await admins.json()).data.items[0].role).toEqual({ code: "ADMIN", name: "Admin" });
+
+    const change = await signedRequest(url, admin, "PATCH", { role: "ORGANIZER" });
+    expect(change.status).toBe(200);
+    expect((await change.json()).data.role).toBe("Organizer");
+    const after = await signedRequest(`/users?search=${encodeURIComponent(email)}&role=ORGANIZER`, admin);
+    expect(after.status).toBe(200);
+    expect((await after.json()).data).toMatchObject({
+      items: [{ id: registered.user.id, role: { code: "ORGANIZER", name: "Organizer" } }],
+      totalRecords: 1,
+    });
+    expect((await signedRequest("/auth/me", registered.accessToken)).status).toBe(401);
+    expect((await post("refresh", { refreshToken: registered.refreshToken })).status).toBe(401);
+
+    const nextLogin = await post("login", { email, password: PASSWORD });
+    const next = (await nextLogin.json()).data;
+    expect(next.user.role).toBe("Organizer");
+    expect((await signedRequest("/rbac/manage-contest", next.accessToken)).status).toBe(200);
+    expect((await signedRequest("/users", next.accessToken)).status).toBe(403);
+
+    const audit = await pool.query(
+      "SELECT changes FROM account_audit_logs WHERE account_id = $1 AND action = 'ACCOUNT_ROLE_CHANGED'",
+      [registered.user.id],
+    );
+    expect(audit.rows[0]?.changes).toEqual({ previous: ["Participant"], current: "Organizer" });
   });
 
   test("Admin xem bốn vai trò với quyền cố định", async () => {
