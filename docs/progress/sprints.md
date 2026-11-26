@@ -110,10 +110,10 @@ Mã FPC là mã công việc nội bộ, đánh số liên tục; không phải 
 | Mã | Phạm vi | Công việc | Người phụ trách | Trạng thái |
 | --- | --- | --- | --- | --- |
 | FPC-080 | Backend | M02 · UC-06–08: Hoàn thiện CRUD và API tra cứu Film Stock, Camera/Lens, Film Lab | Huỳnh Trần Gia Bảo | TODO |
-| FPC-081 | Web | M02 · UC-06–08: Quản trị Master Data; cài đặt hệ thống theo SRS | Vĩ Nguyễn | TODO |
+| FPC-081 | Web | M02 · UC-06–08: Quản trị Master Data; cài đặt hệ thống theo SRS | Vĩ Nguyễn | DONE |
 | FPC-082 | Mobile | M02 · UC-06–08: Tích hợp danh mục vào form Participant | Huỳnh Trần Gia Bảo | TODO |
 | FPC-083 | Backend | M03 · UC-11–14: Tạo/sao chép cuộc thi, timeline, hạng mục, tiêu chí | Nam Nguyễn | DONE |
-| FPC-084 | Web | M03 · UC-11–14: Hoàn thiện và tích hợp form cấu hình | Vĩ Nguyễn | TODO |
+| FPC-084 | Web | M03 · UC-11–14: Hoàn thiện và tích hợp form cấu hình | Vĩ Nguyễn | DONE |
 | FPC-085 | Backend | M03 · UC-15–16: Vòng chấm và phân công Judge | Nam Nguyễn | DONE |
 | FPC-086 | Web | M03 · UC-15–17: Vòng chấm, phân công Judge, danh sách đăng ký | Phạm Tiến Thành Nhân | DONE |
 | FPC-087 | Backend | M03 · UC-17,34: API đăng ký hạng mục và danh sách đăng ký | Dương Nguyễn | DONE |
@@ -123,7 +123,7 @@ Mã FPC là mã công việc nội bộ, đánh số liên tục; không phải 
 | FPC-091 | Web | M04 · UC-35–36: Tích hợp Film Logbook nếu áp dụng theo SRS | Huỳnh Trần Gia Bảo | TODO |
 | FPC-092 | Mobile | M04 · UC-35–36: Quản lý cuộn/frame, nối danh mục | Huỳnh Trần Gia Bảo | TODO |
 | FPC-093 | Backend | M05 · UC-21–22: Yêu cầu đối chứng có hạn, xác minh và duyệt bài | Nam Nguyễn | DONE |
-| FPC-094 | Web | M05 · UC-21–22: Tích hợp yêu cầu đối chứng và duyệt bài | Vĩ Nguyễn | TODO |
+| FPC-094 | Web | M05 · UC-21–22: Tích hợp yêu cầu đối chứng và duyệt bài | Vĩ Nguyễn | DONE |
 | FPC-095 | Mobile | M05 · UC-21: Hiển thị yêu cầu đối chứng và deadline | Huỳnh Trần Gia Bảo | TODO |
 | FPC-096 | Backend | M05 · UC-37,39: Nộp ảnh, liên kết đăng ký/cuộn/frame, chỉnh sửa và rút bài | Dương Nguyễn | TODO |
 | FPC-097 | Web | M05 · UC-37,39: Tích hợp nộp, sửa và rút bài nếu áp dụng theo SRS | Dương Nguyễn | TODO |
@@ -132,14 +132,14 @@ Mã FPC là mã công việc nội bộ, đánh số liên tục; không phải 
 | FPC-100 | Web | M05 · UC-38: Upload đối chứng nếu áp dụng theo SRS | Huỳnh Trần Gia Bảo | TODO |
 | FPC-101 | Mobile | M05 · UC-38: Upload âm bản/contact sheet | Huỳnh Trần Gia Bảo | TODO |
 | FPC-102 | Backend/AI | M06 · UC-09,19,20: Ngưỡng, quét đơn/hàng loạt, đối sánh, gỡ cờ, worker | Hà Đức Bình | TODO |
-| FPC-103 | Web | M06 · UC-09,19,20: Cấu hình và tích hợp AI thật | Vĩ Nguyễn | TODO |
+| FPC-103 | Web | M06 · UC-09,19,20: Cấu hình và tích hợp AI thật | Vĩ Nguyễn | DONE |
 | FPC-104 | Backend | M07 · UC-24–25: Tiến độ, chốt/chuyển vòng và xử lý đồng điểm | Hà Đức Bình | TODO |
 | FPC-105 | Web | M07 · UC-24–25: Tích hợp dashboard tiến độ và chốt vòng | Phạm Tiến Thành Nhân | DONE |
 | FPC-106 | Backend | M07 · UC-29,31–33: Kiểm chứng API hiện có, bổ sung logic theo vòng và khóa phiếu | Hà Đức Bình | TODO |
 | FPC-107 | Web | M07 · UC-29–33: Nối workspace Judge, viewer UC-30 và gửi/sửa/khóa phiếu | Phạm Tiến Thành Nhân | DONE |
 | FPC-108 | Backend | M08 · UC-26: API công bố kết quả và vinh danh người thắng | Nam Nguyễn | DONE |
 | FPC-109 | Backend | M08 · UC-27: Quản lý triển lãm và preview công khai | Nam Nguyễn | DONE |
-| FPC-110 | Web | M08 · UC-26: Chốt và công bố kết quả theo SRS | Vĩ Nguyễn | TODO |
+| FPC-110 | Web | M08 · UC-26: Chốt và công bố kết quả theo SRS | Vĩ Nguyễn | DONE |
 | FPC-111 | Web | M08 · UC-27: Quản lý triển lãm và tác phẩm công khai | Vĩ Nguyễn | TODO |
 | FPC-112 | Backend | M08 · UC-43: API Public Digital Archive, chi tiết tác phẩm công khai và phân trang | Dương Nguyễn | TODO |
 | FPC-113 | Backend | M08 · UC-41: API kết quả, điểm và nhận xét cá nhân | Nam Nguyễn | DONE |
