@@ -64,11 +64,14 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 
 | UC | Chức năng | Backend / Web / Mobile | Backend đạt | Toàn luồng | GV đạt | GV chưa đạt |
 | --- | --- | --- | --- | --- | --- | --- |
-| UC-01 | Register / Login / Logout | Nhóm / Nhóm / Nhóm | DONE | DONE | | |
-| UC-02 | Recover Password | Nhóm / Nhóm / Nhóm | DONE | DONE | | |
-| UC-03 | View & Update Profile | Nhóm / Nhóm / Nhóm | DONE | DONE | | |
-| UC-04 | Manage User Accounts | Nam / Nam / N/A | DONE | DONE | | |
-| UC-05 | Manage Roles & Permissions | Nam / Nam / N/A | DONE | DONE | | |
+| UC-11 | Create / Duplicate Contest | Tạo cuộc thi với năm mốc hợp lệ. Sao chép hạng mục, tiêu chí, vòng, thể lệ và giải sang DRAFT có lịch mới. Kiểm tra bản sao trống đăng ký, bài, điểm và kết quả. (SRS §3, BR-08) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
+| UC-12 | Update Contest Configuration | Sửa thông tin, hạn nộp và thể lệ khi cuộc thi chưa đóng. Từ chối lịch sai thứ tự: mở đăng ký, hạn nộp, bắt đầu chấm, kết thúc chấm, công bố. (BR-08) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
+| UC-13 | Manage Contest Categories | Organizer thêm, sửa, kích hoạt/vô hiệu hóa hạng mục. Kiểm tra Participant chỉ đăng ký được hạng mục hợp lệ. (SRS §2.2–3) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
+| UC-14 | Configure Judging Criteria | Lưu tiêu chí và trọng số theo hạng mục. Chấp nhận tổng đúng 100% và báo MSG007 khi tổng sai. (BR-15) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
+| UC-15 | Manage Judging Rounds | Cấu hình một hoặc nhiều vòng chấm, thời hạn từng vòng và số bài đi tiếp. Mở lại để kiểm tra cấu hình đã lưu. (SRS §2.2, BR-14) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
+| UC-16 | Assign Judges to Categories | Phân công theo hạng mục/vòng, bảo đảm ít nhất một Judge hoạt động. Thử tài khoản có xung đột với vai trò Participant trong cùng cuộc thi. (BR-20/21) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
+| UC-17 | View Participant Registrations | Tìm và lọc đăng ký theo cuộc thi, hạng mục và trạng thái nộp. Kiểm tra phạm vi quyền Organizer. (SRS §2.2–3, CR-03) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng contest-registration.test.ts (FPC-087). |
+| UC-34 | Browse & Register for Contests | Tìm cuộc thi đang mở, xem và chấp nhận thể lệ, đăng ký hạng mục hợp lệ. Thử đăng ký trùng, ngoài hạn và xung đột vai trò. (SRS §3, BR-08/21) | PARTIAL (Backend DONE, Web DONE, Mobile DONE) |  |  | Backend đã kiểm thử bằng contest-registration.test.ts; Web & Mobile hoàn thành đăng ký và lưu trạng thái (FPC-087, FPC-088, FPC-089). |
 
 | UC | Tiêu chí PASS | Còn cần nghiệm thu |
 | --- | --- | --- |
@@ -156,9 +159,11 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 
 | UC | Chức năng | Backend / Web / Mobile | Backend đạt | Toàn luồng | GV đạt | GV chưa đạt |
 | --- | --- | --- | --- | --- | --- | --- |
-| UC-09 | Configure AI Thresholds | Bình / Vĩ / — | PARTIAL | PARTIAL | | |
-| UC-19 | Trigger AI Verification Scan | Bình / Vĩ / — | PARTIAL | PARTIAL | | |
-| UC-20 | Review AI Flagged Submissions | Bình / Vĩ / — | PARTIAL | PARTIAL | | |
+| UC-26 | Approve & Publish Results | Công bố thứ hạng và giải từ vòng cuối đã chốt với đủ đối chứng theo thể lệ. Làm tròn hai chữ số, ghi lý do khi đồng điểm và thử sửa sau công bố. (BR-06/16/25) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
+| UC-27 | Manage Digital Archive & Exhibition | Chọn tác phẩm đưa vào triển lãm. Kiểm tra bản công khai tối ưu có bản quyền và bản gốc độ phân giải cao vẫn riêng tư. (BR-17) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
+| UC-41 | View Contest Results & Judge Feedback | Participant xem kết quả chung cuộc, điểm trung bình và nhận xét cho bài của mình sau công bố. Thử truy cập phản hồi của tài khoản khác. (SRS §2.2–3, CR-03) | PARTIAL (Backend DONE, Mobile DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26; Mobile hoàn thành Bảng vàng vinh danh (FPC-100/FPC-120). |
+| UC-42 | Manage Personal Film Portfolio | Mở portfolio cá nhân và đối chiếu tác phẩm với lịch sử nộp bài, kết quả tương ứng. Kiểm tra phạm vi tài khoản. (SRS §2.2–3, CR-03) | PARTIAL (Backend DONE, Mobile DONE) |  |  | Backend đã kiểm thử bằng portfolio.test.ts; Mobile hoàn thành màn hình Portfolio & Giải thưởng cá nhân (FPC-101/FPC-123). |
+| UC-43 | Explore Digital Archive & Gallery | Khách xem kho ảnh đã công bố và lọc theo phim, máy, năm. Kiểm tra bài chưa công bố và ảnh gốc được bảo vệ. (SRS §2.2–3, BR-17) | PARTIAL |  |  |  |
 
 | UC | Tiêu chí PASS | Còn cần nghiệm thu |
 | --- | --- | --- |
