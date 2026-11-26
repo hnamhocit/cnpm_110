@@ -11,7 +11,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { getAiThresholds, unwrap } from "@/lib/ai-api";
+import { buildAiWarnings, formatPercent } from "@/lib/ai-validation";
 import { http } from "@/lib/http/client";
+import type { AiComparisonData, AiThresholds } from "@/types/ai";
 
 interface ImageComparisonModalProps {
   isOpen: boolean;
@@ -19,39 +22,10 @@ interface ImageComparisonModalProps {
   submissionId: string | null;
 }
 
-interface ComparisonSubmission {
-  id: string;
-  title: string;
-  participantId: string;
-  authorName?: string | null;
-  imageOriginalPath: string | null;
-  imagePreviewPath: string | null;
-  negativeProofPath: string | null;
-  filmMetadata?: {
-    filmBrand?: string | null;
-    filmStock?: string | null;
-    cameraBody?: string | null;
-    filmFormat?: string | null;
-    lens?: string | null;
-    isoShot?: number | null;
-    frameNumber?: string | null;
-  } | null;
-}
-
-interface ComparisonData {
-  flaggedSubmission: ComparisonSubmission;
-  originalSubmission: ComparisonSubmission | null;
-  duplicateCheck: {
-    similarityScore: number | null;
-  } | null;
-  aiGeneratedProbability: number | null;
-  predictedTags: { tag: string; confidence: number }[];
-  flagReasons: string[];
-}
-
-type ComparisonResponse = {
-  data: ComparisonData | null;
-};
+type ComparisonResponse =
+  | { data?: AiComparisonData | null }
+  | AiComparisonData
+  | null;
 
 type ApiErrorBody = { message?: string };
 
@@ -79,13 +53,15 @@ export default function ImageComparisonModal({
   onClose,
   submissionId,
 }: ImageComparisonModalProps) {
-  const [data, setData] = useState<ComparisonData | null>(null);
+  const [data, setData] = useState<AiComparisonData | null>(null);
+  const [thresholds, setThresholds] = useState<AiThresholds | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen || !submissionId) {
       setData(null);
+      setThresholds(null);
       setError(null);
       return;
     }
@@ -96,12 +72,18 @@ export default function ImageComparisonModal({
       setError(null);
 
       try {
+        setThresholds(null);
         // Axios interceptor tự gắn Authorization Bearer (access token trong memory).
-        const response = await http.get<ComparisonResponse>(
-          `/api/v1/submissions/${submissionId}/comparison`,
-          { signal: controller.signal },
-        );
-        setData(response.data.data);
+        const [response, thresholds] = await Promise.all([
+          http.get<ComparisonResponse>(
+            `/api/v1/submissions/${submissionId}/comparison`,
+            { signal: controller.signal },
+          ),
+          getAiThresholds().catch(() => null),
+        ]);
+        if (controller.signal.aborted) return;
+        setData(unwrap<AiComparisonData | null>(response.data) ?? null);
+        setThresholds(thresholds ?? null);
       } catch (err) {
         if (controller.signal.aborted) return;
         setError(
@@ -120,15 +102,11 @@ export default function ImageComparisonModal({
     return () => controller.abort();
   }, [isOpen, submissionId]);
 
-  const metadata = data?.flaggedSubmission.filmMetadata;
-  const filmDetails = metadata ? [
-    ["Phim", [metadata.filmBrand, metadata.filmStock].filter(Boolean).join(" ")],
-    ["Khổ phim", metadata.filmFormat],
-    ["Máy ảnh", metadata.cameraBody],
-    ["Ống kính", metadata.lens],
-    ["ISO chụp", metadata.isoShot],
-    ["Số frame", metadata.frameNumber],
-  ].filter(([, value]) => value != null && value !== "") : [];
+  const warnings = data ? buildAiWarnings(data, thresholds || undefined) : [];
+  const flagged = data?.flaggedSubmission ?? null;
+  const original = data?.originalSubmission ?? null;
+  const flagReasons = data?.flagReasons ?? [];
+  const predictedTags = (data?.predictedTags ?? []).slice(0, 5);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -157,39 +135,111 @@ export default function ImageComparisonModal({
 
         {!loading && !error && data && (
           <>
-            <div className="space-y-1 text-sm">
-              <p className="font-medium">{data.flaggedSubmission.title}</p>
-              {data.flagReasons.includes("DEMO_FIXTURE") && (
-                <p className="text-muted-foreground">Kết quả AI giả lập dùng cho demo.</p>
-              )}
-              {data.aiGeneratedProbability === null ? (
-                <p className="text-muted-foreground">Chưa có kết quả phân tích AI.</p>
-              ) : (
-                <p>Điểm nghi vấn AI {(data.aiGeneratedProbability * 100).toFixed(1)}%</p>
-              )}
-              {data.duplicateCheck?.similarityScore != null && (
-                <p>Độ tương đồng {(data.duplicateCheck.similarityScore * 100).toFixed(1)}%</p>
-              )}
-              {data.predictedTags.length > 0 && (
-                <p>Thẻ gợi ý · {data.predictedTags.map(({ tag }) => tag).join(", ")}</p>
-              )}
-            </div>
-            {filmDetails.length > 0 && (
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                {filmDetails.map(([label, value]) => (
-                  <div key={label}>
-                    <dt className="text-muted-foreground">{label}</dt>
-                    <dd>{value}</dd>
+            {warnings.length > 0 && (
+              <div className="space-y-1">
+                {warnings.map((warning) => (
+                  <div
+                    key={warning}
+                    role="status"
+                    className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300"
+                  >
+                    {warning}
                   </div>
                 ))}
-              </dl>
+              </div>
             )}
-            <div className="grid gap-4 md:grid-cols-2">
-              <ReviewImage src={data.flaggedSubmission.imagePreviewPath} label="Ảnh dự thi" />
-              <ReviewImage src={data.flaggedSubmission.negativeProofPath} label="Âm bản hoặc contact sheet" />
+
+            <div className="space-y-2 text-sm">
+              <p className="font-medium">{flagged?.title ?? "Bài dự thi"}</p>
+              {flagReasons.includes("DEMO_FIXTURE") && (
+                <div
+                  role="status"
+                  className="rounded-md border border-muted bg-muted/40 px-3 py-2 text-muted-foreground"
+                >
+                  Kết quả AI giả lập dùng cho demo.
+                </div>
+              )}
+              <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+                <div>
+                  <dt className="text-muted-foreground">Điểm nghi vấn AI</dt>
+                  <dd>
+                    {data.aiGeneratedProbability != null
+                      ? formatPercent(data.aiGeneratedProbability)
+                      : "Chưa có dữ liệu"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">pHash</dt>
+                  <dd>{data.phashHex ?? "Chưa có dữ liệu"}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Khoảng cách Hamming</dt>
+                  <dd>
+                    {data.duplicateCheck?.hammingDistance ?? "Chưa có dữ liệu"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Độ tương đồng</dt>
+                  <dd>
+                    {data.duplicateCheck?.similarityScore != null
+                      ? formatPercent(data.duplicateCheck.similarityScore)
+                      : "Chưa có dữ liệu"}
+                  </dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-muted-foreground">Lý do gắn cờ</dt>
+                  <dd>
+                    {flagReasons.length > 0 ? (
+                      <ul className="list-inside list-disc">
+                        {flagReasons.map((reason) => (
+                          <li key={reason}>{reason}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      "Chưa có dữ liệu"
+                    )}
+                  </dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-muted-foreground">Thẻ gợi ý</dt>
+                  <dd>
+                    {predictedTags.length > 0 ? (
+                      <ul className="flex flex-wrap gap-1.5">
+                        {predictedTags.map((tag) => (
+                          <li
+                            key={tag.tag}
+                            className="rounded-full border border-border px-2 py-0.5"
+                          >
+                            {tag.tag}
+                            {tag.confidence != null
+                              ? ` · ${formatPercent(tag.confidence)}`
+                              : null}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      "Chưa có thẻ gợi ý."
+                    )}
+                  </dd>
+                </div>
+              </dl>
             </div>
-            {data.originalSubmission && (
-              <ReviewImage src={data.originalSubmission.imagePreviewPath} label={`Ảnh tương tự · ${data.originalSubmission.title}`} />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <ReviewImage
+                src={flagged?.imagePreviewPath ?? null}
+                label="Ảnh dự thi"
+              />
+              <ReviewImage
+                src={flagged?.negativeProofPath ?? null}
+                label="Âm bản hoặc contact sheet"
+              />
+            </div>
+            {original && (
+              <ReviewImage
+                src={original.imagePreviewPath ?? null}
+                label={`Ảnh tương tự · ${original.title ?? "bài gốc"}`}
+              />
             )}
 
             <div className="flex justify-end">

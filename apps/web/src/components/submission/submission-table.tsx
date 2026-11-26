@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "axios";
-import { AlertTriangle, Check, Eye, Search, X } from "lucide-react";
+import { AlertTriangle, Check, Eye, Search, Sparkles, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -29,6 +29,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  getAiErrorMessage,
+  triggerBatchAiScan,
+  triggerSingleAiScan,
+} from "@/lib/ai-api";
 import { formatContestDate } from "@/lib/contest-utils";
 import { http } from "@/lib/http/client";
 import { filterSubmissions } from "@/lib/submission-utils";
@@ -51,6 +56,7 @@ type ApiSubmission = {
   status: SubmissionStatus;
   aiFlagged: boolean;
   createdAt: string;
+  aiAnalysis?: Submission["aiAnalysis"];
 };
 
 type SubmissionListResponse = {
@@ -65,6 +71,7 @@ function mapApiToSubmission(api: ApiSubmission): Submission {
     submittedAt: api.createdAt,
     isAiFlagged: api.aiFlagged,
     status: api.status,
+    aiAnalysis: api.aiAnalysis,
   };
 }
 
@@ -106,6 +113,10 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
     null,
   );
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [aiFilter, setAiFilter] = useState<"all" | "true" | "false">("all");
+  const [scanQueuedIds, setScanQueuedIds] = useState<string[]>([]);
+  const [scanJobs, setScanJobs] = useState<Record<string, string>>({});
+  const [batchScanning, setBatchScanning] = useState(false);
   const [pendingIds, setPendingIds] = useState<string[]>([]);
   const [pendingStatus, setPendingStatus] = useState<SubmissionStatus | null>(
     null,
@@ -118,9 +129,14 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
     async function fetchSubmissions() {
       try {
         setIsLoading(true);
+        const params: Record<string, string | number | boolean> = {
+          contestId,
+          limit: 100,
+        };
+        if (aiFilter !== "all") params.aiFlagged = aiFilter === "true";
         const res = await http.get<SubmissionListResponse>(
           "/api/v1/submissions",
-          { params: { contestId, limit: 100 } },
+          { params },
         );
         const raw = (res.data as any)?.data ?? res.data;
         const list = Array.isArray(raw)
@@ -137,13 +153,52 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
       }
     }
     fetchSubmissions();
-  }, [contestId]);
+  }, [contestId, aiFilter]);
 
   const visibleSubmissions = filterSubmissions(submissions, query);
 
   const openComparison = (id: string) => {
     setSelectedSubmission(id);
     setIsModalOpen(true);
+  };
+
+  const queueSingleScan = async (id: string) => {
+    setRowLoadingId(id);
+    try {
+      const result = await triggerSingleAiScan(id);
+      setScanQueuedIds((prev) =>
+        prev.includes(id) ? prev : [...prev, id],
+      );
+      setScanJobs((prev) => ({ ...prev, [id]: result.jobId }));
+      toast.success(
+        `Đã xếp hàng quét AI cho bài ${id}. Mã job: ${result.jobId}.`,
+      );
+    } catch (error) {
+      toast.error(getAiErrorMessage(error));
+    } finally {
+      setRowLoadingId(null);
+    }
+  };
+
+  const queueBatchScan = async () => {
+    if (selectedRows.length === 0) return;
+    setBatchScanning(true);
+    try {
+      const result = await triggerBatchAiScan({
+        contestId,
+        submissionIds: selectedRows,
+      });
+      setScanQueuedIds((prev) => [
+        ...prev,
+        ...selectedRows.filter((id) => !prev.includes(id)),
+      ]);
+      toast.success(`Đã xếp hàng ${result.queuedCount} bài để quét AI.`);
+      setSelectedRows([]);
+    } catch (error) {
+      toast.error(getAiErrorMessage(error));
+    } finally {
+      setBatchScanning(false);
+    }
   };
 
   const allVisibleSelected =
@@ -255,11 +310,34 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
           />
         </div>
 
+        <select
+          aria-label="Lọc theo cảnh báo AI"
+          value={aiFilter}
+          className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+          onChange={(event) => {
+            setAiFilter(event.target.value as "all" | "true" | "false");
+            setSelectedRows([]);
+          }}
+        >
+          <option value="all">Tất cả</option>
+          <option value="true">Có cờ AI</option>
+          <option value="false">Không cờ AI</option>
+        </select>
+
         {selectedRows.length > 0 ? (
           <div className="ml-auto flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
               Đã chọn {selectedRows.length}
             </span>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isBulkLoading || batchScanning}
+              onClick={() => void queueBatchScan()}
+            >
+              <Sparkles />
+              Quét AI hàng loạt
+            </Button>
             <Button
               size="sm"
               disabled={isBulkLoading}
@@ -353,6 +431,29 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
                           Cảnh báo AI
                         </Badge>
                       )}
+                      {submission.aiAnalysis?.aiGeneratedProbability != null && (
+                        <Badge variant="ai-warning" className="text-[10px]">
+                          AI {Math.round((submission.aiAnalysis.aiGeneratedProbability ?? 0) * 100)}%
+                        </Badge>
+                      )}
+                      {submission.aiAnalysis?.duplicateSimilarityScore != null && (
+                        <Badge variant="ai-warning" className="text-[10px]">
+                          Trùng {Math.round((submission.aiAnalysis.duplicateSimilarityScore ?? 0) * 100)}%
+                        </Badge>
+                      )}
+                      {submission.aiAnalysis?.flagReasons?.includes("DEMO_FIXTURE") && (
+                        <Badge variant="outline" className="text-[10px]">
+                          Demo fixture
+                        </Badge>
+                      )}
+                      {scanQueuedIds.includes(submission.id) && (
+                        <Badge variant="brand" className="text-[10px]">
+                          Đã xếp hàng quét AI
+                          {scanJobs[submission.id]
+                            ? ` · ${scanJobs[submission.id]}`
+                            : null}
+                        </Badge>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
@@ -360,6 +461,15 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
                       >
                         <Eye className="size-4" />
                         Thẩm định
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={rowLoadingId === submission.id}
+                        onClick={() => void queueSingleScan(submission.id)}
+                      >
+                        <Sparkles className="size-4" />
+                        Quét AI
                       </Button>
                     </div>
                   </TableCell>
