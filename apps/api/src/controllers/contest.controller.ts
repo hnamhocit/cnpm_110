@@ -11,10 +11,31 @@ import {
   updateContest,
   type UpdateContestInput,
 } from "../services/contest.service";
+import {
+  categoryCriteria,
+  createConfiguredContest,
+  duplicateContest,
+  saveCategory,
+  scheduleFields,
+} from "../services/contest-configuration";
+import {
+  categoryPatch,
+  fullSchedule,
+  parseCategories,
+  parseCriteria,
+  requiredText,
+  schedulePatch,
+  settingsPatch,
+  type Body,
+} from "./contest-configuration.input";
 import { AppError } from "../utils/errors";
 
 const VALID_STATUSES = [
   "DRAFT",
+  "SCHEDULED",
+  "VERIFYING",
+  "IN_JUDGING",
+  "RESULTS_PUBLISHED",
   "OPEN",
   "UNDER_REVIEW",
   "JUDGING",
@@ -102,13 +123,13 @@ export async function handleListContests(c: Context) {
 
 export async function handleGetContest(c: Context) {
   const { id } = c.req.param();
-  const contest = await getContestById(id);
+  const contest = await getContestById(resourceId(id));
   return c.ok(contest, "Contest retrieved successfully");
 }
 
 export async function handleGetContestCategories(c: Context) {
   const { id } = c.req.param();
-  const data = await getContestCategories(id);
+  const data = await getContestCategories(resourceId(id));
   return c.ok(data, "Categories retrieved successfully");
 }
 
@@ -128,13 +149,7 @@ export async function handleGetContestScoreboard(
   return c.ok(data, "Scoreboard retrieved successfully");
 }
 export async function handleCreateContest(c: Context<AuthEnv>) {
-  const body = await parseJsonBody<{
-    name?: unknown;
-    description?: unknown;
-    startAt?: unknown;
-    endAt?: unknown;
-    status?: unknown;
-  }>(c);
+  const body = await parseJsonBody<Body>(c);
 
   const name = typeof body.name === "string" ? body.name.trim() : "";
   if (!name || name.length > 150) {
@@ -154,6 +169,23 @@ export async function handleCreateContest(c: Context<AuthEnv>) {
   const status = body.status === undefined ? "draft" : body.status;
   if (!isValidStatus(status)) {
     throw AppError.badRequest("Invalid contest status");
+  }
+
+  const settings = settingsPatch(body);
+  const configured = Object.keys(settings).length > 0 || body.categories !== undefined ||
+    Object.keys(scheduleFields).some((field) => body[field] !== undefined);
+  if (configured) {
+    if (body.startAt !== undefined || body.endAt !== undefined || status.toLowerCase() !== "draft") {
+      throw AppError.badRequest("Configured contests start in DRAFT and use the five milestone fields");
+    }
+    const created = await createConfiguredContest({
+      ...settings,
+      ...fullSchedule(body),
+      name,
+      description: typeof body.description === "string" ? body.description.trim() : null,
+      createdBy: c.get("user").id,
+    }, parseCategories(body.categories));
+    return c.created(created, "MSG006: Contest created successfully");
   }
 
   if (
@@ -188,25 +220,15 @@ export async function handleCreateContest(c: Context<AuthEnv>) {
 
 export async function handleUpdateContest(c: Context<AuthEnv>) {
   const { id } = c.req.param();
-  const body = await parseJsonBody<{
-    name?: unknown;
-    description?: unknown;
-    startAt?: unknown;
-    endAt?: unknown;
-    status?: unknown;
-  }>(c);
-
-  if (
-    body.name === undefined &&
-    body.description === undefined &&
-    body.startAt === undefined &&
-    body.endAt === undefined &&
-    body.status === undefined
-  ) {
-    throw AppError.badRequest("At least one field is required");
+  const body = await parseJsonBody<Body>(c);
+  if (body.categories !== undefined) throw AppError.badRequest("Use the category endpoints to update categories");
+  const dates = schedulePatch(body);
+  if ((body.startAt !== undefined && dates.startAt !== undefined) ||
+      (body.endAt !== undefined && dates.endAt !== undefined)) {
+    throw AppError.badRequest("Send each milestone once");
   }
 
-  const input: UpdateContestInput = {};
+  const input: UpdateContestInput = { ...settingsPatch(body), ...dates };
 
   if (body.name !== undefined) {
     if (
@@ -248,7 +270,8 @@ export async function handleUpdateContest(c: Context<AuthEnv>) {
     input.endAt = body.endAt === null ? null : new Date(body.endAt as string);
   }
 
-  const updated = await updateContest(id, input, c.get("user"));
+  if (Object.keys(input).length === 0) throw AppError.badRequest("At least one field is required");
+  const updated = await updateContest(resourceId(id), input, c.get("user"));
   return c.ok(updated, "Contest updated successfully");
 }
 
@@ -256,4 +279,38 @@ export async function handleDeleteContest(c: Context<AuthEnv>) {
   const { id } = c.req.param();
   const deleted = await softDeleteContest(id, c.get("user"));
   return c.ok(deleted, "Contest deleted successfully (BR-03: Soft Delete)");
+}
+
+function resourceId(value: string | undefined) {
+  if (!value || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(value)) {
+    throw AppError.badRequest("Invalid resource ID");
+  }
+  return value;
+}
+
+export async function handleDuplicateContest(c: Context<AuthEnv>) {
+  const body = await parseJsonBody<Body>(c);
+  const name = body.name === undefined ? undefined : requiredText(body.name, "name", 150);
+  const data = await duplicateContest(resourceId(c.req.param("id")), c.get("user").id, fullSchedule(body), name);
+  return c.created(data, "MSG006: Contest duplicated successfully");
+}
+
+export async function handleCreateCategory(c: Context<AuthEnv>) {
+  const body = await parseJsonBody<Body>(c);
+  const input = { ...categoryPatch(body), name: requiredText(body.name, "category name", 100) };
+  const data = await saveCategory(resourceId(c.req.param("id")), c.get("user").id, input);
+  return c.created(data, "Category created successfully");
+}
+
+export async function handleUpdateCategory(c: Context<AuthEnv>) {
+  const input = c.req.method === "DELETE" ? { isActive: false } : categoryPatch(await parseJsonBody<Body>(c));
+  if (Object.keys(input).length === 0) throw AppError.badRequest("At least one category field is required");
+  const data = await saveCategory(resourceId(c.req.param("id")), c.get("user").id, input, resourceId(c.req.param("categoryId")));
+  return c.ok(data, "Category updated successfully");
+}
+
+export async function handleCategoryCriteria(c: Context<AuthEnv>) {
+  const replacement = c.req.method === "PUT" ? parseCriteria((await parseJsonBody<Body>(c)).criteria) : undefined;
+  const data = await categoryCriteria(resourceId(c.req.param("id")), resourceId(c.req.param("categoryId")), c.get("user").id, replacement);
+  return c.ok(data, replacement ? "Category criteria replaced successfully" : "Category criteria retrieved successfully");
 }

@@ -25,6 +25,7 @@ import {
   users,
 } from "../db/schema";
 
+import { contestDto, isClosed, validateSchedule, type Schedule, type Settings } from "./contest-configuration";
 import { aggregateScores } from "./score-aggregation";
 import { assignCompetitionRanks } from "./scoreboard-ranking";
 import type { AuthEnv } from "../middlewares/auth";
@@ -67,6 +68,15 @@ const AWARDS_METADATA = [
 const contestSelection = {
   id: contests.id,
   name: contests.name,
+  code: contests.code,
+  theme: contests.theme,
+  rules: contests.rules,
+  coverImageUrl: contests.coverImageUrl,
+  judgingStartAt: contests.judgingStartAt,
+  judgingDeadlineAt: contests.judgingDeadlineAt,
+  publishedAt: contests.publishedAt,
+  rounds: contests.rounds,
+  awards: contests.awards,
   description: contests.description,
   startAt: contests.startAt,
   endAt: contests.endAt,
@@ -121,7 +131,7 @@ export async function listContests(query: ListContestsQuery) {
   ]);
 
   return {
-    items,
+    items: items.map((contest) => contestDto(contest)),
     pagination: {
       page,
       limit,
@@ -142,7 +152,7 @@ export async function getContestById(id: string) {
     throw AppError.notFound("Contest not found");
   }
 
-  return contest;
+  return contestDto(contest);
 }
 
 export async function getContestCategories(contestId: string) {
@@ -152,11 +162,13 @@ export async function getContestCategories(contestId: string) {
       contestId: categories.contestId,
       name: categories.name,
       description: categories.description,
+      isActive: categories.isActive,
       createdAt: categories.createdAt,
       updatedAt: categories.updatedAt,
     })
     .from(categories)
-    .where(eq(categories.contestId, contestId))
+    .innerJoin(contests, eq(categories.contestId, contests.id))
+    .where(and(eq(categories.contestId, contestId), eq(contests.isDeleted, false)))
     .orderBy(asc(categories.createdAt));
 }
 
@@ -287,10 +299,10 @@ export async function createContest(input: CreateContestInput) {
     })
     .returning(contestSelection);
 
-  return created;
+  return contestDto(created);
 }
 
-export interface UpdateContestInput {
+export interface UpdateContestInput extends Partial<Schedule>, Settings {
   name?: string;
   description?: string | null;
   startAt?: Date | null;
@@ -306,15 +318,7 @@ export async function updateContest(
   return db.transaction(async (tx) => {
     // BR-03: Kiểm tra cuộc thi còn tồn tại và chưa bị xóa mềm
     const [current] = await tx
-      .select({
-        id: contests.id,
-        name: contests.name,
-        description: contests.description,
-        startAt: contests.startAt,
-        endAt: contests.endAt,
-        status: contests.status,
-        createdBy: contests.createdBy,
-      })
+      .select()
       .from(contests)
       .where(and(eq(contests.id, id), eq(contests.isDeleted, false)))
       .for("update")
@@ -329,32 +333,58 @@ export async function updateContest(
     }
 
     // BR-16: Tính bất biến của kết quả sau khi công bố
-    const immutableStatuses = ["published", "archived", "completed"];
+    const immutableStatuses = ["published", "results_published", "archived", "completed", "cancelled"];
     if (immutableStatuses.includes(String(current.status).toLowerCase())) {
       throw AppError.forbidden(
         "Cannot modify contest after results have been published (BR-16: Result Immutability)",
       );
     }
 
-    const name = input.name ?? current.name;
-    const description =
-      input.description !== undefined ? input.description : current.description;
-    const startAt =
-      input.startAt !== undefined ? input.startAt : current.startAt;
-    const endAt = input.endAt !== undefined ? input.endAt : current.endAt;
-    const status = input.status ?? current.status;
-
-    // BR-08: Ràng buộc tuần tự mốc thời gian
-    if (startAt && endAt && new Date(startAt) >= new Date(endAt)) {
-      throw AppError.badRequest(
-        "startAt must be strictly before endAt (BR-08: Sequential Schedule)",
-      );
+    const now = new Date();
+    const { status: requestedStatus, ...configuration } = input;
+    if (Object.keys(configuration).length &&
+        (isClosed(current.status) || (current.judgingStartAt && current.endAt && current.endAt <= now))) {
+      throw AppError.forbidden("Contest configuration is closed");
+    }
+    const schedule = {
+      startAt: input.startAt !== undefined ? input.startAt : current.startAt,
+      endAt: input.endAt !== undefined ? input.endAt : current.endAt,
+      judgingStartAt: input.judgingStartAt ?? current.judgingStartAt,
+      judgingDeadlineAt: input.judgingDeadlineAt ?? current.judgingDeadlineAt,
+      publishedAt: input.publishedAt ?? current.publishedAt,
+    };
+    const { startAt, endAt, judgingStartAt, judgingDeadlineAt, publishedAt } = schedule;
+    if (judgingStartAt || judgingDeadlineAt || publishedAt) {
+      validateSchedule(schedule);
+    } else if (startAt && endAt && startAt >= endAt) {
+      throw AppError.badRequest("MSG008: startAt must be strictly before endAt");
     }
 
+    // Keep the stored values understood by existing judging and results services.
+    const aliases: Record<string, string> = { in_judging: "judging", results_published: "published", verifying: "under_review" };
     const currentStatus = current.status.toLowerCase();
-    const nextStatus = status.toLowerCase();
+    const requested = requestedStatus?.toLowerCase() ?? currentStatus;
+    const nextStatus = aliases[requested] ?? requested;
+    const status = requestedStatus === undefined ? current.status : aliases[requested] ?? requestedStatus;
+    if (judgingStartAt && nextStatus !== currentStatus) {
+      const transitions: Record<string, string[]> = {
+        draft: ["scheduled", "open", "cancelled"],
+        scheduled: ["open", "under_review", "judging", "cancelled"],
+        open: ["under_review", "judging", "cancelled"],
+        ongoing: ["under_review", "judging", "cancelled"],
+        under_review: ["judging", "cancelled"],
+        judging: ["published"],
+      };
+      if (!transitions[currentStatus]?.includes(nextStatus)) {
+        throw AppError.conflict("Invalid contest status transition");
+      }
+    }
+    if (judgingStartAt && nextStatus === "under_review" && endAt && endAt > now) {
+      throw AppError.conflict("Submission window has not closed");
+    }
     if (nextStatus === "judging" && currentStatus !== "judging") {
-      if (currentStatus !== "under_review") {
+      if ((currentStatus !== "under_review" && !(judgingStartAt && ["scheduled", "open", "ongoing"].includes(currentStatus))) ||
+          (judgingStartAt && judgingDeadlineAt && (now < judgingStartAt || now >= judgingDeadlineAt))) {
         throw AppError.conflict("Only contests under review can enter judging");
       }
       const categoryWeights = await tx.select({
@@ -362,7 +392,7 @@ export async function updateContest(
         valid: sql<boolean>`COALESCE(sum(${scoringCriteria.weight}) = 1.0000, false)`,
       }).from(categories)
         .leftJoin(scoringCriteria, eq(scoringCriteria.categoryId, categories.id))
-        .where(eq(categories.contestId, id))
+        .where(and(eq(categories.contestId, id), eq(categories.isActive, true)))
         .groupBy(categories.id);
       const activeJudges = await tx
         .select({ categoryId: contestJudges.categoryId, total: count() })
@@ -383,7 +413,8 @@ export async function updateContest(
     }
 
     if (nextStatus === "published") {
-      if (currentStatus !== "judging" || (endAt && endAt > new Date())) {
+      const publicationTime = publishedAt ?? endAt;
+      if (currentStatus !== "judging" || (publicationTime && publicationTime > now)) {
         throw AppError.conflict("Contest is not ready for publication");
       }
       const scoreboard = await getContestScoreboard(id, actor, tx);
@@ -402,17 +433,15 @@ export async function updateContest(
     const [updated] = await tx
       .update(contests)
       .set({
-        name,
-        description,
-        startAt,
-        endAt,
+        ...configuration,
+        ...schedule,
         status,
-        updatedAt: new Date(),
+        updatedAt: now,
       })
       .where(and(eq(contests.id, id), eq(contests.isDeleted, false)))
       .returning(contestSelection);
 
-    return updated;
+    return contestDto(updated, now);
   });
 }
 

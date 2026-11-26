@@ -105,6 +105,9 @@ export async function seedAcceptance() {
       status: "ongoing",
       startAt: new Date(schedule.registrationStart),
       endAt: new Date(schedule.submissionDeadline),
+      judgingStartAt: new Date(schedule.judgingStart),
+      judgingDeadlineAt: new Date(schedule.judgingEnd),
+      publishedAt: new Date(schedule.resultPublication),
     }))).onConflictDoNothing({ target: contests.id });
     await tx.insert(categories).values(categoryFixtures.map(([alias, contest]) => ({
       id: ids[alias],

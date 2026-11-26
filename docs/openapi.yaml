@@ -623,7 +623,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-      description: Request hiện hành dùng startAt và endAt. Module 03 mô tả thiết kế đủ năm mốc theo BR-08.
+      description: Tạo cấu hình đầy đủ bằng năm mốc BR-08. Payload startAt/endAt chỉ tạo bản nháp tương thích.
       x-implementation: mounted
       operationId: postContests
   /api/v1/contests/{id}:
@@ -770,13 +770,7 @@ paths:
                     data:
                       type: array
                       items:
-                        type: object
-                        properties:
-                          id:
-                            type: string
-                            format: uuid
-                          name:
-                            type: string
+                        $ref: '#/components/schemas/ContestCategory'
         '400':
           $ref: '#/components/responses/BadRequest'
       x-implementation: mounted
@@ -788,6 +782,231 @@ paths:
           type: string
           format: uuid
       operationId: getContestsByIdCategories
+    post:
+      summary: Tạo hạng mục
+      tags:
+      - Contests
+      security:
+      - BearerAuth: []
+      x-implementation: mounted
+      operationId: postContestCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContestCategoryCreate'
+      responses:
+        '201':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/ContestCategory'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột với cấu hình hoặc dữ liệu hiện có
+  /api/v1/contests/{id}/duplicate:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    post:
+      summary: Sao chép cấu hình sang cuộc thi DRAFT
+      tags:
+      - Contests
+      security:
+      - BearerAuth: []
+      x-implementation: mounted
+      operationId: duplicateContest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DuplicateContestInput'
+      responses:
+        '201':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/Contest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột với cấu hình hoặc dữ liệu hiện có
+  /api/v1/contests/{id}/categories/{categoryId}:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    - name: categoryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    patch:
+      summary: Sửa hoặc bật/tắt hạng mục
+      tags:
+      - Contests
+      security:
+      - BearerAuth: []
+      x-implementation: mounted
+      operationId: patchContestCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContestCategoryInput'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/ContestCategory'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột với cấu hình hoặc dữ liệu hiện có
+    delete:
+      summary: Vô hiệu hóa hạng mục và giữ dữ liệu liên quan
+      tags:
+      - Contests
+      security:
+      - BearerAuth: []
+      x-implementation: mounted
+      operationId: deleteContestCategory
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/ContestCategory'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/contests/{id}/categories/{categoryId}/criteria:
+    parameters:
+    - $ref: '#/components/parameters/ContestId'
+    - name: categoryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      summary: Đọc tiêu chí hạng mục
+      tags:
+      - Contests
+      security:
+      - BearerAuth: []
+      x-implementation: mounted
+      operationId: getContestCategoryCriteria
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/ContestCriterion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Thay nguyên bộ tiêu chí có tổng trọng số 1.0000
+      tags:
+      - Contests
+      security:
+      - BearerAuth: []
+      x-implementation: mounted
+      operationId: putContestCategoryCriteria
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContestCriteriaInput'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/SuccessEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/ContestCriterion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Xung đột với cấu hình hoặc dữ liệu hiện có
   /api/v1/contests/{id}/judges:
     post:
       summary: POST /api/v1/contests/{id}/judges
@@ -2682,6 +2901,46 @@ components:
     Contest:
       type: object
       properties:
+        code:
+          type: string
+          example: CON-2026-01
+        registrationStartAt:
+          type: string
+          format: date-time
+          nullable: true
+        submissionDeadlineAt:
+          type: string
+          format: date-time
+          nullable: true
+        judgingStartAt:
+          type: string
+          format: date-time
+          nullable: true
+        judgingDeadlineAt:
+          type: string
+          format: date-time
+          nullable: true
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        theme:
+          type: string
+          nullable: true
+        rules:
+          type: string
+          nullable: true
+        coverImageUrl:
+          type: string
+          nullable: true
+        rounds:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContestRound'
+        awards:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContestAward'
         id:
           type: string
           format: uuid
@@ -2713,6 +2972,50 @@ components:
     ContestInput:
       type: object
       properties:
+        registrationStartAt:
+          type: string
+          format: date-time
+        submissionDeadlineAt:
+          type: string
+          format: date-time
+        judgingStartAt:
+          type: string
+          format: date-time
+        judgingDeadlineAt:
+          type: string
+          format: date-time
+        publishedAt:
+          type: string
+          format: date-time
+        theme:
+          type: string
+          nullable: true
+        rules:
+          type: string
+          nullable: true
+        coverImageUrl:
+          type: string
+          nullable: true
+        rounds:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContestRound'
+        awards:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContestAward'
+        categories:
+          description: Hạng mục và tiêu chí tùy chọn khi tạo cấu hình đầy đủ.
+          type: array
+          items:
+            allOf:
+            - $ref: '#/components/schemas/ContestCategoryCreate'
+            - type: object
+              properties:
+                criteria:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ContestCriterionInput'
         name:
           type: string
           maxLength: 150
@@ -2731,6 +3034,107 @@ components:
         status:
           type: string
           default: draft
+    DuplicateContestInput:
+      type: object
+      required: [registrationStartAt, submissionDeadlineAt, judgingStartAt, judgingDeadlineAt, publishedAt]
+      properties:
+        name:
+          type: string
+          maxLength: 150
+        registrationStartAt:
+          type: string
+          format: date-time
+        submissionDeadlineAt:
+          type: string
+          format: date-time
+        judgingStartAt:
+          type: string
+          format: date-time
+        judgingDeadlineAt:
+          type: string
+          format: date-time
+        publishedAt:
+          type: string
+          format: date-time
+    ContestCategoryInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+    ContestCategoryCreate:
+      allOf:
+      - $ref: '#/components/schemas/ContestCategoryInput'
+      - type: object
+        required: [name]
+    ContestCategory:
+      allOf:
+      - $ref: '#/components/schemas/ContestCategoryCreate'
+      - type: object
+        properties:
+          id: {type: string, format: uuid}
+          contestId: {type: string, format: uuid}
+          createdAt: {type: string, format: date-time}
+          updatedAt: {type: string, format: date-time}
+    ContestCriteriaInput:
+      type: object
+      required: [criteria]
+      properties:
+        criteria:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ContestCriterionInput'
+    ContestCriterionInput:
+      type: object
+      required: [name, weight]
+      properties:
+        name: {type: string, maxLength: 150}
+        description: {type: string, nullable: true}
+        weight:
+          type: number
+          minimum: 0.0001
+          maximum: 1
+          multipleOf: 0.0001
+        maxScore:
+          type: number
+          default: 10
+          minimum: 0.01
+          maximum: 999.99
+          multipleOf: 0.01
+    ContestCriterion:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        categoryId: {type: string, format: uuid}
+        name: {type: string}
+        description: {type: string, nullable: true}
+        weight: {type: string, example: "0.4000"}
+        maxScore: {type: string, example: "10.00"}
+        sortOrder: {type: integer}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    ContestRound:
+      type: object
+      required: [name, order]
+      properties:
+        name: {type: string}
+        order: {type: integer, minimum: 1}
+        advanceCount: {type: integer, minimum: 1, nullable: true}
+    ContestAward:
+      type: object
+      required: [code, name, rankOrder]
+      properties:
+        code: {type: string}
+        name: {type: string}
+        rankOrder: {type: integer, minimum: 1}
+        prizeValueVnd: {type: integer, minimum: 0, default: 0}
+        quota: {type: integer, minimum: 1, default: 1}
     Pagination:
       type: object
       properties:

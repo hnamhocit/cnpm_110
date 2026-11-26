@@ -8,6 +8,13 @@
       "when": 1795606798211,
       "tag": "0000_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795685816017,
+      "tag": "0001_contest_configuration",
+      "breakpoints": true
     }
   ]
 }

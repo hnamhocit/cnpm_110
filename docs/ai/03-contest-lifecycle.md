@@ -4,7 +4,7 @@
 
 **UC-11–17, UC-34, BR-06/08/15/20/21.** Vòng đời dùng DRAFT, SCHEDULED, OPEN, VERIFYING, IN_JUDGING, RESULTS_PUBLISHED và ARCHIVED. Kiểm tra năm mốc BR-08 và trọng số 100%. Duplicate Contest sao chép cấu hình, thể lệ, hạng mục, tiêu chí, vòng và giải vào DRAFT với lịch mới; chỉ dùng nguồn thuộc quyền Organizer và bỏ qua mọi dữ liệu tham gia, phân công, điểm và kết quả.
 
-Đăng ký yêu cầu hạng mục hợp lệ, đúng thời gian, chấp nhận thể lệ, duy nhất theo Participant/cuộc thi/hạng mục và không xung đột với Organizer hoặc Judge cùng cuộc thi. Organizer tìm kiếm và lọc đăng ký theo cuộc thi, hạng mục và trạng thái nộp. Mỗi bài thi gắn đăng ký hợp lệ. Mỗi hạng mục/vòng có ít nhất một Judge hoạt động. Backend hiện mới có một phần vòng đời và phân công, dùng trạng thái cũ.
+Đăng ký yêu cầu hạng mục hợp lệ, đúng thời gian, chấp nhận thể lệ, duy nhất theo Participant/cuộc thi/hạng mục và không xung đột với Organizer hoặc Judge cùng cuộc thi. Organizer tìm kiếm và lọc đăng ký theo cuộc thi, hạng mục và trạng thái nộp. Mỗi bài thi gắn đăng ký hợp lệ. Mỗi hạng mục/vòng có ít nhất một Judge hoạt động. Hợp đồng đã mount của UC-11–14 nằm trong [Module 09 §4.7](09-api-contracts.md#47-contest-dtos). Các giá trị trạng thái cũ còn được giữ tương thích với luồng chấm và công bố.
 
 ## Thiết kế trước lần cập nhật SRS
 
@@ -12,7 +12,7 @@
 
 ## Phạm vi nghiệm thu và trạng thái hiện tại
 
-UC-11–17 và UC-34 bao gồm cả lưu bản nháp wizard, đăng ký tham gia và danh sách đăng ký cho Organizer. Hiện có CRUD cuộc thi và đọc hạng mục. Schema trọng số hỗ trợ 4 chữ số thập phân và giới hạn từng trọng số. Cần luồng lưu bộ tiêu chí kiểm tra tổng đúng 1.0000 theo BR-15. [Schema](../../apps/api/src/db/schema.ts) · [Route](../../apps/api/src/routes/contests.route.ts)
+UC-11–17 và UC-34 bao gồm cả lưu bản nháp wizard, đăng ký tham gia và danh sách đăng ký cho Organizer. Backend lưu năm mốc, sao chép cấu hình, vô hiệu hóa hạng mục và thay nguyên bộ tiêu chí với tổng đúng 1.0000 theo BR-15. [Schema](../../apps/api/src/db/schema.ts) · [Route](../../apps/api/src/routes/contests.route.ts)
 
 Khi triển khai đăng ký, cho Participant đăng ký lúc cuộc thi mở và cho Organizer sở hữu cuộc thi xem danh sách cùng số bài nộp. BR-21 áp dụng ở cả đăng ký và nộp bài. Trước khi mở chấm, kiểm tra đúng lịch BR-08 và tối thiểu 3 giám khảo hoạt động **ở từng hạng mục**. UC-15 còn yêu cầu cấu hình vòng Sơ loại, Bán kết, Chung kết và số bài đi tiếp. Hợp đồng lưu đăng ký, cấu hình vòng chấm và cơ cấu giải cần chốt trong [Module 09](09-api-contracts.md) trước khi triển khai.
 
