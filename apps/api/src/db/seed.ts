@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "./index";
+import { seedDemoSubmissions } from "./seed-demo-submissions";
 import {
   categories,
   contests,
@@ -296,4 +297,9 @@ export async function seed() {
 
   await seedOngoingContest(organizerUserId, participantUserId);
   await seedPublishedContest(organizerUserId, participantUserId);
+
+  const database = URL.parse(Bun.env.DATABASE_URL ?? "");
+  if (database && ["localhost", "127.0.0.1", "[::1]"].includes(database.hostname)) {
+    await seedDemoSubmissions();
+  }
 }

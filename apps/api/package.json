@@ -7,7 +7,7 @@
     "db:reset": "bun run src/db/reset.ts",
     "db:check": "drizzle-kit check --config=drizzle.config.ts",
     "db:studio": "drizzle-kit studio --config=drizzle.config.ts",
-    "db:seed:demo": "bun run src/db/seed-demo-submissions.ts",
+    "db:seed:demo": "bun run src/db/seed-demo.ts",
     "check-types": "tsc --noEmit",
     "test": "bun test tests/auth.test.ts tests/validate-image.test.ts tests/contest-results.test.ts",
     "test:integration": "bun test tests/auth.integration.test.ts",

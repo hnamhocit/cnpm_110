@@ -99,7 +99,7 @@ API Server lắng nghe tại cổng: **[http://localhost:8080](http://localhost:
 
 ## Dữ liệu demo UC-40
 
-Dùng database PostgreSQL local có tên `cinegen_demo`. Chạy `bun --filter api db:migrate` và `bun --filter api db:seed:demo` khi cấu hình API trỏ đúng database demo. Seed có nhóm bài với sáu trạng thái, metadata phim, lý do bị loại và nhiều thí sinh để kiểm tra phạm vi truy cập. Demo dùng ảnh minh họa công khai. Các bài bị gắn cờ có thêm kết quả đối sánh giả lập để trình diễn UC-20, và giao diện ghi rõ dữ liệu demo. Seed không tạo ảnh âm bản hay contact sheet.
+Sau khi migrate hoặc reset PostgreSQL local, khởi động API để tự tạo cuộc thi **CINEGEN Demo · Theo dõi bài dự thi**. Cuộc thi có 72 bài với sáu trạng thái, metadata phim, lý do bị loại và nhiều thí sinh để kiểm tra phạm vi truy cập. Có thể dùng `bun --filter api db:seed:demo` để chuẩn bị dữ liệu trước khi bật API nếu database local có tên `cinegen_demo`. Demo dùng ảnh minh họa công khai. Các bài bị gắn cờ có thêm kết quả đối sánh giả lập để trình diễn UC-20, và giao diện ghi rõ dữ liệu demo. Seed không tạo ảnh âm bản hay contact sheet.
 
 - Organizer dùng `organizer.test@example.com` để duyệt bài **DEMO · Bài chờ Organizer duyệt**.
 - Participant dùng `participant.test@example.com` để xem bài, làm mới trạng thái và xem lý do bị loại. `participant.demo2@example.com` dùng để kiểm tra bài thuộc một thí sinh khác.
