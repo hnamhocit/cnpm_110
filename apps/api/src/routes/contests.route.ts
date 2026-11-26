@@ -3,6 +3,10 @@ import judgingRounds, { handleAssignRoundJudge } from "./judging-rounds.route";
 import { generateContestAnalytics, getContestAnalytics } from "../services/contest-analytics";
 import { AppError } from "../utils/errors";
 import {
+  handleArchiveContest,
+  handleListContestExhibitions,
+} from "../controllers/exhibition.controller";
+import {
   handleCategoryCriteria,
   handlePublishContestResults,
   handleCreateCategory,
@@ -14,6 +18,7 @@ import {
   handleGetContestCategories,
   handleGetContestResults,
   handleGetContestScoreboard,
+  handleGetMyContestResults,
   handleListContests,
   handleUpdateContest,
 } from "../controllers/contest.controller";
@@ -32,7 +37,10 @@ contests.get("/", handleListContests);
 contests.get("/:id", handleGetContest);
 contests.get("/:id/categories", handleGetContestCategories);
 contests.get("/:id/results", handleGetContestResults);
+contests.get("/:id/my-results", authenticate, requirePermission("submissions:read_own"), handleGetMyContestResults);
 contests.post("/:id/publish-results", authenticate, requirePermission("contests:update"), handlePublishContestResults);
+contests.post("/:id/archive", authenticate, requirePermission("contests:update"), handleArchiveContest);
+contests.get("/:id/exhibitions", authenticate, requirePermission("contests:update"), handleListContestExhibitions);
 contests.get(
   "/:id/scoreboard",
   authenticate,
