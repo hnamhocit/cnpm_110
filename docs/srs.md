@@ -69,6 +69,39 @@ Bản Markdown đồng bộ theo [SRS PDF đã cập nhật](SRS_Film_Photograph
 | UC-42 | Manage Personal Film Portfolio | Participant | Xem portfolio cá nhân được tổng hợp từ lịch sử tác phẩm đã nộp và kết quả cuộc thi. |
 | UC-43 | Explore Digital Archive & Gallery | All Actors | Tham quan kho lưu trữ tác phẩm đạt giải, lọc tác phẩm theo loại phim (VD: Kodak Portra, Ilford HP5), máy ảnh hoặc năm thi. |
 
+### 2.3. Phân cấp yêu cầu và truy vết chức năng
+
+| Cấp | Vai trò trong đặc tả |
+| --- | --- |
+| Project Proposal | Xác lập phạm vi và mục tiêu ban đầu, gồm 4 vai trò hệ thống, 5 luồng nghiệp vụ cốt lõi, 4 ứng dụng AI và 4 nhóm yêu cầu phi chức năng cấp cao. |
+| Core Business Flows (CF) | 5 quy trình nghiệp vụ chính, ánh xạ tại §3.1. |
+| High-level Functional Requirements (FR) | 10 nhóm yêu cầu chức năng cấp cao được tổng hợp từ phân tích phạm vi và SRS. |
+| Use Cases (UC) | 43 đặc tả chi tiết về tác nhân, hành vi và kết quả, liệt kê tại §2.2. |
+| Implementation Modules (M) | 11 module nghiệp vụ và kỹ thuật tổ chức triển khai, liệt kê tại §4. |
+| Business Rules (BR) | Điều kiện và giới hạn nghiệp vụ áp dụng cho các UC, liệt kê tại §6.1. |
+| Non-Functional Requirements (NFR) | Yêu cầu chất lượng và kỹ thuật. Bốn nhóm cấp cao thuộc phạm vi đề xuất, được cụ thể hóa trong SRS §5. |
+
+Proposal chưa đánh số 10 FR. Các mã FR dưới đây dùng để truy vết và tổng hợp nghiệm thu trong phạm vi đã có. Bốn vai trò có phân quyền là Administrator, Contest Organizer, Judge và Participant. Public Visitor là tác nhân truy cập công khai. Bốn ứng dụng AI gồm phát hiện ảnh trùng/tương tự, cảnh báo ảnh tạo sinh, gợi ý từ khóa/hạng mục và phân tích số liệu cuộc thi.
+
+#### Ma trận FR → Use Case chính
+
+| FR ID | Functional Requirement | Related Use Cases |
+| --- | --- | --- |
+| FR-01 | Authentication & Access Control | UC-01–05 |
+| FR-02 | System Administration & Master Data | UC-06–10 |
+| FR-03 | Contest Planning & Configuration | UC-11–15 |
+| FR-04 | Judge Assignment & Participant Registration | UC-16, UC-17, UC-34 |
+| FR-05 | Film Roll & Frame Management | UC-35–36 |
+| FR-06 | Film Submission & Tracking | UC-37–40 |
+| FR-07 | Submission Verification & Moderation | UC-18, UC-21–23 |
+| FR-08 | AI-assisted Verification & Analytics | UC-19, UC-20, UC-28 |
+| FR-09 | Judging & Evaluation Management | UC-24, UC-25, UC-29–33 |
+| FR-10 | Result Publication & Digital Archive | UC-26, UC-27, UC-41–43 |
+
+Mỗi UC có đúng một FR chính khi tính tiến độ. UC-09 (cấu hình ngưỡng AI) thuộc FR-02 và hỗ trợ FR-08. UC-28 (báo cáo phân tích) thuộc FR-08 và hỗ trợ nhiều luồng, gồm công bố kết quả. Liên kết phụ chỉ dùng để truy vết phụ thuộc. Mã module chỉ nơi triển khai; FR và module có thể ánh xạ nhiều-nhiều.
+
+Một FR là DONE khi mọi UC chính có Overall DONE. PARTIAL áp dụng khi đã có UC DONE hoặc PARTIAL nhưng nhóm chưa hoàn tất. TODO áp dụng khi mọi UC chính là TODO. Độ phủ Backend và nghiệm thu toàn luồng được tổng hợp riêng từ bảng Use Case. Tỷ lệ FR hoặc UC là tỷ lệ theo số mục, không quy đổi thành phần trăm khối lượng kỹ thuật.
+
 ## 3. System Functional Architecture & Screen Flows
 
 - **Tài khoản và quản trị** (UC-01–10). Participant tự đăng ký bằng email duy nhất và xác minh email. Administrator tạo hoặc gán vai trò nội bộ, khóa/mở khóa tài khoản và quản lý Film Stock, Camera, Lens, Film Lab, ngưỡng AI và AuditLog.
@@ -78,6 +111,18 @@ Bản Markdown đồng bộ theo [SRS PDF đã cập nhật](SRS_Film_Photograph
 - **Thẩm định** (UC-18–23, UC-38). Organizer xem điểm AI, điểm tương đồng, ảnh khớp theo quyền, thẻ gợi ý và ảnh bài thi/bằng chứng cạnh nhau. Organizer đặt hạn bổ sung và xử lý thủ công khi quá hạn. Bài cần đối chứng phải được xác minh theo BR-06.
 - **Chấm ẩn danh** (UC-14–16, UC-24–25, UC-29–33). Dùng trình xem ảnh có zoom và metadata kỹ thuật. Tổng hợp điểm đã xác nhận, khóa vòng và chọn bài đi tiếp theo cấu hình. Kết quả dùng điểm vòng cuối; xử lý đồng điểm theo thể lệ và lưu lý do.
 - **Kết quả và phân tích** (UC-26–28, UC-41–43). Công bố khi đã chốt điểm và hoàn tất điều kiện đối chứng. Lưu riêng ảnh gốc và công khai ảnh xem trước tối ưu. Portfolio tổng hợp từ lịch sử bài thi và kết quả. Báo cáo cơ bản lấy số liệu tổng hợp từ cơ sở dữ liệu, có thể xuất và vẫn truy cập khi AI lỗi. AI chỉ nhận số liệu tổng hợp không chứa thông tin định danh.
+
+### 3.1. Truy vết luồng nghiệp vụ cốt lõi
+
+| Flow ID | Core Business Flow | FR chính |
+| --- | --- | --- |
+| CF-01 | Contest Planning and Configuration | FR-03, FR-04 |
+| CF-02 | Film Submission and Metadata Management | FR-05, FR-06 |
+| CF-03 | Submission Verification | FR-07, FR-08 |
+| CF-04 | Judging and Evaluation Management | FR-09 |
+| CF-05 | Result Publication and Digital Archive | FR-10 |
+
+FR-01 và FR-02 hỗ trợ xuyên suốt các luồng. AI Analytics thuộc FR-08 và hỗ trợ nhiều luồng, gồm báo cáo ở CF-05. UC-28 chỉ được tính một lần trong FR-08.
 
 ## 4. Module Specifications Mapping (Chỉ mục Ánh xạ Module Chi tiết)
 

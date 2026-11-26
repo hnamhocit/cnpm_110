@@ -41,7 +41,7 @@ film-contest/
 
 ### Các Ứng dụng Thành phần:
 
-*   **[`apps/api`](apps/api/README.md)**: RESTful API service hiệu năng cao với **Hono**, chạy native trên **Bun runtime**, tích hợp **PostgreSQL 16+**, **`pgvector`** và **Drizzle ORM**.
+*   **[`apps/api`](apps/api/README.md)**: RESTful API service hiệu năng cao với **Hono**, chạy native trên **Bun runtime**, dùng **PostgreSQL** và **Drizzle ORM**. Hàng đợi AI hiện lưu trong PostgreSQL.
 *   **[`apps/web`](apps/web/README.md)**: Ứng dụng Web dành cho Quản trị viên, Ban tổ chức, Giám khảo và Thí sinh xây dựng trên **Next.js 16 (App Router)**, **React 19**, **Tailwind CSS v4** và **Biome**.
 *   **[`apps/mobile`](apps/mobile/README.md)**: Ứng dụng Flutter (iOS / Android) để xem cuộc thi, nộp ảnh kèm thông số phim và theo dõi trạng thái bài thi.
 
@@ -54,6 +54,14 @@ film-contest/
 - [Tổng quan tiến độ](docs/progress/overview.md) và [bảng sprint](docs/progress/sprints.md) ghi phần đã có và phần còn thiếu.
 
 ---
+
+## Tóm tắt báo cáo và hỏi đáp
+
+CINEGEN quản lý cuộc thi nhiếp ảnh phim từ lập kế hoạch, đăng ký, nộp ảnh và metadata, thẩm định, chấm điểm đến công bố và triển lãm. Phạm vi đề xuất gồm **4 vai trò hệ thống**, **5 luồng nghiệp vụ**, **4 ứng dụng AI** và **4 nhóm yêu cầu phi chức năng cấp cao**. Public Visitor là tác nhân truy cập công khai. Phân tích SRS tổ chức **43 Use Case** thành **10 nhóm FR cấp cao**. Hệ thống được triển khai theo **11 module**. [Ma trận FR–UC và luồng nghiệp vụ](docs/srs.md#23-phân-cấp-yêu-cầu-và-truy-vết-chức-năng)
+
+- **Đã hoàn thành bao nhiêu yêu cầu?** FR-01 là nhóm duy nhất DONE (**1/10**). Có **8/43 UC DONE và đã nghiệm thu toàn luồng**, **30 UC PARTIAL**, **5 UC TODO** và **10/43 UC có Backend DONE**. Tỷ lệ theo số mục không quy đổi thành khối lượng kỹ thuật có trọng số. [Dashboard](docs/progress/overview.md)
+- **AI làm gì?** Phát hiện ảnh trùng hoặc tương tự, cảnh báo ảnh tạo sinh, gợi ý từ khóa và hạng mục, hỗ trợ phân tích số liệu cuộc thi. Organizer quyết định duyệt hoặc loại. [Checklist nghiệm thu](CINEGEN_Functional_Acceptance_Checklist.md)
+- **Stack hiện dùng và phương án đề xuất?** Web dùng Next.js/React, Mobile dùng Flutter, Backend dùng Hono/Bun, Drizzle và PostgreSQL với hàng đợi AI trong PostgreSQL. Lưu trữ đối tượng tích hợp R2. Redis và pgvector là lựa chọn thiết kế trong SRS. Docker Compose hỗ trợ chạy PostgreSQL local. Push notification là tùy chọn. [SRS](docs/srs.md) · [Đặc tả lưu trữ](docs/ai/10-database-and-storage.md) · [Docker Compose](apps/api/docker-compose.yml)
 
 ## Yêu cầu môi trường
 

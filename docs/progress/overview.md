@@ -2,18 +2,45 @@
 
 | Chỉ số | Hiện trạng |
 | --- | --- |
+| Nhóm yêu cầu chức năng cấp cao (FR) | 10 |
+| Use Case (UC) | 43 |
+| Module triển khai | 11 |
+| Luồng nghiệp vụ cốt lõi (CF) | 5 |
+| Vai trò hệ thống | 4 |
+| Nhóm FR hoàn thành | **1/10** · FR-01 |
+| Use Case hoàn thành (Overall DONE) | **8/43** |
+| Use Case triển khai một phần (Overall PARTIAL) | **30/43** |
+| Use Case chưa triển khai (Overall TODO) | **5/43** |
+| Use Case đã có triển khai (DONE + PARTIAL) | **38/43** |
+| Độ phủ nghiệm thu Backend (Backend DONE) | **10/43** · gồm 8 UC toàn luồng và Backend của UC-28, UC-30 |
+| Độ phủ nghiệm thu toàn luồng (Integration và Overall DONE) | **8/43** |
 | Module hoàn thành | **1/11** |
 | Module nghiệp vụ hoàn thành | **1/8** |
-| Use Case đã có triển khai | **38/43** · 8 DONE, 30 PARTIAL |
-| Use Case đã nghiệm thu riêng Backend | **10/43** · gồm 8 UC nghiệm thu toàn luồng và Backend của UC-30, UC-28 |
-| Use Case đã nghiệm thu toàn luồng | **8/43** |
-| Use Case TODO | **8/43** |
 | Sprint hiện tại | **Sprint 5 · Chuẩn bị triển khai** |
 | Sprint còn lại | **2**, gồm Sprint 5 và Sprint 6 |
+
+Số liệu lấy từ [bảng Use Case](use-cases.md). Overall TODO có 5 UC, còn cột Backend có 8 TODO. Tỷ lệ FR và UC phản ánh số mục đã đóng. Khối lượng kỹ thuật không được tính theo trọng số trong bảng này.
 
 Project Lead xác nhận **M01 DONE**, gồm UC-01–05. Checklist demo xác nhận thêm **UC-18, UC-23 và UC-40**. Sprint 5 được lấy làm mốc kế tiếp sau Sprint 4. Ngày bắt đầu và người phụ trách vẫn chờ Project Lead chốt.
 
 [Use Cases](use-cases.md) · [Tổng kết Sprint 4 và kế hoạch Sprint 5–6](sprints.md#tổng-kết-cuối-sprint-4) · [SRS](../srs.md) · <a id="review-fpc-86"></a>[Bằng chứng kỹ thuật](technical-evidence.md) ([Review FPC-86](technical-evidence.md#review-fpc-86))
+
+## Tiến độ theo nhóm yêu cầu chức năng
+
+Một FR chỉ DONE khi tất cả UC chính có Overall DONE. Các liên kết phụ và module triển khai được truy vết theo [SRS](../srs.md#23-phân-cấp-yêu-cầu-và-truy-vết-chức-năng).
+
+| FR ID | Functional Requirement | Accepted UC / Total UC | Status |
+| --- | --- | --- | --- |
+| FR-01 | Authentication & Access Control | 5/5 | DONE |
+| FR-02 | System Administration & Master Data | 0/5 | PARTIAL |
+| FR-03 | Contest Planning & Configuration | 0/5 | PARTIAL |
+| FR-04 | Judge Assignment & Participant Registration | 0/3 | PARTIAL |
+| FR-05 | Film Roll & Frame Management | 0/2 | PARTIAL |
+| FR-06 | Film Submission & Tracking | 1/4 | PARTIAL |
+| FR-07 | Submission Verification & Moderation | 2/4 | PARTIAL |
+| FR-08 | AI-assisted Verification & Analytics | 0/3 | PARTIAL |
+| FR-09 | Judging & Evaluation Management | 0/7 | PARTIAL |
+| FR-10 | Result Publication & Digital Archive | 0/5 | PARTIAL |
 
 <a id="độ-phủ-theo-module"></a>
 
