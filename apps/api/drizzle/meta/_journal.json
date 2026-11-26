@@ -36,6 +36,13 @@
       "when": 1795687701114,
       "tag": "0004_contest_publication",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795687801114,
+      "tag": "0005_exhibition_images",
+      "breakpoints": true
     }
   ]
 }
