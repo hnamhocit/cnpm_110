@@ -11,7 +11,8 @@
     "check-types": "tsc --noEmit",
     "test": "bun test tests/auth.test.ts tests/validate-image.test.ts tests/contest-results.test.ts",
     "test:integration": "bun test tests/auth.integration.test.ts",
-    "test:all": "bun test"
+    "test:all": "bun test",
+    "notifications:deliver": "bun run src/notification-worker.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1152.0",

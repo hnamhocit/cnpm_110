@@ -43,6 +43,13 @@
       "when": 1795687801114,
       "tag": "0005_exhibition_images",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795687901114,
+      "tag": "0006_audit_notification_delivery",
+      "breakpoints": true
     }
   ]
 }

@@ -17,13 +17,18 @@ Module dùng chung cho Auth, cuộc thi, nộp bài, AI, chấm thi và công b�
 - Ghi vết các thao tác tạo, sửa, duyệt, loại và chốt điểm trên thực thể nhạy cảm. Bản ghi tra cứu gồm người thực hiện, IP, hành động, đối tượng, thời điểm, giá trị trước/sau và lý do khi áp dụng.
 - Yêu cầu lý do cụ thể khi loại bài, gỡ cờ AI hoặc chỉnh điểm. Nghiệm thu cả trường hợp thiếu lý do và trường hợp thao tác thành công. Chỉ ghi sự kiện thành công khi thay đổi tương ứng được lưu. Ẩn mật khẩu, token và bí mật cấu hình khỏi dữ liệu trước/sau.
 - Admin tra cứu nhật ký toàn hệ thống từ SCR-ADM-09. Kiểm tra API từ chối các vai trò khác và bộ lọc trả đúng bản ghi với đúng lý do.
-- Hiện có log kiểm duyệt riêng cho bài thi và `account_audit_logs` cho thao tác Module 01. Chưa thấy bảng `audit_logs` dùng chung hoặc route tra cứu hệ thống trong [schema](../../apps/api/src/db/schema.ts) và [đăng ký Hono](../../apps/api/src/index.ts).
+- `audit_logs` lưu `actor_id`, `resource_type`, `resource_id`, `action`, `old_value`, `new_value`, `reason`, `created_at`. Trigger theo dõi Contest, Category, Criteria, JudgingRound, Submission, ModerationLog, AIVerificationLog, JudgeEvaluation, EvaluationScore, ContestPublication và ExhibitionImage. Dữ liệu giải nằm trong snapshot `contest_publications.entries` và cấu hình `contests.awards`.
+- Middleware xác thực đặt actor bằng transaction-local PostgreSQL setting trong transaction của request. ORM dùng cùng transaction qua AsyncLocalStorage. Request lỗi rollback cả nghiệp vụ, audit và thông báo. Worker/webhook hệ thống có actor null; không giả danh người dùng. Các service giữ transaction/savepoint hiện có.
+- Hàm `audit_safe_json` loại khóa password, token, secret, credential, authorization và API key đệ quy trước khi lưu old/new. Quyền đọc HTTP AuditLog thực hiện tại UC-10/FPC-125; FPC-132 không mở route đọc audit công khai.
 
 ## Thông báo · SRS §5.1.2
 
-- SMTP phục vụ email, gồm khôi phục mật khẩu theo UC-02. FCM phục vụ thông báo đẩy. Luồng đối chứng và công bố cần áp dụng các sự kiện từ Module 05 và 08.
-- Khi gửi yêu cầu đối chứng, lấy hạn 48 giờ từ dữ liệu đã lưu ở Backend. Khi công bố, lấy kết quả từ dữ liệu đã chốt. Việc gửi lại thông báo không được gia hạn đối chứng hoặc công bố lại.
-- Nghiệm thu bằng người nhận hợp lệ, thời hạn hiển thị khớp Backend, kết quả gửi được quan sát khi kênh gửi lỗi hoặc thử lại. Module 01 đã có adapter SMTP và test bằng bộ gửi giả. Cần nghiệm thu SMTP thật và triển khai FCM cho các sự kiện cần thông báo đẩy.
+- SMTP phục vụ email xác thực/khôi phục mật khẩu và sự kiện nghiệp vụ. Push là tùy chọn theo SRS hiện hành.
+- Khi gửi yêu cầu đối chứng, dùng loại proof và hạn do Organizer đặt đã lưu ở Backend (BR-19). Khi công bố, dùng sự kiện sau khi snapshot đã được lưu. Việc gửi lại không gia hạn đối chứng hoặc công bố lại.
+- `contest_notifications` là thông báo trong ứng dụng, giới hạn theo `recipient_id` khi đọc. Sự kiện `PROOF_REQUESTED` chứa submissionId, proofType, proofDeadlineAt, reason. `SUBMISSION_STATUS` chứa submissionId, status, reason. `RESULTS_PUBLISHED` chứa contestId và gửi cho các Participant trong snapshot vòng cuối.
+- Trigger tạo một `notification_emails` cho mỗi notification trong cùng transaction. Cột `notification_id` unique, `status` là PENDING/FAILED/SENT, kèm attempts, last_error và sent_at. Chỉ đánh SENT sau khi SMTP trả thành công. Lỗi lưu thông báo cố định không chứa nội dung lỗi provider.
+- API xử lý hàng đợi mỗi 30 giây, không chạy hai lượt chồng nhau trong cùng process. Worker khóa bản ghi bằng FOR UPDATE SKIP LOCKED để nhiều process không gửi đồng thời cùng một bản ghi. Lệnh `bun --filter api notifications:deliver` xử lý thủ công/retry PENDING và FAILED. SENT không gửi lại. Retry không tạo thêm notification nghiệp vụ.
+- SMTP và PostgreSQL không có transaction chung. Nếu SMTP đã nhận thư nhưng process dừng trước khi lưu SENT, retry có thể gửi email lại. Thông báo trong ứng dụng vẫn duy nhất theo sự kiện đã lưu. Không tuyên bố exactly-once cho email.
 
 ## Báo cáo cuộc thi · UC-28
 
@@ -33,7 +38,7 @@ Module dùng chung cho Auth, cuộc thi, nộp bài, AI, chấm thi và công b�
 
 ## Quyết định cần chốt trước khi triển khai
 
-Thống nhất cấu trúc sự kiện audit, chính sách lưu và trường cần ẩn, kênh gửi theo sự kiện, và phạm vi/mẫu số/định dạng xuất báo cáo. Sau khi chốt, ghi DTO và quyền truy cập vào [Module 09](09-api-contracts.md), cập nhật OpenAPI và kiểm thử bằng route thực tế. Thứ tự triển khai nằm trong [kế hoạch Sprint 5](../progress/sprints.md#sprint-5--feature-complete).
+Chính sách thời hạn lưu audit và hợp đồng tra cứu UC-10 do module owner xác định. Hợp đồng xác nhận thứ hạng khi đồng điểm tại ranh giới đi tiếp thuộc UC-25. Mọi thay đổi method/path/DTO phải cập nhật Module 09 và OpenAPI theo SRS.
 
 ## Hợp đồng UC-28
 

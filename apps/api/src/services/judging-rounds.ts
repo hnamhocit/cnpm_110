@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   categories, contestJudges, contests, judgingRoundEntries, judgingRounds,
@@ -170,5 +170,105 @@ export function startJudgingRound(contestId: string, ownerId: string, roundId: s
       .where(eq(judgingRounds.id, roundId)).returning();
     await tx.update(contests).set({ status: "judging", updatedAt: now }).where(eq(contests.id, contestId));
     return started;
+  });
+}
+
+async function roundProgress(tx: Transaction, contestId: string, ownerId: string, requestedRoundId?: string) {
+  const contest = await ownedContest(tx, contestId, ownerId);
+  const rounds = await roundsForContest(tx, contestId);
+  const round = requestedRoundId ? roundById(rounds, requestedRoundId) :
+    rounds.find((item) => item.startedAt && !item.lockedAt) ?? rounds.at(-1);
+  if (!round) throw AppError.notFound("Judging round not found");
+  const result = await tx.execute(sql`
+    SELECT a.id AS "assignmentId", a.judge_id AS "judgeId", u.full_name AS "judgeName",
+      a.category_id AS "categoryId", c.name AS "categoryName", a.locked_at AS "lockedAt",
+      count(s.id)::int AS "assignedCount",
+      count(s.id) FILTER (WHERE e.id IS NOT NULL AND
+        (SELECT count(*) FROM scoring_criteria k WHERE k.category_id=c.id) > 0 AND
+        (SELECT count(*) FROM evaluation_scores es JOIN scoring_criteria k ON k.id=es.criterion_id
+         WHERE es.evaluation_id=e.id AND k.category_id=c.id AND es.score BETWEEN 0 AND k.max_score)
+        = (SELECT count(*) FROM scoring_criteria k WHERE k.category_id=c.id))::int AS "scoredCount"
+    FROM contest_judges a JOIN users u ON u.id=a.judge_id JOIN categories c ON c.id=a.category_id
+    LEFT JOIN judging_round_entries r ON r.round_id=a.round_id
+    LEFT JOIN submissions s ON s.id=r.submission_id AND s.category_id=a.category_id
+    LEFT JOIN evaluations e ON e.round_id=a.round_id AND e.submission_id=s.id AND e.judge_id=a.judge_id
+    WHERE a.round_id=${round.id} AND a.is_active=true
+    GROUP BY a.id,u.full_name,c.id,c.name
+  `);
+  const judges = result.rows.map((row) => {
+    const assignedCount = Number(row.assignedCount);
+    const scoredCount = Number(row.scoredCount);
+    return { ...row, assignedCount, scoredCount, isLocked: row.lockedAt !== null,
+      progressPercent: assignedCount ? Math.round(scoredCount / assignedCount * 100) : 0 };
+  });
+  const totalAssigned = judges.reduce((sum, row) => sum + row.assignedCount, 0);
+  const totalScored = judges.reduce((sum, row) => sum + row.scoredCount, 0);
+  return { contestId, contestName: contest.name, contestStatus: contest.status, roundId: round.id,
+    round, judges, overall: { totalAssigned, totalScored,
+      overallPercent: totalAssigned ? Math.round(totalScored / totalAssigned * 100) : 0,
+      allLocked: judges.length > 0 && judges.every((row) => row.isLocked && row.assignedCount === row.scoredCount) } };
+}
+
+export function getRoundProgress(contestId: string, ownerId: string, roundId?: string) {
+  return db.transaction((tx) => roundProgress(tx, contestId, ownerId, roundId));
+}
+
+export function finalizeRound(contestId: string, ownerId: string, roundId?: string) {
+  return db.transaction(async (tx) => {
+    const progress = await roundProgress(tx, contestId, ownerId, roundId);
+    const { round } = progress;
+    if (round.lockedAt) return { contestId, roundId: round.id, lockedAt: round.lockedAt, alreadyLocked: true };
+    if (!round.startedAt || !["judging", "in_judging"].includes(progress.contestStatus.toLowerCase())) {
+      throw AppError.conflict("Round must be started before finalization");
+    }
+    if (!progress.overall.allLocked) throw AppError.conflict("All required evaluations must be complete and confirmed");
+    const invalid = await tx.execute(sql`
+      SELECT s.id FROM judging_round_entries r JOIN submissions s ON s.id=r.submission_id
+      WHERE r.round_id=${round.id} AND (
+        s.status <> 'APPROVED' OR s.contest_id <> ${contestId} OR
+        (SELECT count(*) FROM contest_judges a JOIN users u ON u.id=a.judge_id
+         WHERE a.round_id=r.round_id AND a.category_id=s.category_id AND a.is_active=true
+         AND u.is_active=true AND u.is_banned=false) < ${round.requiredJudges} OR
+        (SELECT coalesce(sum(k.weight),0) FROM scoring_criteria k WHERE k.category_id=s.category_id) <> 1
+      ) LIMIT 1
+    `);
+    if (invalid.rows.length) throw AppError.conflict("Round entries, required Judges or criterion weights are invalid");
+    const scores = await tx.execute(sql`
+      SELECT s.id, s.category_id AS "categoryId", avg(sheet.total)::numeric AS score
+      FROM judging_round_entries r JOIN submissions s ON s.id=r.submission_id
+      JOIN LATERAL (
+        SELECT a.judge_id, sum(es.score*k.weight) AS total
+        FROM contest_judges a JOIN evaluations e ON e.judge_id=a.judge_id AND e.round_id=a.round_id AND e.submission_id=s.id
+        JOIN evaluation_scores es ON es.evaluation_id=e.id JOIN scoring_criteria k ON k.id=es.criterion_id AND k.category_id=s.category_id
+        WHERE a.round_id=r.round_id AND a.category_id=s.category_id AND a.is_active=true
+        GROUP BY a.judge_id
+      ) sheet ON true
+      WHERE r.round_id=${round.id} GROUP BY s.id ORDER BY s.category_id, score DESC, s.id
+    `);
+    if (!scores.rows.length) throw AppError.conflict("Round has no scored entries");
+    const rounds = await roundsForContest(tx, contestId);
+    if (round.advanceCount !== null) {
+      const next = rounds.find((item) => item.position > round.position);
+      if (!next || next.startedAt) throw AppError.conflict("An unstarted next round is required");
+      const selected: { roundId: string; submissionId: string }[] = [];
+      const groups = new Map<string, typeof scores.rows>();
+      for (const row of scores.rows) {
+        const key = String(row.categoryId);
+        const group = groups.get(key) ?? [];
+        group.push(row);
+        groups.set(key, group);
+      }
+      for (const group of groups.values()) {
+        const boundary = round.advanceCount;
+        if (group[boundary] && Number(group[boundary-1].score) === Number(group[boundary].score)) {
+          throw AppError.conflict("BR-25: Advancement boundary has tied scores requiring an organizer decision");
+        }
+        selected.push(...group.slice(0, boundary).map((row) => ({ roundId: next.id, submissionId: String(row.id) })));
+      }
+      await tx.insert(judgingRoundEntries).values(selected).onConflictDoNothing();
+    }
+    const lockedAt = new Date();
+    await tx.update(judgingRounds).set({ lockedAt }).where(eq(judgingRounds.id, round.id));
+    return { contestId, roundId: round.id, lockedAt, alreadyLocked: false, resultsLocked: false };
   });
 }

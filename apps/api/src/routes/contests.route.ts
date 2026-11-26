@@ -7,6 +7,7 @@ import {
   handleListContestExhibitions,
 } from "../controllers/exhibition.controller";
 import {
+  handleCloseJudgingRound,
   handleCategoryCriteria,
   handlePublishContestResults,
   handleCreateCategory,
@@ -18,6 +19,7 @@ import {
   handleGetContestCategories,
   handleGetContestResults,
   handleGetContestScoreboard,
+  handleGetJudgingProgress,
   handleGetMyContestResults,
   handleListContests,
   handleUpdateContest,
@@ -46,6 +48,18 @@ contests.get(
   authenticate,
   requirePermission("judging:read_scoreboard"),
   handleGetContestScoreboard,
+);
+contests.get(
+  "/:id/judging-progress",
+  authenticate,
+  requirePermission("judging:read_scoreboard"),
+  handleGetJudgingProgress,
+);
+contests.post(
+  "/:id/close-judging",
+  authenticate,
+  requirePermission("contests:update"),
+  handleCloseJudgingRound,
 );
 contests.on(
   ["GET", "POST"],
@@ -87,7 +101,6 @@ contests.on(
   authenticate,
   requirePermission("contests:update"),
   handleCategoryCriteria,
-  handlePublishContestResults,
 );
 contests.post(
   "/",

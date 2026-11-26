@@ -3,8 +3,8 @@
 import {
   BarChart3,
   ClipboardCheck,
+  Database,
   LayoutDashboard,
-  Medal,
   Trophy,
   Users,
 } from "lucide-react";
@@ -12,8 +12,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import Header from "../components/portal/Header";
 import { BrandMark } from "@/components/brand-mark";
+import Header from "../components/portal/Header";
 
 // Các mục điều hướng của Portal
 const menuItems = [
@@ -28,6 +28,11 @@ const menuItems = [
   { label: "Reports", href: "/portal/reports", icon: BarChart3 },
 ];
 
+// Master Data chỉ dành cho Administrator (BR-02).
+const adminMenuItems = [
+  { label: "Master Data", href: "/portal/master-data", icon: Database },
+];
+
 // Kiểu dữ liệu cho Sidebar
 type SidebarProps = {
   onClose?: () => void;
@@ -36,6 +41,24 @@ type SidebarProps = {
 // Component Sidebar phong cách SaaS hiện đại đồng bộ theme
 function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { user?: { role?: string | null } } | null) => {
+        if (active) setIsAdmin(data?.user?.role === "Admin");
+      })
+      .catch(() => {
+        if (active) setIsAdmin(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const visibleItems = isAdmin ? [...menuItems, ...adminMenuItems] : menuItems;
 
   return (
     <aside className="flex h-full w-full flex-col overflow-y-auto bg-brand-ink px-4 py-6 text-white border-r border-slate-800">
@@ -65,7 +88,7 @@ function Sidebar({ onClose }: SidebarProps) {
 
       {/* NAVIGATION LINKS */}
       <nav aria-label="Portal Navigation" className="flex-1 space-y-1">
-        {menuItems.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           const isActive =
             item.href === "/portal"

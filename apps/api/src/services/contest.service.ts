@@ -758,3 +758,5 @@ export async function getContestScoreboard(
     updatedAt: new Date().toISOString(),
   };
 }
+
+export { getRoundProgress as getJudgingProgress, finalizeRound as closeJudgingRound } from "./judging-rounds";

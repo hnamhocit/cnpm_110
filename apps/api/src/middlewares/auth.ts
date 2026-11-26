@@ -73,7 +73,7 @@ export const createAuthenticator = (
   await next();
 });
 
-export const authenticate = createAuthenticator(async (id, role, tokenVersion, sessionId) => {
+const authenticateAccount = createAuthenticator(async (id, role, tokenVersion, sessionId) => {
   if (!UUID_PATTERN.test(id)) {
     return false;
   }
@@ -105,6 +105,21 @@ export const authenticate = createAuthenticator(async (id, role, tokenVersion, s
     .limit(1);
 
   return Boolean(account);
+});
+
+export const authenticate = createMiddleware<AuthEnv>(async (c, next) => {
+  return authenticateAccount(c, async () => {
+    const { withAuditActor } = await import("../db");
+    const rollback = new Error("Rollback failed request");
+    try {
+      await withAuditActor(c.get("user").id, async () => {
+        await next();
+        if (c.error || c.res.status >= 400) throw rollback;
+      });
+    } catch (error) {
+      if (error !== rollback) throw error;
+    }
+  });
 });
 
 export function requireRoles(...allowedRoles: Role[]) {
