@@ -4,9 +4,11 @@ import {
   createContest,
   getContestById,
   getContestCategories,
+  getContestRegistrations,
   getContestResults,
   getContestScoreboard,
   listContests,
+  registerParticipantForContest,
   softDeleteContest,
   updateContest,
   type UpdateContestInput,
@@ -257,3 +259,45 @@ export async function handleDeleteContest(c: Context<AuthEnv>) {
   const deleted = await softDeleteContest(id, c.get("user"));
   return c.ok(deleted, "Contest deleted successfully (BR-03: Soft Delete)");
 }
+
+export async function handleRegisterContest(c: Context<AuthEnv>) {
+  const { id: contestId } = c.req.param();
+  const user = c.get("user");
+  const body = await parseJsonBody<{
+    categoryId?: string;
+    termsAccepted?: boolean;
+  }>(c);
+
+  if (!body.categoryId || typeof body.categoryId !== "string") {
+    throw AppError.badRequest("categoryId is required");
+  }
+
+  const result = await registerParticipantForContest({
+    contestId,
+    categoryId: body.categoryId,
+    participantId: user.id,
+    termsAccepted: body.termsAccepted ?? true,
+  });
+
+  return c.created(result, "Contest registration successful");
+}
+
+export async function handleGetContestRegistrations(c: Context<AuthEnv>) {
+  const { id: contestId } = c.req.param();
+  const user = c.get("user");
+  const pageParam = c.req.query("page");
+  const limitParam = c.req.query("limit");
+  const categoryId = c.req.query("categoryId");
+
+  const page = pageParam ? Math.max(1, parseInt(pageParam, 10) || 1) : 1;
+  const limit = limitParam ? Math.min(100, Math.max(1, parseInt(limitParam, 10) || 20)) : 20;
+
+  const result = await getContestRegistrations(contestId, user.id, {
+    page,
+    limit,
+    categoryId,
+  });
+
+  return c.ok(result, "Registrations retrieved successfully");
+}
+

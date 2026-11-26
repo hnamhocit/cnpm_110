@@ -15,6 +15,7 @@ import {
   categories,
   contests,
   contestJudges,
+  contestRegistrations,
   evaluations,
   evaluationScores,
   filmMetadata,
@@ -721,5 +722,171 @@ export async function getContestScoreboard(
   return {
     entries: rankedEntries,
     updatedAt: new Date().toISOString(),
+  };
+}
+
+export interface RegisterContestInput {
+  contestId: string;
+  categoryId: string;
+  participantId: string;
+  termsAccepted?: boolean;
+}
+
+export async function registerParticipantForContest(input: RegisterContestInput) {
+  const { contestId, categoryId, participantId, termsAccepted = true } = input;
+
+  if (!termsAccepted) {
+    throw AppError.badRequest("You must accept the contest terms and rules");
+  }
+
+  // 1. Verify contest exists
+  const [contest] = await db
+    .select()
+    .from(contests)
+    .where(and(eq(contests.id, contestId), eq(contests.isDeleted, false)))
+    .limit(1);
+
+  if (!contest) {
+    throw AppError.notFound("Contest not found");
+  }
+
+  // Allow registration when contest is open or draft/scheduled in testing
+  const normalizedStatus = contest.status.toLowerCase();
+  if (normalizedStatus === "archived" || normalizedStatus === "cancelled" || normalizedStatus === "published") {
+    throw AppError.badRequest("Contest is closed for new registrations");
+  }
+
+  // 2. Check category exists and belongs to contest
+  const [category] = await db
+    .select()
+    .from(categories)
+    .where(and(eq(categories.id, categoryId), eq(categories.contestId, contestId)))
+    .limit(1);
+
+  if (!category) {
+    throw AppError.badRequest("Category does not belong to this contest");
+  }
+
+  // 3. BR-21: Conflict of Interest - Organizer or Judge cannot participate
+  if (contest.createdBy === participantId) {
+    throw AppError.forbidden("Organizer cannot participate in their own contest (Conflict of interest BR-21)");
+  }
+
+  const [judgeAssignment] = await db
+    .select({ id: contestJudges.id })
+    .from(contestJudges)
+    .where(
+      and(
+        eq(contestJudges.contestId, contestId),
+        eq(contestJudges.judgeId, participantId),
+        eq(contestJudges.isActive, true),
+      ),
+    )
+    .limit(1);
+
+  if (judgeAssignment) {
+    throw AppError.forbidden("Assigned judge cannot participate in this contest (Conflict of interest BR-21)");
+  }
+
+  // 4. Check if already registered
+  const [existing] = await db
+    .select()
+    .from(contestRegistrations)
+    .where(
+      and(
+        eq(contestRegistrations.contestId, contestId),
+        eq(contestRegistrations.categoryId, categoryId),
+        eq(contestRegistrations.participantId, participantId),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    return {
+      ...existing,
+      contestName: contest.name,
+      categoryName: category.name,
+      alreadyRegistered: true,
+    };
+  }
+
+  // 5. Insert registration
+  const [newReg] = await db
+    .insert(contestRegistrations)
+    .values({
+      contestId,
+      categoryId,
+      participantId,
+      termsAccepted,
+    })
+    .returning();
+
+  return {
+    ...newReg,
+    contestName: contest.name,
+    categoryName: category.name,
+    alreadyRegistered: false,
+  };
+}
+
+export async function getContestRegistrations(
+  contestId: string,
+  userId: string,
+  options: { page?: number; limit?: number; categoryId?: string } = {},
+) {
+  const { page = 1, limit = 20, categoryId } = options;
+  const offset = (page - 1) * limit;
+
+  // 1. Verify contest
+  const [contest] = await db
+    .select()
+    .from(contests)
+    .where(and(eq(contests.id, contestId), eq(contests.isDeleted, false)))
+    .limit(1);
+
+  if (!contest) {
+    throw AppError.notFound("Contest not found");
+  }
+
+  const conditions: SQL[] = [eq(contestRegistrations.contestId, contestId)];
+  if (categoryId) {
+    conditions.push(eq(contestRegistrations.categoryId, categoryId));
+  }
+
+  const [{ totalCount }] = await db
+    .select({ totalCount: count() })
+    .from(contestRegistrations)
+    .where(and(...conditions));
+
+  const rows = await db
+    .select({
+      id: contestRegistrations.id,
+      contestId: contestRegistrations.contestId,
+      categoryId: contestRegistrations.categoryId,
+      categoryName: categories.name,
+      participantId: contestRegistrations.participantId,
+      participantName: users.fullName,
+      participantEmail: users.email,
+      termsAccepted: contestRegistrations.termsAccepted,
+      registeredAt: contestRegistrations.registeredAt,
+    })
+    .from(contestRegistrations)
+    .innerJoin(users, eq(users.id, contestRegistrations.participantId))
+    .innerJoin(categories, eq(categories.id, contestRegistrations.categoryId))
+    .where(and(...conditions))
+    .orderBy(desc(contestRegistrations.registeredAt))
+    .limit(limit)
+    .offset(offset);
+
+  return {
+    contestId: contest.id,
+    contestName: contest.name,
+    registrations: rows,
+    pagination: {
+      page,
+      limit,
+      total: Number(totalCount),
+      totalPages: Math.ceil(Number(totalCount) / limit),
+    },
   };
 }

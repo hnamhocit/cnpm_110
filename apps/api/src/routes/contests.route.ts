@@ -6,9 +6,11 @@ import {
   handleDeleteContest,
   handleGetContest,
   handleGetContestCategories,
+  handleGetContestRegistrations,
   handleGetContestResults,
   handleGetContestScoreboard,
   handleListContests,
+  handleRegisterContest,
   handleUpdateContest,
 } from "../controllers/contest.controller";
 import {
@@ -23,6 +25,18 @@ contests.get("/", handleListContests);
 contests.get("/:id", handleGetContest);
 contests.get("/:id/categories", handleGetContestCategories);
 contests.get("/:id/results", handleGetContestResults);
+contests.get(
+  "/:id/registrations",
+  authenticate,
+  requirePermission("contests:update"),
+  handleGetContestRegistrations,
+);
+contests.post(
+  "/:id/register",
+  authenticate,
+  requirePermission("submissions:create"),
+  handleRegisterContest,
+);
 contests.get(
   "/:id/scoreboard",
   authenticate,

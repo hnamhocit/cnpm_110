@@ -155,3 +155,34 @@ export const contestJudges = pgTable(
       .where(sql`${table.isActive} = true`),
   ],
 );
+
+export const contestRegistrations = pgTable(
+  "contest_registrations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    contestId: uuid("contest_id")
+      .notNull()
+      .references(() => contests.id, { onDelete: "cascade" }),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    participantId: uuid("participant_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    termsAccepted: boolean("terms_accepted").notNull().default(true),
+    registeredAt: timestamp("registered_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_contest_registrations_contest_id").on(table.contestId),
+    index("idx_contest_registrations_participant_id").on(table.participantId),
+    index("idx_contest_registrations_category_id").on(table.categoryId),
+    uniqueIndex("uq_contest_registration_participant_category").on(
+      table.contestId,
+      table.categoryId,
+      table.participantId,
+    ),
+  ],
+);
+
