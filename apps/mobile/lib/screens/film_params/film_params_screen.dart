@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/providers/master_data_provider.dart';
 import '../../models/film_shooting_params.dart';
 import 'film_params_form.dart';
 
@@ -258,10 +260,19 @@ class _FilmParamsScreenState extends State<FilmParamsScreen> {
                   ),
                   const SizedBox(height: 16),
                 ],
-                FilmParamsForm(
-                  initialParams: widget.initialParams,
-                  onSubmit: _onFormSubmitted,
-                ),
+                if (context.findAncestorWidgetOfExactType<UncontrolledProviderScope>() != null)
+                  Consumer(
+                    builder: (context, ref, _) => FilmParamsForm(
+                      initialParams: widget.initialParams,
+                      onSubmit: _onFormSubmitted,
+                      catalog: ref.watch(masterDataCatalogProvider).asData?.value,
+                    ),
+                  )
+                else
+                  FilmParamsForm(
+                    initialParams: widget.initialParams,
+                    onSubmit: _onFormSubmitted,
+                  ),
               ],
             ),
           ),

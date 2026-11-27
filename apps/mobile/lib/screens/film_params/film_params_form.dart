@@ -5,6 +5,7 @@ import '../../core/components/custom_dropdown_field.dart';
 import '../../core/components/custom_input_field.dart';
 import '../../core/utils/validators.dart';
 import '../../models/film_shooting_params.dart';
+import '../../models/master_data.dart';
 
 class FilmParamsForm extends StatefulWidget {
   const FilmParamsForm({
@@ -14,6 +15,7 @@ class FilmParamsForm extends StatefulWidget {
     this.onReset,
     this.isLoading = false,
     this.submitButtonLabel = 'Lưu thông số phim',
+    this.catalog,
   });
 
   final FilmShootingParams? initialParams;
@@ -21,6 +23,7 @@ class FilmParamsForm extends StatefulWidget {
   final VoidCallback? onReset;
   final bool isLoading;
   final String submitButtonLabel;
+  final MasterDataCatalog? catalog;
 
   @override
   State<FilmParamsForm> createState() => _FilmParamsFormState();
@@ -272,6 +275,35 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
                 Validators.notEmpty(v, field: 'Thân máy ảnh') ??
                 Validators.maxLength(v, 150, field: 'Thân máy ảnh'),
           ),
+          if (widget.catalog != null && widget.catalog!.cameras.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: widget.catalog!.cameras.take(8).map((cam) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ActionChip(
+                      avatar: const Icon(Icons.camera_alt_outlined, size: 14),
+                      label: Text(cam.displayName, style: theme.textTheme.labelSmall),
+                      onPressed: () {
+                        setState(() {
+                          _cameraBodyController.text = cam.displayName;
+                          if (cam.supportedFormat == '135') {
+                            _selectedFormat = '135 (35mm)';
+                          } else if (cam.supportedFormat == '120') {
+                            _selectedFormat = '120 (6x6)';
+                          } else if (_filmFormats.contains(cam.supportedFormat)) {
+                            _selectedFormat = cam.supportedFormat;
+                          }
+                        });
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           CustomInputField(
             controller: _lensController,
@@ -280,6 +312,28 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
             prefixIcon: const Icon(Icons.lens_outlined),
             validator: (v) => Validators.maxLength(v, 150, field: 'Ống kính'),
           ),
+          if (widget.catalog != null && widget.catalog!.lenses.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: widget.catalog!.lenses.take(8).map((lens) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ActionChip(
+                      avatar: const Icon(Icons.lens_outlined, size: 14),
+                      label: Text(lens.displayName, style: theme.textTheme.labelSmall),
+                      onPressed: () {
+                        setState(() {
+                          _lensController.text = lens.displayName;
+                        });
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
 
           const SizedBox(height: 24),
 
@@ -289,6 +343,39 @@ class _FilmParamsFormState extends State<FilmParamsForm> {
             title: 'Cuộn phim (Film Stock & Khổ phim)',
             colorScheme: colorScheme,
           ),
+          if (widget.catalog != null && widget.catalog!.filmStocks.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: widget.catalog!.filmStocks.take(8).map((stock) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ActionChip(
+                      avatar: const Icon(Icons.movie_filter_outlined, size: 14),
+                      label: Text(stock.displayName, style: theme.textTheme.labelSmall),
+                      onPressed: () {
+                        setState(() {
+                          if (_popularBrands.contains(stock.brand)) {
+                            _selectedBrand = stock.brand;
+                            _filmBrandCustomController.clear();
+                          } else {
+                            _selectedBrand = 'Khác';
+                            _filmBrandCustomController.text = stock.brand;
+                          }
+                          _filmStockController.text = stock.name;
+                          _isoRatedController.text = '${stock.nominalIso}';
+                          if (_matchRatedIso) {
+                            _isoShotController.text = '${stock.nominalIso}';
+                          }
+                        });
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
