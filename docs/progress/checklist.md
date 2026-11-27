@@ -64,22 +64,19 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 
 | UC | Chức năng | Backend / Web / Mobile | Backend đạt | Toàn luồng | GV đạt | GV chưa đạt |
 | --- | --- | --- | --- | --- | --- | --- |
-| UC-11 | Create / Duplicate Contest | Tạo cuộc thi với năm mốc hợp lệ. Sao chép hạng mục, tiêu chí, vòng, thể lệ và giải sang DRAFT có lịch mới. Kiểm tra bản sao trống đăng ký, bài, điểm và kết quả. (SRS §3, BR-08) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
-| UC-12 | Update Contest Configuration | Sửa thông tin, hạn nộp và thể lệ khi cuộc thi chưa đóng. Từ chối lịch sai thứ tự: mở đăng ký, hạn nộp, bắt đầu chấm, kết thúc chấm, công bố. (BR-08) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
-| UC-13 | Manage Contest Categories | Organizer thêm, sửa, kích hoạt/vô hiệu hóa hạng mục. Kiểm tra Participant chỉ đăng ký được hạng mục hợp lệ. (SRS §2.2–3) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
-| UC-14 | Configure Judging Criteria | Lưu tiêu chí và trọng số theo hạng mục. Chấp nhận tổng đúng 100% và báo MSG007 khi tổng sai. (BR-15) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
-| UC-15 | Manage Judging Rounds | Cấu hình một hoặc nhiều vòng chấm, thời hạn từng vòng và số bài đi tiếp. Mở lại để kiểm tra cấu hình đã lưu. (SRS §2.2, BR-14) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
-| UC-16 | Assign Judges to Categories | Phân công theo hạng mục/vòng, bảo đảm ít nhất một Judge hoạt động. Thử tài khoản có xung đột với vai trò Participant trong cùng cuộc thi. (BR-20/21) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
-| UC-17 | View Participant Registrations | Tìm và lọc đăng ký theo cuộc thi, hạng mục và trạng thái nộp. Kiểm tra phạm vi quyền Organizer. (SRS §2.2–3, CR-03) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng contest-registration.test.ts (FPC-087). |
-| UC-34 | Browse & Register for Contests | Tìm cuộc thi đang mở, xem và chấp nhận thể lệ, đăng ký hạng mục hợp lệ. Thử đăng ký trùng, ngoài hạn và xung đột vai trò. (SRS §3, BR-08/21) | PARTIAL (Backend DONE, Web DONE, Mobile DONE) |  |  | Backend đã kiểm thử bằng contest-registration.test.ts; Web & Mobile hoàn thành đăng ký và lưu trạng thái (FPC-087, FPC-088, FPC-089). |
+| UC-01 | Register / Login / Logout | Cả nhóm / Cả nhóm / Cả nhóm | DONE | DONE | | |
+| UC-02 | Recover Password | Cả nhóm / Cả nhóm / Cả nhóm | DONE | DONE | | |
+| UC-03 | View & Update Profile | Cả nhóm / Cả nhóm / Cả nhóm | DONE | DONE | | |
+| UC-04 | Manage User Accounts | Nam / Nam / N/A | DONE | DONE | | |
+| UC-05 | Manage Roles & Permissions | Nam / Nam / N/A | DONE | DONE | | |
 
-| UC | Tiêu chí PASS | Còn cần nghiệm thu |
-| --- | --- | --- |
-| UC-01 | Đăng ký Participant bằng email duy nhất, xác minh email rồi đăng nhập bằng JWT. Từ chối email trùng và token phiên đã đăng xuất. (BR-01/04) | — |
-| UC-02 | Yêu cầu khôi phục qua email, mở liên kết và đặt mật khẩu mới. Kiểm tra mật khẩu cũ bị từ chối. (SRS §2.2) | — |
-| UC-03 | Xem và sửa hồ sơ, ảnh đại diện, mật khẩu của chính mình. Tải lại để kiểm tra dữ liệu đã lưu. (SRS §2.2, CR-01/03) | — |
-| UC-04 | Admin tạo, xem, khóa và mở khóa tài khoản. API bảo vệ từ chối tài khoản bị khóa. Kiểm tra phiên cũ vẫn bị thu hồi sau mở khóa. (BR-02/04, M01) | — |
-| UC-05 | Admin gán một trong 4 vai trò cố định. Kiểm tra quyền mới trên màn hình và API, kể cả thu hồi phiên cũ khi đổi vai trò. (BR-02, CR-03, M01) | — |
+| UC | Tiêu chí nghiệm thu |
+| --- | --- |
+| UC-01 | Đăng ký Participant bằng email duy nhất, xác minh email rồi đăng nhập bằng JWT. Từ chối email trùng và token phiên đã đăng xuất. (BR-01/04) |
+| UC-02 | Yêu cầu khôi phục qua email, mở liên kết và đặt mật khẩu mới. Kiểm tra mật khẩu cũ bị từ chối. (SRS §2.2) |
+| UC-03 | Xem và sửa hồ sơ, ảnh đại diện, mật khẩu của chính mình. Tải lại để kiểm tra dữ liệu đã lưu. (SRS §2.2, CR-01/03) |
+| UC-04 | Admin tạo, xem, khóa và mở khóa tài khoản. API bảo vệ từ chối tài khoản bị khóa. Kiểm tra phiên cũ vẫn bị thu hồi sau mở khóa. (BR-02/04, M01) |
+| UC-05 | Admin gán một trong 4 vai trò cố định. Kiểm tra quyền mới trên màn hình và API, kể cả thu hồi phiên cũ khi đổi vai trò. (BR-02, CR-03, M01) |
 
 ### M02 Analog Master Data — Owner: Bảo
 
@@ -89,11 +86,11 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 | UC-07 | Manage Camera & Lens Catalog | Bảo / Vĩ / Bảo (INT) | TODO | PARTIAL | | |
 | UC-08 | Manage Film Lab Directory | Bảo / Vĩ / Bảo (INT) | TODO | PARTIAL | | |
 
-| UC | Tiêu chí PASS | Còn cần nghiệm thu |
-| --- | --- | --- |
-| UC-06 | Admin tạo/sửa Film Stock với hãng, tên, ISO và loại phim. Vô hiệu hóa vẫn giữ dữ liệu lịch sử. (BR-02/03) | Web quản trị đã có. Cần Backend CRUD/tra cứu và nghiệm thu tích hợp. |
-| UC-07 | Admin tạo/sửa và tra cứu thân máy, ống kính. Kiểm tra dữ liệu dùng được khi khai báo thông số ảnh. (BR-02/22) | Web quản trị đã có. Cần Backend CRUD/tra cứu và nghiệm thu tích hợp. |
-| UC-08 | Admin tạo/sửa và tra cứu Lab tráng/quét phim. Kiểm tra Lab chọn được trong metadata. (BR-02/22) | Web quản trị đã có. Cần Backend CRUD/tra cứu và nghiệm thu tích hợp. |
+| UC | Tiêu chí nghiệm thu |
+| --- | --- |
+| UC-06 | Admin tạo/sửa Film Stock với hãng, tên, ISO và loại phim. Vô hiệu hóa vẫn giữ dữ liệu lịch sử. (BR-02/03) |
+| UC-07 | Admin tạo/sửa và tra cứu thân máy, ống kính. Kiểm tra dữ liệu dùng được khi khai báo thông số ảnh. (BR-02/22) |
+| UC-08 | Admin tạo/sửa và tra cứu Lab tráng/quét phim. Kiểm tra Lab chọn được trong metadata. (BR-02/22) |
 
 ### M03 Contest Lifecycle — Owner: Nam
 
@@ -108,16 +105,16 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 | UC-17 | View Participant Registrations | Dương / Nhân / — | DONE | DONE | | |
 | UC-34 | Browse & Register for Contests | Dương / Dương / Dương | DONE | DONE | | |
 
-| UC | Tiêu chí PASS | Còn cần nghiệm thu |
-| --- | --- | --- |
-| UC-11 | Tạo cuộc thi với năm mốc hợp lệ. Sao chép hạng mục, tiêu chí, vòng, thể lệ và giải sang DRAFT có lịch mới. Kiểm tra bản sao trống đăng ký, bài, điểm và kết quả. (SRS §3, BR-08) | Backend E1/E2 đạt. Web đã tích hợp cấu hình, còn nghiệm thu toàn luồng tạo/sao chép. |
-| UC-12 | Sửa thông tin, hạn nộp và thể lệ khi cuộc thi chưa đóng. Từ chối lịch sai thứ tự: mở đăng ký, hạn nộp, bắt đầu chấm, kết thúc chấm, công bố. (BR-08) | Backend E1 đạt. Còn nghiệm thu luồng sửa trên Web. |
-| UC-13 | Organizer thêm, sửa, kích hoạt/vô hiệu hóa hạng mục. Kiểm tra Participant chỉ đăng ký được hạng mục hợp lệ. (SRS §2.2–3) | Backend quản lý hạng mục đạt E1. Đăng ký Participant còn phụ thuộc UC-34. |
-| UC-14 | Lưu tiêu chí và trọng số theo hạng mục. Chấp nhận tổng đúng 100% và báo MSG007 khi tổng sai. (BR-15) | Backend trọng số và rollback đạt E1. Còn nghiệm thu Web với dữ liệu thật. |
-| UC-15 | Cấu hình một hoặc nhiều vòng chấm, thời hạn từng vòng và số bài đi tiếp. Mở lại để kiểm tra cấu hình đã lưu. (SRS §2.2, BR-14) | Backend vòng chấm đạt E1. Còn nghiệm thu giao diện cấu hình vòng. |
-| UC-16 | Phân công theo hạng mục/vòng, bảo đảm ít nhất một Judge hoạt động. Thử tài khoản có xung đột với vai trò Participant trong cùng cuộc thi. (BR-20/21) | Backend phân công đạt E1. Còn nối và nghiệm thu Web theo hạng mục/vòng. |
-| UC-17 | Tìm và lọc đăng ký theo cuộc thi, hạng mục và trạng thái nộp. Kiểm tra phạm vi quyền Organizer. (SRS §2.2–3, CR-03) | Backend API danh sách đăng ký đã đạt E1/E2 (FPC-087). Còn nghiệm thu Web. |
-| UC-34 | Tìm cuộc thi đang mở, xem và chấp nhận thể lệ, đăng ký hạng mục hợp lệ. Thử đăng ký trùng, ngoài hạn và xung đột vai trò. (SRS §3, BR-08/21) | Backend, Web và Mobile đăng ký cuộc thi và chọn hạng mục đã đạt (FPC-087, FPC-088, FPC-089). |
+| UC | Tiêu chí nghiệm thu |
+| --- | --- |
+| UC-11 | Tạo cuộc thi với năm mốc hợp lệ. Sao chép hạng mục, tiêu chí, vòng, thể lệ và giải sang DRAFT có lịch mới. Kiểm tra bản sao trống đăng ký, bài, điểm và kết quả. (SRS §3, BR-08) |
+| UC-12 | Sửa thông tin, hạn nộp và thể lệ khi cuộc thi chưa đóng. Từ chối lịch sai thứ tự: mở đăng ký, hạn nộp, bắt đầu chấm, kết thúc chấm, công bố. (BR-08) |
+| UC-13 | Organizer thêm, sửa, kích hoạt/vô hiệu hóa hạng mục. Kiểm tra Participant chỉ đăng ký được hạng mục hợp lệ. (SRS §2.2–3) |
+| UC-14 | Lưu tiêu chí và trọng số theo hạng mục. Chấp nhận tổng đúng 100% và báo MSG007 khi tổng sai. (BR-15) |
+| UC-15 | Cấu hình một hoặc nhiều vòng chấm, thời hạn từng vòng và số bài đi tiếp. Mở lại để kiểm tra cấu hình đã lưu. (SRS §2.2, BR-14) |
+| UC-16 | Phân công theo hạng mục/vòng, bảo đảm ít nhất một Judge hoạt động. Thử tài khoản có xung đột với vai trò Participant trong cùng cuộc thi. (BR-20/21) |
+| UC-17 | Tìm và lọc đăng ký theo cuộc thi, hạng mục và trạng thái nộp. Kiểm tra phạm vi quyền Organizer. (SRS §2.2–3, CR-03) |
+| UC-34 | Tìm cuộc thi đang mở, xem và chấp nhận thể lệ, đăng ký hạng mục hợp lệ. Thử đăng ký trùng, ngoài hạn và xung đột vai trò. (SRS §3, BR-08/21) |
 
 ### M04 Film Logbook — Owner: Bảo
 
@@ -126,10 +123,10 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 | UC-35 | Manage Film Roll Log | Bảo / Bảo* / Bảo | PARTIAL | PARTIAL | | |
 | UC-36 | Manage Frame Metadata | Bảo / Bảo* / Bảo | PARTIAL | PARTIAL | | |
 
-| UC | Tiêu chí PASS | Còn cần nghiệm thu |
-| --- | --- | --- |
-| UC-35 | Tạo và quản lý cuộn của mình với tên phim, khổ, ISO, máy, ngày lắp và Lab. Kiểm tra tài khoản khác bị chặn truy cập. (SRS §2.2–3, CR-03) | Có bảng Film Roll. Còn API và luồng Logbook theo SRS. |
-| UC-36 | Lưu ống kính, địa điểm, phơi sáng nếu có. Từ chối số frame không nguyên dương hoặc trùng trong cuộn; chấp nhận số hợp lệ theo BR-23. (SRS §2.2, BR-23) | Thiếu schema/API Frame và liên kết frame chuẩn hóa. |
+| UC | Tiêu chí nghiệm thu |
+| --- | --- |
+| UC-35 | Tạo và quản lý cuộn của mình với tên phim, khổ, ISO, máy, ngày lắp và Lab. Kiểm tra tài khoản khác bị chặn truy cập. (SRS §2.2–3, CR-03) |
+| UC-36 | Lưu ống kính, địa điểm, phơi sáng nếu có. Từ chối số frame không nguyên dương hoặc trùng trong cuộn; chấp nhận số hợp lệ theo BR-23. (SRS §2.2, BR-23) |
 
 ### M05 Submission & Proof — Owner: Dương
 
@@ -144,32 +141,30 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 | UC-39 | Edit / Withdraw Submission | Dương / Dương / Dương | DONE | DONE | | |
 | UC-40 | Track Submission Status | Nam hỗ trợ; chủ API chưa xác minh / Chưa xác minh / Dương | DONE | DONE | | |
 
-| UC | Tiêu chí PASS | Còn cần nghiệm thu |
-| --- | --- | --- |
-| UC-18 | Mở hàng đợi cuộc thi thuộc quyền. Đối chiếu danh sách bài, trạng thái kiểm duyệt và nhãn cảnh báo AI. (SRS §2.2, CR-03) | — |
-| UC-21 | Organizer gửi yêu cầu âm bản hoặc contact sheet với hạn do mình đặt. Kiểm tra thí sinh thấy hạn đúng và Organizer xử lý thủ công khi quá hạn. (BR-06/19) | Backend thông báo, deadline và SMTP thật đạt E1/E3. Còn nghiệm thu màn Participant. |
-| UC-22 | Duyệt bài đạt chuẩn kỹ thuật vào danh sách chấm. Thử bài yêu cầu đối chứng và xác nhận hệ thống chỉ cho duyệt sau xác minh. (BR-06/07/09) | Backend chặn duyệt trước xác minh proof đạt E1. Còn nghiệm thu toàn luồng. |
-| UC-23 | Organizer loại bài vi phạm. Thiếu lý do thì bị chặn; khi thành công kiểm tra trạng thái và AuditLog. (BR-18, CR-04) | — |
-| UC-37 | Nộp ảnh đúng chuẩn, đủ metadata/tuyên ngôn, gắn đăng ký và cuộn/frame thuộc quyền. Thử quá hạn, quá số bài, trùng cuộn/frame và thiếu đối chứng bắt buộc. (BR-05–08/22–24) | Còn đăng ký hạng mục và liên kết Roll/Frame theo SRS. |
-| UC-38 | Tải âm bản hoặc contact sheet cho bài của mình. Kiểm tra Organizer có quyền xem đúng bằng chứng. Quá hạn do Organizer xử lý thủ công. (BR-06/19, CR-03) | Còn nghiệm thu API upload proof và giao diện với tệp thật. |
-| UC-39 | Sửa thông số hoặc rút bài khi còn hạn và chưa vào chấm. Thử cả hai điều kiện chặn. Nếu thay ảnh, bài trở lại kiểm duyệt. (SRS §3, BR-08/24) | Backend PATCH/withdraw POST đã kiểm thử đạt 5/5 test (submission-edit-withdraw.test.ts); Web & Mobile hoàn thành sửa thông số và rút bài theo BR-24 (FPC-096, FPC-097, FPC-098). |
-| UC-40 | Mở và làm mới bài của mình sau thay đổi kiểm duyệt. Đối chiếu trạng thái mới với dữ liệu lưu và thử truy cập bài người khác. (SRS §2.2–3, CR-03) | — |
+| UC | Tiêu chí nghiệm thu |
+| --- | --- |
+| UC-18 | Mở hàng đợi cuộc thi thuộc quyền. Đối chiếu danh sách bài, trạng thái kiểm duyệt và nhãn cảnh báo AI. (SRS §2.2, CR-03) |
+| UC-21 | Organizer gửi yêu cầu âm bản hoặc contact sheet với hạn do mình đặt. Kiểm tra thí sinh thấy hạn đúng và Organizer xử lý thủ công khi quá hạn. (BR-06/19) |
+| UC-22 | Duyệt bài đạt chuẩn kỹ thuật vào danh sách chấm. Thử bài yêu cầu đối chứng và xác nhận hệ thống chỉ cho duyệt sau xác minh. (BR-06/07/09) |
+| UC-23 | Organizer loại bài vi phạm. Thiếu lý do thì bị chặn; khi thành công kiểm tra trạng thái và AuditLog. (BR-18, CR-04) |
+| UC-37 | Nộp ảnh đúng chuẩn, đủ metadata/tuyên ngôn, gắn đăng ký và cuộn/frame thuộc quyền. Thử quá hạn, quá số bài, trùng cuộn/frame và thiếu đối chứng bắt buộc. (BR-05–08/22–24) |
+| UC-38 | Tải âm bản hoặc contact sheet cho bài của mình. Kiểm tra Organizer có quyền xem đúng bằng chứng. Quá hạn do Organizer xử lý thủ công. (BR-06/19, CR-03) |
+| UC-39 | Sửa thông số hoặc rút bài khi còn hạn và chưa vào chấm. Thử cả hai điều kiện chặn. Nếu thay ảnh, bài trở lại kiểm duyệt. (SRS §3, BR-08/24) |
+| UC-40 | Mở và làm mới bài của mình sau thay đổi kiểm duyệt. Đối chiếu trạng thái mới với dữ liệu lưu và thử truy cập bài người khác. (SRS §2.2–3, CR-03) |
 
 ### M06 AI Verification — Owner: Bình
 
 | UC | Chức năng | Backend / Web / Mobile | Backend đạt | Toàn luồng | GV đạt | GV chưa đạt |
 | --- | --- | --- | --- | --- | --- | --- |
-| UC-26 | Approve & Publish Results | Công bố thứ hạng và giải từ vòng cuối đã chốt với đủ đối chứng theo thể lệ. Làm tròn hai chữ số, ghi lý do khi đồng điểm và thử sửa sau công bố. (BR-06/16/25) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
-| UC-27 | Manage Digital Archive & Exhibition | Chọn tác phẩm đưa vào triển lãm. Kiểm tra bản công khai tối ưu có bản quyền và bản gốc độ phân giải cao vẫn riêng tư. (BR-17) | PARTIAL (Backend DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26 bằng organizer-usecases.integration.test.ts. |
-| UC-41 | View Contest Results & Judge Feedback | Participant xem kết quả chung cuộc, điểm trung bình và nhận xét cho bài của mình sau công bố. Thử truy cập phản hồi của tài khoản khác. (SRS §2.2–3, CR-03) | PARTIAL (Backend DONE, Mobile DONE) |  |  | Backend đã kiểm thử ngày 2026-11-26; Mobile hoàn thành Bảng vàng vinh danh (FPC-100/FPC-120). |
-| UC-42 | Manage Personal Film Portfolio | Mở portfolio cá nhân và đối chiếu tác phẩm với lịch sử nộp bài, kết quả tương ứng. Kiểm tra phạm vi tài khoản. (SRS §2.2–3, CR-03) | PARTIAL (Backend DONE, Mobile DONE) |  |  | Backend đã kiểm thử bằng portfolio.test.ts; Mobile hoàn thành màn hình Portfolio & Giải thưởng cá nhân (FPC-101/FPC-123). |
-| UC-43 | Explore Digital Archive & Gallery | Khách xem kho ảnh đã công bố và lọc theo phim, máy, năm. Kiểm tra bài chưa công bố và ảnh gốc được bảo vệ. (SRS §2.2–3, BR-17) | PARTIAL |  |  |  |
+| UC-09 | Configure AI Thresholds | Bình / Vĩ / — | PARTIAL | PARTIAL | | |
+| UC-19 | Trigger AI Verification Scan | Bình / Vĩ / — | PARTIAL | PARTIAL | | |
+| UC-20 | Review AI Flagged Submissions | Bình / Vĩ / — | PARTIAL | PARTIAL | | |
 
-| UC | Tiêu chí PASS | Còn cần nghiệm thu |
-| --- | --- | --- |
-| UC-09 | Admin cấu hình ngưỡng cảnh báo ảnh tạo sinh và tương đồng. Dùng ảnh đại diện kiểm tra kết quả hai phía của ngưỡng. (BR-09/10) | Cần xác nhận các ca PASS theo tiêu chí. |
-| UC-19 | Organizer kích hoạt quét từng bài và hàng loạt. Kiểm tra xử lý nền cho trùng ảnh, ảnh AI và gợi ý thẻ. (BR-09–11, SRS §5) | Cần xác nhận các ca PASS theo tiêu chí. |
-| UC-20 | Xem điểm AI, điểm tương đồng và ảnh khớp theo quyền. Đối chiếu ảnh thi với bằng chứng cạnh nhau. Organizer quyết định và ghi lý do khi gỡ cờ. (BR-09/10/18) | Cần xác nhận các ca PASS theo tiêu chí. |
+| UC | Tiêu chí nghiệm thu |
+| --- | --- |
+| UC-09 | Admin cấu hình ngưỡng cảnh báo ảnh tạo sinh và tương đồng. Dùng ảnh đại diện kiểm tra kết quả hai phía của ngưỡng. (BR-09/10) |
+| UC-19 | Organizer kích hoạt quét từng bài và hàng loạt. Kiểm tra xử lý nền cho trùng ảnh, ảnh AI và gợi ý thẻ. (BR-09–11, SRS §5) |
+| UC-20 | Xem điểm AI, điểm tương đồng và ảnh khớp theo quyền. Đối chiếu ảnh thi với bằng chứng cạnh nhau. Organizer quyết định và ghi lý do khi gỡ cờ. (BR-09/10/18) |
 
 ### M07 Blind Judging — Owner: Nhân
 
@@ -183,15 +178,15 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 | UC-32 | Update Evaluation Score | Bình / Nhân / — | PARTIAL | DONE | | |
 | UC-33 | Lock & Confirm Final Evaluations | Bình / Nhân / — | PARTIAL | DONE | | |
 
-| UC | Tiêu chí PASS | Còn cần nghiệm thu |
-| --- | --- | --- |
-| UC-24 | Theo từng vòng và Judge, đối chiếu số bài được giao, số bài đã chấm và trạng thái xác nhận điểm. (SRS §2.2) | Backend owner và tiến độ riêng từng vòng đạt E1. Còn nghiệm thu Web. |
-| UC-25 | Thử chốt khi còn phiếu bắt buộc chưa xác nhận. Khi đủ, khóa vòng, xếp theo điểm trung bình có trọng số và chọn đúng số bài đi tiếp. (BR-14/25) | Chốt/chuyển vòng, transaction và tách công bố đạt E1. Còn xác nhận đồng điểm tại ranh giới đi tiếp. |
-| UC-29 | Judge chỉ thấy bài được giao. Kiểm tra cả UI lẫn phản hồi API đều ẩn tên, email, avatar, ID và dữ liệu định danh tác giả. (BR-12, CR-03) | Cần xác nhận các ca PASS theo tiêu chí. |
-| UC-30 | Judge phóng to ảnh scan độ phân giải cao và xem metadata chụp/tráng/scan. Kiểm tra ảnh và dữ liệu giữ ẩn danh. (SRS §2.2–3, BR-12) | Cần xác nhận các ca PASS theo tiêu chí. |
-| UC-31 | Chấm theo từng tiêu chí và lưu nhận xét. Đối chiếu tổng điểm có trọng số. Thử xem điểm/nhận xét của Judge khác trước khi vòng kết thúc. (BR-13/15) | Cần xác nhận các ca PASS theo tiêu chí. |
-| UC-32 | Sửa điểm và nhận xét trước khi khóa, kiểm tra lưu vết cập nhật. Thử sửa lại sau khóa và xác nhận bị từ chối. (SRS §2.2, CR-04) | Cần xác nhận các ca PASS theo tiêu chí. |
-| UC-33 | Judge xác nhận hoàn tất và khóa phiếu cá nhân cho vòng được giao. Kiểm tra trạng thái đã khóa và chặn thay đổi tiếp theo. (SRS §2.2–3) | Cần xác nhận các ca PASS theo tiêu chí. |
+| UC | Tiêu chí nghiệm thu |
+| --- | --- |
+| UC-24 | Theo từng vòng và Judge, đối chiếu số bài được giao, số bài đã chấm và trạng thái xác nhận điểm. (SRS §2.2) |
+| UC-25 | Thử chốt khi còn phiếu bắt buộc chưa xác nhận. Khi đủ, khóa vòng, xếp theo điểm trung bình có trọng số và chọn đúng số bài đi tiếp. (BR-14/25) |
+| UC-29 | Judge chỉ thấy bài được giao. Kiểm tra cả UI lẫn phản hồi API đều ẩn tên, email, avatar, ID và dữ liệu định danh tác giả. (BR-12, CR-03) |
+| UC-30 | Judge phóng to ảnh scan độ phân giải cao và xem metadata chụp/tráng/scan. Kiểm tra ảnh và dữ liệu giữ ẩn danh. (SRS §2.2–3, BR-12) |
+| UC-31 | Chấm theo từng tiêu chí và lưu nhận xét. Đối chiếu tổng điểm có trọng số. Thử xem điểm/nhận xét của Judge khác trước khi vòng kết thúc. (BR-13/15) |
+| UC-32 | Sửa điểm và nhận xét trước khi khóa, kiểm tra lưu vết cập nhật. Thử sửa lại sau khóa và xác nhận bị từ chối. (SRS §2.2, CR-04) |
+| UC-33 | Judge xác nhận hoàn tất và khóa phiếu cá nhân cho vòng được giao. Kiểm tra trạng thái đã khóa và chặn thay đổi tiếp theo. (SRS §2.2–3) |
 
 ### M08 Archive & Exhibition — Owner: Nhân
 
@@ -203,13 +198,13 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 | UC-42 | Manage Personal Film Portfolio | Bảo / Bảo* / Bảo | PARTIAL | PARTIAL | | |
 | UC-43 | Explore Digital Archive & Gallery | Dương / Nhân / Dương | DONE | DONE | | |
 
-| UC | Tiêu chí PASS | Còn cần nghiệm thu |
-| --- | --- | --- |
-| UC-26 | Công bố thứ hạng và giải từ vòng cuối đã chốt với đủ đối chứng theo thể lệ. Làm tròn hai chữ số, ghi lý do khi đồng điểm và thử sửa sau công bố. (BR-06/16/25) | Backend công bố, snapshot và điều kiện proof đạt E1/E2. Còn ca đồng điểm và nghiệm thu giao diện. |
-| UC-27 | Chọn tác phẩm đưa vào triển lãm. Kiểm tra bản công khai tối ưu có bản quyền và bản gốc độ phân giải cao vẫn riêng tư. (BR-17) | Backend preview WebP, bảo vệ master và xóa mềm đạt E1/E2. Còn nghiệm thu Web. |
-| UC-41 | Participant xem kết quả chung cuộc, điểm trung bình và nhận xét cho bài của mình sau công bố. Thử truy cập phản hồi của tài khoản khác. (SRS §2.2–3, CR-03) | Backend điểm và feedback đúng Participant đạt E1/E2; Web modal nhận xét giám khảo (FPC-119) & Mobile Bảng vàng vinh danh (FPC-120) hoàn thành. |
-| UC-42 | Mở portfolio cá nhân và đối chiếu tác phẩm với lịch sử nộp bài, kết quả tương ứng. Kiểm tra phạm vi tài khoản. (SRS §2.2–3, CR-03) | Cần xác nhận các ca PASS theo tiêu chí. |
-| UC-43 | Khách xem kho ảnh đã công bố và lọc theo phim, máy, năm. Kiểm tra bài chưa công bố và ảnh gốc được bảo vệ. (SRS §2.2–3, BR-17) | Backend API lọc/phân trang/index WebP bản quyền đã kiểm thử 6/6 test (archive-public.test.ts, FPC-112, FPC-114, FPC-115); Mobile Masonry Gallery & bộ lọc hoàn thành (FPC-124). |
+| UC | Tiêu chí nghiệm thu |
+| --- | --- |
+| UC-26 | Công bố thứ hạng và giải từ vòng cuối đã chốt với đủ đối chứng theo thể lệ. Làm tròn hai chữ số, ghi lý do khi đồng điểm và thử sửa sau công bố. (BR-06/16/25) |
+| UC-27 | Chọn tác phẩm đưa vào triển lãm. Kiểm tra bản công khai tối ưu có bản quyền và bản gốc độ phân giải cao vẫn riêng tư. (BR-17) |
+| UC-41 | Participant xem kết quả chung cuộc, điểm trung bình và nhận xét cho bài của mình sau công bố. Thử truy cập phản hồi của tài khoản khác. (SRS §2.2–3, CR-03) |
+| UC-42 | Mở portfolio cá nhân và đối chiếu tác phẩm với lịch sử nộp bài, kết quả tương ứng. Kiểm tra phạm vi tài khoản. (SRS §2.2–3, CR-03) |
+| UC-43 | Khách xem kho ảnh đã công bố và lọc theo phim, máy, năm. Kiểm tra bài chưa công bố và ảnh gốc được bảo vệ. (SRS §2.2–3, BR-17) |
 
 ### M09 Shared API Contracts — Owner: Nam
 
@@ -226,10 +221,10 @@ Không có UC riêng. Nghiệm thu kỹ thuật tại mục 4.
 | UC-10 | View System Audit Logs | Bảo / Vĩ / — | PARTIAL | PARTIAL | | |
 | UC-28 | Export Contest Analytics Report | DONE; Bình (AI/VERIFY) / Vĩ / — | DONE | PARTIAL | | |
 
-| UC | Tiêu chí PASS | Còn cần nghiệm thu |
-| --- | --- | --- |
-| UC-10 | Admin tra cứu nhật ký thao tác nhạy cảm. Kiểm tra người thực hiện, thời điểm, hành động, dữ liệu cũ/mới và lý do. (BR-18, CR-04) | Audit ghi dùng chung đã có. Thiếu API/UI tra cứu và kiểm tra quyền đọc UC-10. |
-| UC-28 | Organizer xem thống kê DB theo cuộc thi/hạng mục và xuất báo cáo. Kiểm tra AI chỉ nhận số liệu tổng hợp không định danh và số liệu/xuất vẫn dùng được khi AI lỗi. (SRS §3) | Backend đã nghiệm thu theo hồ sơ trước. Còn Web xuất báo cáo và nhà cung cấp AI thật. |
+| UC | Tiêu chí nghiệm thu |
+| --- | --- |
+| UC-10 | Admin tra cứu nhật ký thao tác nhạy cảm. Kiểm tra người thực hiện, thời điểm, hành động, dữ liệu cũ/mới và lý do. (BR-18, CR-04) |
+| UC-28 | Organizer xem thống kê DB theo cuộc thi/hạng mục và xuất báo cáo. Kiểm tra AI chỉ nhận số liệu tổng hợp không định danh và số liệu/xuất vẫn dùng được khi AI lỗi. (SRS §3) |
 
 ## 4. Nghiệm thu kỹ thuật và AI
 
