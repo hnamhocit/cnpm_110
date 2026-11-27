@@ -239,6 +239,28 @@ Không có UC riêng. Nghiệm thu kỹ thuật tại mục 4.
 
 ### Bằng chứng kiểm thử
 
+#### Bộ dữ liệu Lifecycle — 27/11/2026
+
+Phục vụ UC-11–17/34 (BR-08/15/20/21), tách biệt bộ Acceptance dùng cho công bố kết quả/triển lãm. ID cố định xuất từ `lifecycleIds` trong [seed-lifecycle.ts](../../apps/api/src/db/seed/lifecycle.ts).
+
+| Mã | Dữ liệu |
+| --- | --- |
+| O1, O2 | Hai Organizer; O1 quản lý C1/C2/C3, O2 không có quyền quản lý C1 |
+| J1, J2 | Hai Judge được phân công CAT1 trong cả R1 và R2 |
+| P1, P2 | Hai Participant chưa đăng ký, sẵn sàng thử luồng đăng ký |
+| C1 | OPEN, đang trong hạn đăng ký/nộp bài khi khởi tạo seed |
+| C2 | UNDER_REVIEW, đã hết hạn đăng ký/nộp bài |
+| C3 | DRAFT, lịch trong tương lai |
+| CAT1, CAT2 | Hai hạng mục của C1: hoạt động / vô hiệu hóa |
+| R1, R2 | Sơ khảo và chung khảo cùng C1, chưa bắt đầu/khóa |
+| K1, K2, K3 | Tiêu chí CAT1 có trọng số 40%, 30%, 30% |
+
+Tài khoản: `lifecycle.o1@example.com`, `lifecycle.o2@example.com`, `lifecycle.j1@example.com`, `lifecycle.j2@example.com`, `lifecycle.p1@example.com`, `lifecycle.p2@example.com`; mật khẩu `password123`, đã xác minh email.
+
+Chạy `bun --filter api db:seed:lifecycle` với `DATABASE_URL` trỏ database local đã migrate. Migration/seed thường trên local cũng tự thêm bộ này; nhánh seed Acceptance giữ nguyên, có thể gọi lệnh Lifecycle riêng nếu cần. Chạy lại không ghi đè trạng thái đã thao tác nghiệm thu; lịch tính tương đối tại lần tạo đầu tiên.
+
+Đã kiểm thử trên `cinegen_lifecycle_verify_20261127`: 3 test, 33 assertions đạt trong [lifecycle-seed.integration.test.ts](../../apps/api/tests/lifecycle-seed.integration.test.ts), gồm lịch/trạng thái, tài khoản/vai trò, hạng mục, trọng số, phân công hai vòng và chạy lại không ghi đè. TypeScript API đạt. Đã chạy lại `bun --filter api db:seed:lifecycle` thành công trên `DATABASE_URL` hiện tại trong `apps/api/.env`: bộ Lifecycle đã tồn tại, giữ nguyên dữ liệu. Log in riêng từng tài khoản O1/O2/J1/J2/P1/P2 với vai trò, email, mật khẩu lúc khởi tạo và mục đích sử dụng; đồng thời đọc trạng thái, lịch, hạng mục, vòng và trọng số hiện tại từ database.
+
 | Mã | Bằng chứng | Kết quả gần nhất |
 | --- | --- | --- |
 | E1 | [Integration Backend và audit](../../apps/api/tests/organizer-usecases.integration.test.ts) | 16 test, 120 assertions đạt. Ca gửi SMTP thật chạy riêng. |

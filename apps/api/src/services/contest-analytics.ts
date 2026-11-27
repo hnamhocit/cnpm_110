@@ -1,3 +1,4 @@
+import { env } from "../config/env";
 import { and, count, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
@@ -131,7 +132,7 @@ async function getCameraStats(contestId: string) {
 export async function generateContestAnalytics(
   statistics: Awaited<ReturnType<typeof getContestAnalytics>>,
 ) {
-  const url = Bun.env.AI_ANALYTICS_URL;
+  const url = env.aiAnalyticsUrl;
   if (!url) return null;
 
   const { totals, categories } = statistics;
@@ -143,7 +144,7 @@ export async function generateContestAnalytics(
   };
 
   try {
-    const key = Bun.env.AI_ANALYTICS_API_KEY;
+    const key = env.aiAnalyticsApiKey;
     const response = await fetch(url, {
       method: "POST",
       headers: {

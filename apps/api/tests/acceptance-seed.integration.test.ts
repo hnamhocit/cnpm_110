@@ -6,7 +6,7 @@ import {
   acceptanceIds as ids,
   assertAcceptanceEnvironment,
   seedAcceptance,
-} from "../src/db/seed-acceptance";
+} from "../src/db/seed/acceptance";
 import auth from "../src/routes/auth.route";
 import contests from "../src/routes/contests.route";
 import submissions from "../src/routes/submissions.route";

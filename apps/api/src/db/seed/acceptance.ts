@@ -1,7 +1,8 @@
+import { env } from "../../config/env";
 import { eq, sql } from "drizzle-orm";
 import sharp from "sharp";
-import { uploadToR2 } from "../r2";
-import { db } from "./index";
+import { uploadToR2 } from "../../r2";
+import { db } from "../index";
 import {
   categories,
   contestJudges,
@@ -19,7 +20,7 @@ import {
   userRoles,
   users,
   exhibitionImages,
-} from "./schema";
+} from "../schema";
 
 // Keep the original aliases stable. Add new aliases at the end only.
 const aliases = [
@@ -118,9 +119,9 @@ function schedule(anchor: Date) {
 }
 
 export function assertAcceptanceEnvironment() {
-  const url = URL.parse(Bun.env.DATABASE_URL ?? "");
+  const url = new URL(env.databaseUrl);
   if (
-    Bun.env.NODE_ENV === "production" ||
+    env.nodeEnv === "production" ||
     !url ||
     !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) ||
     !/^\/cinegen_acceptance_(?:test|verify(?:_[a-z0-9]+)?)$/.test(url.pathname)
@@ -143,7 +144,7 @@ export function assertAcceptanceEnvironment() {
 
 export async function seedAcceptance() {
   assertAcceptanceEnvironment();
-  const storagePrefix = `acceptance/${new URL(Bun.env.DATABASE_URL!).pathname.slice(1)}/`;
+  const storagePrefix = `acceptance/${new URL(env.databaseUrl).pathname.slice(1)}/`;
   await db.transaction(async (tx) => {
     await tx.execute(
       sql`SELECT pg_advisory_xact_lock(hashtext('cinegen:seed:acceptance'))`,
@@ -162,7 +163,7 @@ export async function seedAcceptance() {
           "Legacy acceptance fixtures detected. Preserve that database and seed a separate clean cinegen_acceptance_verify_* database.",
         );
       console.log(
-        "[Seed nghiệm thu] Fixtures already exist; preserving current test state.",
+        "[Seed] Fixtures already exist; preserving current test state.",
       );
       return;
     }
@@ -381,7 +382,7 @@ export async function seedAcceptance() {
     .where(eq(contestPublications.contestId, ids.C1));
   if (!publication.length) {
     const { publishContestResults } = await import(
-      "../services/contest-publication"
+      "../../services/contest-publication"
     );
     await publishContestResults(ids.C1, ids.O1, []);
   }
@@ -392,12 +393,12 @@ export async function seedAcceptance() {
     .limit(1);
   if (!preview.length) {
     const { archiveContestWorks } = await import(
-      "../services/exhibition.service"
+      "../../services/exhibition.service"
     );
     await archiveContestWorks(ids.C1, ids.O1, {});
   }
   console.log(
-    "[Seed nghiệm thu] v2 loaded. See acceptanceIds and the API for current fixture states.",
+    "[Seed] v2 loaded. See acceptanceIds and the API for current fixture states.",
   );
 }
 

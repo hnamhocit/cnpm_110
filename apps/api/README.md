@@ -118,6 +118,6 @@ Fixture v2 dùng database local `cinegen_acceptance_test` hoặc `cinegen_accept
 - R1 thuộc C1, R2 thuộc C3. Mỗi hạng mục đã chấm có hai tiêu chí 0.5/0.5 và hai Judge đã xác nhận. S1/S3 có phiếu 8/9 và 9/8; S2/S4 có phiếu 7/8 và 8/7. Seed không chép điểm vào response giả.
 - ROLL1 thuộc P1, ROLL2 thuộc P2. Metadata dùng roll ID thật và số frame riêng 1/2. Schema/API registration và Frame chưa có, được ghi rõ là phụ thuộc N134-05 trong checklist.
 - Năm mốc được tạo tương đối tại lần seed đầu. Đọc thời gian thật từ API. Chạy lại seed giữ trạng thái hiện tại, không đổi lịch hay công bố lại.
-- Alias UUID được xuất qua `acceptanceIds` trong [seed-acceptance.ts](src/db/seed-acceptance.ts). Các alias gốc giữ UUID, alias mới được nối cuối danh sách.
+- Alias UUID được xuất qua `acceptanceIds` trong [seed-acceptance.ts](src/db/seed/acceptance.ts). Các alias gốc giữ UUID, alias mới được nối cuối danh sách.
 
 Smoke test dùng DB kiểm chứng riêng đã migrate. Chạy `bun --filter api test:all tests/acceptance-seed.integration.test.ts` với DATABASE_URL trỏ vào DB đó. Bộ test đăng nhập qua API thật, đọc contest/bài/kết quả, kiểm tra storage và điều kiện công bố, rồi khôi phục các điều kiện lỗi tạm thời. Không cần chỉnh DB thủ công.

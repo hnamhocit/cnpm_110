@@ -24,6 +24,14 @@ Before writing or proposing code, schemas, or API changes, read the master SRS a
 
 - Keep `docs/ai/` focused on technical specifications and instructions for AI implementation. Record progress, bugs, review notes, test results, and acceptance evidence in `docs/progress/checklist.md`.
 
+## Database target and completion requirements
+
+- For database, migration, schema, and seed work, the required target is the current `DATABASE_URL` loaded from the application's `.env` (`apps/api/.env` for API commands). Read the effective configuration before executing commands; do not print credentials or the full connection URL.
+- Apply the requested changes and verify the resulting schema, data, and relevant application behavior against that configured database. Do not substitute a hardcoded URL, another local database, or a newly created verification database unless the user explicitly requests a different target.
+- Separate test databases may be used for additional checks, but passing those checks does not complete the task. Do not report database work as complete or hand off a command as working until it succeeds against the database configured in `.env`.
+- If the configured database has schema drift or inconsistent migration history, investigate and resolve that condition as part of the authorized work while preserving existing data. Do not bypass the problem by switching databases or changing `.env` to point elsewhere.
+- Never reset, drop, truncate, or erase existing database data to resolve migration or seed failures without explicit user authorization. If a required action is blocked by permissions or would require destructive recovery, state the exact blocker and request only the necessary approval; do not claim completion.
+
 ## Monorepo & Tooling Rules
 
 - **Package Manager**: Use `bun` exclusively (`bun install`, `bun dev`, `bun run build`). NEVER use `npm`, `yarn`, or `pnpm`.
