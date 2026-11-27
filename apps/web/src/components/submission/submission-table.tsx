@@ -7,6 +7,7 @@ import {
   FileClock,
   Search,
   ShieldCheck,
+  Sparkles,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
