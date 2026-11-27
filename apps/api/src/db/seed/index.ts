@@ -1,4 +1,5 @@
 import { env } from "../../config/env";
+import { seedMasterData } from "../seed-master-data";
 import { seedRoles, seedUsers } from "./accounts";
 import { seedOngoingContest, seedPublishedContest } from "./contests";
 import { seedDemoSubmissions } from "./demo-submissions";
@@ -28,6 +29,7 @@ export async function seed() {
     return;
   }
 
+  await seedMasterData();
   await seedOngoingContest(organizerUserId, participantUserId);
   await seedPublishedContest(organizerUserId, participantUserId);
   if (isLocalDatabase) {

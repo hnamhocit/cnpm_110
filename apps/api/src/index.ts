@@ -19,6 +19,7 @@ import rbacRoute from "./routes/rbac.route";
 import usersRoute from "./routes/users.route";
 import healthRoute from "./routes/health.route";
 import judgeRoute from "./routes/judge.route";
+import masterDataRoute from "./routes/master-data.route";
 import submissionRoute from "./routes/submissions.route";
 import uploadRoute from "./routes/upload.route";
 import { AppError } from "./utils/errors";
@@ -70,6 +71,7 @@ v1.route("/ai", aiWebhookRoute);
 v1.route("/upload", uploadRoute)
 
 v1.route("/rbac", rbacRoute);
+v1.route("/master-data", masterDataRoute);
 v1.route("/film-rolls", filmLogbookRoute);
 v1.route("/audit-logs", auditLogsRoute);
 app.route("/api/v1", v1);
