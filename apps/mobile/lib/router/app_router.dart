@@ -15,6 +15,7 @@ import '../screens/contest/contest_detail_screen.dart';
 import '../screens/contest/photo_detail_screen.dart';
 import '../screens/contest/winners_showcase_screen.dart';
 import '../screens/film_dev_scan/film_dev_scan_screen.dart';
+import '../screens/film_logbook/film_logbook_screen.dart';
 import '../screens/film_params/film_params_screen.dart';
 import '../screens/main_screen.dart';
 import '../screens/profile_screen.dart';
@@ -80,6 +81,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/my-submissions',
       builder: (context, state) => const MySubmissionsScreen(),
+    ),
+    GoRoute(
+      path: '/film-logbook',
+      builder: (context, state) => const FilmLogbookScreen(),
     ),
     GoRoute(
       path: '/contests/:id',

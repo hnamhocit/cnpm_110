@@ -112,11 +112,10 @@ export async function publishResults(
 export async function getContestResults(
   contestId: string,
 ): Promise<ContestResults> {
-  return unwrap(
-    await http.get<ContestResults>(
-      `/api/v1/contests/${encodeURIComponent(contestId)}/results`,
-    ),
-  );
+  const response = await http.get<
+    ContestResults & { data?: ContestResults }
+  >(`/api/v1/contests/${encodeURIComponent(contestId)}/results`);
+  return response.data.data ?? response.data;
 }
 
 export async function getSubmissionFeedback(

@@ -27,7 +27,10 @@ export interface Submission {
   categoryRequiresProofUpfront?: boolean | null;
   aiAnalysis?: {
     aiGeneratedProbability?: number | null;
+    phashHex?: string | null;
+    duplicateSuspectId?: string | null;
     duplicateSimilarityScore?: number | null;
+    predictedTags?: { tag: string; confidence?: number | null }[] | null;
     flagReasons?: string[] | null;
   } | null;
 }

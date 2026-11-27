@@ -12,13 +12,22 @@ export type ModerationAction =
 export type ProofRequestPayload = {
   reason: string;
   proofDeadlineAt: string;
+  proofType: "negative" | "contact_sheet";
 };
 
 export type ProofRequestResponse = {
+  id?: string;
   submissionId?: string;
   status?: SubmissionStatus;
+  proofType?: "negative" | "contact_sheet";
+  proofStatus?: string;
   proofRequestedAt?: string | null;
   proofDeadlineAt?: string | null;
+  proofVerifiedAt?: string | null;
+  proofUrl?: string | null;
+  contestId?: string;
+  categoryId?: string;
+  title?: string;
 };
 
 export class SubmissionModerationError extends Error {
@@ -45,7 +54,6 @@ export function getSubmissionApiErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : fallback;
 }
 
-// /request-proof is planned per OpenAPI; backend FPC-093 must mount it and store the Organizer-set deadline.
 export async function requestProof(
   id: string,
   payload: ProofRequestPayload,
@@ -53,6 +61,27 @@ export async function requestProof(
   const response = await http.post<unknown>(
     `/api/v1/submissions/${id}/request-proof`,
     payload,
+  );
+  const body = response.data as
+    | { data?: ProofRequestResponse | null }
+    | ProofRequestResponse
+    | null;
+  const data =
+    (body && "data" in body
+      ? body.data
+      : (body as ProofRequestResponse | null)) ?? {};
+
+  if (data.id && !data.submissionId) {
+    return { ...data, submissionId: data.id };
+  }
+  return data;
+}
+
+export async function verifyProof(
+  id: string,
+): Promise<ProofRequestResponse> {
+  const response = await http.post<unknown>(
+    `/api/v1/submissions/${id}/verify-proof`,
   );
   const body = response.data as
     | { data?: ProofRequestResponse | null }

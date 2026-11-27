@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/providers/master_data_provider.dart';
 import '../../models/film_dev_scan_params.dart';
 import 'film_dev_scan_form.dart';
 
@@ -227,10 +229,19 @@ class _FilmDevScanScreenState extends State<FilmDevScanScreen> {
                   ),
                   const SizedBox(height: 16),
                 ],
-                FilmDevScanForm(
-                  initialParams: widget.initialParams,
-                  onSubmit: _onFormSubmitted,
-                ),
+                if (context.findAncestorWidgetOfExactType<UncontrolledProviderScope>() != null)
+                  Consumer(
+                    builder: (context, ref, _) => FilmDevScanForm(
+                      initialParams: widget.initialParams,
+                      onSubmit: _onFormSubmitted,
+                      catalog: ref.watch(masterDataCatalogProvider).asData?.value,
+                    ),
+                  )
+                else
+                  FilmDevScanForm(
+                    initialParams: widget.initialParams,
+                    onSubmit: _onFormSubmitted,
+                  ),
               ],
             ),
           ),

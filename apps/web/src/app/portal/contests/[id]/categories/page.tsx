@@ -75,7 +75,6 @@ export default function ContestCategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [gapBanner, setGapBanner] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!contestId) {
@@ -90,7 +89,6 @@ export default function ContestCategoriesPage() {
     } catch (loadError) {
       const mapped = toContestConfigError(loadError);
       setError(mapped.message);
-      if (mapped.contractGap) setGapBanner(mapped.contractGap);
     } finally {
       setLoading(false);
     }
@@ -125,7 +123,6 @@ export default function ContestCategoriesPage() {
     } catch (saveError) {
       const mapped = toContestConfigError(saveError);
       setError(mapped.message);
-      if (mapped.contractGap) setGapBanner(mapped.contractGap);
       toast.error(mapped.message);
     } finally {
       setSaving(false);
@@ -149,7 +146,6 @@ export default function ContestCategoriesPage() {
     } catch (toggleError) {
       const mapped = toContestConfigError(toggleError);
       setError(mapped.message);
-      if (mapped.contractGap) setGapBanner(mapped.contractGap);
       toast.error(mapped.message);
     }
   };
@@ -183,12 +179,6 @@ export default function ContestCategoriesPage() {
         </Button>
       </div>
 
-      {gapBanner && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
-          API quản lý hạng mục chưa mount (FPC-083). Biểu mẫu vẫn giữ lại để
-          thao tác khi backend sẵn sàng.
-        </div>
-      )}
       {error && (
         <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-700">
           {error}

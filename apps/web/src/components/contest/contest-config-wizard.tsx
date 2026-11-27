@@ -26,8 +26,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  CONTEST_CONFIG_GAP_MESSAGE,
   createContestConfig,
+  duplicateContestConfig,
   fetchContestCategories,
   fetchContestConfig,
   splitDescription,
@@ -160,7 +160,6 @@ function categoryFromRecord(
   index: number,
 ): CategoryConfig {
   const format = record.formatRestriction ?? record.format_restriction ?? "ALL";
-  // TODO(backend): GET categories không trả criteria theo hạng mục (FPC-083); dùng bộ mẫu để tiếp tục wizard.
   return {
     id: record.id,
     code: record.code || `CAT-${index + 1}`,
@@ -249,6 +248,7 @@ export function ContestConfigWizard({
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const requestRef = useRef(0);
 
   const loadSource = useCallback(async () => {
@@ -264,6 +264,7 @@ export function ContestConfigWizard({
     setLoading(true);
     setLoadError(null);
     setBanner(null);
+    setTouched({});
 
     try {
       const [record, categories] = await Promise.all([
@@ -315,6 +316,11 @@ export function ContestConfigWizard({
         : validateContestConfig(input),
     [input, mode],
   );
+  const markTouched = (key: string) =>
+    setTouched((previous) =>
+      previous[key] ? previous : { ...previous, [key]: true },
+    );
+  const errorFor = (key: string) => (touched[key] ? errors[key] : undefined);
   const categoryIndex = Math.min(
     selectedCategory,
     Math.max(input.categories.length - 1, 0),
@@ -329,6 +335,8 @@ export function ContestConfigWizard({
       : errors.judgingStartAt?.code === "MSG008"
         ? errors.judgingStartAt
         : null;
+  const showTimelineError =
+    timelineError !== null && TIMELINE_FIELDS.some((key) => touched[key]);
   const locked = mode === "edit" && isLockedStatus(input.status);
   const canSave =
     !hasValidationErrors(errors) && !locked && !saving && !loading;
@@ -386,7 +394,12 @@ export function ContestConfigWizard({
     const payload: ContestConfigInput = { ...input, status };
 
     try {
-      if (mode === "edit" && contestId) {
+      if (mode === "duplicate" && sourceId) {
+        const created = await duplicateContestConfig(sourceId, payload);
+        if (!created?.id) throw new Error("Thiếu mã cuộc thi sau khi sao chép.");
+        toast.success(`Sao chép cuộc thi "${payload.name}" thành công.`);
+        router.push(`/portal/contests/${created.id}`);
+      } else if (mode === "edit" && contestId) {
         await updateContestConfig(contestId, payload);
         toast.success("Đã cập nhật cấu hình cuộc thi.");
         router.push(`/portal/contests/${contestId}`);
@@ -400,7 +413,6 @@ export function ContestConfigWizard({
     } catch (error) {
       const mapped = toContestConfigError(error);
       setLoadError(mapped.message);
-      if (mapped.contractGap) setBanner(mapped.contractGap);
       toast.error(mapped.message);
     } finally {
       setSaving(false);
@@ -450,15 +462,6 @@ export function ContestConfigWizard({
         </p>
       </div>
 
-      {mode === "edit" && (
-        <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
-          <span>
-            Backend hiện chỉ lưu tên/chủ đề/thể lệ và 2 mốc start/end. Các mốc
-            BR-08, hạng mục, tiêu chí, giải đang ở dạng form chuẩn và cần
-            FPC-083 để lưu đầy đủ.
-          </span>
-        </div>
-      )}
       {banner && (
         <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
           <TriangleAlert className="mt-0.5 size-4 shrink-0" />
@@ -512,13 +515,17 @@ export function ContestConfigWizard({
                   <Input
                     id="config-name"
                     value={input.name}
-                    onChange={(event) => setField("name", event.target.value)}
+                    onChange={(event) => {
+                      markTouched("name");
+                      setField("name", event.target.value);
+                    }}
+                    onBlur={() => markTouched("name")}
                     placeholder="VD: Hương Sắc Phim Màu 2026"
-                    aria-invalid={Boolean(errors.name)}
+                    aria-invalid={Boolean(errorFor("name"))}
                   />
-                  {errors.name && (
+                  {errorFor("name") && (
                     <p className="text-xs text-red-600">
-                      {errors.name.message}
+                      {errorFor("name")?.message}
                     </p>
                   )}
                 </div>
@@ -527,13 +534,17 @@ export function ContestConfigWizard({
                   <Input
                     id="config-slug"
                     value={input.slug ?? ""}
-                    onChange={(event) => setField("slug", event.target.value)}
+                    onChange={(event) => {
+                      markTouched("slug");
+                      setField("slug", event.target.value);
+                    }}
+                    onBlur={() => markTouched("slug")}
                     placeholder="huong-sac-phim-mau-2026"
-                    aria-invalid={Boolean(errors.slug)}
+                    aria-invalid={Boolean(errorFor("slug"))}
                   />
-                  {errors.slug && (
+                  {errorFor("slug") && (
                     <p className="text-xs text-red-600">
-                      {errors.slug.message}
+                      {errorFor("slug")?.message}
                     </p>
                   )}
                 </div>
@@ -544,11 +555,17 @@ export function ContestConfigWizard({
                 <Input
                   id="config-theme"
                   value={input.theme}
-                  onChange={(event) => setField("theme", event.target.value)}
-                  aria-invalid={Boolean(errors.theme)}
+                  onChange={(event) => {
+                    markTouched("theme");
+                    setField("theme", event.target.value);
+                  }}
+                  onBlur={() => markTouched("theme")}
+                  aria-invalid={Boolean(errorFor("theme"))}
                 />
-                {errors.theme && (
-                  <p className="text-xs text-red-600">{errors.theme.message}</p>
+                {errorFor("theme") && (
+                  <p className="text-xs text-red-600">
+                    {errorFor("theme")?.message}
+                  </p>
                 )}
               </div>
 
@@ -557,12 +574,18 @@ export function ContestConfigWizard({
                 <textarea
                   id="config-rules"
                   value={input.rules}
-                  onChange={(event) => setField("rules", event.target.value)}
+                  onChange={(event) => {
+                    markTouched("rules");
+                    setField("rules", event.target.value);
+                  }}
+                  onBlur={() => markTouched("rules")}
                   className="min-h-24 w-full rounded-lg border border-input bg-transparent p-2.5 text-sm"
-                  aria-invalid={Boolean(errors.rules)}
+                  aria-invalid={Boolean(errorFor("rules"))}
                 />
-                {errors.rules && (
-                  <p className="text-xs text-red-600">{errors.rules.message}</p>
+                {errorFor("rules") && (
+                  <p className="text-xs text-red-600">
+                    {errorFor("rules")?.message}
+                  </p>
                 )}
               </div>
 
@@ -587,14 +610,19 @@ export function ContestConfigWizard({
                     min={1}
                     max={10}
                     value={input.maxEntriesPerUser}
-                    onChange={(event) =>
-                      setField("maxEntriesPerUser", Number(event.target.value))
-                    }
-                    aria-invalid={Boolean(errors.maxEntriesPerUser)}
+                    onChange={(event) => {
+                      markTouched("maxEntriesPerUser");
+                      setField(
+                        "maxEntriesPerUser",
+                        Number(event.target.value),
+                      );
+                    }}
+                    onBlur={() => markTouched("maxEntriesPerUser")}
+                    aria-invalid={Boolean(errorFor("maxEntriesPerUser"))}
                   />
-                  {errors.maxEntriesPerUser && (
+                  {errorFor("maxEntriesPerUser") && (
                     <p className="text-xs text-red-600">
-                      {errors.maxEntriesPerUser.message}
+                      {errorFor("maxEntriesPerUser")?.message}
                     </p>
                   )}
                 </div>
@@ -620,20 +648,22 @@ export function ContestConfigWizard({
                         id={`timeline-${key}`}
                         type="datetime-local"
                         value={input[key]}
-                        onChange={(event) =>
-                          setTimeline(key, event.target.value)
-                        }
-                        aria-invalid={Boolean(errors[key])}
+                        onChange={(event) => {
+                          markTouched(key);
+                          setTimeline(key, event.target.value);
+                        }}
+                        onBlur={() => markTouched(key)}
+                        aria-invalid={Boolean(errorFor(key))}
                       />
-                      {errors[key] && (
+                      {errorFor(key) && (
                         <p className="text-xs text-red-600">
-                          {errors[key].message}
+                          {errorFor(key)?.message}
                         </p>
                       )}
                     </div>
                   ))}
                 </div>
-                {timelineError && (
+                {showTimelineError && (
                   <p className="rounded-md border border-red-200 bg-red-50 p-2 text-xs font-medium text-red-600">
                     {MSG008_INVALID_TIMELINE}
                   </p>
@@ -649,9 +679,9 @@ export function ContestConfigWizard({
                   Chưa có hạng mục. Thêm ít nhất một hạng mục để tiếp tục.
                 </p>
               )}
-              {errors.categories && (
+              {errorFor("categories") && (
                 <p className="text-xs font-medium text-red-600">
-                  {errors.categories.message}
+                  {errorFor("categories")?.message}
                 </p>
               )}
               {input.categories.map((category, index) => (
@@ -701,16 +731,22 @@ export function ContestConfigWizard({
                       <Input
                         id={`category-name-${index}`}
                         value={category.name}
-                        onChange={(event) =>
-                          updateCategory(index, { name: event.target.value })
-                        }
+                        onChange={(event) => {
+                          markTouched("categories");
+                          markTouched(`categories.${index}.name`);
+                          updateCategory(index, { name: event.target.value });
+                        }}
+                        onBlur={() => {
+                          markTouched("categories");
+                          markTouched(`categories.${index}.name`);
+                        }}
                         aria-invalid={Boolean(
-                          errors[`categories.${index}.name`],
+                          errorFor(`categories.${index}.name`),
                         )}
                       />
-                      {errors[`categories.${index}.name`] && (
+                      {errorFor(`categories.${index}.name`) && (
                         <p className="text-xs text-red-600">
-                          {errors[`categories.${index}.name`].message}
+                          {errorFor(`categories.${index}.name`)?.message}
                         </p>
                       )}
                     </div>
@@ -750,28 +786,36 @@ export function ContestConfigWizard({
                         min={1}
                         max={10}
                         value={category.maxEntriesPerParticipant}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          markTouched("categories");
+                          markTouched(
+                            `categories.${index}.maxEntriesPerParticipant`,
+                          );
                           updateCategory(index, {
                             maxEntriesPerParticipant: Number(
                               event.target.value,
                             ),
-                          })
-                        }
+                          });
+                        }}
+                        onBlur={() => {
+                          markTouched("categories");
+                          markTouched(
+                            `categories.${index}.maxEntriesPerParticipant`,
+                          );
+                        }}
                         aria-invalid={Boolean(
-                          errors[
-                            `categories.${index}.maxEntriesPerParticipant`
-                          ],
+                          errorFor(
+                            `categories.${index}.maxEntriesPerParticipant`,
+                          ),
                         )}
                       />
-                      {errors[
-                        `categories.${index}.maxEntriesPerParticipant`
-                      ] && (
+                      {errorFor(
+                        `categories.${index}.maxEntriesPerParticipant`,
+                      ) && (
                         <p className="text-xs text-red-600">
-                          {
-                            errors[
-                              `categories.${index}.maxEntriesPerParticipant`
-                            ].message
-                          }
+                          {errorFor(
+                            `categories.${index}.maxEntriesPerParticipant`,
+                          )?.message}
                         </p>
                       )}
                     </div>
@@ -1040,10 +1084,6 @@ export function ContestConfigWizard({
                     <dd className="font-medium">{input.publishedAt || "—"}</dd>
                   </div>
                 </dl>
-                <p className="mt-3 text-xs text-amber-700">
-                  {CONTEST_CONFIG_GAP_MESSAGE} Các hạng mục, tiêu chí và giải
-                  thưởng có thể chưa được lưu xuống backend.
-                </p>
               </div>
             </div>
           )}

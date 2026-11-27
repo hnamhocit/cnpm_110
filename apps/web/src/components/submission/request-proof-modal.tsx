@@ -42,6 +42,9 @@ export function RequestProofModal({
 }: RequestProofModalProps) {
   const [reason, setReason] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [proofType, setProofType] = useState<
+    "negative" | "contact_sheet"
+  >("negative");
   const [submitting, setSubmitting] = useState(false);
 
   const reasonError = validateReason(reason);
@@ -51,6 +54,7 @@ export function RequestProofModal({
     if (!open) {
       setReason("");
       setDeadline("");
+      setProofType("negative");
       setSubmitting(false);
     }
   }, [open]);
@@ -78,6 +82,7 @@ export function RequestProofModal({
       const result = await requestProof(submission.id, {
         reason: normalizeReason(reason),
         proofDeadlineAt: iso,
+        proofType,
       });
       toast.success(
         `Đã gửi yêu cầu bổ sung bằng chứng cho thí sinh (Hạn chót: ${formatDeadlineForMessage(result.proofDeadlineAt ?? iso)}).`,
@@ -126,6 +131,23 @@ export function RequestProofModal({
             <p className="text-xs text-muted-foreground">
               {normalizeReason(reason).length}/10 ký tự tối thiểu
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="proof-type">Loại bằng chứng</Label>
+            <select
+              id="proof-type"
+              value={proofType}
+              onChange={(event) =>
+                setProofType(
+                  event.target.value as "negative" | "contact_sheet",
+                )
+              }
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+            >
+              <option value="negative">Âm bản</option>
+              <option value="contact_sheet">Contact sheet</option>
+            </select>
           </div>
 
           <div className="space-y-2">

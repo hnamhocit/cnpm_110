@@ -19,6 +19,7 @@ import { http } from "@/lib/http/client";
 import {
   getSubmissionApiErrorMessage,
   moderateSubmission,
+  verifyProof,
 } from "@/lib/submission-moderation-api";
 import {
   getSubmissionCode,
@@ -124,10 +125,10 @@ export function ProofReviewModal({
   async function handleApprove() {
     if (!submission || !verified || reasonError || submitting) return;
 
-    // Backend chưa có endpoint lưu review_status = VALID; web chỉ chặn ở client, cần FPC-093 chặn server-side.
     const id = submission.id;
     setSubmitting(true);
     try {
+      await verifyProof(id);
       await moderateSubmission(
         id,
         "APPROVE_FOR_JUDGING",

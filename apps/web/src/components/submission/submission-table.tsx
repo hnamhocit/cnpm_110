@@ -81,6 +81,14 @@ const statusLabels: Record<SubmissionStatus, string> = {
 };
 
 // DTO thực tế của GET /api/v1/submissions (apps/api/src/routes/submissions.ts).
+type AiAnalysis = {
+  aiGeneratedProbability?: number | null;
+  duplicateSimilarityScore?: number | null;
+  flagReasons?: string[] | null;
+};
+
+type SubmissionWithAi = Submission & { aiAnalysis?: AiAnalysis | null };
+
 type ApiSubmission = {
   id: string;
   participantId: string;
@@ -88,6 +96,7 @@ type ApiSubmission = {
   title: string;
   status: SubmissionStatus;
   aiFlagged: boolean;
+  aiAnalysis?: AiAnalysis | null;
   createdAt: string;
   code?: string | null;
   submissionCode?: string | null;
@@ -103,13 +112,14 @@ type SubmissionListResponse = {
   data: ApiSubmission[];
 };
 
-function mapApiToSubmission(api: ApiSubmission): Submission {
+function mapApiToSubmission(api: ApiSubmission): SubmissionWithAi {
   return {
     id: api.id,
     authorName: api.authorName || api.participantId || "Thí sinh ẩn danh",
     title: api.title,
     submittedAt: api.createdAt,
     isAiFlagged: api.aiFlagged,
+    aiAnalysis: api.aiAnalysis,
     status: api.status,
     code: api.code,
     submissionCode: api.submissionCode,
@@ -127,7 +137,7 @@ type SubmissionTableProps = {
 };
 
 export default function SubmissionTable({ contestId }: SubmissionTableProps) {
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [submissions, setSubmissions] = useState<SubmissionWithAi[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -184,7 +194,10 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
     fetchSubmissions();
   }, [contestId, aiFilter]);
 
-  const visibleSubmissions = filterSubmissions(submissions, query);
+  const visibleSubmissions = filterSubmissions(
+    submissions,
+    query,
+  ) as SubmissionWithAi[];
   const findSubmission = (id: string) =>
     submissions.find((submission) => submission.id === id) ?? null;
   const hasVerifiedProof = (submission: Submission) =>
@@ -739,10 +752,11 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
         }
         onSuccess={(result) => {
           const targetId = requestProofTarget?.id;
-          if (targetId) {
+          const submissionId = result.submissionId ?? result.id ?? targetId;
+          if (submissionId) {
             setSubmissions((prev) =>
               prev.map((s) =>
-                s.id === targetId
+                s.id === submissionId
                   ? {
                       ...s,
                       status: result.status ?? "PROOF_REQUESTED",
@@ -755,7 +769,9 @@ export default function SubmissionTable({ contestId }: SubmissionTableProps) {
               ),
             );
           }
-          setSelectedRows((prev) => prev.filter((id) => id !== targetId));
+          setSelectedRows((prev) =>
+            prev.filter((id) => id !== submissionId),
+          );
           setRequestProofTarget(null);
         }}
       />

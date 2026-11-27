@@ -5,6 +5,7 @@ import '../../core/components/custom_dropdown_field.dart';
 import '../../core/components/custom_input_field.dart';
 import '../../core/utils/validators.dart';
 import '../../models/film_dev_scan_params.dart';
+import '../../models/master_data.dart';
 
 class FilmDevScanForm extends StatefulWidget {
   const FilmDevScanForm({
@@ -14,6 +15,7 @@ class FilmDevScanForm extends StatefulWidget {
     this.onReset,
     this.isLoading = false,
     this.submitButtonLabel = 'Lưu thông tin tráng scan',
+    this.catalog,
   });
 
   final FilmDevScanParams? initialParams;
@@ -21,6 +23,7 @@ class FilmDevScanForm extends StatefulWidget {
   final VoidCallback? onReset;
   final bool isLoading;
   final String submitButtonLabel;
+  final MasterDataCatalog? catalog;
 
   @override
   State<FilmDevScanForm> createState() => _FilmDevScanFormState();
@@ -290,6 +293,39 @@ class _FilmDevScanFormState extends State<FilmDevScanForm> {
               if (val != null) setState(() => _selectedLab = val);
             },
           ),
+          if (widget.catalog != null && widget.catalog!.filmLabs.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: widget.catalog!.filmLabs.take(8).map((lab) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ActionChip(
+                      avatar: Icon(
+                        lab.isVerifiedPartner
+                            ? Icons.verified_outlined
+                            : Icons.storefront_outlined,
+                        size: 14,
+                      ),
+                      label: Text(lab.displayName, style: theme.textTheme.labelSmall),
+                      onPressed: () {
+                        setState(() {
+                          if (_popularLabs.contains(lab.name)) {
+                            _selectedLab = lab.name;
+                            _labCustomController.clear();
+                          } else {
+                            _selectedLab = 'Khác (Nhập tên Lab)';
+                            _labCustomController.text = lab.name;
+                          }
+                        });
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
           if (_selectedLab == 'Khác (Nhập tên Lab)') ...[
             const SizedBox(height: 12),
             CustomInputField(
