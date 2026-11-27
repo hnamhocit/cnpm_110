@@ -1,0 +1,52 @@
+{
+  "owner": "hnamhocit",
+  "repo": "cnpm_110",
+  "taskSeq": 1,
+  "tasks": [
+    {
+      "id": "CNPM1-1",
+      "title": "Khởi tạo dự án cnpm_110 & cấu trúc công việc",
+      "description": "### Mục tiêu ban đầu\n\n- Khởi tạo dự án và thiết lập môi trường phát triển\n- Lên danh sách các tính năng cốt lõi\n- Cập nhật file `.gitvn/tasks.json` và `.gitvn/tasks/*.md`",
+      "status": "in_progress",
+      "priority": "high",
+      "assignee": {
+        "login": "hnamhocit",
+        "name": "hnamhocit"
+      },
+      "reporter": {
+        "login": "hnamhocit",
+        "name": "hnamhocit"
+      },
+      "sprintId": "sprint-1",
+      "storyPoints": 3,
+      "createdAt": "2026-11-27T07:43:09.932Z",
+      "updatedAt": "2026-11-27T07:43:09.932Z"
+    }
+  ],
+  "sprints": [
+    {
+      "id": "sprint-1",
+      "name": "Sprint 1 - Bắt đầu dự án",
+      "goal": "Kế hoạch phát triển cho cnpm_110",
+      "startDate": "2026-11-27",
+      "endDate": "2026-12-11",
+      "status": "active",
+      "createdAt": "2026-11-27T07:43:09.932Z"
+    }
+  ],
+  "permissions": {
+    "userRoles": {
+      "hnamhocit": "admin"
+    },
+    "defaultRole": "member",
+    "canManageSprint": [
+      "admin",
+      "pm"
+    ],
+    "canCreateBacklog": [
+      "admin",
+      "pm",
+      "member"
+    ]
+  }
+}
