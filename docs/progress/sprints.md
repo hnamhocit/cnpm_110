@@ -145,9 +145,9 @@ Mã FPC là mã công việc nội bộ, đánh số liên tục; không phải 
 | FPC-113 | Backend | M08 · UC-41: API kết quả, điểm và nhận xét cá nhân | Nam Nguyễn | DONE |
 | FPC-114 | Backend | M08 · UC-43: Bộ lọc Archive theo film stock, camera và năm | Dương Nguyễn | DONE |
 | FPC-115 | Backend | M08 · UC-43: Index truy vấn kho ảnh | Dương Nguyễn | DONE |
-| FPC-116 | Web | M08 · UC-43: Tích hợp Digital Archive dạng masonry | Phạm Tiến Thành Nhân | IN REVIEW |
-| FPC-117 | Web | M08 · UC-43: Tích hợp chi tiết tác phẩm đạt giải | Phạm Tiến Thành Nhân | IN REVIEW |
-| FPC-118 | Web | M08 · UC-43: Bộ lọc kho ảnh theo phim, định dạng và năm | Phạm Tiến Thành Nhân | IN REVIEW |
+| FPC-116 | Web | M08 · UC-43: Tích hợp Digital Archive dạng masonry | Phạm Tiến Thành Nhân | DONE |
+| FPC-117 | Web | M08 · UC-43: Tích hợp chi tiết tác phẩm đạt giải | Phạm Tiến Thành Nhân | DONE |
+| FPC-118 | Web | M08 · UC-43: Bộ lọc kho ảnh theo phim, định dạng và năm | Phạm Tiến Thành Nhân | DONE |
 | FPC-119 | Web | M08 · UC-41: Kết quả và feedback cá nhân nếu áp dụng theo SRS | Dương Nguyễn | DONE |
 | FPC-120 | Mobile | M08 · UC-41: Hoàn thiện bảng vàng, kết quả và feedback thật | Dương Nguyễn | DONE |
 | FPC-121 | Backend | M08 · UC-42: API portfolio và lịch sử giải thưởng | Huỳnh Trần Gia Bảo | IN REVIEW |
