@@ -32,6 +32,7 @@ export function CriteriaConfigClient() {
   const [categories, setCategories] = useState<CategoryRecord[]>([]);
   const [selectedCategory, setSelectedCategory] = useState(initialCategoryId);
   const [criteria, setCriteria] = useState<CriterionConfig[]>([]);
+  const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,10 +67,12 @@ export function CriteriaConfigClient() {
       const records = await fetchCriteria(contestId, selectedCategory);
       if (requestId !== criteriaRequestRef.current) return;
       setCriteria(records);
+      setDirty(false);
     } catch (loadError) {
       if (requestId !== criteriaRequestRef.current) return;
       const mapped = toContestConfigError(loadError);
       setCriteria([]);
+      setDirty(false);
       setError(mapped.message);
     } finally {
       if (requestId === criteriaRequestRef.current) setLoading(false);
@@ -85,6 +88,14 @@ export function CriteriaConfigClient() {
   }, [loadCriteria]);
 
   const handleReload = async () => {
+    if (
+      dirty &&
+      !window.confirm(
+        "Bạn có thay đổi chưa lưu. Tải lại sẽ bỏ các thay đổi đó. Tiếp tục?",
+      )
+    ) {
+      return;
+    }
     await loadCategories();
     await loadCriteria();
   };
@@ -102,6 +113,7 @@ export function CriteriaConfigClient() {
     setSaving(true);
     try {
       await saveCriteria(contestId, selectedCategory, criteria);
+      setDirty(false);
       toast.success("Đã lưu cấu hình tiêu chí thành công.");
     } catch (saveError) {
       const mapped = toContestConfigError(saveError);
@@ -125,6 +137,11 @@ export function CriteriaConfigClient() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             Cấu hình tiêu chí chấm điểm
+            {dirty && (
+              <span className="ml-2 text-sm font-normal text-amber-600">
+                Chưa lưu
+              </span>
+            )}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             UC-14 · BR-15: tổng trọng số từng hạng mục phải bằng đúng 100%.
@@ -168,7 +185,19 @@ export function CriteriaConfigClient() {
                 <select
                   id="criteria-category"
                   value={selectedCategory}
-                  onChange={(event) => setSelectedCategory(event.target.value)}
+                  onChange={(event) => {
+                    const nextCategory = event.target.value;
+                    if (
+                      nextCategory !== selectedCategory &&
+                      dirty &&
+                      !window.confirm(
+                        "Bạn có thay đổi chưa lưu. Tải lại sẽ bỏ các thay đổi đó. Tiếp tục?",
+                      )
+                    ) {
+                      return;
+                    }
+                    setSelectedCategory(nextCategory);
+                  }}
                   className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
                 >
                   {categories.map((category) => (
@@ -180,7 +209,10 @@ export function CriteriaConfigClient() {
               </div>
               <CriteriaEditor
                 criteria={criteria}
-                onChange={setCriteria}
+                onChange={(next) => {
+                  setCriteria(next);
+                  setDirty(true);
+                }}
                 error={totalError?.message}
               />
               <div className="flex justify-end">

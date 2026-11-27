@@ -25,7 +25,7 @@ export function ContestStatusActions({
   const isPublished = status === "results_published";
 
   async function handleUpdateStatus(newStatus: string) {
-    const statusLabel = "Mở nộp bài (OPEN/ONGOING)";
+    const statusLabel = "Mở nộp bài (OPEN)";
 
     if (
       !window.confirm(
@@ -64,7 +64,7 @@ export function ContestStatusActions({
         <Button
           size="sm"
           className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm"
-          onClick={() => handleUpdateStatus("ongoing")}
+          onClick={() => handleUpdateStatus("OPEN")}
           disabled={loading}
         >
           <Play className="w-3.5 h-3.5 mr-1" />

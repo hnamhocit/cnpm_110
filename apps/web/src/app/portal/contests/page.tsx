@@ -1,5 +1,6 @@
 "use client";
 
+import { Copy } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -24,6 +25,11 @@ const STATUS_STYLES: Record<string, string> = {
   ongoing: "bg-green-100 text-green-700",
   completed: "bg-gray-100 text-gray-700",
   cancelled: "bg-red-100 text-red-700",
+  scheduled: "bg-blue-100 text-blue-700",
+  verifying: "bg-amber-100 text-amber-700",
+  in_judging: "bg-purple-100 text-purple-700",
+  results_published: "bg-green-100 text-green-700",
+  archived: "bg-gray-100 text-gray-700",
 };
 
 export default function OrganizerContestsPage() {
@@ -151,6 +157,14 @@ export default function OrganizerContestsPage() {
                     >
                       <Button className="w-full text-xs bg-brand-solid hover:bg-brand-hover text-white">
                         Bài dự thi
+                      </Button>
+                    </Link>
+                    <Link
+                      href={`/portal/contests/create?duplicateFrom=${contest.id}`}
+                      className="flex-1"
+                    >
+                      <Button variant="outline" className="w-full text-xs">
+                        <Copy className="mr-1 size-3.5" /> Sao chép
                       </Button>
                     </Link>
                   </div>

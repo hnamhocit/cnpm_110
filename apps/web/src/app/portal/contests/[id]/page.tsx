@@ -3,6 +3,7 @@ import {
   Award,
   Calendar,
   ClipboardCheck,
+  Copy,
   ExternalLink,
   Film,
   Layers,
@@ -37,6 +38,9 @@ type ContestData = {
   endAt?: string | null;
   status: string;
   created_at: string;
+  createdAt?: string | null;
+  theme?: string | null;
+  rules?: string | null;
 };
 
 async function getContest(id: string): Promise<ContestData | null> {
@@ -58,6 +62,11 @@ const STATUS_STYLES: Record<string, string> = {
   draft: "bg-amber-100 text-amber-700 border-amber-200",
   completed: "bg-gray-100 text-gray-700 border-gray-200",
   cancelled: "bg-red-100 text-red-700 border-red-200",
+  scheduled: "bg-blue-100 text-blue-700 border-blue-200",
+  verifying: "bg-amber-100 text-amber-700 border-amber-200",
+  in_judging: "bg-purple-100 text-purple-700 border-purple-200",
+  results_published: "bg-green-100 text-green-700 border-green-200",
+  archived: "bg-gray-100 text-gray-700 border-gray-200",
 };
 
 export default async function PortalContestOverviewPage({
@@ -75,6 +84,15 @@ export default async function PortalContestOverviewPage({
     status === "published" || status === "results_published";
   const statusBadgeClass =
     STATUS_STYLES[status] ?? "bg-blue-100 text-blue-700 border-blue-200";
+  const description =
+    contest.description?.trim() ||
+    [
+      contest.theme?.trim() ? `Chủ đề: ${contest.theme.trim()}` : "",
+      contest.rules?.trim() ? `Thể lệ: ${contest.rules.trim()}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n") ||
+    "";
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -112,7 +130,7 @@ export default async function PortalContestOverviewPage({
             </Button>
           </Link>
           {resultsPublished && (
-            <Link href={`/contests/${contest.id}/results`}>
+            <Link href={`/contests/${contest.id}/results?from=portal`}>
               <Button variant="outline" size="sm" className="text-xs">
                 <Award className="w-3.5 h-3.5 mr-1.5" /> Kết quả chính thức
               </Button>
@@ -121,6 +139,11 @@ export default async function PortalContestOverviewPage({
           <Link href={`/portal/contests/${contest.id}/edit`}>
             <Button variant="outline" size="sm" className="text-xs">
               <Settings className="w-3.5 h-3.5 mr-1.5" /> Chỉnh sửa cấu hình
+            </Button>
+          </Link>
+          <Link href={`/portal/contests/create?duplicateFrom=${contest.id}`}>
+            <Button variant="outline" size="sm" className="text-xs">
+              <Copy className="w-3.5 h-3.5 mr-1.5" /> Sao chép cấu hình
             </Button>
           </Link>
           <Link href={`/portal/contests/${contest.id}/categories`}>
@@ -239,8 +262,7 @@ export default async function PortalContestOverviewPage({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {contest.description ||
-                "Chưa có mô tả chi tiết cho cuộc thi này."}
+              {description || "Chưa có mô tả chi tiết cho cuộc thi này."}
             </CardContent>
           </Card>
         </div>
@@ -274,7 +296,7 @@ export default async function PortalContestOverviewPage({
                 <div className="flex items-center justify-between text-gray-500">
                   <span>Ngày khởi tạo:</span>
                   <span className="font-medium text-gray-700">
-                    {formatContestDate(contest.created_at)}
+                    {formatContestDate(contest.created_at ?? contest.createdAt)}
                   </span>
                 </div>
               </div>

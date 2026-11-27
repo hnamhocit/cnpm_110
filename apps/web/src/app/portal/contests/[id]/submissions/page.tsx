@@ -25,9 +25,9 @@ export default async function ContestSubmissionsPage({
           </p>
         </div>
         <Button asChild variant="outline">
-          <Link href="/portal/contests">
+          <Link href={`/portal/contests/${id}`}>
             <ArrowLeft />
-            Quay lại
+            Quay lại chi tiết cuộc thi
           </Link>
         </Button>
       </div>

@@ -4,6 +4,7 @@ import {
   BarChart3,
   ClipboardCheck,
   Database,
+  Film,
   LayoutDashboard,
   ScrollText,
   Sparkles,
@@ -15,6 +16,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { BrandMark } from "@/components/brand-mark";
+import { http } from "@/lib/http";
 import Header from "../components/portal/Header";
 
 type MenuItem = {
@@ -22,23 +24,65 @@ type MenuItem = {
   href: string;
   icon: typeof Sparkles;
   roles?: string[];
+  match?: (pathname: string) => boolean;
+  dynamicHref?: "submissions";
 };
 
 // Các mục điều hướng của Portal
 const menuItems: MenuItem[] = [
-  { label: "Dashboard", href: "/portal", icon: LayoutDashboard },
-  { label: "Contests", href: "/portal/contests", icon: Trophy },
-  { label: "Judges", href: "/portal/contests/judges", icon: Users },
-  { label: "Rounds", href: "/portal/contests/rounds", icon: Database },
+  {
+    label: "Dashboard",
+    href: "/portal",
+    icon: LayoutDashboard,
+    match: (pathname) => pathname === "/portal",
+  },
+  {
+    label: "Contests",
+    href: "/portal/contests",
+    icon: Trophy,
+    match: (pathname) =>
+      pathname === "/portal/contests" ||
+      (pathname.startsWith("/portal/contests/") &&
+        !pathname.startsWith("/portal/contests/judges") &&
+        !pathname.startsWith("/portal/contests/judging-progress") &&
+        !pathname.startsWith("/portal/contests/registrations") &&
+        !pathname.startsWith("/portal/contests/rounds") &&
+        !pathname.endsWith("/submissions")),
+  },
+  {
+    label: "Judges",
+    href: "/portal/contests/judges",
+    icon: Users,
+    match: (pathname) => pathname.startsWith("/portal/contests/judges"),
+  },
+  {
+    label: "Rounds",
+    href: "/portal/contests/rounds",
+    icon: Database,
+    match: (pathname) => pathname.startsWith("/portal/contests/rounds"),
+  },
   {
     label: "Registrations",
     href: "/portal/contests/registrations",
     icon: Users,
+    match: (pathname) => pathname.startsWith("/portal/contests/registrations"),
+  },
+  {
+    label: "Bài dự thi",
+    href: "/portal/contests",
+    icon: Film,
+    roles: ["Organizer"],
+    dynamicHref: "submissions",
+    match: (pathname) =>
+      pathname.startsWith("/portal/contests/") &&
+      pathname.endsWith("/submissions"),
   },
   {
     label: "Tiến độ chấm thi",
     href: "/portal/contests/judging-progress",
     icon: ClipboardCheck,
+    match: (pathname) =>
+      pathname.startsWith("/portal/contests/judging-progress"),
   },
   { label: "Reports", href: "/portal/reports", icon: BarChart3 },
   {
@@ -68,14 +112,31 @@ type SidebarProps = {
 function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname();
   const [role, setRole] = useState<string | null>(null);
+  const [submissionHref, setSubmissionHref] = useState("/portal/contests");
 
   useEffect(() => {
     let active = true;
     fetch("/api/auth/me", { cache: "no-store" })
       .then((response) => (response.ok ? response.json() : null))
-      .then((data: { user?: { role?: string | null } } | null) => {
-        if (active) setRole(data?.user?.role ?? null);
-      })
+      .then(
+        (data: { user?: { role?: string | null; id?: string | null } } | null) => {
+          const nextRole = data?.user?.role ?? null;
+          const userId = data?.user?.id ?? null;
+          if (!active) return;
+          setRole(nextRole);
+          if (nextRole === "Organizer" && userId) {
+            http
+              .get<{ data?: { items?: { id: string }[] } }>("/api/v1/contests", {
+                params: { page: 1, limit: 1, createdBy: userId },
+              })
+              .then((response) => {
+                const id = response.data?.data?.items?.[0]?.id;
+                if (id) setSubmissionHref(`/portal/contests/${id}/submissions`);
+              })
+              .catch(() => undefined);
+          }
+        },
+      )
       .catch(() => {
         if (active) setRole(null);
       });
@@ -122,20 +183,18 @@ function Sidebar({ onClose }: SidebarProps) {
       <nav aria-label="Portal Navigation" className="flex-1 space-y-1">
         {visibleItems.map((item) => {
           const Icon = item.icon;
-          const isActive =
-            item.href === "/portal"
+          const href =
+            item.dynamicHref === "submissions" ? submissionHref : item.href;
+          const isActive = item.match
+            ? item.match(pathname)
+            : item.href === "/portal"
               ? pathname === "/portal"
-              : item.href === "/portal/contests"
-                ? pathname === "/portal/contests" ||
-                  (pathname.startsWith("/portal/contests/") &&
-                    !pathname.startsWith("/portal/contests/judges") &&
-                    !pathname.startsWith("/portal/contests/judging-progress"))
-                : pathname.startsWith(item.href);
+              : pathname.startsWith(item.href);
 
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={item.label}
+              href={href}
               onClick={onClose}
               className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all ${
                 isActive

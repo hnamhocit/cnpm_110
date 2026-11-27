@@ -42,6 +42,7 @@ export interface CategoryConfig {
   id?: string;
   code: string;
   name: string;
+  description?: string | null;
   formatRestriction: FormatRestriction;
   maxEntriesPerParticipant: number;
   requireNegativeProofUpfront: boolean;
