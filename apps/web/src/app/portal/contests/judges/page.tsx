@@ -16,6 +16,8 @@ interface CategoryOption {
 interface RoundOption {
   id: string;
   name: string;
+  startedAt?: string | null;
+  lockedAt?: string | null;
 }
 
 interface AssignedJudge {
@@ -27,6 +29,8 @@ interface AssignedJudge {
   categoryName?: string;
   roundId: string;
   status?: string;
+  isActive?: boolean;
+  lockedAt?: string | null;
 }
 
 export default function ContestJudgesPage() {
@@ -53,7 +57,9 @@ export default function ContestJudgesPage() {
           setSelectedContest(items[0].id);
         }
       } catch {
-        // Keep empty state if API is unavailable
+        if (active) {
+          setError("Không thể tải danh sách cuộc thi.");
+        }
       }
     }
     loadContests();
@@ -91,6 +97,7 @@ export default function ContestJudgesPage() {
         if (active) {
           setCategories([]);
           setRounds([]);
+          setError("Không thể tải vòng chấm và hạng mục của cuộc thi.");
         }
       }
     }
@@ -116,7 +123,10 @@ export default function ContestJudgesPage() {
           setAssignedJudges(Array.isArray(items) ? items : []);
         }
       } catch {
-        if (active) setAssignedJudges([]);
+        if (active) {
+          setAssignedJudges([]);
+          setError("Không thể tải danh sách giám khảo của vòng này.");
+        }
       }
     }
     loadRoundJudges();
@@ -256,10 +266,21 @@ export default function ContestJudgesPage() {
 
         <button
           type="submit"
-          disabled={submitting}
-          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
+          disabled={
+            submitting ||
+            Boolean(
+              rounds.find((r) => r.id === selectedRound)?.startedAt ||
+                rounds.find((r) => r.id === selectedRound)?.lockedAt,
+            )
+          }
+          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {submitting ? "Đang phân công..." : "Phân công Giám khảo"}
+          {submitting
+            ? "Đang phân công..."
+            : rounds.find((r) => r.id === selectedRound)?.startedAt ||
+                rounds.find((r) => r.id === selectedRound)?.lockedAt
+              ? "Vòng đã mở/khóa"
+              : "Phân công Giám khảo"}
         </button>
       </form>
 
@@ -281,11 +302,18 @@ export default function ContestJudgesPage() {
                   {item.judgeName ?? item.judgeEmail ?? "—"}
                 </td>
                 <td className="px-4 py-3">
-                  {item.categoryName ?? item.categoryId}
+                  {item.categoryName ??
+                    categories.find((c) => c.id === item.categoryId)?.name ??
+                    item.categoryId}
                 </td>
                 <td className="px-4 py-3">
                   <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-700">
-                    {item.status ?? "ASSIGNED"}
+                    {item.status ??
+                      (item.lockedAt
+                        ? "LOCKED"
+                        : item.isActive === false
+                          ? "INACTIVE"
+                          : "ACTIVE")}
                   </span>
                 </td>
               </tr>
