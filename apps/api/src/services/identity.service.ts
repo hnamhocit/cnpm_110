@@ -1,3 +1,4 @@
+import { env } from "../config/env";
 import { createHmac, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../db";
@@ -16,9 +17,7 @@ const RESEND_MS = 60_000;
 const MAX_ATTEMPTS = 5;
 
 function digest(purpose: Purpose, value: string) {
-  const secret = Bun.env.JWT_SECRET;
-  if (!secret) throw new Error("JWT_SECRET is not configured");
-  return createHmac("sha256", secret).update(`identity:${purpose}:${value}`).digest("hex");
+  return createHmac("sha256", env.jwtSecret).update(`identity:${purpose}:${value}`).digest("hex");
 }
 
 function challengeKey(accountId: string, purpose: Purpose) {

@@ -42,7 +42,7 @@ Hai route đọc từ snapshot `contest_publications`, không tính lại điể
 
 ### Fixture Backend M08
 
-Fixture nằm trong `src/db/seed-acceptance.ts`, tự tạo sau migrate và khi API khởi động với database acceptance local. Hướng dẫn môi trường và alias tại [README API](../../apps/api/README.md#fixture-nghiệm-thu).
+Fixture nằm trong `src/db/seed/acceptance.ts`, tự tạo sau migrate và khi API khởi động với database acceptance local. Hướng dẫn môi trường và alias tại [README API](../../apps/api/README.md#fixture-nghiệm-thu).
 
 - C1 thuộc O1, đã công bố với S1/P1/K1 = 8.50 và S2/P2/K2 = 7.50, hai phiếu cuối đã xác nhận, proof đã xác minh. Snapshot và preview được tạo bằng service nghiệp vụ.
 - C3 thuộc O1 có S3/P1 và S4/P2 trong K4, điểm 8.50/7.50. Vòng R2 đã khóa, chưa công bố, phục vụ luồng công bố qua API. C2/K3 thuộc O2 dùng để kiểm tra phạm vi quyền.

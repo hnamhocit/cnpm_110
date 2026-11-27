@@ -1,3 +1,4 @@
+import { env } from "../config/env";
 import {
   and,
   count,
@@ -639,7 +640,7 @@ export type ModerationAction = "APPROVE_FOR_JUDGING" | "DISQUALIFY" | "REQUEST_P
 function reviewPreviewUrl(path: string) {
   const url = URL.parse(path);
   // Local seed previews reference public photos. Uploaded originals use keys.
-  if (Bun.env.NODE_ENV !== "production" && url?.origin === "https://images.unsplash.com" &&
+  if (env.nodeEnv !== "production" && url?.origin === "https://images.unsplash.com" &&
       url.pathname.startsWith("/photo-") && !url.username && !url.password) {
     return Promise.resolve(url.href);
   }

@@ -4,6 +4,7 @@
     "dev": "bun run --hot src/index.ts",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:migrate": "bun run src/db/migrate.ts",
+    "db:seed:lifecycle": "bun run src/db/seed/lifecycle.ts",
     "db:reset": "bun run src/db/reset.ts",
     "db:check": "drizzle-kit check --config=drizzle.config.ts",
     "db:studio": "drizzle-kit studio --config=drizzle.config.ts",

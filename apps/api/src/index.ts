@@ -1,3 +1,4 @@
+import { env } from "./config/env";
 import { Hono } from "hono";
 import { compress } from "hono/compress";
 import { cors } from "hono/cors";
@@ -70,7 +71,7 @@ v1.route("/rbac", rbacRoute);
 app.route("/api/v1", v1);
 
 // 5. Server & Graceful Shutdown
-const port = Number(process.env.PORT) || 8080;
+const port = env.port;
 
 await seed();
 
