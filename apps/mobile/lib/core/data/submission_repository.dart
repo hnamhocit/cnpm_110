@@ -25,6 +25,9 @@ abstract interface class SubmissionRepository {
     required String submissionId,
     required ImageAttachment proofImage,
   });
+
+  /// Rút bài dự thi trước hạn và trước khi vào chấm (BR-24 / UC-39)
+  Future<void> withdrawSubmission(String submissionId);
 }
 
 abstract interface class SubmissionMetadataRepository {
@@ -202,6 +205,17 @@ class ApiSubmissionRepository
       await _dio.post<Map<String, dynamic>>(
         '/api/v1/submissions/$submissionId/proof',
         data: formData,
+      );
+    } on DioException catch (error) {
+      throw ApiException.fromDio(error);
+    }
+  }
+
+  @override
+  Future<void> withdrawSubmission(String submissionId) async {
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        '/api/v1/submissions/$submissionId/withdraw',
       );
     } on DioException catch (error) {
       throw ApiException.fromDio(error);
