@@ -14,6 +14,7 @@ import auditLogsRoute from "./routes/audit-logs.route";
 import authRoute from "./routes/auth.route";
 import contestsRoute from "./routes/contests.route";
 import exhibitionsRoute from "./routes/exhibitions.route";
+import filmLogbookRoute from "./routes/film-logbook.route";
 import rbacRoute from "./routes/rbac.route";
 import usersRoute from "./routes/users.route";
 import healthRoute from "./routes/health.route";
@@ -69,6 +70,7 @@ v1.route("/ai", aiWebhookRoute);
 v1.route("/upload", uploadRoute)
 
 v1.route("/rbac", rbacRoute);
+v1.route("/film-rolls", filmLogbookRoute);
 v1.route("/audit-logs", auditLogsRoute);
 app.route("/api/v1", v1);
 
