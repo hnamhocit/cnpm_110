@@ -31,7 +31,7 @@ Module Owner chịu trách nhiệm theo dõi và nghiệm thu module, không m�
 | Thành viên | Module Owner | Backend/AI được giao (UC) | Web được giao (UC) | Mobile được giao (UC) | Sprint 5 DONE / tổng task |
 | --- | --- | --- | --- | --- | ---: |
 | Nam Nguyễn | M01, M03, M09 | 11, 12, 13, 14, 15, 16, 21, 22, 26, 27, 41 | — | — | 8/9 |
-| Hà Đức Bình | M06, M10 | 09, 19, 20, 24, 25, 29, 31, 32, 33, 28 (AI/VERIFY) | — | — | 0/6 |
+| Hà Đức Bình | M06, M10 | 09, 19, 20, 24, 25, 29, 31, 32, 33, 28 (AI/VERIFY) | — | — | 3/6 DONE, 3/6 IN REVIEW (FPC-102/104/127 DONE; FPC-106/129/131 IN REVIEW) |
 | Vĩ Nguyễn | M11 | — | 06, 07, 08, 09, 10, 11, 12, 13, 14, 19, 20, 21, 22, 26, 27, 28 | — | 5/8 |
 | Phạm Tiến Thành Nhân | M07, M08 | — | 15, 16, 17, 24, 25, 29, 30, 31, 32, 33, 43 | — | 3/6 |
 | Dương Nguyễn | M05 | 17, 34, 37, 39, 43 | 34, 37, 39, 41 | 34, 37, 39, 41, 43 | 0/12 |
