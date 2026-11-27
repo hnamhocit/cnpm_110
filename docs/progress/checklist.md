@@ -82,7 +82,7 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 
 | UC | Chức năng | Backend / Web / Mobile | Backend đạt | Toàn luồng | GV đạt | GV chưa đạt |
 | --- | --- | --- | --- | --- | --- | --- |
-| UC-06 | Manage Film Stock Catalog | Bảo / Vĩ / Bảo (INT) | TODO | PARTIAL | | |
+| UC-06 | Manage Film Stock & Format Catalog | Bảo / Vĩ / Bảo (INT) | TODO | PARTIAL | | |
 | UC-07 | Manage Camera & Lens Catalog | Bảo / Vĩ / Bảo (INT) | TODO | PARTIAL | | |
 | UC-08 | Manage Film Lab Directory | Bảo / Vĩ / Bảo (INT) | TODO | PARTIAL | | |
 

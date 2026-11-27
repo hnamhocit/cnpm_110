@@ -30,7 +30,7 @@ Bản Markdown phục vụ triển khai trong repository. Tài liệu SRS, sơ �
 | UC-03 | View & Update Profile | All Actors | Hiển thị và cho phép cập nhật thông tin hồ sơ cá nhân, ảnh đại diện và mật khẩu. |
 | UC-04 | Manage User Accounts | Admin | Quản lý vòng đời tài khoản người dùng (tạo mới, xem chi tiết, khóa/mở khóa tài khoản). |
 | UC-05 | Manage Roles & Permissions | Admin | Gán một trong bốn vai trò hệ thống cố định và áp dụng quyền RBAC tương ứng; không yêu cầu tạo vai trò hoặc permission động. |
-| UC-06 | Manage Film Stock Catalog | Admin | Quản lý danh mục các loại phim chuẩn (Hãng phim, Tên film stock, ISO danh định, Loại phim màu/đen trắng/dương bản). |
+| UC-06 | Manage Film Stock & Format Catalog | Admin | Quản lý danh mục các loại phim chuẩn (Hãng phim, Tên film stock, ISO danh định, Loại phim màu/đen trắng/dương bản). |
 | UC-07 | Manage Camera & Lens Catalog | Admin | Quản lý danh mục thiết bị thân máy ảnh phim (Camera Bodies) và ống kính (Lenses). |
 | UC-08 | Manage Film Lab Directory | Admin | Quản lý danh sách các phòng Lab tráng và quét phim để chuẩn hóa metadata. |
 | UC-09 | Configure AI Thresholds | Admin được kiểm thử; không giao diện tinh chỉnh chuyên sâu. | Quản lý ngưỡng cảnh báo AI và độ tương đồng ảnh theo cấu hình yêu cầu mô hình |

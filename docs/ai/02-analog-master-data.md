@@ -2,6 +2,8 @@
 
 ## Phạm vi theo SRS hiện hành
 
+UC-06 — **Manage Film Stock & Format Catalog**.
+
 **UC-06–08, BR-02/03/22.** Quản lý Film Stock, Camera, Lens và Film Lab cơ bản. Lab lưu tên, địa điểm, dịch vụ, thiết bị scan và trạng thái hoạt động. Vô hiệu hóa bản ghi ngừng dùng để giữ metadata lịch sử. Participant có danh mục tra cứu khi ghi nhật ký phim và nộp bài. Trạng thái Verified Partner Lab không thuộc phạm vi.
 
 ## Thiết kế trước lần cập nhật SRS
