@@ -35,7 +35,6 @@ export function CriteriaConfigClient() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [gapBanner, setGapBanner] = useState<string | null>(null);
   const criteriaRequestRef = useRef(0);
 
   const loadCategories = useCallback(async () => {
@@ -53,7 +52,6 @@ export function CriteriaConfigClient() {
     } catch (loadError) {
       const mapped = toContestConfigError(loadError);
       setError(mapped.message);
-      if (mapped.contractGap) setGapBanner(mapped.contractGap);
     } finally {
       setLoading(false);
     }
@@ -72,11 +70,7 @@ export function CriteriaConfigClient() {
       if (requestId !== criteriaRequestRef.current) return;
       const mapped = toContestConfigError(loadError);
       setCriteria([]);
-      if (mapped.contractGap) {
-        setGapBanner(mapped.contractGap);
-      } else {
-        setError(mapped.message);
-      }
+      setError(mapped.message);
     } finally {
       if (requestId === criteriaRequestRef.current) setLoading(false);
     }
@@ -112,7 +106,6 @@ export function CriteriaConfigClient() {
     } catch (saveError) {
       const mapped = toContestConfigError(saveError);
       setError(mapped.message);
-      if (mapped.contractGap) setGapBanner(mapped.contractGap);
       toast.error(mapped.message);
     } finally {
       setSaving(false);
@@ -147,11 +140,6 @@ export function CriteriaConfigClient() {
         </Button>
       </div>
 
-      {gapBanner && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
-          {gapBanner}
-        </div>
-      )}
       {error && (
         <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-700">
           {error}
