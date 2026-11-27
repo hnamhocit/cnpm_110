@@ -131,11 +131,11 @@ Mã FPC là mã công việc nội bộ, đánh số liên tục; không phải 
 | FPC-099 | Backend | M05 · UC-38: API upload đối chứng và kiểm tra quyền | Huỳnh Trần Gia Bảo | TODO |
 | FPC-100 | Web | M05 · UC-38: Upload đối chứng nếu áp dụng theo SRS | Huỳnh Trần Gia Bảo | TODO |
 | FPC-101 | Mobile | M05 · UC-38: Upload âm bản/contact sheet | Huỳnh Trần Gia Bảo | TODO |
-| FPC-102 | Backend/AI | M06 · UC-09,19,20: Ngưỡng, quét đơn/hàng loạt, đối sánh, gỡ cờ, worker | Hà Đức Bình | TODO |
+| FPC-102 | Backend/AI | M06 · UC-09,19,20: Ngưỡng, quét đơn/hàng loạt, đối sánh, gỡ cờ, worker | Hà Đức Bình | DONE |
 | FPC-103 | Web | M06 · UC-09,19,20: Cấu hình và tích hợp AI thật | Vĩ Nguyễn | DONE |
-| FPC-104 | Backend | M07 · UC-24–25: Tiến độ, chốt/chuyển vòng và xử lý đồng điểm | Hà Đức Bình | TODO |
+| FPC-104 | Backend | M07 · UC-24–25: Tiến độ, chốt/chuyển vòng và xử lý đồng điểm | Hà Đức Bình | DONE |
 | FPC-105 | Web | M07 · UC-24–25: Tích hợp dashboard tiến độ và chốt vòng | Phạm Tiến Thành Nhân | DONE |
-| FPC-106 | Backend | M07 · UC-29,31–33: Kiểm chứng API hiện có, bổ sung logic theo vòng và khóa phiếu | Hà Đức Bình | TODO |
+| FPC-106 | Backend | M07 · UC-29,31–33: Kiểm chứng API hiện có, bổ sung logic theo vòng và khóa phiếu | Hà Đức Bình | IN REVIEW |
 | FPC-107 | Web | M07 · UC-29–33: Nối workspace Judge, viewer UC-30 và gửi/sửa/khóa phiếu | Phạm Tiến Thành Nhân | DONE |
 | FPC-108 | Backend | M08 · UC-26: API công bố kết quả và vinh danh người thắng | Nam Nguyễn | DONE |
 | FPC-109 | Backend | M08 · UC-27: Quản lý triển lãm và preview công khai | Nam Nguyễn | DONE |
@@ -156,11 +156,11 @@ Mã FPC là mã công việc nội bộ, đánh số liên tục; không phải 
 | FPC-124 | Mobile | M08 · UC-43: Tích hợp Digital Archive và bộ lọc | Dương Nguyễn | TODO |
 | FPC-125 | Backend | M11 · UC-10: API tra cứu Audit Log | Huỳnh Trần Gia Bảo | TODO |
 | FPC-126 | Web | M11 · UC-10: Giao diện tra cứu Audit Log | Vĩ Nguyễn | TODO |
-| FPC-127 | Backend/AI | M11 · UC-28: Kiểm chứng thống kê phim, ISO, lab theo phạm vi SRS; không viết lại Backend đã nghiệm thu | Hà Đức Bình | TODO |
+| FPC-127 | Backend/AI | M11 · UC-28: Kiểm chứng thống kê phim, ISO, lab theo phạm vi SRS; không viết lại Backend đã nghiệm thu | Hà Đức Bình | DONE |
 | FPC-128 | Web | M11 · UC-28: Tích hợp dashboard thống kê và xuất báo cáo | Vĩ Nguyễn | TODO |
-| FPC-129 | AI | M06/M11 · UC-09,19,20,28: Kiểm thử ảnh thật, AI Analytics thật và xử lý lỗi | Hà Đức Bình | TODO |
+| FPC-129 | AI | M06/M11 · UC-09,19,20,28: Kiểm thử ảnh thật, AI Analytics thật và xử lý lỗi | Hà Đức Bình | IN REVIEW |
 | FPC-130 | Lead | M09: Đồng bộ OpenAPI và kiểm soát thay đổi hợp đồng | Nam Nguyễn | TODO |
-| FPC-131 | Backend | M10: Hoàn thiện schema, migration, storage và quyền truy cập theo UC | Hà Đức Bình | TODO |
+| FPC-131 | Backend | M10: Hoàn thiện schema, migration, storage và quyền truy cập theo UC | Hà Đức Bình | IN REVIEW |
 | FPC-132 | Backend | M11: Hoàn thiện email/thông báo và audit dùng chung theo SRS | Nam Nguyễn | DONE |
 | FPC-133 | Integration | Nghiệm thu toàn bộ 35 UC còn lại và hồi quy 8 UC đã đạt; Feature Freeze | Cả nhóm | TODO |
 | FPC-134 | Backend | Chuẩn bị và kiểm chứng dữ liệu mẫu phục vụ demo (seed, không dùng mock thay API) | Nam Nguyễn | DONE |
