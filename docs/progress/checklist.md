@@ -289,3 +289,7 @@ Chỉ cộng 43 hàng UC ở mục 3. Các mục kỹ thuật không cộng thê
 ### Sửa metadata migration — 27/11/2026
 
 Đã giải quyết merge conflict trong `_journal.json` và `0006_snapshot.json`. Journal giữ cả migration audit/email và catalog theo thứ tự thời gian, giữ nguyên tên SQL và timestamp. Snapshot hợp nhất catalog với các bảng audit, notification và exhibition. `db:check` đạt, Drizzle đọc được đủ 8 migration. Đã áp dụng migration còn thiếu thành công trên database hiện tại trong `apps/api/.env`, giữ dữ liệu hiện có. Không chạy `db:reset`.
+
+### UC-01 · Refresh phiên Web — 27/11/2026
+
+Theo Module 01, access token 15 phút và refresh token 7 ngày. Hai route BFF `/api/auth/me` và `/api/auth/session` nay dùng chung một lần rotation khi nhận đồng thời cùng refresh token trong một process Web. Mỗi response tự cập nhật cookie của request tương ứng. Backend vẫn từ chối token đã thu hồi. Lỗi kết nối/service trả 502 thay vì bị nuốt và đổi thành “Not authenticated”. TypeScript Web đạt; 2 test với 6 assertions đạt cho gộp request đồng thời và phân biệt lỗi dịch vụ/token hết hạn. Chưa xác nhận phiên trong ảnh với DB hoặc trình duyệt của người dùng. Cơ chế gộp request hiện chỉ áp dụng trong cùng process Web.
