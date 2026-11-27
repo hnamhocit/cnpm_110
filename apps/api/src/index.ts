@@ -1,3 +1,4 @@
+import { env } from "./config/env";
 import { Hono } from "hono";
 import { compress } from "hono/compress";
 import { cors } from "hono/cors";
@@ -9,11 +10,9 @@ import { timing } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 import aiWebhookRoute from "./routes/ai-webhook.route";
-import auditLogsRoute from "./routes/audit-logs.route";
 import authRoute from "./routes/auth.route";
 import contestsRoute from "./routes/contests.route";
 import exhibitionsRoute from "./routes/exhibitions.route";
-import filmLogbookRoute from "./routes/film-logbook.route";
 import rbacRoute from "./routes/rbac.route";
 import usersRoute from "./routes/users.route";
 import healthRoute from "./routes/health.route";
@@ -24,6 +23,7 @@ import uploadRoute from "./routes/upload.route";
 import { AppError } from "./utils/errors";
 import { attachResponseHelpers, errorResponse } from "./utils/result";
 import { seed } from "./db/seed";
+import { startNotificationDelivery } from "./services/notification-delivery";
 
 const app = new Hono();
 
@@ -70,12 +70,10 @@ v1.route("/upload", uploadRoute)
 
 v1.route("/rbac", rbacRoute);
 v1.route("/master-data", masterDataRoute);
-v1.route("/film-rolls", filmLogbookRoute);
-v1.route("/audit-logs", auditLogsRoute);
 app.route("/api/v1", v1);
 
 // 5. Server & Graceful Shutdown
-const port = Number(process.env.PORT) || 8080;
+const port = env.port;
 
 await seed();
 
@@ -86,6 +84,7 @@ const server = Bun.serve({
 
 console.log(`Server running on http://localhost:${server.port}`);
 
+const stopNotificationDelivery = startNotificationDelivery();
 let isShuttingDown = false;
 
 const shutdown = async (signal: string) => {
@@ -95,6 +94,7 @@ const shutdown = async (signal: string) => {
   console.log(`\nReceived ${signal}, shutting down gracefully...`);
 
   try {
+    await stopNotificationDelivery();
     await server.stop();
     console.log("HTTP server closed.");
     process.exit(0);

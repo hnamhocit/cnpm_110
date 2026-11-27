@@ -1,3 +1,4 @@
+import { env } from "../../config/env";
 
 export interface AiModelResult {
   aiGeneratedProbability: number;
@@ -6,8 +7,8 @@ export interface AiModelResult {
 export async function detectAiGeneratedImage(
   imageUrl: string,
 ): Promise<AiModelResult> {
-  const apiUrl = process.env.AI_MODEL_URL;
-  const apiKey = process.env.AI_MODEL_API_KEY;
+  const apiUrl = env.aiModelUrl;
+  const apiKey = env.aiModelApiKey;
 
   if (!apiUrl) {
     throw new Error("AI_MODEL_URL is not configured");

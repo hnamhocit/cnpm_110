@@ -16,6 +16,7 @@ import {
   contestPublications,
   contests,
   contestJudges,
+  contestRegistrations,
   evaluations,
   evaluationScores,
   filmMetadata,
@@ -759,13 +760,23 @@ export async function getContestScoreboard(
   };
 }
 
-export async function getJudgingProgress(contestId: string) {
+export interface RegisterContestInput {
+  contestId: string;
+  categoryId: string;
+  participantId: string;
+  termsAccepted?: boolean;
+}
+
+export async function registerParticipantForContest(input: RegisterContestInput) {
+  const { contestId, categoryId, participantId, termsAccepted = true } = input;
+
+  if (!termsAccepted) {
+    throw AppError.badRequest("You must accept the contest terms and rules");
+  }
+
+  // 1. Verify contest exists
   const [contest] = await db
-    .select({
-      id: contests.id,
-      name: contests.name,
-      status: contests.status,
-    })
+    .select()
     .from(contests)
     .where(and(eq(contests.id, contestId), eq(contests.isDeleted, false)))
     .limit(1);
@@ -774,126 +785,145 @@ export async function getJudgingProgress(contestId: string) {
     throw AppError.notFound("Contest not found");
   }
 
-  const assignments = await db
-    .select({
-      assignmentId: contestJudges.id,
-      judgeId: contestJudges.judgeId,
-      judgeName: users.fullName,
-      categoryId: contestJudges.categoryId,
-      categoryName: categories.name,
-      lockedAt: contestJudges.lockedAt,
-    })
+  // Allow registration when contest is open or draft/scheduled in testing
+  const normalizedStatus = contest.status.toLowerCase();
+  if (normalizedStatus === "archived" || normalizedStatus === "cancelled" || normalizedStatus === "published") {
+    throw AppError.badRequest("Contest is closed for new registrations");
+  }
+
+  // 2. Check category exists and belongs to contest
+  const [category] = await db
+    .select()
+    .from(categories)
+    .where(and(eq(categories.id, categoryId), eq(categories.contestId, contestId)))
+    .limit(1);
+
+  if (!category) {
+    throw AppError.badRequest("Category does not belong to this contest");
+  }
+
+  // 3. BR-21: Conflict of Interest - Organizer or Judge cannot participate
+  if (contest.createdBy === participantId) {
+    throw AppError.forbidden("Organizer cannot participate in their own contest (Conflict of interest BR-21)");
+  }
+
+  const [judgeAssignment] = await db
+    .select({ id: contestJudges.id })
     .from(contestJudges)
-    .innerJoin(users, eq(users.id, contestJudges.judgeId))
-    .innerJoin(categories, eq(categories.id, contestJudges.categoryId))
-    .where(and(eq(contestJudges.contestId, contestId), eq(contestJudges.isActive, true)));
+    .where(
+      and(
+        eq(contestJudges.contestId, contestId),
+        eq(contestJudges.judgeId, participantId),
+        eq(contestJudges.isActive, true),
+      ),
+    )
+    .limit(1);
 
-  const approvedSubs = await db
-    .select({
-      id: submissions.id,
-      categoryId: submissions.categoryId,
-    })
-    .from(submissions)
-    .where(and(eq(submissions.contestId, contestId), eq(submissions.status, "APPROVED")));
-
-  const subCountByCategory = new Map<string, number>();
-  for (const sub of approvedSubs) {
-    subCountByCategory.set(sub.categoryId, (subCountByCategory.get(sub.categoryId) ?? 0) + 1);
+  if (judgeAssignment) {
+    throw AppError.forbidden("Assigned judge cannot participate in this contest (Conflict of interest BR-21)");
   }
 
-  const subIds = approvedSubs.map((s) => s.id);
-  const scoredByJudgeCategory = new Map<string, number>();
+  // 4. Check if already registered
+  const [existing] = await db
+    .select()
+    .from(contestRegistrations)
+    .where(
+      and(
+        eq(contestRegistrations.contestId, contestId),
+        eq(contestRegistrations.categoryId, categoryId),
+        eq(contestRegistrations.participantId, participantId),
+      ),
+    )
+    .limit(1);
 
-  if (subIds.length > 0) {
-    const evals = await db
-      .select({
-        judgeId: evaluations.judgeId,
-        submissionId: evaluations.submissionId,
-      })
-      .from(evaluations)
-      .where(inArray(evaluations.submissionId, subIds));
-
-    const subCatMap = new Map(approvedSubs.map((s) => [s.id, s.categoryId]));
-    for (const ev of evals) {
-      const catId = subCatMap.get(ev.submissionId);
-      if (!catId) continue;
-      const key = `${ev.judgeId}:${catId}`;
-      scoredByJudgeCategory.set(key, (scoredByJudgeCategory.get(key) ?? 0) + 1);
-    }
-  }
-
-  let totalAssigned = 0;
-  let totalScored = 0;
-
-  const judges = assignments.map((a) => {
-    const assignedCount = subCountByCategory.get(a.categoryId) ?? 0;
-    const scoredCount = scoredByJudgeCategory.get(`${a.judgeId}:${a.categoryId}`) ?? 0;
-    totalAssigned += assignedCount;
-    totalScored += scoredCount;
-
+  if (existing) {
     return {
-      assignmentId: a.assignmentId,
-      judgeId: a.judgeId,
-      judgeName: a.judgeName,
-      categoryId: a.categoryId,
-      categoryName: a.categoryName,
-      assignedCount,
-      scoredCount,
-      progressPercent: assignedCount > 0 ? Math.round((scoredCount / assignedCount) * 100) : 0,
-      isLocked: a.lockedAt !== null,
-      lockedAt: a.lockedAt,
+      ...existing,
+      contestName: contest.name,
+      categoryName: category.name,
+      alreadyRegistered: true,
     };
-  });
+  }
+
+  // 5. Insert registration
+  const [newReg] = await db
+    .insert(contestRegistrations)
+    .values({
+      contestId,
+      categoryId,
+      participantId,
+      termsAccepted,
+    })
+    .returning();
+
+  return {
+    ...newReg,
+    contestName: contest.name,
+    categoryName: category.name,
+    alreadyRegistered: false,
+  };
+}
+
+export async function getContestRegistrations(
+  contestId: string,
+  userId: string,
+  options: { page?: number; limit?: number; categoryId?: string } = {},
+) {
+  const { page = 1, limit = 20, categoryId } = options;
+  const offset = (page - 1) * limit;
+
+  // 1. Verify contest
+  const [contest] = await db
+    .select()
+    .from(contests)
+    .where(and(eq(contests.id, contestId), eq(contests.isDeleted, false)))
+    .limit(1);
+
+  if (!contest) {
+    throw AppError.notFound("Contest not found");
+  }
+
+  const conditions: SQL[] = [eq(contestRegistrations.contestId, contestId)];
+  if (categoryId) {
+    conditions.push(eq(contestRegistrations.categoryId, categoryId));
+  }
+
+  const [{ totalCount }] = await db
+    .select({ totalCount: count() })
+    .from(contestRegistrations)
+    .where(and(...conditions));
+
+  const rows = await db
+    .select({
+      id: contestRegistrations.id,
+      contestId: contestRegistrations.contestId,
+      categoryId: contestRegistrations.categoryId,
+      categoryName: categories.name,
+      participantId: contestRegistrations.participantId,
+      participantName: users.fullName,
+      participantEmail: users.email,
+      termsAccepted: contestRegistrations.termsAccepted,
+      registeredAt: contestRegistrations.registeredAt,
+    })
+    .from(contestRegistrations)
+    .innerJoin(users, eq(users.id, contestRegistrations.participantId))
+    .innerJoin(categories, eq(categories.id, contestRegistrations.categoryId))
+    .where(and(...conditions))
+    .orderBy(desc(contestRegistrations.registeredAt))
+    .limit(limit)
+    .offset(offset);
 
   return {
     contestId: contest.id,
     contestName: contest.name,
-    contestStatus: contest.status,
-    overall: {
-      totalAssigned,
-      totalScored,
-      overallPercent: totalAssigned > 0 ? Math.round((totalScored / totalAssigned) * 100) : 0,
-      allLocked: judges.length > 0 && judges.every((j) => j.isLocked),
+    registrations: rows,
+    pagination: {
+      page,
+      limit,
+      total: Number(totalCount),
+      totalPages: Math.ceil(Number(totalCount) / limit),
     },
-    judges,
   };
 }
 
-export async function closeJudgingRound(contestId: string, actor: AuthEnv["Variables"]["user"]) {
-  const progress = await getJudgingProgress(contestId);
-
-  if (progress.contestStatus.toUpperCase() !== "JUDGING") {
-    throw AppError.conflict("Contest must be in JUDGING status to close judging round");
-  }
-
-  if (!progress.overall.allLocked) {
-    throw AppError.conflict("All assigned judges must lock their scorecards before closing the judging round (UC-33)");
-  }
-
-  const scoreboard = await getContestScoreboard(contestId, actor);
-  const hasDiscrepancy = scoreboard.entries.some((e) => e.discrepancyFlag !== null);
-  if (hasDiscrepancy) {
-    throw AppError.conflict("Cannot close judging round while unresolved DISCREPANCY_CONFLICT submissions exist (BR-14)");
-  }
-
-  const [updated] = await db
-    .update(contests)
-    .set({
-      status: "PUBLISHED",
-      updatedAt: new Date(),
-    })
-    .where(and(eq(contests.id, contestId), eq(contests.isDeleted, false)))
-    .returning({
-      id: contests.id,
-      status: contests.status,
-      updatedAt: contests.updatedAt,
-    });
-
-  return {
-    contestId: updated.id,
-    previousStatus: "JUDGING",
-    newStatus: updated.status,
-    publishedAt: updated.updatedAt,
-    resultsLocked: true,
-  };
-}
+export { getRoundProgress as getJudgingProgress, finalizeRound as closeJudgingRound } from "./judging-rounds";

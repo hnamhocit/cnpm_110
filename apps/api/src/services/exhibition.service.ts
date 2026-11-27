@@ -62,6 +62,11 @@ async function generatePublicPreview(masterBuffer: Buffer, copyrightText: string
     .toBuffer();
 }
 
+function exhibitionPreviewKey(masterKey: string, contestId: string, submissionId: string) {
+  const fixturePrefix = masterKey.match(/^acceptance\/cinegen_acceptance_[a-z0-9_]+\//)?.[0] ?? "";
+  return `${fixturePrefix}exhibitions/${contestId}/${submissionId}.webp`;
+}
+
 function buildCopyrightText(contestName: string, authorName: string, year: number): string {
   return `© ${year} ${contestName} — ${authorName}`;
 }
@@ -264,7 +269,7 @@ async function prepareExhibitionPreviews(
       throw new AppError("Failed to process exhibition preview image", 500);
     }
 
-    const webpKey = `exhibitions/${contestId}/${row.submission.id}.webp`;
+    const webpKey = exhibitionPreviewKey(row.submission.imageOriginalPath, contestId, row.submission.id);
     await uploadToR2(
       new File([new Uint8Array(previewBuffer)], `${row.submission.id}.webp`, { type: "image/webp" }),
       webpKey,
@@ -497,7 +502,7 @@ export async function processExhibitionImage(
     throw new AppError("Failed to process exhibition preview image", 500);
   }
 
-  const webpKey = `exhibitions/${row.contest.id}/${row.submission.id}.webp`;
+  const webpKey = exhibitionPreviewKey(row.exhibition.masterKey, row.contest.id, row.submission.id);
   await uploadToR2(
     new File([new Uint8Array(previewBuffer)], `${row.submission.id}.webp`, { type: "image/webp" }),
     webpKey,

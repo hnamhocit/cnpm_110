@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Hono } from "hono";
 import { sign } from "hono/jwt";
+import { env } from "../src/config/env";
 import {
   createAuthenticator,
   requirePermission,
@@ -15,7 +16,7 @@ import {
 import { AppError } from "../src/utils/errors";
 import { attachResponseHelpers, errorResponse } from "../src/utils/result";
 
-const TEST_SECRET = "test-master-data-secret";
+const TEST_SECRET = env.jwtSecret;
 const USER_ID = "11111111-1111-4111-8111-111111111111";
 
 function createTestRbacApp() {

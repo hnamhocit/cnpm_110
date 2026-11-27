@@ -1,6 +1,13 @@
-import { and, count, eq, sql } from "drizzle-orm";
+import { env } from "../config/env";
+import { and, count, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { db } from "../db";
-import { categories, contests, submissionAiAnalyses, submissions } from "../db/schema";
+import {
+  categories,
+  contests,
+  filmMetadata,
+  submissionAiAnalyses,
+  submissions,
+} from "../db/schema";
 import { AppError } from "../utils/errors";
 
 type Counts = {
@@ -53,13 +60,79 @@ export async function getContestAnalytics(contestId: string, organizerId: string
     totals.byStatus[row.status] = (totals.byStatus[row.status] ?? 0) + row.total;
   }
 
-  return { contest, totals, categories: [...byCategory.values()] };
+  return {
+    contest,
+    totals,
+    categories: [...byCategory.values()],
+    filmStocks: await getFilmStockStats(contestId),
+    isoDistribution: await getIsoDistribution(contestId),
+    labs: await getLabStats(contestId),
+    cameras: await getCameraStats(contestId),
+  };
+}
+
+async function getFilmStockStats(contestId: string) {
+  return db
+    .select({
+      name: filmMetadata.filmStock,
+      count: count(submissions.id),
+    })
+    .from(submissions)
+    .innerJoin(filmMetadata, eq(filmMetadata.submissionId, submissions.id))
+    .where(eq(submissions.contestId, contestId))
+    .groupBy(filmMetadata.filmStock)
+    .orderBy(desc(count(submissions.id)), filmMetadata.filmStock);
+}
+
+async function getIsoDistribution(contestId: string) {
+  return db
+    .select({
+      iso: filmMetadata.isoRated,
+      count: count(submissions.id),
+    })
+    .from(submissions)
+    .innerJoin(filmMetadata, eq(filmMetadata.submissionId, submissions.id))
+    .where(eq(submissions.contestId, contestId))
+    .groupBy(filmMetadata.isoRated)
+    .orderBy(filmMetadata.isoRated);
+}
+
+async function getLabStats(contestId: string) {
+  return db
+    .select({
+      name: filmMetadata.devLabName,
+      count: count(submissions.id),
+    })
+    .from(submissions)
+    .innerJoin(filmMetadata, eq(filmMetadata.submissionId, submissions.id))
+    .where(
+      and(
+        eq(submissions.contestId, contestId),
+        isNotNull(filmMetadata.devLabName),
+        sql`length(trim(${filmMetadata.devLabName})) > 0`,
+      ),
+    )
+    .groupBy(filmMetadata.devLabName)
+    .orderBy(desc(count(submissions.id)), filmMetadata.devLabName);
+}
+
+async function getCameraStats(contestId: string) {
+  return db
+    .select({
+      name: filmMetadata.cameraBody,
+      count: count(submissions.id),
+    })
+    .from(submissions)
+    .innerJoin(filmMetadata, eq(filmMetadata.submissionId, submissions.id))
+    .where(eq(submissions.contestId, contestId))
+    .groupBy(filmMetadata.cameraBody)
+    .orderBy(desc(count(submissions.id)), filmMetadata.cameraBody);
 }
 
 export async function generateContestAnalytics(
   statistics: Awaited<ReturnType<typeof getContestAnalytics>>,
 ) {
-  const url = Bun.env.AI_ANALYTICS_URL;
+  const url = env.aiAnalyticsUrl;
   if (!url) return null;
 
   const { totals, categories } = statistics;
@@ -71,7 +144,7 @@ export async function generateContestAnalytics(
   };
 
   try {
-    const key = Bun.env.AI_ANALYTICS_API_KEY;
+    const key = env.aiAnalyticsApiKey;
     const response = await fetch(url, {
       method: "POST",
       headers: {

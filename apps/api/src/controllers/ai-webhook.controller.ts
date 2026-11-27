@@ -1,3 +1,4 @@
+import { env } from "../config/env";
 import type { Context } from "hono";
 import { timingSafeEqual } from "node:crypto";
 import {
@@ -70,7 +71,7 @@ function parseWebhookPayload(raw: unknown): AiWebhookPayload {
 }
 
 export async function handleAiWebhook(c: Context) {
-  const secret = process.env.AI_WEBHOOK_SECRET;
+  const secret = env.aiWebhookSecret;
   if (!secret) {
     console.error("AI_WEBHOOK_SECRET is not configured");
     throw new AppError("Webhook unavailable", 503);
