@@ -1,6 +1,6 @@
 import { and, eq, inArray, like, sql } from "drizzle-orm";
-import { db } from "./index";
-import { categories, contests, filmMetadata, roles, submissionAiAnalyses, submissions, userRoles, users } from "./schema";
+import { db } from "../index";
+import { categories, contests, filmMetadata, roles, submissionAiAnalyses, submissions, userRoles, users } from "../schema";
 
 const demoEmails = Array.from({ length: 5 }, (_, index) => `participant.demo${index + 2}@example.com`);
 const demoName = "CINEGEN Demo · Theo dõi bài dự thi";
@@ -109,7 +109,5 @@ export async function seedDemoSubmissions() {
 
   const demoAccounts = await db.select({ email: users.email }).from(users)
     .where(inArray(users.email, demoEmails)).orderBy(users.email);
-  for (const { email } of demoAccounts) {
-    console.log(`[Seed] Participant: ${email}`);
-  }
+  if (demoAccounts.length) console.log(`[Seed] Participant: participant.demo{2..6}@example.com (${demoAccounts.length} tài khoản)`);
 }

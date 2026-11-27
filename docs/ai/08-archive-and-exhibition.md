@@ -40,15 +40,14 @@ Bảng `exhibition_images` (migration `0005_exhibition_images.sql`) lưu `master
 
 Hai route đọc từ snapshot `contest_publications`, không tính lại điểm và không dùng dữ liệu mẫu. Điểm cuối là trung bình có trọng số của vòng cuối, làm tròn hai chữ số (BR-25); nhận xét lấy từ `evaluations` và `evaluation_scores` của chính vòng công bố. Kết quả bất biến theo BR-16.
 
-### Dữ liệu nghiệm thu M08
+### Fixture Backend M08
 
-Fixture nghiệm thu nằm trong `src/db/seed-acceptance.ts` và được API nạp tự động khi khởi động với database `cinegen_acceptance_test` (xem [README API](../../apps/api/README.md#fixture-nghiệm-thu)). Không cần lệnh hay script riêng.
+Fixture nằm trong `src/db/seed/acceptance.ts`, tự tạo sau migrate và khi API khởi động với database acceptance local. Hướng dẫn môi trường và alias tại [README API](../../apps/api/README.md#fixture-nghiệm-thu).
 
-- Alias cố định: O1/O2 (Organizer), P1/P2 (Participant), J1/J2 (Judge), A (Admin); C1 thuộc O1, C2 thuộc O2; K1/K2 thuộc C1, K3 thuộc C2; S1 thuộc P1/K1, S2 thuộc P2/K2.
-- Lịch UTC+7: 01/12 09:00 mở, 05/12 18:00 hạn nộp, 06/12 09:00 bắt đầu chấm, 07/12 18:00 kết thúc chấm, 08/12 09:00 công bố. Dùng lịch này để đặt đồng hồ kiểm thử theo từng ca.
-- Dữ liệu cho UC-26/27/41: C1 ở trạng thái đã công bố với vòng chung kết đã khóa; J1 và J2 chấm S1 nên điểm trung bình là 8.50 (Giải Nhất) kèm nhận xét riêng; S1 có ảnh âm bản đã xác minh nên đưa được vào triển lãm. S2 chưa có trong snapshot công bố nên chỉ dùng để thử trường hợp không có kết quả.
-- Seed dùng ảnh JPEG tổng hợp trong `apps/api/uploads` và từ chối chạy khi còn cấu hình R2, nên không đụng bucket thật.
-
+- C1 thuộc O1, đã công bố với S1/P1/K1 = 8.50 và S2/P2/K2 = 7.50, hai phiếu cuối đã xác nhận, proof đã xác minh. Snapshot và preview được tạo bằng service nghiệp vụ.
+- C3 thuộc O1 có S3/P1 và S4/P2 trong K4, điểm 8.50/7.50. Vòng R2 đã khóa, chưa công bố, phục vụ luồng công bố qua API. C2/K3 thuộc O2 dùng để kiểm tra phạm vi quyền.
+- Đọc năm mốc thời gian thật từ API. Seed tạo lịch tương đối ở lần đầu và giữ trạng thái trong lần chạy tiếp.
+- Ảnh test nằm trong `uploads/acceptance/<database>/`, gồm scan, proof và WebP xem trước. Seed acceptance từ chối cấu hình R2.
 
 ## 1. Domain Entities & Database Mapping
 

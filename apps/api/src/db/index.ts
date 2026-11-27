@@ -1,12 +1,11 @@
+import { env } from "../config/env";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { sql } from "drizzle-orm";
 import { Pool } from "pg";
 import * as schema from "./schema";
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) throw new Error("Missing DATABASE_URL environment variable");
-export const pool = new Pool({ connectionString });
+export const pool = new Pool({ connectionString: env.databaseUrl });
 const database = drizzle(pool, { schema });
 type Transaction = Parameters<Parameters<typeof database.transaction>[0]>[0];
 const requestTransaction = new AsyncLocalStorage<Transaction>();

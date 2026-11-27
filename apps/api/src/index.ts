@@ -1,3 +1,4 @@
+import { env } from "./config/env";
 import { Hono } from "hono";
 import { compress } from "hono/compress";
 import { cors } from "hono/cors";
@@ -9,6 +10,7 @@ import { timing } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 import aiWebhookRoute from "./routes/ai-webhook.route";
+import auditLogsRoute from "./routes/audit-logs.route";
 import authRoute from "./routes/auth.route";
 import contestsRoute from "./routes/contests.route";
 import exhibitionsRoute from "./routes/exhibitions.route";
@@ -69,10 +71,11 @@ v1.route("/upload", uploadRoute)
 
 v1.route("/rbac", rbacRoute);
 v1.route("/film-rolls", filmLogbookRoute);
+v1.route("/audit-logs", auditLogsRoute);
 app.route("/api/v1", v1);
 
 // 5. Server & Graceful Shutdown
-const port = Number(process.env.PORT) || 8080;
+const port = env.port;
 
 await seed();
 

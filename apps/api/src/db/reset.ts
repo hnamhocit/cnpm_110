@@ -1,14 +1,15 @@
+import { env } from "../config/env";
 import { readMigrationFiles } from "drizzle-orm/migrator";
 import { Client } from "pg";
 import config from "../../drizzle.config";
 
 async function resetDatabase() {
-  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  const client = new Client({ connectionString: env.databaseUrl });
   const database = client.database;
   const confirmation = process.argv.slice(2);
 
   if (
-    process.env.NODE_ENV === "production" ||
+    env.nodeEnv === "production" ||
     !["localhost", "127.0.0.1", "::1"].includes(client.host) ||
     !database ||
     ["postgres", "template0", "template1"].includes(database)

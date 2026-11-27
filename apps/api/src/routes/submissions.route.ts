@@ -3,6 +3,7 @@ import { bodyLimit } from "hono/body-limit";
 
 import {
   handleApproveSubmission,
+  handleEditSubmission,
   handleGetContestNotifications,
   handleGetSubmissionFeedback,
   handleGetSubmissionProofDetail,
@@ -10,6 +11,7 @@ import {
   handleRequestSubmissionProof,
   handleUploadSubmissionProof,
   handleVerifySubmissionProof,
+  handleWithdrawSubmission,
   handleCreateSubmission,
   handleGetMySubmissions,
   handleGetSubmissionComparison,
@@ -53,6 +55,9 @@ route.get("/my/notifications", authenticate, requirePermission("submissions:read
 route.get("/:id/feedback", authenticate, requirePermission("submissions:read_own"), handleGetSubmissionFeedback);
 route.get("/:id/result", authenticate, requirePermission("submissions:read_own"), handleGetSubmissionFeedback);
 route.get("/:id", authenticate, handleGetSubmissionProofDetail);
+route.patch("/:id", authenticate, requirePermission("submissions:read_own"), handleEditSubmission);
+route.post("/:id/withdraw", authenticate, requirePermission("submissions:read_own"), handleWithdrawSubmission);
+route.delete("/:id", authenticate, requirePermission("submissions:read_own"), handleWithdrawSubmission);
 route.get("/:id/proof/image", authenticate, handleGetSubmissionProofImage);
 route.post("/:id/request-proof", authenticate, requirePermission("submissions:moderate"), handleRequestSubmissionProof);
 route.post("/:id/proof", authenticate, requirePermission("submissions:read_own"), bodyLimit({

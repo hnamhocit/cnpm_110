@@ -1,3 +1,4 @@
+import { env } from "./config/env";
 import { pool } from "./db";
 import {
   claimNextAiJob,
@@ -10,12 +11,7 @@ const POLL_INTERVAL_MS = 5000;
 const RECOVERY_INTERVAL_MS = 60_000;
 
 async function main(): Promise<void> {
-  // Safety: require explicit permission before running the AI Worker.
-  if (process.env.AI_WORKER_ENABLED !== "true") {
-    throw new Error(
-      "AI Worker is disabled. Set AI_WORKER_ENABLED=true to enable it.",
-    );
-  }
+  if (!env.aiWorkerEnabled) throw new Error("[Config] AI_WORKER_ENABLED=true is required to start the AI worker.");
 
   const database = await pool.query(
     "SELECT current_database() AS db",

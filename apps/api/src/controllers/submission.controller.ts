@@ -3,10 +3,13 @@ import type { AuthEnv } from "../middlewares/auth";
 import {
   approveSubmission,
   createSubmission,
+  editSubmission,
   getSubmissionComparison,
   listAllSubmissions,
   listMySubmissions,
   rejectSubmission,
+  withdrawSubmission,
+  type EditSubmissionInput,
   type ModerationAction,
 } from "../services/submission.service";
 import {
@@ -408,4 +411,23 @@ export async function handleGetSubmissionFeedback(c: Context<AuthEnv>) {
   assertUuid(id, "submission ID");
   const data = await getMySubmissionResultAndFeedback(id, c.get("user").id);
   return c.ok(data, "Submission results and feedback retrieved successfully");
+}
+
+export async function handleEditSubmission(c: Context<AuthEnv>) {
+  const id = c.req.param("id") ?? "";
+  assertUuid(id, "submission ID");
+  const user = c.get("user");
+  const body = await c.req.json<EditSubmissionInput>().catch(() => {
+    throw AppError.badRequest("Invalid JSON body");
+  });
+  const result = await editSubmission(id, user.id, body);
+  return c.ok(result, "Submission updated successfully");
+}
+
+export async function handleWithdrawSubmission(c: Context<AuthEnv>) {
+  const id = c.req.param("id") ?? "";
+  assertUuid(id, "submission ID");
+  const user = c.get("user");
+  const result = await withdrawSubmission(id, user.id);
+  return c.ok(result, "Submission withdrawn successfully");
 }

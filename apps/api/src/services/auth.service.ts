@@ -1,3 +1,4 @@
+import { env } from "../config/env";
 import { and, count, desc, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
 import { sign } from "hono/jwt";
 import { createHash, randomBytes } from "node:crypto";
@@ -65,13 +66,7 @@ type DbExecutor = Pick<typeof db, "select" | "insert" | "update">;
 const FAILED_LOGIN_LIMIT = 5;
 const LOGIN_LOCK_MS = 15 * 60 * 1000;
 
-function getJwtSecret(): string {
-  const secret = Bun.env.JWT_SECRET ?? process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error("JWT_SECRET is not configured");
-  }
-  return secret;
-}
+function getJwtSecret(): string { return env.jwtSecret; }
 
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");

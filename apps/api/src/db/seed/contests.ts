@@ -1,110 +1,6 @@
 import { eq } from "drizzle-orm";
-import { db } from "./index";
-import { seedDemoSubmissions } from "./seed-demo-submissions";
-import {
-  categories,
-  contests,
-  roles,
-  scoringCriteria,
-  submissions,
-  userRoles,
-  users,
-} from "./schema";
-
-const DEFAULT_ROLES = [
-  { name: "Admin", description: "System administrator" },
-  { name: "Organizer", description: "Competition organizer" },
-  { name: "Judge", description: "Competition judge" },
-  { name: "Participant", description: "Competition participant" },
-] as const;
-
-type RoleName = (typeof DEFAULT_ROLES)[number]["name"];
-
-const TEST_ACCOUNTS: {
-  fullName: string;
-  email: string;
-  roleName: RoleName;
-}[] = [
-    {
-      fullName: "Quản Trị Viên Hệ Thống",
-      email: "admin.test@example.com",
-      roleName: "Admin",
-    },
-    {
-      fullName: "Ban Tổ Chức Thử Nghiệm",
-      email: "organizer.test@example.com",
-      roleName: "Organizer",
-    },
-    {
-      fullName: "Nguyễn Văn Thí Sinh",
-      email: "participant.test@example.com",
-      roleName: "Participant",
-    },
-  ];
-
-async function seedRoles() {
-  await db.insert(roles).values([...DEFAULT_ROLES]).onConflictDoNothing({
-    target: roles.name,
-  });
-
-  const allRoles = await db
-    .select({ id: roles.id, name: roles.name })
-    .from(roles);
-
-  console.log("[Seed] Vai trò hệ thống: Admin, Organizer, Judge, Participant.");
-  return new Map(allRoles.map((r) => [r.name, r.id]));
-}
-
-async function seedUsers(
-  roleMap: Map<string, string>,
-) {
-  const userIdsByRole = new Map<RoleName, string>();
-  let sharedPasswordHash: string | null = null;
-
-  for (const acc of TEST_ACCOUNTS) {
-    const roleId = roleMap.get(acc.roleName);
-    if (!roleId) continue;
-
-    const [existing] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.email, acc.email))
-      .limit(1);
-
-    let userId = existing?.id;
-
-    if (!userId) {
-      if (!sharedPasswordHash) {
-        sharedPasswordHash = await Bun.password.hash("password123");
-      }
-
-      const [inserted] = await db
-        .insert(users)
-        .values({
-          fullName: acc.fullName,
-          email: acc.email,
-          passwordHash: sharedPasswordHash,
-          isActive: true,
-        })
-        .onConflictDoNothing({ target: users.email })
-        .returning({ id: users.id });
-
-      userId = inserted?.id;
-    }
-
-    if (userId) {
-      await db
-        .insert(userRoles)
-        .values({ userId, roleId })
-        .onConflictDoNothing();
-
-      userIdsByRole.set(acc.roleName, userId);
-      console.log(`[Seed] ${acc.roleName}: ${acc.email}`);
-    }
-  }
-
-  return userIdsByRole;
-}
+import { db } from "../index";
+import { categories, contests, scoringCriteria, submissions } from "../schema";
 
 async function contestExistsByName(name: string) {
   const [found] = await db
@@ -116,7 +12,7 @@ async function contestExistsByName(name: string) {
   return Boolean(found);
 }
 
-async function seedOngoingContest(
+export async function seedOngoingContest(
   organizerUserId: string,
   participantUserId: string,
 ) {
@@ -221,7 +117,7 @@ async function seedOngoingContest(
   ]);
 }
 
-async function seedPublishedContest(
+export async function seedPublishedContest(
   organizerUserId: string,
   participantUserId: string,
 ) {
@@ -272,35 +168,3 @@ async function seedPublishedContest(
   });
 }
 
-export async function seed() {
-  if (Bun.env.NODE_ENV === "production") {
-    await seedRoles();
-    return;
-  }
-
-  const database = URL.parse(Bun.env.DATABASE_URL ?? "");
-  const isLocalDatabase = database && ["localhost", "127.0.0.1", "[::1]"].includes(database.hostname);
-  if (isLocalDatabase && database.pathname === "/cinegen_acceptance_test") {
-    const { seedAcceptance } = await import("./seed-acceptance");
-    await seedAcceptance();
-    return;
-  }
-
-  const roleMap = await seedRoles();
-  const userIdsByRole = await seedUsers(roleMap);
-
-  const organizerUserId = userIdsByRole.get("Organizer");
-  const participantUserId = userIdsByRole.get("Participant");
-
-  if (!organizerUserId || !participantUserId) {
-    console.warn("Missing Organizer or Participant ID, skipping contest seed.");
-    return;
-  }
-
-  await seedOngoingContest(organizerUserId, participantUserId);
-  await seedPublishedContest(organizerUserId, participantUserId);
-  if (isLocalDatabase) await seedDemoSubmissions();
-
-  console.log(`[Seed] Dữ liệu mẫu: ${isLocalDatabase ? 3 : 2} cuộc thi.`);
-  console.log("[Seed] Mật khẩu mặc định: password123.");
-}

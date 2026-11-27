@@ -1,3 +1,4 @@
+import { env } from "../config/env";
 import { createMiddleware } from "hono/factory";
 import { verify } from "hono/jwt";
 import { canGrant, type Permission } from "../services/permission-policy";
@@ -25,11 +26,7 @@ function isRole(value: unknown): value is Role {
 export const createAuthenticator = (
   hasActiveRole: (userId: string, role: Role, tokenVersion: number, sessionId?: string) => Promise<boolean>,
 ) => createMiddleware<AuthEnv>(async (c, next) => {
-  const secret = Bun.env.JWT_SECRET;
-
-  if (!secret) {
-    return c.json({ error: "JWT_SECRET is not configured" }, 500);
-  }
+  const secret = env.jwtSecret;
 
   const authorization = c.req.header("Authorization");
   const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];

@@ -25,10 +25,7 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  fetchMockScoreboard,
-  MOCK_SCOREBOARD_CONTESTS,
-} from "@/lib/mock-scoreboard";
+import { getResultsErrorMessage, getScoreboard } from "@/lib/results-api";
 import {
   filterScoreboard,
   formatScore,
@@ -60,6 +57,8 @@ function formatUpdatedAt(isoDate: string | null): string {
 
 export default function ScoreboardPage() {
   const [entries, setEntries] = useState<ScoreboardEntry[]>([]);
+  const [apiRanks, setApiRanks] = useState<Record<string, number | null>>({});
+  const [apiScores, setApiScores] = useState<Record<string, number | null>>({});
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,36 +70,78 @@ export default function ScoreboardPage() {
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<
     string | null
   >(null);
-  const [selectedContest, setSelectedContest] = useState(
-    MOCK_SCOREBOARD_CONTESTS[0]?.id ?? "",
-  );
+  const [selectedContest, setSelectedContest] = useState("");
 
   const searchInputId = useId();
   const categorySelectId = useId();
   const statusSelectId = useId();
-  const contestSelectId = useId();
+  const contestInputId = useId();
 
-  const loadScoreboard = useCallback(async () => {
+  const loadScoreboard = useCallback(async (contestId: string) => {
+    if (!contestId.trim()) {
+      setError("Vui lòng nhập mã cuộc thi.");
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      const snapshot = await fetchMockScoreboard();
-      setEntries(snapshot.entries);
-      setUpdatedAt(snapshot.updatedAt);
-      setError(null);
-    } catch {
-      setError(
-        "Không thể tải bảng điểm. Vui lòng thử lại.",
+      const snapshot = await getScoreboard(contestId.trim());
+      const apiEntries = snapshot.data.entries ?? [];
+      const mapped: ScoreboardEntry[] = apiEntries.map((entry) => ({
+        submissionId: entry.submissionId,
+        submissionCode: entry.submissionCode ?? entry.submissionId,
+        title: entry.title,
+        categoryId: entry.categoryId,
+        categoryName: entry.categoryName,
+        judgeCount: entry.judgeCount,
+        scoreScale: entry.scoreScale,
+        negativeProofVerified: entry.negativeProofVerified,
+        scores: entry.scores,
+      }));
+      setEntries(mapped);
+      setApiRanks(
+        Object.fromEntries(
+          apiEntries.map((entry) => [entry.submissionId, entry.rank]),
+        ),
       );
+      setApiScores(
+        Object.fromEntries(
+          apiEntries.map((entry) => [entry.submissionId, entry.finalScore]),
+        ),
+      );
+      setUpdatedAt(snapshot.data.updatedAt);
+      setError(null);
+    } catch (err: unknown) {
+      setError(getResultsErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void loadScoreboard();
+    const contestId =
+      new URLSearchParams(window.location.search).get("contestId") ?? "";
+    if (contestId) {
+      setSelectedContest(contestId);
+      void loadScoreboard(contestId);
+    } else {
+      setIsLoading(false);
+    }
   }, [loadScoreboard]);
 
   const summary = summarizeScoreboard(entries);
-  const rankedEntries = rankScoreboard(entries);
+  const rankedEntries = rankScoreboard(entries).map((entry) => ({
+    ...entry,
+    rank:
+      entry.submissionId in apiRanks
+        ? apiRanks[entry.submissionId]
+        : entry.rank,
+    finalScore:
+      entry.submissionId in apiScores
+        ? apiScores[entry.submissionId]
+        : entry.finalScore,
+  }));
   const categories = Array.from(
     new Map(
       entries.map((entry) => [
@@ -141,17 +182,19 @@ export default function ScoreboardPage() {
             Bảng điểm tổng hợp
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Điểm chung cuộc của từng bài thi trong dữ liệu minh họa.
+            Điểm chung cuộc của từng bài thi từ dữ liệu thật từ API.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-gray-500">Cập nhật {formatUpdatedAt(updatedAt)}</span>
+          <span className="text-xs text-gray-500">
+            Cập nhật {formatUpdatedAt(updatedAt)}
+          </span>
           <Button
             variant="outline"
             size="sm"
             className="text-xs"
-            onClick={() => void loadScoreboard()}
+            onClick={() => void loadScoreboard(selectedContest)}
           >
             <RefreshCw className="h-3.5 w-3.5" /> Làm mới
           </Button>
@@ -160,23 +203,25 @@ export default function ScoreboardPage() {
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
         <Label
-          htmlFor={contestSelectId}
+          htmlFor={contestInputId}
           className="text-xs whitespace-nowrap text-gray-500"
         >
-          Cuộc thi:
+          Mã cuộc thi:
         </Label>
-        <select
-          id={contestSelectId}
+        <Input
+          id={contestInputId}
           value={selectedContest}
           onChange={(event) => setSelectedContest(event.target.value)}
-          className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm focus:ring-1 focus:ring-black focus:outline-none"
+          placeholder="Nhập mã cuộc thi (UUID)"
+          className="h-9 w-full max-w-md text-sm"
+        />
+        <Button
+          size="sm"
+          onClick={() => void loadScoreboard(selectedContest)}
+          disabled={isLoading}
         >
-          {MOCK_SCOREBOARD_CONTESTS.map((contest) => (
-            <option key={contest.id} value={contest.id}>
-              {contest.name}
-            </option>
-          ))}
-        </select>
+          Tải bảng điểm
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
@@ -221,14 +266,14 @@ export default function ScoreboardPage() {
             </div>
           </CardContent>
         </Card>
-
       </div>
 
       {summary.missingProof > 0 && (
         <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
-            {summary.missingProof} bài thi cần xác minh bằng chứng trước khi xét giải (BR-06).
+            {summary.missingProof} bài thi cần xác minh bằng chứng trước khi xét
+            giải (BR-06).
           </span>
         </div>
       )}
@@ -240,7 +285,7 @@ export default function ScoreboardPage() {
             variant="outline"
             size="sm"
             className="text-xs"
-            onClick={() => void loadScoreboard()}
+            onClick={() => void loadScoreboard(selectedContest)}
           >
             Thử lại
           </Button>
@@ -386,12 +431,13 @@ export default function ScoreboardPage() {
                           <div className="min-w-0">
                             <p className="flex items-center gap-1.5 truncate font-semibold text-gray-900">
                               {entry.title}
-                              {entry.proofRequired && !entry.negativeProofVerified && (
-                                <ShieldAlert
-                                  className="h-3.5 w-3.5 shrink-0 text-amber-500"
-                                  aria-label="Chưa xác minh ảnh âm bản"
-                                />
-                              )}
+                              {entry.proofRequired &&
+                                !entry.negativeProofVerified && (
+                                  <ShieldAlert
+                                    className="h-3.5 w-3.5 shrink-0 text-amber-500"
+                                    aria-label="Chưa xác minh ảnh âm bản"
+                                  />
+                                )}
                             </p>
                             <p className="font-mono text-xs text-gray-400">
                               {entry.submissionCode}
