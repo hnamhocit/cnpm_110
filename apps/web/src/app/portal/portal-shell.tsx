@@ -5,6 +5,7 @@ import {
   ClipboardCheck,
   Database,
   LayoutDashboard,
+  ScrollText,
   Sparkles,
   Trophy,
   Users,
@@ -51,6 +52,11 @@ const menuItems: MenuItem[] = [
 // Master Data chỉ dành cho Administrator (BR-02).
 const adminMenuItems: MenuItem[] = [
   { label: "Master Data", href: "/portal/master-data", icon: Database },
+  {
+    label: "Audit Log",
+    href: "/portal/audit-logs",
+    icon: ScrollText,
+  },
 ];
 
 // Kiểu dữ liệu cho Sidebar
