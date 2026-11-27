@@ -285,3 +285,7 @@ Chỉ cộng 43 hàng UC ở mục 3. Các mục kỹ thuật không cộng thê
 | Kết luận nghiệm thu | |
 | Ngày kiểm tra | |
 | Chữ ký giảng viên | |
+
+### Sửa metadata migration — 27/11/2026
+
+Đã giải quyết merge conflict trong `_journal.json` và `0006_snapshot.json`. Journal giữ cả migration audit/email và catalog theo thứ tự thời gian, giữ nguyên tên SQL và timestamp. Snapshot hợp nhất catalog với các bảng audit, notification và exhibition. `db:check` đạt, Drizzle đọc được đủ 8 migration. Đã áp dụng migration còn thiếu thành công trên database hiện tại trong `apps/api/.env`, giữ dữ liệu hiện có. Không chạy `db:reset`.
