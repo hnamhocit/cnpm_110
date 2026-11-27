@@ -101,29 +101,69 @@ export async function fetchCriteria(
   contestId: string,
   categoryId: string,
 ): Promise<CriterionConfig[]> {
-  // TODO(backend): GET criteria theo hạng mục là contract planned (FPC-083).
   const response = await http.get<unknown>(
-    `/api/v1/contests/${contestId}/criteria`,
-    {
-      params: { categoryId },
-    },
+    `/api/v1/contests/${contestId}/categories/${categoryId}/criteria`,
   );
   const payload = unwrap<unknown>(response.data);
-  return asArray(payload, "criteria") as CriterionConfig[];
+  return asArray(payload, "criteria").map((item) => {
+    const record = item as Record<string, unknown>;
+    return {
+      code: String(record.code ?? record.id ?? record.name ?? ""),
+      name: String(record.name ?? ""),
+      weight: Number(record.weight),
+      maxScore:
+        record.maxScore != null ? Number(record.maxScore) : undefined,
+    };
+  });
 }
 
-export async function createContestConfig(
-  payload: ContestConfigInput,
-): Promise<ContestConfigRecord> {
-  // TODO(backend): POST mounted chỉ đọc name/description/startAt/endAt/status; các field Module 03 khác bị bỏ qua (FPC-083).
-  const response = await http.post<unknown>("/api/v1/contests", {
-    ...payload,
+type RoundInput = {
+  name: string;
+  order: number;
+  advanceCount?: number | null;
+};
+
+function contestBody(payload: ContestConfigInput) {
+  const rounds = (payload as ContestConfigInput & { rounds?: RoundInput[] })
+    .rounds;
+
+  return {
+    name: payload.name,
+    description: composeDescription(payload.theme, payload.rules),
     registrationStartAt: toIso(payload.registrationStartAt),
     submissionDeadlineAt: toIso(payload.submissionDeadlineAt),
     judgingStartAt: toIso(payload.judgingStartAt),
     judgingDeadlineAt: toIso(payload.judgingDeadlineAt),
     publishedAt: toIso(payload.publishedAt),
-  });
+    theme: payload.theme,
+    rules: payload.rules,
+    ...(payload.coverImageUrl
+      ? { coverImageUrl: payload.coverImageUrl }
+      : {}),
+    rounds:
+      rounds?.map((round) => ({
+        name: round.name,
+        order: round.order,
+        advanceCount: round.advanceCount ?? null,
+      })) ?? [{ name: "Vòng chung kết", order: 1, advanceCount: null }],
+    awards: payload.awards.map((award) => ({
+      code: award.code,
+      name: award.name,
+      rankOrder: award.rankOrder,
+      prizeValueVnd: award.prizeValueVnd,
+      quota: award.quota,
+    })),
+    status: payload.status,
+  };
+}
+
+export async function createContestConfig(
+  payload: ContestConfigInput,
+): Promise<ContestConfigRecord> {
+  const response = await http.post<unknown>(
+    "/api/v1/contests",
+    contestBody(payload),
+  );
   return unwrap<ContestConfigRecord>(response.data);
 }
 
@@ -131,15 +171,28 @@ export async function updateContestConfig(
   id: string,
   payload: ContestConfigInput,
 ): Promise<ContestConfigRecord> {
-  // TODO(backend): PUT mounted chỉ lưu 5 field dưới đây. Slug/theme/rules/cover, 5 mốc BR-08,
-  // maxEntriesPerUser, categories, criteria và awards chưa có route lưu (FPC-083).
-  const response = await http.put<unknown>(`/api/v1/contests/${id}`, {
-    name: payload.name.trim(),
-    description: composeDescription(payload.theme, payload.rules),
-    startAt: toIso(payload.registrationStartAt),
-    endAt: toIso(payload.publishedAt),
-    status: payload.status,
-  });
+  const response = await http.put<unknown>(
+    `/api/v1/contests/${id}`,
+    contestBody(payload),
+  );
+  return unwrap<ContestConfigRecord>(response.data);
+}
+
+export async function duplicateContestConfig(
+  sourceId: string,
+  payload: ContestConfigInput,
+): Promise<ContestConfigRecord> {
+  const response = await http.post<unknown>(
+    `/api/v1/contests/${sourceId}/duplicate`,
+    {
+      name: payload.name,
+      registrationStartAt: toIso(payload.registrationStartAt),
+      submissionDeadlineAt: toIso(payload.submissionDeadlineAt),
+      judgingStartAt: toIso(payload.judgingStartAt),
+      judgingDeadlineAt: toIso(payload.judgingDeadlineAt),
+      publishedAt: toIso(payload.publishedAt),
+    },
+  );
   return unwrap<ContestConfigRecord>(response.data);
 }
 
@@ -148,17 +201,17 @@ export async function saveCategory(
   category: CategoryConfig | null,
   categoryId?: string,
 ): Promise<CategoryRecord> {
-  // TODO(backend): POST/PATCH categories là contract planned, chưa mount (FPC-083).
+  const description = (
+    category as (CategoryConfig & { description?: string }) | null
+  )?.description;
   const body = category
     ? {
-        code: category.code,
         name: category.name,
-        formatRestriction: category.formatRestriction,
-        maxEntriesPerParticipant: category.maxEntriesPerParticipant,
-        requireNegativeProofUpfront: category.requireNegativeProofUpfront,
-        ...(category.isActive === undefined
-          ? {}
-          : { isActive: category.isActive }),
+        ...(description ? { description } : {}),
+        ...(category.isActive !== undefined
+          ? { isActive: category.isActive }
+          : {}),
+        requireNegativeProof: Boolean(category.requireNegativeProofUpfront),
       }
     : {};
 
@@ -179,11 +232,18 @@ export async function saveCriteria(
   categoryId: string,
   criteria: CriterionConfig[],
 ): Promise<void> {
-  // Giữ endpoint cũ để tương thích với form hiện có; route vẫn là contract planned (FPC-083).
-  await http.post(`/api/v1/contests/${contestId}/criteria`, {
-    categoryId,
-    criteria,
-  });
+  await http.put(
+    `/api/v1/contests/${contestId}/categories/${categoryId}/criteria`,
+    {
+      criteria: criteria.map((criterion) => ({
+        name: criterion.name,
+        weight: Number(criterion.weight),
+        ...(criterion.maxScore != null
+          ? { maxScore: Number(criterion.maxScore) }
+          : {}),
+      })),
+    },
+  );
 }
 
 function safeMessage(value: unknown, fallback: string): string {

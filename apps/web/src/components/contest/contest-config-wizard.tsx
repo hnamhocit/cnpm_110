@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import {
   CONTEST_CONFIG_GAP_MESSAGE,
   createContestConfig,
+  duplicateContestConfig,
   fetchContestCategories,
   fetchContestConfig,
   splitDescription,
@@ -386,7 +387,12 @@ export function ContestConfigWizard({
     const payload: ContestConfigInput = { ...input, status };
 
     try {
-      if (mode === "edit" && contestId) {
+      if (mode === "duplicate" && sourceId) {
+        const created = await duplicateContestConfig(sourceId, payload);
+        if (!created?.id) throw new Error("Thiếu mã cuộc thi sau khi sao chép.");
+        toast.success(`Sao chép cuộc thi "${payload.name}" thành công.`);
+        router.push(`/portal/contests/${created.id}`);
+      } else if (mode === "edit" && contestId) {
         await updateContestConfig(contestId, payload);
         toast.success("Đã cập nhật cấu hình cuộc thi.");
         router.push(`/portal/contests/${contestId}`);
