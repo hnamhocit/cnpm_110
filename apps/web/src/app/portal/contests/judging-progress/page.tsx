@@ -90,7 +90,12 @@ export default function JudgingProgressPage() {
       return true;
     } catch (error) {
       setRounds([]);
-      setMessage(`Không thể tải tiến độ chấm: ${getErrorMessage(error)}`);
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      if (status === 404) {
+        setMessage(null);
+      } else {
+        setMessage(`Không thể tải tiến độ chấm: ${getErrorMessage(error)}`);
+      }
       return false;
     } finally {
       setLoading(false);
