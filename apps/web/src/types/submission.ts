@@ -25,4 +25,9 @@ export interface Submission {
   negativeProofPath?: string | null;
   proofReviewStatus?: "PENDING" | "VALID" | "INVALID" | string | null;
   categoryRequiresProofUpfront?: boolean | null;
+  aiAnalysis?: {
+    aiGeneratedProbability?: number | null;
+    duplicateSimilarityScore?: number | null;
+    flagReasons?: string[] | null;
+  } | null;
 }

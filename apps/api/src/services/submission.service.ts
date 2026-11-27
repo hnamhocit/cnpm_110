@@ -790,3 +790,211 @@ export async function getSubmissionComparison(submissionId: string, actor: Moder
     analyzedAt: ai?.createdAt ?? sub.createdAt,
   };
 }
+
+export interface EditSubmissionInput {
+  title?: string;
+  description?: string;
+  filmBrand?: string;
+  filmName?: string;
+  filmSpeedIso?: number;
+  cameraModel?: string;
+  lensModel?: string;
+  focalLengthMm?: number;
+  aperture?: string;
+  shutterSpeed?: string;
+  isoUsed?: number;
+  labName?: string;
+  locationTaken?: string;
+}
+
+export async function editSubmission(
+  submissionId: string,
+  actorId: string,
+  input: EditSubmissionInput,
+) {
+  const [submission] = await db
+    .select({
+      id: submissions.id,
+      contestId: submissions.contestId,
+      participantId: submissions.participantId,
+      status: submissions.status,
+      title: submissions.title,
+      description: submissions.description,
+    })
+    .from(submissions)
+    .where(eq(submissions.id, submissionId))
+    .limit(1);
+
+  if (!submission) {
+    throw AppError.notFound("Submission not found");
+  }
+
+  if (submission.participantId !== actorId) {
+    throw AppError.forbidden("You do not have permission to edit this submission");
+  }
+
+  const [contest] = await db
+    .select({
+      id: contests.id,
+      status: contests.status,
+      endAt: contests.endAt,
+    })
+    .from(contests)
+    .where(eq(contests.id, submission.contestId))
+    .limit(1);
+
+  if (!contest) {
+    throw AppError.notFound("Contest not found");
+  }
+
+  const now = new Date();
+  if (contest.endAt && now > contest.endAt) {
+    throw AppError.conflict("Cannot edit submission after submission deadline (BR-24)");
+  }
+
+  const contestStatus = contest.status.toLowerCase();
+  if (
+    [
+      "judging",
+      "in_judging",
+      "published",
+      "results_published",
+      "archived",
+      "completed",
+    ].includes(contestStatus)
+  ) {
+    throw AppError.conflict(
+      "Cannot edit submission once contest has entered judging (BR-24)",
+    );
+  }
+
+  if (["APPROVED", "DISQUALIFIED"].includes(submission.status)) {
+    throw AppError.conflict(
+      "Cannot edit submission that has already been approved or disqualified (BR-24)",
+    );
+  }
+
+  const subUpdates: Record<string, unknown> = { updatedAt: now };
+  if (input.title !== undefined) {
+    if (!input.title.trim()) throw AppError.badRequest("Title cannot be empty");
+    subUpdates.title = input.title.trim();
+  }
+  if (input.description !== undefined) {
+    subUpdates.description = input.description;
+  }
+
+  await db
+    .update(submissions)
+    .set(subUpdates)
+    .where(eq(submissions.id, submissionId));
+
+  const metaUpdates: Record<string, unknown> = {};
+  if (input.filmBrand !== undefined) metaUpdates.filmBrand = input.filmBrand;
+  if (input.filmName !== undefined) metaUpdates.filmName = input.filmName;
+  if (input.filmSpeedIso !== undefined)
+    metaUpdates.filmSpeedIso = input.filmSpeedIso;
+  if (input.cameraModel !== undefined)
+    metaUpdates.cameraModel = input.cameraModel;
+  if (input.lensModel !== undefined) metaUpdates.lensModel = input.lensModel;
+  if (input.focalLengthMm !== undefined)
+    metaUpdates.focalLengthMm = input.focalLengthMm;
+  if (input.aperture !== undefined) metaUpdates.aperture = input.aperture;
+  if (input.shutterSpeed !== undefined)
+    metaUpdates.shutterSpeed = input.shutterSpeed;
+  if (input.isoUsed !== undefined) metaUpdates.isoUsed = input.isoUsed;
+  if (input.labName !== undefined) metaUpdates.labName = input.labName;
+  if (input.locationTaken !== undefined)
+    metaUpdates.locationTaken = input.locationTaken;
+
+  if (Object.keys(metaUpdates).length > 0) {
+    metaUpdates.updatedAt = now;
+    await db
+      .update(filmMetadata)
+      .set(metaUpdates)
+      .where(eq(filmMetadata.submissionId, submissionId));
+  }
+
+  return {
+    id: submissionId,
+    message: "Submission updated successfully",
+    updatedAt: now,
+  };
+}
+
+export async function withdrawSubmission(submissionId: string, actorId: string) {
+  const [submission] = await db
+    .select({
+      id: submissions.id,
+      contestId: submissions.contestId,
+      participantId: submissions.participantId,
+      status: submissions.status,
+    })
+    .from(submissions)
+    .where(eq(submissions.id, submissionId))
+    .limit(1);
+
+  if (!submission) {
+    throw AppError.notFound("Submission not found");
+  }
+
+  if (submission.participantId !== actorId) {
+    throw AppError.forbidden("You do not have permission to withdraw this submission");
+  }
+
+  const [contest] = await db
+    .select({
+      id: contests.id,
+      status: contests.status,
+      endAt: contests.endAt,
+    })
+    .from(contests)
+    .where(eq(contests.id, submission.contestId))
+    .limit(1);
+
+  if (!contest) {
+    throw AppError.notFound("Contest not found");
+  }
+
+  const now = new Date();
+  if (contest.endAt && now > contest.endAt) {
+    throw AppError.conflict("Cannot withdraw submission after submission deadline (BR-24)");
+  }
+
+  const contestStatus = contest.status.toLowerCase();
+  if (
+    [
+      "judging",
+      "in_judging",
+      "published",
+      "results_published",
+      "archived",
+      "completed",
+    ].includes(contestStatus)
+  ) {
+    throw AppError.conflict(
+      "Cannot withdraw submission once contest has entered judging (BR-24)",
+    );
+  }
+
+  if (submission.status === "APPROVED") {
+    throw AppError.conflict(
+      "Cannot withdraw submission that has already entered judging (BR-24)",
+    );
+  }
+
+  const [updated] = await db
+    .update(submissions)
+    .set({
+      status: "DISQUALIFIED",
+      rejectionReason: "Withdrawn by participant (BR-24)",
+      updatedAt: now,
+    })
+    .where(eq(submissions.id, submissionId))
+    .returning({ id: submissions.id, status: submissions.status });
+
+  return {
+    id: updated.id,
+    status: updated.status,
+    message: "Submission withdrawn successfully (BR-24)",
+  };
+}

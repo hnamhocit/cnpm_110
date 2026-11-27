@@ -3,9 +3,12 @@
 import {
   AlertCircle,
   ArrowLeft,
+  Award,
   Eye,
   FilePlus2,
+  Pencil,
   Search,
+  Trash2,
   Trophy,
   Upload,
 } from "lucide-react";
@@ -18,6 +21,9 @@ import { LiveCountdown48h } from "@/components/submission/live-countdown-48h";
 import { ModerationPipelineTimeline } from "@/components/submission/moderation-pipeline-timeline";
 import { RejectionDetailsModal } from "@/components/submission/rejection-details-modal";
 import { UploadNegativeProofModal } from "@/components/submission/upload-negative-proof-modal";
+import { EditSubmissionModal } from "@/components/submission/edit-submission-modal";
+import { WithdrawSubmissionModal } from "@/components/submission/withdraw-submission-modal";
+import { SubmissionFeedbackModal } from "@/components/submission/submission-feedback-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,6 +69,9 @@ export default function MySubmissionsPage() {
   const [zoomItem, setZoomItem] = useState<MySubmissionItem | null>(null);
   const [proofItem, setProofItem] = useState<MySubmissionItem | null>(null);
   const [rejectItem, setRejectItem] = useState<MySubmissionItem | null>(null);
+  const [editItem, setEditItem] = useState<MySubmissionItem | null>(null);
+  const [withdrawItem, setWithdrawItem] = useState<MySubmissionItem | null>(null);
+  const [feedbackItem, setFeedbackItem] = useState<MySubmissionItem | null>(null);
   const [resultTarget, setResultTarget] = useState<{
     id: string;
     title: string;
@@ -236,17 +245,54 @@ export default function MySubmissionsPage() {
                           Xem kết quả
                         </Button>
 
-                        {needsProof ? (
+                      {!isRejected && item.status !== "APPROVED" && item.status !== "JUDGING" ? (
+                        <>
                           <Button
                             type="button"
+                            variant="outline"
                             size="sm"
-                            className="bg-amber-600 hover:bg-amber-700 text-white"
-                            onClick={() => setProofItem(item)}
+                            className="text-slate-700 hover:text-blue-700 hover:border-blue-300"
+                            onClick={() => setEditItem(item)}
                           >
-                            <Upload className="mr-1.5 h-3.5 w-3.5" />
-                            Nộp âm bản
+                            <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                            Sửa thông số
                           </Button>
-                        ) : null}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-200"
+                            onClick={() => setWithdrawItem(item)}
+                          >
+                            <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                            Rút bài
+                          </Button>
+                        </>
+                      ) : null}
+
+                      {item.status === "APPROVED" || item.status === "JUDGING" ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                          onClick={() => setFeedbackItem(item)}
+                        >
+                          <Award className="mr-1.5 h-3.5 w-3.5" />
+                          Kết quả & Nhận xét
+                        </Button>
+                      ) : null}
+
+                      {needsProof ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="bg-amber-600 hover:bg-amber-700 text-white"
+                          onClick={() => setProofItem(item)}
+                        >
+                          <Upload className="mr-1.5 h-3.5 w-3.5" />
+                          Nộp âm bản
+                        </Button>
+                      ) : null}
 
                         {isRejected ? (
                           <Button
@@ -323,6 +369,35 @@ export default function MySubmissionsPage() {
             onOpenChange={(open) => !open && setResultTarget(null)}
             submissionId={resultTarget.id}
             title={resultTarget.title}
+          />
+        ) : null}
+
+        {/* Modal chỉnh sửa bài thi (BR-24) */}
+        {editItem ? (
+          <EditSubmissionModal
+            open={Boolean(editItem)}
+            onOpenChange={(open) => !open && setEditItem(null)}
+            submission={editItem}
+            onSuccess={fetchMySubmissions}
+          />
+        ) : null}
+
+        {/* Modal rút bài thi (BR-24) */}
+        {withdrawItem ? (
+          <WithdrawSubmissionModal
+            open={Boolean(withdrawItem)}
+            onOpenChange={(open) => !open && setWithdrawItem(null)}
+            submission={withdrawItem}
+            onSuccess={fetchMySubmissions}
+          />
+        ) : null}
+
+        {/* Modal kết quả & nhận xét BGK (UC-41) */}
+        {feedbackItem ? (
+          <SubmissionFeedbackModal
+            open={Boolean(feedbackItem)}
+            onOpenChange={(open) => !open && setFeedbackItem(null)}
+            submission={feedbackItem}
           />
         ) : null}
       </main>

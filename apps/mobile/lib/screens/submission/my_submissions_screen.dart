@@ -17,12 +17,15 @@ import '../../core/providers/notification_provider.dart';
 import '../../core/services/image_compression_service.dart';
 import '../../core/services/image_picker_service.dart';
 import '../../models/app_notification.dart';
+import '../../models/film_dev_scan_params.dart';
+import '../../models/film_shooting_params.dart';
 import '../../models/image_attachment.dart';
 import '../../models/user_submission.dart';
 import 'components/image_preview_dialog.dart';
 import 'components/live_countdown_widget.dart';
 import 'components/moderation_timeline_widget.dart';
 import 'components/rejection_details_sheet.dart';
+import 'edit_submission_metadata_screen.dart';
 
 class MySubmissionsScreen extends ConsumerStatefulWidget {
   const MySubmissionsScreen({super.key});
@@ -668,6 +671,99 @@ class _MySubmissionsScreenState extends ConsumerState<MySubmissionsScreen> {
                     ),
                   ),
                 ),
+                 const SizedBox(height: 16),
+                if (submission.status != SubmissionStatus.approved &&
+                    submission.status != SubmissionStatus.disqualified &&
+                    submission.status != SubmissionStatus.disqualifiedNoProof) ...[
+                  FilledButton.tonalIcon(
+                    onPressed: () {
+                      Navigator.of(sheetContext).pop();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => EditSubmissionMetadataScreen(
+                            submissionId: submission.id,
+                            submissionStatus: submission.status.name,
+                            initialShootingParams: FilmShootingParams(
+                              cameraBody: submission.metadata?.cameraBody ?? '',
+                              filmBrand: submission.metadata?.filmStock ?? '',
+                              filmStock: submission.metadata?.filmStock ?? '',
+                              filmFormat: submission.metadata?.filmFormat ?? '135',
+                              isoRated: submission.metadata?.isoRated ?? 400,
+                              isoShot: submission.metadata?.isoShot ?? 400,
+                              lens: submission.metadata?.lens,
+                              frameNumber: submission.metadata?.frameNumber,
+                            ),
+                            initialDevScanParams: FilmDevScanParams(
+                              labName: submission.metadata?.devLabName ?? '',
+                              scannerModel: submission.metadata?.scannerModel ?? '',
+                              devChemistry: submission.metadata?.devChemistry,
+                            ),
+                            onSaved: (_, __) {
+                              ref.read(mySubmissionsProvider.notifier).silentRefresh();
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.edit_note_rounded),
+                    label: const Text('Chỉnh sửa thông số (BR-24)'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colorScheme.error,
+                      side: BorderSide(color: colorScheme.error),
+                    ),
+                    onPressed: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Xác nhận rút bài thi (BR-24)'),
+                          content: Text(
+                            'Bạn có chắc chắn muốn rút tác phẩm "${submission.title}" không? Sau khi rút, bài thi sẽ bị hủy và không thể khôi phục.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(false),
+                              child: const Text('Hủy'),
+                            ),
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: colorScheme.error,
+                              ),
+                              onPressed: () => Navigator.of(ctx).pop(true),
+                              child: const Text('Rút bài'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirmed == true && context.mounted) {
+                        try {
+                          await ref
+                              .read(submissionRepositoryProvider)
+                              .withdrawSubmission(submission.id);
+                          if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+                          ref.read(mySubmissionsProvider.notifier).silentRefresh();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Đã rút bài dự thi thành công (BR-24).')),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Lỗi khi rút bài: $e')),
+                            );
+                          }
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    label: const Text('Rút bài dự thi (BR-24)'),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 const SizedBox(height: 20),
                 OutlinedButton(
                   onPressed: () => Navigator.of(sheetContext).pop(),
