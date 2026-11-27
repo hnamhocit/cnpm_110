@@ -1,91 +1,158 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { http } from "@/lib/http";
 
 interface RoundProgress {
   roundId: string;
   roundName: string;
   status: "ACTIVE" | "LOCKED";
-  totalSubmissions: number;
-  evaluatedSubmissions: number;
+  totalAssignments: number;
+  scoredAssignments: number;
   judgesCompleted: number;
   totalJudges: number;
 }
 
-const DEFAULT_PROGRESS: RoundProgress[] = [
-  {
-    roundId: "round-1",
-    roundName: "Vòng Sơ loại (Preliminary)",
-    status: "ACTIVE",
-    totalSubmissions: 120,
-    evaluatedSubmissions: 112,
-    judgesCompleted: 4,
-    totalJudges: 5,
-  },
-  {
-    roundId: "round-2",
-    roundName: "Vòng Bán kết (Semifinal)",
-    status: "ACTIVE",
-    totalSubmissions: 50,
-    evaluatedSubmissions: 18,
-    judgesCompleted: 1,
-    totalJudges: 5,
-  },
-];
+interface ContestOption {
+  id: string;
+  name: string;
+}
 
-const CONTEST_OPTIONS = [
-  { id: "contest-1", name: "Analog Street Photography 2026" },
-  { id: "contest-2", name: "35mm Film Portrait Awards" },
-];
+interface ContestListItem {
+  id: string;
+  name: string;
+  code?: string | null;
+}
+
+interface ProgressPayload {
+  round?: {
+    id: string;
+    name: string;
+    lockedAt?: string | null;
+  } | null;
+  judges?: { isLocked: boolean }[];
+  overall?: {
+    totalAssigned?: number;
+    totalScored?: number;
+  };
+}
+
+function getErrorMessage(error: unknown): string {
+  const fallback = "Đã xảy ra lỗi. Vui lòng thử lại.";
+  if (typeof error !== "object" || error === null) return fallback;
+  const data = (
+    error as {
+      response?: { data?: { code?: string; message?: unknown } };
+    }
+  ).response?.data;
+  if (data?.code === "alreadyLocked") {
+    return "Vòng chấm này đã được chốt trước đó.";
+  }
+  if (typeof data?.message === "string" && data.message.trim()) {
+    return data.message;
+  }
+  return fallback;
+}
+
+function toProgressCards(payload: ProgressPayload | undefined): RoundProgress[] {
+  const round = payload?.round;
+  if (!round) return [];
+  const judges = payload?.judges ?? [];
+  const overall = payload?.overall;
+  return [
+    {
+      roundId: round.id,
+      roundName: round.name,
+      status: round.lockedAt ? "LOCKED" : "ACTIVE",
+      totalAssignments: overall?.totalAssigned ?? 0,
+      scoredAssignments: overall?.totalScored ?? 0,
+      judgesCompleted: judges.filter((judge) => judge.isLocked).length,
+      totalJudges: judges.length,
+    },
+  ];
+}
 
 export default function JudgingProgressPage() {
-  const [selectedContest, setSelectedContest] = useState(CONTEST_OPTIONS[0].id);
-  const [rounds, setRounds] = useState<RoundProgress[]>(DEFAULT_PROGRESS);
+  const [contestOptions, setContestOptions] = useState<ContestOption[]>([]);
+  const [selectedContest, setSelectedContest] = useState("");
+  const [rounds, setRounds] = useState<RoundProgress[]>([]);
+  const [loading, setLoading] = useState(true);
   const [lockingId, setLockingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
+  const loadProgress = useCallback(async (contestId: string) => {
+    setLoading(true);
+    try {
+      const res = await http.get<{ data?: ProgressPayload }>(
+        `/api/v1/contests/${contestId}/judging-progress`,
+      );
+      setRounds(toProgressCards(res.data?.data));
+      return true;
+    } catch (error) {
+      setRounds([]);
+      setMessage(`Không thể tải tiến độ chấm: ${getErrorMessage(error)}`);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     let active = true;
-    async function loadProgress() {
+
+    async function loadContests() {
       try {
-        const res = await http.get(
-          `/api/v1/contests/${selectedContest}/judging-progress`,
-        );
-        const items = res.data?.data?.rounds ?? res.data?.data;
-        if (active && Array.isArray(items) && items.length > 0) {
-          setRounds(items);
-        }
-      } catch {
-        // Fallback to default progress when API endpoint is not yet populated
+        const res = await http.get<{
+          data?: { items?: ContestListItem[] };
+        }>("/api/v1/contests", { params: { page: 1, limit: 100 } });
+        const items = res.data?.data?.items ?? [];
+        const options = items.map((item) => ({
+          id: item.id,
+          name: item.code ? `${item.name} (${item.code})` : item.name,
+        }));
+        if (!active) return;
+        setContestOptions(options);
+        setSelectedContest((current) => current || options[0]?.id || "");
+        if (options.length === 0) setLoading(false);
+      } catch (error) {
+        if (!active) return;
+        setMessage(`Không thể tải danh sách cuộc thi: ${getErrorMessage(error)}`);
+        setLoading(false);
       }
     }
-    loadProgress();
+
+    void loadContests();
     return () => {
       active = false;
     };
-  }, [selectedContest]);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedContest) return;
+    void loadProgress(selectedContest);
+  }, [selectedContest, loadProgress]);
 
   async function handleLockRound(roundId: string) {
     setLockingId(roundId);
     setMessage(null);
     try {
-      await http.post(
-        `/api/v1/contests/${selectedContest}/rounds/${roundId}/lock`,
+      const res = await http.post<{
+        data?: { alreadyLocked?: boolean };
+      }>(
+        `/api/v1/contests/${selectedContest}/close-judging`,
+        undefined,
+        { params: { roundId } },
       );
-      setRounds((prev) =>
-        prev.map((r) =>
-          r.roundId === roundId ? { ...r, status: "LOCKED" } : r,
-        ),
-      );
-      setMessage("Đã chốt vòng chấm và khóa bảng điểm thành công.");
-    } catch {
-      setRounds((prev) =>
-        prev.map((r) =>
-          r.roundId === roundId ? { ...r, status: "LOCKED" } : r,
-        ),
-      );
-      setMessage("Đã chốt vòng chấm (local state — API chưa sẵn sàng).");
+      const refreshed = await loadProgress(selectedContest);
+      if (refreshed) {
+        setMessage(
+          res.data?.data?.alreadyLocked === true
+            ? "Vòng chấm này đã được chốt trước đó."
+            : "Đã chốt vòng chấm và khóa bảng điểm thành công.",
+        );
+      }
+    } catch (error) {
+      setMessage(getErrorMessage(error));
     } finally {
       setLockingId(null);
     }
@@ -110,9 +177,9 @@ export default function JudgingProgressPage() {
           className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm"
           aria-label="Chọn cuộc thi"
         >
-          {CONTEST_OPTIONS.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
+          {contestOptions.map((contest) => (
+            <option key={contest.id} value={contest.id}>
+              {contest.name}
             </option>
           ))}
         </select>
@@ -124,75 +191,83 @@ export default function JudgingProgressPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {rounds.map((round) => {
-          const percent =
-            round.totalSubmissions > 0
-              ? Math.round(
-                  (round.evaluatedSubmissions / round.totalSubmissions) * 100,
-                )
-              : 0;
+      {loading ? (
+        <p className="text-sm text-neutral-500">Đang tải dữ liệu...</p>
+      ) : rounds.length === 0 ? (
+        <p className="text-sm text-neutral-500">
+          Không có vòng chấm nào để hiển thị.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {rounds.map((round) => {
+            const percent =
+              round.totalAssignments > 0
+                ? Math.round(
+                    (round.scoredAssignments / round.totalAssignments) * 100,
+                  )
+                : 0;
 
-          return (
-            <div
-              key={round.roundId}
-              className="space-y-4 rounded-lg border border-neutral-200 bg-white p-5"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h2 className="text-lg font-semibold">{round.roundName}</h2>
-                  <p className="text-xs text-neutral-500">
-                    Giám khảo hoàn thành: {round.judgesCompleted}/
-                    {round.totalJudges}
-                  </p>
-                </div>
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    round.status === "LOCKED"
-                      ? "bg-neutral-900 text-white"
-                      : "bg-emerald-100 text-emerald-800"
-                  }`}
-                >
-                  {round.status}
-                </span>
-              </div>
-
-              <div>
-                <div className="mb-1 flex justify-between text-xs text-neutral-600">
-                  <span>
-                    Đã chấm {round.evaluatedSubmissions}/
-                    {round.totalSubmissions} bài
+            return (
+              <div
+                key={round.roundId}
+                className="space-y-4 rounded-lg border border-neutral-200 bg-white p-5"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h2 className="text-lg font-semibold">{round.roundName}</h2>
+                    <p className="text-xs text-neutral-500">
+                      Giám khảo hoàn thành: {round.judgesCompleted}/
+                      {round.totalJudges}
+                    </p>
+                  </div>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      round.status === "LOCKED"
+                        ? "bg-neutral-900 text-white"
+                        : "bg-emerald-100 text-emerald-800"
+                    }`}
+                  >
+                    {round.status}
                   </span>
-                  <span className="font-semibold">{percent}%</span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-100">
-                  <div
-                    className="h-full bg-neutral-900 transition-all"
-                    style={{ width: `${percent}%` }}
-                  />
-                </div>
-              </div>
 
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  disabled={
-                    round.status === "LOCKED" || lockingId === round.roundId
-                  }
-                  onClick={() => handleLockRound(round.roundId)}
-                  className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {round.status === "LOCKED"
-                    ? "Đã chốt vòng"
-                    : lockingId === round.roundId
-                      ? "Đang chốt..."
-                      : "Chốt vòng (Lock Round)"}
-                </button>
+                <div>
+                  <div className="mb-1 flex justify-between text-xs text-neutral-600">
+                    <span>
+                      Đã chấm {round.scoredAssignments}/
+                      {round.totalAssignments} phiếu
+                    </span>
+                    <span className="font-semibold">{percent}%</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-100">
+                    <div
+                      className="h-full bg-neutral-900 transition-all"
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    disabled={
+                      round.status === "LOCKED" || lockingId === round.roundId
+                    }
+                    onClick={() => handleLockRound(round.roundId)}
+                    className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {round.status === "LOCKED"
+                      ? "Đã chốt vòng"
+                      : lockingId === round.roundId
+                        ? "Đang chốt..."
+                        : "Chốt vòng (Lock Round)"}
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
