@@ -1,8 +1,18 @@
 "use client";
 
-import { ChevronDown, FileText, Layers, LogOut, Menu, Shield, User, Users, X } from "lucide-react";
+import {
+  ChevronDown,
+  FileText,
+  Layers,
+  LogOut,
+  Menu,
+  Shield,
+  User,
+  Users,
+  X,
+} from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { BrandMark } from "@/components/brand-mark";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -14,40 +24,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useCurrentUser } from "@/lib/hooks/use-current-user";
 import { logout } from "@/lib/logout";
-
-type CurrentUser = {
-  id?: string;
-  fullName?: string;
-  email?: string;
-  avatarUrl?: string | null;
-  role?: string;
-};
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState<CurrentUser | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    async function loadUser() {
-      try {
-        const res = await fetch("/api/auth/me");
-        if (res.ok) {
-          const data = await res.json();
-          if (isMounted && data.user) {
-            setUser(data.user);
-          }
-        }
-      } catch {
-        // Not authenticated
-      }
-    }
-    loadUser();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const user = useCurrentUser();
 
   async function handleLogout() {
     if (await logout()) {
@@ -129,7 +111,11 @@ export function Navbar() {
                     className="group flex items-center gap-2 rounded-full border border-white/15 bg-white/10 py-1 pl-1 pr-2.5 text-xs font-medium text-white transition-all hover:border-white/30 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 cursor-pointer"
                   >
                     <Avatar className="size-6.5 ring-1 ring-white/20">
-                      <AvatarImage src={user.avatarUrl ?? undefined} alt="" referrerPolicy="no-referrer" />
+                      <AvatarImage
+                        src={user.avatarUrl ?? undefined}
+                        alt=""
+                        referrerPolicy="no-referrer"
+                      />
                       <AvatarFallback className="bg-brand-solid text-white text-[11px] font-bold">
                         {userInitial}
                       </AvatarFallback>
@@ -144,7 +130,11 @@ export function Navbar() {
                 <DropdownMenuContent align="end" className="w-60 p-1.5">
                   <div className="flex items-center gap-2.5 px-2.5 py-2">
                     <Avatar className="size-8 ring-1 ring-border">
-                      <AvatarImage src={user.avatarUrl ?? undefined} alt="" referrerPolicy="no-referrer" />
+                      <AvatarImage
+                        src={user.avatarUrl ?? undefined}
+                        alt=""
+                        referrerPolicy="no-referrer"
+                      />
                       <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                         {userInitial}
                       </AvatarFallback>
@@ -169,7 +159,10 @@ export function Navbar() {
                   </DropdownMenuItem>
                   {user.role === "Participant" && (
                     <DropdownMenuItem asChild>
-                      <Link href="/my-submissions" className="flex items-center gap-2">
+                      <Link
+                        href="/my-submissions"
+                        className="flex items-center gap-2"
+                      >
                         <FileText className="size-4 text-muted-foreground" />
                         <span>Bài thi của tôi</span>
                       </Link>
@@ -177,7 +170,10 @@ export function Navbar() {
                   )}
                   {user.role === "Admin" && (
                     <DropdownMenuItem asChild>
-                      <Link href="/portal/users" className="flex items-center gap-2">
+                      <Link
+                        href="/portal/users"
+                        className="flex items-center gap-2"
+                      >
                         <Users className="size-4 text-muted-foreground" />
                         <span>Quản lý tài khoản</span>
                       </Link>
@@ -297,8 +293,12 @@ export function Navbar() {
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2.5 rounded-lg border border-border p-2.5 bg-muted/30">
                   <Avatar className="size-8 ring-1 ring-border">
-                    <AvatarImage src={user.avatarUrl ?? undefined} alt="" referrerPolicy="no-referrer" />
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                    <AvatarImage
+                      src={user.avatarUrl ?? undefined}
+                      alt=""
+                      referrerPolicy="no-referrer"
+                    />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                       {userInitial}
                     </AvatarFallback>
                   </Avatar>
@@ -319,11 +319,19 @@ export function Navbar() {
                   </div>
                 </div>
 
-                <Button variant="outline" asChild onClick={() => setMobileMenuOpen(false)}>
+                <Button
+                  variant="outline"
+                  asChild
+                  onClick={() => setMobileMenuOpen(false)}
+                >
                   <Link href="/profile">Hồ sơ cá nhân</Link>
                 </Button>
                 {user.role === "Admin" && (
-                  <Button variant="outline" asChild onClick={() => setMobileMenuOpen(false)}>
+                  <Button
+                    variant="outline"
+                    asChild
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     <Link href="/portal/users">Quản lý tài khoản</Link>
                   </Button>
                 )}

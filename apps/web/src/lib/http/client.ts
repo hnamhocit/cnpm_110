@@ -5,7 +5,14 @@ import { tokenStorage } from "@/lib/http/token-storage";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 const TIMEOUT_MS = 15_000;
 
-const AUTH_PATHS = ["/auth/login", "/auth/register", "/auth/verify-email", "/auth/resend-verification", "/auth/forgot-password", "/auth/reset-password"];
+const AUTH_PATHS = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/verify-email",
+  "/auth/resend-verification",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+];
 
 type RetryableConfig = InternalAxiosRequestConfig & { _retry?: boolean };
 
@@ -71,6 +78,10 @@ http.interceptors.response.use(
       original !== undefined &&
       !original._retry &&
       !isAuthRequest(original.url);
+
+    if (error.response?.status === 401 && original?._retry) {
+      tokenStorage.clear();
+    }
 
     if (!shouldRefresh || !original) {
       return Promise.reject(error);

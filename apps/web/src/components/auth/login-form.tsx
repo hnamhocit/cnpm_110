@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { http } from "@/lib/http";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { useUserStore } from "@/lib/stores/user-store";
 
 type LoginResponse = {
   accessToken?: string;
@@ -42,9 +43,11 @@ export function LoginForm() {
         "/api/v1/auth/resend-verification",
         { email: email.trim(), password },
       );
-      setNotice(data.data.deliveryStatus === "RETRY_REQUIRED"
-        ? "Chưa gửi được mã. Vui lòng thử lại sau."
-        : "Kiểm tra hộp thư để nhận mã xác thực.");
+      setNotice(
+        data.data.deliveryStatus === "RETRY_REQUIRED"
+          ? "Chưa gửi được mã. Vui lòng thử lại sau."
+          : "Kiểm tra hộp thư để nhận mã xác thực.",
+      );
     } catch {
       setError("Chưa gửi được mã. Vui lòng thử lại sau.");
     } finally {
@@ -67,9 +70,14 @@ export function LoginForm() {
     try {
       if (verifying) {
         try {
-          await http.post("/api/v1/auth/verify-email", { email: email.trim(), code: code.trim() });
+          await http.post("/api/v1/auth/verify-email", {
+            email: email.trim(),
+            code: code.trim(),
+          });
         } catch {
-          setError("Không thể xác thực email. Kiểm tra mã hoặc yêu cầu gửi lại.");
+          setError(
+            "Không thể xác thực email. Kiểm tra mã hoặc yêu cầu gửi lại.",
+          );
           return;
         }
         setVerifying(false);
@@ -96,6 +104,7 @@ export function LoginForm() {
       }
 
       const userRole = data.user?.role || "Participant";
+      useUserStore.getState().clearUser();
       useAuthStore.getState().setTokens({
         accessToken: data.accessToken,
         role: userRole,
@@ -185,7 +194,11 @@ export function LoginForm() {
               />
             </>
           )}
-          {notice && <p role="status" className="text-sm">{notice}</p>}
+          {notice && (
+            <p role="status" className="text-sm">
+              {notice}
+            </p>
+          )}
 
           {error ? (
             <div
@@ -203,20 +216,34 @@ export function LoginForm() {
             disabled={isLoading}
             className="h-11 w-full rounded-xl bg-brand-solid text-sm font-semibold text-white shadow-md shadow-brand-solid/20 hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 transition-all active:scale-[0.99]"
           >
-            {isLoading ? "Đang xử lý…" : verifying ? "Xác thực và đăng nhập" : "Đăng nhập"}
+            {isLoading
+              ? "Đang xử lý…"
+              : verifying
+                ? "Xác thực và đăng nhập"
+                : "Đăng nhập"}
           </Button>
 
           {verifying ? (
             <div className="flex flex-wrap justify-center gap-2">
-              <Button type="button" variant="outline" disabled={isLoading} onClick={() => void resendCode()}>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isLoading}
+                onClick={() => void resendCode()}
+              >
                 Gửi lại mã
               </Button>
-              <Button type="button" variant="ghost" disabled={isLoading} onClick={() => {
-                setVerifying(false);
-                setCode("");
-                setError("");
-                setNotice("");
-              }}>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={isLoading}
+                onClick={() => {
+                  setVerifying(false);
+                  setCode("");
+                  setError("");
+                  setNotice("");
+                }}
+              >
                 Quay lại đăng nhập
               </Button>
             </div>

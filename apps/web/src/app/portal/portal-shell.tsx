@@ -2,6 +2,7 @@
 
 import {
   BarChart3,
+  ChevronDown,
   ClipboardCheck,
   Database,
   LayoutDashboard,
@@ -15,6 +16,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { BrandMark } from "@/components/brand-mark";
+import { useCurrentUser } from "@/lib/hooks/use-current-user";
 import Header from "../components/portal/Header";
 
 type MenuItem = {
@@ -27,11 +29,21 @@ type MenuItem = {
 // Các mục điều hướng của Portal
 const menuItems: MenuItem[] = [
   { label: "Dashboard", href: "/portal", icon: LayoutDashboard },
-  { label: "Contests", href: "/portal/contests", icon: Trophy },
-  { label: "Judges", href: "/portal/contests/judges", icon: Users },
-  { label: "Rounds", href: "/portal/contests/rounds", icon: Database },
+  { label: "Reports", href: "/portal/reports", icon: BarChart3 },
   {
-    label: "Registrations",
+    label: "Cấu hình AI",
+    href: "/portal/ai-settings",
+    icon: Sparkles,
+    roles: ["Admin", "Organizer"],
+  },
+];
+
+const contestMenuItems: MenuItem[] = [
+  { label: "Danh sách cuộc thi", href: "/portal/contests", icon: Trophy },
+  { label: "Giám khảo", href: "/portal/contests/judges", icon: Users },
+  { label: "Vòng chấm", href: "/portal/contests/rounds", icon: Database },
+  {
+    label: "Đăng ký tham gia",
     href: "/portal/contests/registrations",
     icon: Users,
   },
@@ -39,13 +51,6 @@ const menuItems: MenuItem[] = [
     label: "Tiến độ chấm thi",
     href: "/portal/contests/judging-progress",
     icon: ClipboardCheck,
-  },
-  { label: "Reports", href: "/portal/reports", icon: BarChart3 },
-  {
-    label: "Cấu hình AI",
-    href: "/portal/ai-settings",
-    icon: Sparkles,
-    roles: ["Admin", "Organizer"],
   },
 ];
 
@@ -67,22 +72,23 @@ type SidebarProps = {
 // Component Sidebar phong cách SaaS hiện đại đồng bộ theme
 function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname();
-  const [role, setRole] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    fetch("/api/auth/me", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data: { user?: { role?: string | null } } | null) => {
-        if (active) setRole(data?.user?.role ?? null);
-      })
-      .catch(() => {
-        if (active) setRole(null);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const [contestMenu, setContestMenu] = useState<{
+    pathname: string;
+    open: boolean;
+  } | null>(null);
+  const contestsOpen =
+    contestMenu?.pathname === pathname
+      ? contestMenu.open
+      : pathname.startsWith("/portal/contests");
+  const activeContestHref =
+    contestMenuItems
+      .slice(1)
+      .find(
+        (item) =>
+          pathname === item.href || pathname.startsWith(`${item.href}/`),
+      )?.href ??
+    (pathname.startsWith("/portal/contests") ? "/portal/contests" : null);
+  const role = useCurrentUser()?.role ?? null;
 
   const isAdmin = role === "Admin";
   const visibleItems = [
@@ -120,22 +126,65 @@ function Sidebar({ onClose }: SidebarProps) {
 
       {/* NAVIGATION LINKS */}
       <nav aria-label="Portal Navigation" className="flex-1 space-y-1">
-        {visibleItems.map((item) => {
+        {visibleItems.slice(0, 1).map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onClose}
+            aria-current={pathname === item.href ? "page" : undefined}
+            className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium ${pathname === item.href ? "bg-brand-solid text-white" : "text-slate-300 hover:bg-slate-800/80"}`}
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            {item.label}
+          </Link>
+        ))}
+        <div>
+          <button
+            type="button"
+            aria-expanded={contestsOpen}
+            aria-controls="contest-navigation"
+            onClick={() => setContestMenu({ pathname, open: !contestsOpen })}
+            className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white focus-visible:outline-2 focus-visible:outline-brand-ring"
+          >
+            <Trophy className="h-4 w-4" />
+            <span className="flex-1 text-left">Cuộc thi</span>
+            <ChevronDown
+              className={`h-4 w-4 ${contestsOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+          <div
+            id="contest-navigation"
+            hidden={!contestsOpen}
+            className="ml-5 mt-1 space-y-1 border-l border-slate-700 pl-3"
+          >
+            {contestMenuItems.map((item) => {
+              const Icon = item.icon;
+              const active = activeContestHref === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onClose}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm focus-visible:outline-2 focus-visible:outline-brand-ring ${active ? "bg-brand-solid font-semibold text-white" : "text-slate-300 hover:bg-slate-800/80 hover:text-white"}`}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+        {visibleItems.slice(1).map((item) => {
           const Icon = item.icon;
           const isActive =
-            item.href === "/portal"
-              ? pathname === "/portal"
-              : item.href === "/portal/contests"
-                ? pathname === "/portal/contests" ||
-                  (pathname.startsWith("/portal/contests/") &&
-                    !pathname.startsWith("/portal/contests/judges") &&
-                    !pathname.startsWith("/portal/contests/judging-progress"))
-                : pathname.startsWith(item.href);
+            pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? "page" : undefined}
               onClick={onClose}
               className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all ${
                 isActive

@@ -1,6 +1,6 @@
 import axios from "axios";
-
 import { http } from "@/lib/http";
+import { loadCurrentUser } from "@/lib/stores/user-store";
 import type {
   MasterDataEntity,
   MasterDataInput,
@@ -131,12 +131,7 @@ export async function softDeleteMasterData(
 
 export async function fetchCurrentUserRole(): Promise<string | null> {
   try {
-    const response = await fetch("/api/auth/me", { cache: "no-store" });
-    if (!response.ok) return null;
-    const body = (await response.json()) as {
-      user?: { role?: string | null } | null;
-    };
-    return body.user?.role ?? null;
+    return (await loadCurrentUser())?.role ?? null;
   } catch {
     return null;
   }

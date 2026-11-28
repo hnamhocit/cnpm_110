@@ -7,6 +7,7 @@ import { AuthField } from "@/components/auth/auth-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { useUserStore } from "@/lib/stores/user-store";
 
 export function JudgeLoginForm() {
   const router = useRouter();
@@ -76,6 +77,7 @@ export function JudgeLoginForm() {
         );
       }
 
+      useUserStore.getState().clearUser();
       useAuthStore
         .getState()
         .setTokens({ accessToken: data.accessToken, role: "Judge" });

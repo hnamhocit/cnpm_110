@@ -5,8 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { http } from "@/lib/http";
 
+import { loadCurrentUser } from "@/lib/stores/user-store";
+
 type Contest = { id: string; name: string };
-type Counts = { submissions: number; aiWarnings: number; byStatus: Record<string, number> };
+type Counts = {
+  submissions: number;
+  aiWarnings: number;
+  byStatus: Record<string, number>;
+};
 type Analytics = {
   contest: Contest;
   totals: Counts;
@@ -28,9 +34,9 @@ export default function ReportsPage() {
     const controller = new AbortController();
     async function loadContests() {
       try {
-        const response = await fetch("/api/auth/me", { signal: controller.signal });
-        const { user } = await response.json() as { user?: { id: string; role: string } };
-        if (!response.ok || user?.role !== "Organizer") {
+        const user = await loadCurrentUser();
+        if (controller.signal.aborted) return;
+        if (user?.role !== "Organizer") {
           setError("Báo cáo dành cho Ban tổ chức của cuộc thi.");
           return;
         }
@@ -39,10 +45,12 @@ export default function ReportsPage() {
         let page = 1;
         let totalPages = 1;
         while (page <= totalPages) {
-          const { data } = await http.get<Envelope<{
-            items: Contest[];
-            pagination: { totalPages: number };
-          }>>("/api/v1/contests", {
+          const { data } = await http.get<
+            Envelope<{
+              items: Contest[];
+              pagination: { totalPages: number };
+            }>
+          >("/api/v1/contests", {
             params: { createdBy: user.id, page, limit: 100 },
             signal: controller.signal,
           });
@@ -53,7 +61,8 @@ export default function ReportsPage() {
         setContests(items);
         setContestId(items[0]?.id ?? "");
       } catch {
-        if (!controller.signal.aborted) setError("Không thể tải danh sách cuộc thi.");
+        if (!controller.signal.aborted)
+          setError("Không thể tải danh sách cuộc thi.");
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -77,7 +86,8 @@ export default function ReportsPage() {
         );
         setAnalytics(data.data);
       } catch {
-        if (!controller.signal.aborted) setError("Không thể tải thống kê cuộc thi.");
+        if (!controller.signal.aborted)
+          setError("Không thể tải thống kê cuộc thi.");
       }
     }
     void loadAnalytics();
@@ -88,11 +98,18 @@ export default function ReportsPage() {
     setGenerating(true);
     setNotice("");
     try {
-      const { data } = await http.post<Envelope<Analytics>>(`/api/v1/contests/${contestId}/analytics`);
+      const { data } = await http.post<Envelope<Analytics>>(
+        `/api/v1/contests/${contestId}/analytics`,
+      );
       setAnalytics(data.data);
-      if (!data.data.report) setNotice("Chưa tạo được nhận xét AI. Bạn vẫn có thể xem và xuất thống kê.");
+      if (!data.data.report)
+        setNotice(
+          "Chưa tạo được nhận xét AI. Bạn vẫn có thể xem và xuất thống kê.",
+        );
     } catch {
-      setNotice("Chưa tạo được nhận xét AI. Bạn vẫn có thể xem và xuất thống kê.");
+      setNotice(
+        "Chưa tạo được nhận xét AI. Bạn vẫn có thể xem và xuất thống kê.",
+      );
     } finally {
       setGenerating(false);
     }
@@ -102,7 +119,12 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Thống kê cuộc thi</h1>
-        <label className="mt-4 block text-sm font-medium" htmlFor="analytics-contest">Cuộc thi</label>
+        <label
+          className="mt-4 block text-sm font-medium"
+          htmlFor="analytics-contest"
+        >
+          Cuộc thi
+        </label>
         <select
           className="mt-1 max-w-full rounded-md border bg-background p-2 text-sm"
           id="analytics-contest"
@@ -110,12 +132,26 @@ export default function ReportsPage() {
           disabled={loading || generating || contests.length === 0}
           onChange={(event) => setContestId(event.target.value)}
         >
-          {!contests.length && <option value="">{loading ? "Đang tải…" : "Chưa có cuộc thi"}</option>}
-          {contests.map((contest) => <option key={contest.id} value={contest.id}>{contest.name}</option>)}
+          {!contests.length && (
+            <option value="">
+              {loading ? "Đang tải…" : "Chưa có cuộc thi"}
+            </option>
+          )}
+          {contests.map((contest) => (
+            <option key={contest.id} value={contest.id}>
+              {contest.name}
+            </option>
+          ))}
         </select>
       </div>
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-      {!analytics && contestId && !error && <p role="status">Đang tải thống kê…</p>}
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+      {!analytics && contestId && !error && (
+        <p role="status">Đang tải thống kê…</p>
+      )}
       {analytics && (
         <>
           <div className="flex flex-wrap gap-3">
@@ -132,9 +168,14 @@ export default function ReportsPage() {
             </Button>
           </div>
           <Card>
-            <CardHeader><CardTitle>{analytics.contest.name}</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>{analytics.contest.name}</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4 text-sm">
-              <p>{analytics.totals.submissions} bài dự thi · {analytics.totals.aiWarnings} cảnh báo AI</p>
+              <p>
+                {analytics.totals.submissions} bài dự thi ·{" "}
+                {analytics.totals.aiWarnings} cảnh báo AI
+              </p>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
@@ -157,11 +198,19 @@ export default function ReportsPage() {
               </div>
             </CardContent>
           </Card>
-          {notice && <p role="status" className="text-sm">{notice}</p>}
+          {notice && (
+            <p role="status" className="text-sm">
+              {notice}
+            </p>
+          )}
           {analytics.report && (
             <Card>
-              <CardHeader><CardTitle>Nhận xét AI</CardTitle></CardHeader>
-              <CardContent className="whitespace-pre-wrap text-sm">{analytics.report}</CardContent>
+              <CardHeader>
+                <CardTitle>Nhận xét AI</CardTitle>
+              </CardHeader>
+              <CardContent className="whitespace-pre-wrap text-sm">
+                {analytics.report}
+              </CardContent>
             </Card>
           )}
         </>

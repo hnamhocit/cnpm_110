@@ -1,13 +1,29 @@
 "use client";
 
 import axios from "axios";
-import { AlertCircle, CheckCircle2, Lock, Search, Shield, Unlock, UserPlus, Users } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Lock,
+  Search,
+  Shield,
+  Unlock,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { AuthField } from "@/components/auth/auth-field";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useCurrentUser } from "@/lib/hooks/use-current-user";
 import { http } from "@/lib/http";
 
 const roles = {
@@ -34,7 +50,8 @@ type Account = {
 
 function errorMessage(error: unknown) {
   if (axios.isAxiosError<{ message?: string }>(error)) {
-    if (error.response?.status === 403) return "Chỉ quản trị viên có quyền thực hiện thao tác này.";
+    if (error.response?.status === 403)
+      return "Chỉ quản trị viên có quyền thực hiện thao tác này.";
     if (error.response?.data?.message) return error.response.data.message;
   }
   return "Không thể thực hiện yêu cầu.";
@@ -43,7 +60,7 @@ function errorMessage(error: unknown) {
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedId, setSelectedId] = useState("");
-  const [actorId, setActorId] = useState("");
+  const actorId = useCurrentUser()?.id ?? "";
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
@@ -51,7 +68,10 @@ export default function AccountsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
-  const [message, setMessage] = useState<{ error: boolean; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    error: boolean;
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -59,10 +79,12 @@ export default function AccountsPage() {
       setLoading(true);
       setLoadError("");
       try {
-        const { data } = await http.get<{ data: { items: Account[]; totalPages: number } }>(
-          "/api/v1/users",
-          { params: { page, search }, signal: controller.signal },
-        );
+        const { data } = await http.get<{
+          data: { items: Account[]; totalPages: number };
+        }>("/api/v1/users", {
+          params: { page, search },
+          signal: controller.signal,
+        });
         setAccounts(data.data.items);
         setTotalPages(data.data.totalPages);
       } catch (error) {
@@ -75,18 +97,12 @@ export default function AccountsPage() {
     return () => controller.abort();
   }, [page, search, revision]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/auth/me", { signal: controller.signal })
-      .then((response) => response.json())
-      .then((data) => setActorId(data.user?.id ?? ""))
-      .catch(() => {});
-    return () => controller.abort();
-  }, []);
-
   const selected = accounts.find((account) => account.id === selectedId);
 
-  async function save(event: FormEvent<HTMLFormElement>, action: "create" | "role" | "status") {
+  async function save(
+    event: FormEvent<HTMLFormElement>,
+    action: "create" | "role" | "status",
+  ) {
     event.preventDefault();
     if (saving) return;
     const element = event.currentTarget;
@@ -96,18 +112,32 @@ export default function AccountsPage() {
     try {
       if (action === "create") {
         const { data } = await http.post<{ data: { deliveryStatus: string } }>(
-          "/api/v1/users", Object.fromEntries(form),
+          "/api/v1/users",
+          Object.fromEntries(form),
         );
-        setMessage({ error: false, text: data.data.deliveryStatus === "RETRY_REQUIRED"
-          ? "Đã tạo tài khoản. Chủ tài khoản có thể yêu cầu gửi lại mã từ màn đăng nhập."
-          : "Đã tạo tài khoản và gửi mã xác thực." });
+        setMessage({
+          error: false,
+          text:
+            data.data.deliveryStatus === "RETRY_REQUIRED"
+              ? "Đã tạo tài khoản. Chủ tài khoản có thể yêu cầu gửi lại mã từ màn đăng nhập."
+              : "Đã tạo tài khoản và gửi mã xác thực.",
+        });
       } else if (selected) {
-        const body = action === "role" ? { role: form.get("role") } : {
-          status: selected.status === "LOCKED" ? "ACTIVE" : "LOCKED",
-          reason: form.get("reason"),
-        };
+        const body =
+          action === "role"
+            ? { role: form.get("role") }
+            : {
+                status: selected.status === "LOCKED" ? "ACTIVE" : "LOCKED",
+                reason: form.get("reason"),
+              };
         await http.patch(`/api/v1/users/${selected.id}/${action}`, body);
-        setMessage({ error: false, text: action === "role" ? "Đã cập nhật vai trò." : "Đã cập nhật trạng thái." });
+        setMessage({
+          error: false,
+          text:
+            action === "role"
+              ? "Đã cập nhật vai trò."
+              : "Đã cập nhật trạng thái.",
+        });
       }
       element.reset();
       setRevision((value) => value + 1);
@@ -170,7 +200,8 @@ export default function AccountsPage() {
                 Tài khoản người dùng
               </CardTitle>
               <CardDescription>
-                Chọn một tài khoản trong danh sách để chỉnh sửa vai trò hoặc trạng thái.
+                Chọn một tài khoản trong danh sách để chỉnh sửa vai trò hoặc
+                trạng thái.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -180,11 +211,19 @@ export default function AccountsPage() {
                   event.preventDefault();
                   setPage(1);
                   setSelectedId("");
-                  setSearch(String(new FormData(event.currentTarget).get("search")).trim());
+                  setSearch(
+                    String(
+                      new FormData(event.currentTarget).get("search"),
+                    ).trim(),
+                  );
                 }}
               >
                 <div className="min-w-0 flex-1">
-                  <AuthField id="search" label="Tìm theo tên hoặc email" maxLength={255} />
+                  <AuthField
+                    id="search"
+                    label="Tìm theo tên hoặc email"
+                    maxLength={255}
+                  />
                 </div>
                 <Button type="submit" variant="outline" className="gap-1.5">
                   <Search className="size-4" />
@@ -193,7 +232,10 @@ export default function AccountsPage() {
               </form>
 
               {loading ? (
-                <p role="status" className="py-8 text-center text-sm text-muted-foreground">
+                <p
+                  role="status"
+                  className="py-8 text-center text-sm text-muted-foreground"
+                >
                   Đang tải…
                 </p>
               ) : accounts.length ? (
@@ -205,7 +247,9 @@ export default function AccountsPage() {
                         <button
                           type="button"
                           className={`flex w-full items-center gap-3 p-3.5 text-left transition-colors hover:bg-muted/60 ${
-                            isSelected ? "bg-muted/80 ring-1 ring-inset ring-primary/30" : ""
+                            isSelected
+                              ? "bg-muted/80 ring-1 ring-inset ring-primary/30"
+                              : ""
                           }`}
                           aria-pressed={isSelected}
                           onClick={() => {
@@ -220,9 +264,13 @@ export default function AccountsPage() {
                           </Avatar>
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="truncate font-medium">{account.fullName}</span>
+                              <span className="truncate font-medium">
+                                {account.fullName}
+                              </span>
                               <Badge variant="outline">
-                                {account.role ? roles[account.role.code] : "Chưa có vai trò"}
+                                {account.role
+                                  ? roles[account.role.code]
+                                  : "Chưa có vai trò"}
                               </Badge>
                               <Badge variant={statusVariant(account.status)}>
                                 {statuses[account.status]}
@@ -277,10 +325,14 @@ export default function AccountsPage() {
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <CardTitle className="text-lg">{selected.fullName}</CardTitle>
+                      <CardTitle className="text-lg">
+                        {selected.fullName}
+                      </CardTitle>
                       <CardDescription className="break-all">
                         {selected.email}
-                        {selected.phoneNumber ? ` · ${selected.phoneNumber}` : ""}
+                        {selected.phoneNumber
+                          ? ` · ${selected.phoneNumber}`
+                          : ""}
                       </CardDescription>
                     </div>
                     <Badge variant={statusVariant(selected.status)}>
@@ -333,7 +385,11 @@ export default function AccountsPage() {
                           <Button
                             type="submit"
                             size="sm"
-                            variant={selected.status === "LOCKED" ? "outline" : "destructive"}
+                            variant={
+                              selected.status === "LOCKED"
+                                ? "outline"
+                                : "destructive"
+                            }
                             className="gap-1.5"
                             disabled={saving}
                           >
@@ -354,7 +410,8 @@ export default function AccountsPage() {
                     </>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      Không thể tự thay đổi vai trò hoặc trạng thái của chính bạn.
+                      Không thể tự thay đổi vai trò hoặc trạng thái của chính
+                      bạn.
                     </p>
                   )}
                 </CardContent>
@@ -374,13 +431,29 @@ export default function AccountsPage() {
                   Tạo tài khoản nội bộ
                 </CardTitle>
                 <CardDescription>
-                  Cấp tài khoản mới cho giám khảo, ban tổ chức hoặc quản trị viên.
+                  Cấp tài khoản mới cho giám khảo, ban tổ chức hoặc quản trị
+                  viên.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form className="grid gap-4 sm:grid-cols-2" onSubmit={(event) => void save(event, "create")}>
-                  <AuthField id="fullName" label="Họ và tên" minLength={2} maxLength={100} required />
-                  <AuthField id="email" label="Email" type="email" maxLength={255} required />
+                <form
+                  className="grid gap-4 sm:grid-cols-2"
+                  onSubmit={(event) => void save(event, "create")}
+                >
+                  <AuthField
+                    id="fullName"
+                    label="Họ và tên"
+                    minLength={2}
+                    maxLength={100}
+                    required
+                  />
+                  <AuthField
+                    id="email"
+                    label="Email"
+                    type="email"
+                    maxLength={255}
+                    required
+                  />
                   <AuthField
                     id="temporaryPassword"
                     label="Mật khẩu tạm"

@@ -293,3 +293,20 @@ Chỉ cộng 43 hàng UC ở mục 3. Các mục kỹ thuật không cộng thê
 ### UC-01 · Refresh phiên Web — 27/11/2026
 
 Theo Module 01, access token 15 phút và refresh token 7 ngày. Hai route BFF `/api/auth/me` và `/api/auth/session` nay dùng chung một lần rotation khi nhận đồng thời cùng refresh token trong một process Web. Mỗi response tự cập nhật cookie của request tương ứng. Backend vẫn từ chối token đã thu hồi. Lỗi kết nối/service trả 502 thay vì bị nuốt và đổi thành “Not authenticated”. TypeScript Web đạt; 2 test với 6 assertions đạt cho gộp request đồng thời và phân biệt lỗi dịch vụ/token hết hạn. Chưa xác nhận phiên trong ảnh với DB hoặc trình duyệt của người dùng. Cơ chế gộp request hiện chỉ áp dụng trong cùng process Web.
+
+
+### Portal contest list and navigation — 2026-11-28
+- UC-11/12/15/17/24; BR-02/08: display existing contest DTO fields in a responsive, horizontally scrollable table with registration, submission, judging and publication milestones, code/theme where present, Vietnamese statuses and shared shadcn buttons. No business rules or API changes.
+- Group contest list, judges, rounds, registrations and judging progress under a keyboard-accessible expandable menu; only the selected child has aria-current and active styling.
+- Add API pagination and explicitly page-scoped name/code/theme search and normalized status filter.
+- Validation: 18 existing contest utility/config tests pass; targeted Biome passes. Full web TypeScript check blocked by three pre-existing fetch mock casts missing Bun fetch.preconnect in src/lib/refresh-session.test.ts. Browser visual verification not performed.
+
+- Portal status filter follow-up: replace native select with existing shared shadcn/Radix DropdownMenu radio items and Button trigger; preserve filter behavior and keyboard selection. Targeted Biome check passes.
+
+
+### Shared client user session — 2026-11-28
+- UC-01/03/05, BR-02/04: activate existing Zustand user store for Header, Navbar, Sidebar, contest pages, reports, users and master-data role lookup; one shared in-flight /api/auth/me request and five-minute memory cache, including anonymous state. Revalidate on consumer mount/window focus after cache expiry. No persistent user storage.
+- Invalidate user on login, logout and unrecoverable API 401; refresh after profile save. Revision guard prevents in-flight responses from restoring a signed-out user. Backend authorization remains authoritative.
+- Validation: 9 session/store and portal auth tests pass, covering concurrent fetch deduplication, navigation cache reuse, logout race, expiry/401 and transient retry. TypeScript reports only the existing three fetch.preconnect mock errors in refresh-session.test.ts. Broader Biome still reports existing accessibility/dependency issues in touched legacy forms/pages; core session store/hook passes. Browser network verification not performed.
+
+- Portal account menu readability (UC-03, BR-02): show user name as primary trigger text, Vietnamese role beneath, name-based avatar initials, and readable name/email/role in the dropdown. Remove assumed Organizer identity while user loads. Shared UI components retained. Targeted Biome passes; no browser visual verification.

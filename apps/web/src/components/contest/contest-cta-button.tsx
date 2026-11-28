@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useCurrentUser } from "@/lib/hooks/use-current-user";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 type CategoryItem = {
@@ -29,9 +30,7 @@ export function ContestCtaButton({
   contestId,
   contestName,
 }: ContestCtaButtonProps) {
-  const [user, setUser] = useState<{ id?: string; role?: string; fullName?: string } | null>(
-    null,
-  );
+  const user = useCurrentUser();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,27 +49,6 @@ export function ContestCtaButton({
   const [cameraBody, setCameraBody] = useState("Leica M6");
   const [lens, setLens] = useState("Summicron 35mm f/2");
   const [imageFile, setImageFile] = useState<File | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    async function loadUser() {
-      try {
-        const res = await fetch("/api/auth/me");
-        if (res.ok) {
-          const data = await res.json();
-          if (isMounted && data.user) {
-            setUser(data.user);
-          }
-        }
-      } catch {
-        // Not logged in
-      }
-    }
-    loadUser();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   // Fetch categories when modal opens
   useEffect(() => {
@@ -186,7 +164,9 @@ export function ContestCtaButton({
     return (
       <div className="space-y-3">
         <div className="rounded-xl bg-blue-50 border border-blue-200 p-3 text-xs text-blue-800">
-          <p className="font-semibold">Bạn đang đăng nhập vai trò {user.role}</p>
+          <p className="font-semibold">
+            Bạn đang đăng nhập vai trò {user.role}
+          </p>
           <p className="text-[11px] text-blue-600 mt-0.5">
             Truy cập Portal để quản lý bài nộp và điều phối cuộc thi.
           </p>
@@ -249,7 +229,12 @@ export function ContestCtaButton({
                   Nộp bài thi thành công!
                 </h3>
                 <p className="text-sm text-slate-600 max-w-md mx-auto">
-                  Tác phẩm <span className="font-semibold text-slate-900">"{title}"</span> đã được tiếp nhận. Hệ thống kiểm tra ảnh tạo sinh và ảnh tương tự để hỗ trợ Ban tổ chức thẩm định.
+                  Tác phẩm{" "}
+                  <span className="font-semibold text-slate-900">
+                    "{title}"
+                  </span>{" "}
+                  đã được tiếp nhận. Hệ thống kiểm tra ảnh tạo sinh và ảnh tương
+                  tự để hỗ trợ Ban tổ chức thẩm định.
                 </p>
                 <div className="pt-4 flex justify-center gap-3">
                   <button
@@ -275,7 +260,10 @@ export function ContestCtaButton({
                     Gửi bài dự thi
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    Cuộc thi: <span className="font-medium text-slate-700">{contestName}</span>
+                    Cuộc thi:{" "}
+                    <span className="font-medium text-slate-700">
+                      {contestName}
+                    </span>
                   </p>
                 </div>
 
@@ -290,7 +278,8 @@ export function ContestCtaButton({
                 <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Hạng mục / Bảng thi <span className="text-red-500">*</span>
+                      Hạng mục / Bảng thi{" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={categoryId}
@@ -341,7 +330,9 @@ export function ContestCtaButton({
                     </p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                       <div>
-                        <label className="block text-slate-600 mb-1">Hãng phim</label>
+                        <label className="block text-slate-600 mb-1">
+                          Hãng phim
+                        </label>
                         <input
                           type="text"
                           value={filmBrand}
@@ -350,7 +341,9 @@ export function ContestCtaButton({
                         />
                       </div>
                       <div>
-                        <label className="block text-slate-600 mb-1">Loại cuộn phim</label>
+                        <label className="block text-slate-600 mb-1">
+                          Loại cuộn phim
+                        </label>
                         <input
                           type="text"
                           value={filmStock}
@@ -359,7 +352,9 @@ export function ContestCtaButton({
                         />
                       </div>
                       <div>
-                        <label className="block text-slate-600 mb-1">Khổ phim</label>
+                        <label className="block text-slate-600 mb-1">
+                          Khổ phim
+                        </label>
                         <select
                           value={filmFormat}
                           onChange={(e) => setFilmFormat(e.target.value)}
@@ -372,7 +367,9 @@ export function ContestCtaButton({
                         </select>
                       </div>
                       <div>
-                        <label className="block text-slate-600 mb-1">ISO chụp</label>
+                        <label className="block text-slate-600 mb-1">
+                          ISO chụp
+                        </label>
                         <input
                           type="number"
                           value={isoShot}
@@ -381,7 +378,9 @@ export function ContestCtaButton({
                         />
                       </div>
                       <div>
-                        <label className="block text-slate-600 mb-1">Thân máy ảnh</label>
+                        <label className="block text-slate-600 mb-1">
+                          Thân máy ảnh
+                        </label>
                         <input
                           type="text"
                           value={cameraBody}
@@ -390,7 +389,9 @@ export function ContestCtaButton({
                         />
                       </div>
                       <div>
-                        <label className="block text-slate-600 mb-1">Ống kính (Lens)</label>
+                        <label className="block text-slate-600 mb-1">
+                          Ống kính (Lens)
+                        </label>
                         <input
                           type="text"
                           value={lens}
@@ -404,8 +405,8 @@ export function ContestCtaButton({
                   {/* File Upload */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Tải file ảnh scan dự thi (JPEG / TIFF tối thiểu 2000px theo BR-07){" "}
-                      <span className="text-red-500">*</span>
+                      Tải file ảnh scan dự thi (JPEG / TIFF tối thiểu 2000px
+                      theo BR-07) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="file"
@@ -433,7 +434,9 @@ export function ContestCtaButton({
                     disabled={loading}
                     className="px-6 py-2.5 rounded-xl bg-brand-solid hover:bg-brand-hover text-white text-xs font-bold shadow-md shadow-brand-solid/30 transition disabled:opacity-50"
                   >
-                    {loading ? "Đang tải lên & thẩm định..." : "Nộp bài dự thi ngay"}
+                    {loading
+                      ? "Đang tải lên & thẩm định..."
+                      : "Nộp bài dự thi ngay"}
                   </button>
                 </div>
               </form>

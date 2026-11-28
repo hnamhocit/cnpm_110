@@ -1,6 +1,6 @@
 import { create } from "zustand";
-
 import type { Role } from "@/lib/route-access";
+import { useUserStore } from "@/lib/stores/user-store";
 
 export type TokenPair = {
   accessToken: string;
@@ -23,5 +23,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       accessToken,
       userRole: role ?? state.userRole,
     })),
-  clear: () => set({ accessToken: null, userRole: null }),
+  clear: () => {
+    useUserStore.getState().clearUser();
+    set({ accessToken: null, userRole: null });
+  },
 }));

@@ -3,7 +3,7 @@
 import { ChevronDown, Globe, LogOut, Menu, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,45 +14,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useCurrentUser } from "@/lib/hooks/use-current-user";
 import { logout } from "@/lib/logout";
 
 type HeaderProps = {
   onMenuClick: () => void;
 };
 
-type CurrentUser = {
-  id?: string;
-  fullName?: string;
-  email?: string;
-  avatarUrl?: string | null;
-  role?: string;
-};
-
 export default function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [user, setUser] = useState<CurrentUser | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    async function loadUser() {
-      try {
-        const res = await fetch("/api/auth/me");
-        if (res.ok) {
-          const data = await res.json();
-          if (isMounted && data.user) {
-            setUser(data.user);
-          }
-        }
-      } catch {
-        // Not authenticated
-      }
-    }
-    loadUser();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const user = useCurrentUser();
 
   const pageName =
     pathname === "/portal/contests"
@@ -78,18 +50,22 @@ export default function Header({ onMenuClick }: HeaderProps) {
     }
   }
 
-  // Nhận diện vai trò từ token / profile người dùng
-  const role = user?.role || "Organizer";
-  const isOrganizer = role === "Organizer";
-  const roleTitle = isOrganizer
-    ? "Ban tổ chức (Organizer)"
-    : "Quản trị viên (Admin)";
-  const roleSubtitle = isOrganizer
-    ? "Ban tổ chức Cuộc thi"
-    : "Quản trị viên Hệ thống";
-  const initials = isOrganizer ? "BTC" : "AD";
-  const displayName =
-    user?.fullName || (isOrganizer ? "Ban Tổ Chức" : "Quản Trị Viên");
+  const roleLabels = {
+    Admin: "Quản trị viên",
+    Organizer: "Ban tổ chức",
+    Judge: "Giám khảo",
+    Participant: "Thí sinh",
+  };
+  const roleTitle = user?.role ? roleLabels[user.role] : "Đang tải tài khoản…";
+  const displayName = user?.fullName?.trim() || user?.email || "Tài khoản";
+  const nameParts = user?.fullName?.trim().split(/\s+/).filter(Boolean) ?? [];
+  const initials = nameParts.length
+    ? nameParts
+        .slice(-2)
+        .map((part) => Array.from(part)[0])
+        .join("")
+        .toLocaleUpperCase("vi")
+    : "?";
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/95 backdrop-blur-md px-4 py-3 sm:px-6 lg:px-8">
@@ -138,41 +114,50 @@ export default function Header({ onMenuClick }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="group flex cursor-pointer items-center gap-2.5 rounded-full border border-border/80 bg-background/80 py-1 pl-2 pr-2.5 shadow-2xs transition-all hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              aria-label={`Mở menu tài khoản: ${displayName}, ${roleTitle}`}
+              className="group flex min-w-0 cursor-pointer items-center gap-2.5 rounded-xl border border-border/80 bg-background px-2.5 py-2 text-left transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
             >
-              <span className="hidden text-xs font-medium text-foreground/90 sm:block">
-                {roleTitle}
-              </span>
-
               <Avatar className="size-8 ring-1 ring-border">
-                <AvatarImage src={user?.avatarUrl ?? undefined} alt="" referrerPolicy="no-referrer" />
+                <AvatarImage
+                  src={user?.avatarUrl ?? undefined}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                />
                 <AvatarFallback className="bg-brand-solid text-white text-xs font-bold shadow-xs">
                   {initials}
                 </AvatarFallback>
               </Avatar>
 
+              <span className="hidden min-w-0 sm:block">
+                <span
+                  className="block max-w-40 truncate text-sm font-semibold text-foreground"
+                  title={displayName}
+                >
+                  {displayName}
+                </span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  {roleTitle}
+                </span>
+              </span>
+
               <ChevronDown className="size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
             </button>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent align="end" className="w-64 p-1.5">
-            <div className="border-b border-border px-2.5 py-2">
-              <div className="flex items-center gap-1.5">
-                <p className="truncate text-xs font-semibold text-foreground">
-                  {displayName}
-                </p>
-                <Badge variant="brand" className="h-4 px-1 text-[9px]">
-                  {role}
-                </Badge>
-              </div>
-              <p className="mt-0.5 text-[11px] font-medium text-brand-solid">
-                {roleSubtitle}
+          <DropdownMenuContent
+            align="end"
+            className="w-72 max-w-[calc(100vw-2rem)] p-1.5"
+          >
+            <div className="space-y-2 border-b border-border px-3 py-3">
+              <p className="break-words text-sm font-semibold leading-5 text-foreground">
+                {displayName}
               </p>
               {user?.email && (
-                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                <p className="break-all text-xs leading-5 text-muted-foreground">
                   {user.email}
                 </p>
               )}
+              {user?.role && <Badge variant="brand">{roleTitle}</Badge>}
             </div>
 
             <div className="py-1">
