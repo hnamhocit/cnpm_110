@@ -2,18 +2,22 @@ import type { ArchiveArtwork, ArchiveFilterState } from "@/types/archive";
 
 export function filterArchiveArtworks(
   artworks: ArchiveArtwork[],
-  filters: ArchiveFilterState
+  filters: ArchiveFilterState,
 ): ArchiveArtwork[] {
   return artworks.filter((item) => {
     // Search Query (Tên tác phẩm, tác giả, cuộc thi, máy ảnh)
-    if (filters.searchQuery.trim()) {
-      const q = filters.searchQuery.toLowerCase();
+    const searchQuery = filters.searchQuery.trim();
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
       const matchText =
         item.title.toLowerCase().includes(q) ||
         item.author_name.toLowerCase().includes(q) ||
         item.contest_name.toLowerCase().includes(q) ||
-        (item.camera && item.camera.toLowerCase().includes(q)) ||
-        (item.lab_scan && item.lab_scan.toLowerCase().includes(q));
+        item.film_stock.toLowerCase().includes(q) ||
+        item.category.toLowerCase().includes(q) ||
+        item.camera?.toLowerCase().includes(q) ||
+        item.description?.toLowerCase().includes(q) ||
+        item.lab_scan?.toLowerCase().includes(q);
 
       if (!matchText) return false;
     }
@@ -25,7 +29,9 @@ export function filterArchiveArtworks(
 
     // Lọc theo Film stock
     if (filters.filmStock && filters.filmStock !== "all") {
-      if (!item.film_stock.toLowerCase().includes(filters.filmStock.toLowerCase())) {
+      if (
+        !item.film_stock.toLowerCase().includes(filters.filmStock.toLowerCase())
+      ) {
         return false;
       }
     }
@@ -43,4 +49,3 @@ export function filterArchiveArtworks(
     return true;
   });
 }
-

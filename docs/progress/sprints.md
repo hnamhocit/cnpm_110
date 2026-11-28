@@ -140,7 +140,7 @@ Mã FPC là mã công việc nội bộ, đánh số liên tục; không phải 
 | FPC-108 | Backend | M08 · UC-26: API công bố kết quả và vinh danh người thắng | Nam Nguyễn | DONE |
 | FPC-109 | Backend | M08 · UC-27: Quản lý triển lãm và preview công khai | Nam Nguyễn | DONE |
 | FPC-110 | Web | M08 · UC-26: Chốt và công bố kết quả theo SRS | Vĩ Nguyễn | DONE |
-| FPC-111 | Web | M08 · UC-27: Quản lý triển lãm và tác phẩm công khai | Vĩ Nguyễn | TODO |
+| FPC-111 | Web | M08 · UC-27: Quản lý triển lãm và tác phẩm công khai | Vĩ Nguyễn | DONE |
 | FPC-112 | Backend | M08 · UC-43: API Public Digital Archive, chi tiết tác phẩm công khai và phân trang | Dương Nguyễn | DONE |
 | FPC-113 | Backend | M08 · UC-41: API kết quả, điểm và nhận xét cá nhân | Nam Nguyễn | DONE |
 | FPC-114 | Backend | M08 · UC-43: Bộ lọc Archive theo film stock, camera và năm | Dương Nguyễn | DONE |

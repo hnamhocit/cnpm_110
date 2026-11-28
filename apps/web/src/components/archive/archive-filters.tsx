@@ -1,6 +1,6 @@
 "use client";
 
-import { Award, Filter, RotateCcw, Search } from "lucide-react";
+import { Award, RotateCcw, Search } from "lucide-react";
 import type { ArchiveFilterState } from "@/types/archive";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,6 @@ export function ArchiveFilters({
 }: ArchiveFiltersProps) {
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
-      {/* Search Input */}
       <div className="relative">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <Input
@@ -30,9 +29,20 @@ export function ArchiveFilters({
         />
       </div>
 
-      {/* Select Dropdowns Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {/* Năm tổ chức */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+            Cuộc thi (ID)
+          </label>
+          <Input
+            type="text"
+            value={filters.contestId ?? ""}
+            onChange={(e) => onChange({ ...filters, contestId: e.target.value })}
+            placeholder="Contest ID"
+            className="h-10 rounded-xl bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-xs font-medium"
+          />
+        </div>
+
         <div>
           <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
             Năm tổ chức
@@ -49,7 +59,6 @@ export function ArchiveFilters({
           </select>
         </div>
 
-        {/* Film Stock */}
         <div>
           <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
             Film Stock (Loại phim)
@@ -69,7 +78,6 @@ export function ArchiveFilters({
           </select>
         </div>
 
-        {/* Khổ phim / Format */}
         <div>
           <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
             Khổ phim (Format)
@@ -86,8 +94,33 @@ export function ArchiveFilters({
           </select>
         </div>
 
-        {/* Giải thưởng Toggle & Reset */}
-        <div className="flex items-end gap-2">
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+            Máy ảnh
+          </label>
+          <Input
+            type="text"
+            value={filters.camera ?? ""}
+            onChange={(e) => onChange({ ...filters, camera: e.target.value })}
+            placeholder="VD: Leica M6"
+            className="h-10 rounded-xl bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-xs font-medium"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+            AI tag
+          </label>
+          <Input
+            type="text"
+            value={filters.aiTag ?? ""}
+            onChange={(e) => onChange({ ...filters, aiTag: e.target.value })}
+            placeholder="VD: street"
+            className="h-10 rounded-xl bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-xs font-medium"
+          />
+        </div>
+
+        <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-2">
           <button
             type="button"
             onClick={() => onChange({ ...filters, awardOnly: !filters.awardOnly })}
@@ -115,4 +148,3 @@ export function ArchiveFilters({
     </div>
   );
 }
-

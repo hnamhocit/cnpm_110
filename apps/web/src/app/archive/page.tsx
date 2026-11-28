@@ -15,15 +15,20 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ArchivePage() {
+export default async function ArchivePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ contestId?: string }>;
+}) {
+  const { contestId } = await searchParams;
+
   return (
     <div className="min-h-screen flex flex-col bg-[#f4f7ff] dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-sky-600 selection:text-white">
       <Navbar />
       <main className="flex-1">
-        <ArchiveClientView />
+        <ArchiveClientView initialContestId={contestId} />
       </main>
       <Footer />
     </div>
   );
 }
-

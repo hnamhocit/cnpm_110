@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { filterArchiveArtworks } from "./archive-utils";
 import type { ArchiveArtwork, ArchiveFilterState } from "@/types/archive";
+import { filterArchiveArtworks } from "./archive-utils";
 
 const sampleArtworks: ArchiveArtwork[] = [
   {
@@ -98,5 +98,30 @@ describe("FPC-99 / FPC-97 Archive Utils", () => {
     expect(res).toHaveLength(2);
     expect(res.map((r) => r.id)).toEqual(["1", "2"]);
   });
-});
 
+  it("bỏ khoảng trắng thừa ở từ khoá tìm kiếm", () => {
+    const filters: ArchiveFilterState = {
+      searchQuery: "  Nắng Sài Gòn  ",
+      year: "all",
+      filmStock: "all",
+      filmFormat: "all",
+      awardOnly: false,
+    };
+    const res = filterArchiveArtworks(sampleArtworks, filters);
+    expect(res).toHaveLength(1);
+    expect(res[0].id).toBe("1");
+  });
+
+  it("tìm kiếm theo film stock trong từ khoá", () => {
+    const filters: ArchiveFilterState = {
+      searchQuery: "  hp5  ",
+      year: "all",
+      filmStock: "all",
+      filmFormat: "all",
+      awardOnly: false,
+    };
+    const res = filterArchiveArtworks(sampleArtworks, filters);
+    expect(res).toHaveLength(1);
+    expect(res[0].title).toBe("Không tên");
+  });
+});

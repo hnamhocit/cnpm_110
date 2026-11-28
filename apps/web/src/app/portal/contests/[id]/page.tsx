@@ -6,6 +6,7 @@ import {
   Copy,
   ExternalLink,
   Film,
+  Images,
   Layers,
   Settings,
   Users,
@@ -130,11 +131,18 @@ export default async function PortalContestOverviewPage({
             </Button>
           </Link>
           {resultsPublished && (
-            <Link href={`/contests/${contest.id}/results?from=portal`}>
-              <Button variant="outline" size="sm" className="text-xs">
-                <Award className="w-3.5 h-3.5 mr-1.5" /> Kết quả chính thức
-              </Button>
-            </Link>
+            <>
+              <Link href={`/contests/${contest.id}/results?from=portal`}>
+                <Button variant="outline" size="sm" className="text-xs">
+                  <Award className="w-3.5 h-3.5 mr-1.5" /> Kết quả chính thức
+                </Button>
+              </Link>
+              <Link href={`/portal/contests/${contest.id}/exhibitions`}>
+                <Button variant="outline" size="sm" className="text-xs">
+                  <Images className="w-3.5 h-3.5 mr-1.5" /> Triển lãm số
+                </Button>
+              </Link>
+            </>
           )}
           <Link href={`/portal/contests/${contest.id}/edit`}>
             <Button variant="outline" size="sm" className="text-xs">
