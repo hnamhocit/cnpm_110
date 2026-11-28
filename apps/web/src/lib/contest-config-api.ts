@@ -120,7 +120,7 @@ type RoundInput = {
   advanceCount?: number | null;
 };
 
-function contestBody(payload: ContestConfigInput) {
+function contestBody(payload: ContestConfigInput, includeCategories = false) {
   const rounds = (payload as ContestConfigInput & { rounds?: RoundInput[] })
     .rounds;
 
@@ -150,6 +150,25 @@ function contestBody(payload: ContestConfigInput) {
       prizeValueVnd: award.prizeValueVnd,
       quota: award.quota,
     })),
+    ...(includeCategories
+      ? {
+          categories: payload.categories.map((category) => ({
+            name: category.name,
+            ...(category.description
+              ? { description: category.description }
+              : {}),
+            isActive: category.isActive ?? true,
+            requireNegativeProof: Boolean(
+              category.requireNegativeProofUpfront,
+            ),
+            criteria: (category.criteria ?? []).map((criterion) => ({
+              name: criterion.name,
+              weight: Number(criterion.weight),
+              maxScore: Number(criterion.maxScore ?? 10),
+            })),
+          })),
+        }
+      : {}),
     status: payload.status,
   };
 }
@@ -159,7 +178,7 @@ export async function createContestConfig(
 ): Promise<ContestConfigRecord> {
   const response = await http.post<unknown>(
     "/api/v1/contests",
-    contestBody(payload),
+    contestBody(payload, true),
   );
   return unwrap<ContestConfigRecord>(response.data);
 }
@@ -170,7 +189,7 @@ export async function updateContestConfig(
 ): Promise<ContestConfigRecord> {
   const response = await http.put<unknown>(
     `/api/v1/contests/${id}`,
-    contestBody(payload),
+    contestBody(payload, false),
   );
   return unwrap<ContestConfigRecord>(response.data);
 }
@@ -198,9 +217,7 @@ export async function saveCategory(
   category: CategoryConfig | null,
   categoryId?: string,
 ): Promise<CategoryRecord> {
-  const description = (
-    category as (CategoryConfig & { description?: string }) | null
-  )?.description;
+  const description = category?.description;
   const body = category
     ? {
         name: category.name,
@@ -222,6 +239,15 @@ export async function saveCategory(
         body,
       );
   return unwrap<CategoryRecord>(response.data);
+}
+
+export async function deleteCategory(
+  contestId: string,
+  categoryId: string,
+): Promise<void> {
+  await http.delete(
+    `/api/v1/contests/${contestId}/categories/${categoryId}`,
+  );
 }
 
 export async function saveCriteria(

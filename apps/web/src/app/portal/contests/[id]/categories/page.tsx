@@ -225,6 +225,7 @@ export default function ContestCategoriesPage() {
               <Label htmlFor="category-format">Khổ phim</Label>
               <select
                 id="category-format"
+                disabled
                 value={form.formatRestriction}
                 onChange={(event) =>
                   setForm((previous) => ({
@@ -250,6 +251,7 @@ export default function ContestCategoriesPage() {
                 type="number"
                 min={1}
                 max={10}
+                disabled
                 value={form.maxEntriesPerParticipant}
                 onChange={(event) =>
                   setForm((previous) => ({
@@ -260,6 +262,9 @@ export default function ContestCategoriesPage() {
               />
             </div>
           </div>
+          <p className="text-xs text-amber-600">
+            API hiện chưa lưu 2 trường này; cần backend bổ sung.
+          </p>
           <div className="flex items-center gap-2">
             <Checkbox
               id="category-proof"

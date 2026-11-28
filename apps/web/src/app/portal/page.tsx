@@ -222,7 +222,7 @@ export default async function PortalDashboardPage() {
               contests.slice(0, 3).map((contest) => {
                 const statusUpper = (contest.status || "DRAFT").toUpperCase();
                 const isOngoing = ["ONGOING", "OPEN"].includes(statusUpper);
-                const isPublished = ["PUBLISHED", "COMPLETED"].includes(statusUpper);
+                const isPublished = ["PUBLISHED", "COMPLETED", "RESULTS_PUBLISHED"].includes(statusUpper);
 
                 return (
                   <div
