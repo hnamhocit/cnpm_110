@@ -35,7 +35,7 @@ Module Owner chịu trách nhiệm theo dõi và nghiệm thu module, không m�
 | Vĩ Nguyễn | M11 | — | 06, 07, 08, 09, 10, 11, 12, 13, 14, 19, 20, 21, 22, 26, 27, 28 | — | 5/8 |
 | Phạm Tiến Thành Nhân | M07, M08 | — | 15, 16, 17, 24, 25, 29, 30, 31, 32, 33, 43 | — | 6/6 |
 | Dương Nguyễn | M05 | 17, 34, 37, 39, 43 | 34, 37, 39, 41 | 34, 37, 39, 41, 43 | 12/12 |
-| Huỳnh Trần Gia Bảo | M02, M04 | 06, 07, 08, 10, 35, 36, 38, 42 | 35, 36, 38, 42 | 06, 07, 08, 21, 35, 36, 38, 42 | 0/13 |
+| Huỳnh Trần Gia Bảo | M02, M04 | 06, 07, 08, 10, 35, 36, 38, 42 | 35, 36, 38, 42 | 06, 07, 08, 21, 35, 36, 38, 42 | 4/13 DONE , 7/13 IN REVIEW |
 
 * Web có dấu `*` trong bảng nghiệm thu cần đối chiếu phạm vi SRS; Mobile INT chỉ tích hợp. UC-01–03 là phần chung; UC-04–05 do Nam thực hiện theo xác nhận trưởng nhóm. Cả năm UC đã nghiệm thu, không cộng lặp vào tổng dự án. FPC-133 là task cả nhóm, không tính vào mẫu số cá nhân.
 
@@ -82,9 +82,9 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 
 | UC | Chức năng | Backend / Web / Mobile | Backend đạt | Toàn luồng | GV đạt | GV chưa đạt |
 | --- | --- | --- | --- | --- | --- | --- |
-| UC-06 | Manage Film Stock & Format Catalog | Bảo / Vĩ / Bảo (INT) | TODO | PARTIAL | | |
-| UC-07 | Manage Camera & Lens Catalog | Bảo / Vĩ / Bảo (INT) | TODO | PARTIAL | | |
-| UC-08 | Manage Film Lab Directory | Bảo / Vĩ / Bảo (INT) | TODO | PARTIAL | | |
+| UC-06 | Manage Film Stock & Format Catalog | Bảo / Vĩ / Bảo (INT) | DONE | PARTIAL | | |
+| UC-07 | Manage Camera & Lens Catalog | Bảo / Vĩ / Bảo (INT) | DONE | PARTIAL | | |
+| UC-08 | Manage Film Lab Directory | Bảo / Vĩ / Bảo (INT) | DONE | PARTIAL | | |
 
 | UC | Tiêu chí nghiệm thu |
 | --- | --- |
@@ -120,8 +120,8 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 
 | UC | Chức năng | Backend / Web / Mobile | Backend đạt | Toàn luồng | GV đạt | GV chưa đạt |
 | --- | --- | --- | --- | --- | --- | --- |
-| UC-35 | Manage Film Roll Log | Bảo / Bảo* / Bảo | PARTIAL | PARTIAL | | |
-| UC-36 | Manage Frame Metadata | Bảo / Bảo* / Bảo | PARTIAL | PARTIAL | | |
+| UC-35 | Manage Film Roll Log | Bảo / Bảo* / Bảo | DONE | PARTIAL | | |
+| UC-36 | Manage Frame Metadata | Bảo / Bảo* / Bảo | DONE | PARTIAL | | |
 
 | UC | Tiêu chí nghiệm thu |
 | --- | --- |
@@ -137,7 +137,7 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 | UC-22 | Verify & Approve Submission | Nam / Vĩ / — | DONE | PARTIAL | | |
 | UC-23 | Disqualify / Reject Submission | Nam / Vĩ / — | DONE | DONE | | |
 | UC-37 | Submit Film Photograph | Dương / Dương* / Dương | PARTIAL | PARTIAL | | |
-| UC-38 | Upload Negative / Contact Sheet Proof | Bảo / Bảo* / Bảo | PARTIAL | PARTIAL | | |
+| UC-38 | Upload Negative / Contact Sheet Proof | Bảo / Bảo* / Bảo | DONE | PARTIAL | | |
 | UC-39 | Edit / Withdraw Submission | Dương / Dương / Dương | DONE | DONE | | |
 | UC-40 | Track Submission Status | Nam hỗ trợ; chủ API chưa xác minh / Chưa xác minh / Dương | DONE | DONE | | |
 
@@ -195,7 +195,7 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 | UC-26 | Approve & Publish Results | Nam / Vĩ / — | DONE | PARTIAL | | |
 | UC-27 | Manage Digital Archive & Exhibition | Nam / Vĩ / — | DONE | PARTIAL | | |
 | UC-41 | View Contest Results & Judge Feedback | Nam / Dương / Dương | DONE | DONE | | |
-| UC-42 | Manage Personal Film Portfolio | Bảo / Bảo* / Bảo | PARTIAL | PARTIAL | | |
+| UC-42 | Manage Personal Film Portfolio | Bảo / Bảo* / Bảo | DONE | PARTIAL | | |
 | UC-43 | Explore Digital Archive & Gallery | Dương / Nhân / Dương | DONE | DONE | | |
 
 | UC | Tiêu chí nghiệm thu |
@@ -218,7 +218,7 @@ Không có UC riêng. Nghiệm thu kỹ thuật tại mục 4.
 
 | UC | Chức năng | Backend / Web / Mobile | Backend đạt | Toàn luồng | GV đạt | GV chưa đạt |
 | --- | --- | --- | --- | --- | --- | --- |
-| UC-10 | View System Audit Logs | Bảo / Vĩ / — | PARTIAL | PARTIAL | | |
+| UC-10 | View System Audit Logs | Bảo / Vĩ / — | DONE | PARTIAL | | |
 | UC-28 | Export Contest Analytics Report | DONE; Bình (AI/VERIFY) / Vĩ / — | DONE | PARTIAL | | |
 
 | UC | Tiêu chí nghiệm thu |
