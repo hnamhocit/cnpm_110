@@ -52,6 +52,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   const roleLabels = {
     Admin: "Quản trị viên",
+    Administrator: "Quản trị viên",
+    "Contest Organizer": "Ban tổ chức",
     Organizer: "Ban tổ chức",
     Judge: "Giám khảo",
     Participant: "Thí sinh",

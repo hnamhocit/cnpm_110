@@ -92,7 +92,7 @@ Mã FPC là mã công việc nội bộ, đánh số liên tục; không phải 
 | FPC-067 | Backend | Xử lý đồng điểm | Hà Đức Bình | DONE |
 | FPC-068 | Web | Màn theo dõi tiến độ chấm của từng giám khảo | Vĩ Nguyễn | DONE |
 | FPC-069 | Web | Bảng điểm tổng hợp cập nhật cho Organizer | Vĩ Nguyễn | DONE |
-| FPC-070 | Web | Nhắc giám khảo sắp trễ hạn qua email | Vĩ Nguyễn | TODO |
+| FPC-070 | Web | Nhắc giám khảo sắp trễ hạn qua email | Vĩ Nguyễn | DONE |
 | FPC-071 | Web | Giao diện chấm toàn màn hình | Phạm Tiến Thành Nhân | DONE |
 | FPC-072 | Web | Trình xem ảnh chất lượng cao có zoom và metadata | Phạm Tiến Thành Nhân | DONE |
 | FPC-073 | Web | Thanh trượt chấm từng tiêu chí và nhập nhận xét | Phạm Tiến Thành Nhân | DONE |

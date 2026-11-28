@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ClipboardCheck,
   Database,
+  Film,
   LayoutDashboard,
   ScrollText,
   Sparkles,
@@ -17,6 +18,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { BrandMark } from "@/components/brand-mark";
 import { useCurrentUser } from "@/lib/hooks/use-current-user";
+import { http } from "@/lib/http";
 import Header from "../components/portal/Header";
 
 type MenuItem = {
@@ -88,7 +90,26 @@ function Sidebar({ onClose }: SidebarProps) {
           pathname === item.href || pathname.startsWith(`${item.href}/`),
       )?.href ??
     (pathname.startsWith("/portal/contests") ? "/portal/contests" : null);
-  const role = useCurrentUser()?.role ?? null;
+  const user = useCurrentUser();
+  const role = user?.role ?? null;
+  const [submissionHref, setSubmissionHref] = useState("/portal/contests");
+  useEffect(() => {
+    if (user?.role !== "Organizer") return;
+    let active = true;
+    http
+      .get<{ data?: { items?: { id: string }[] } }>("/api/v1/contests", {
+        params: { page: 1, limit: 1, createdBy: user.id },
+      })
+      .then((response) => {
+        const id = response.data.data?.items?.[0]?.id;
+        if (active && id)
+          setSubmissionHref(`/portal/contests/${id}/submissions`);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [user?.id, user?.role]);
 
   const isAdmin = role === "Admin";
   const visibleItems = [
@@ -128,7 +149,7 @@ function Sidebar({ onClose }: SidebarProps) {
       <nav aria-label="Portal Navigation" className="flex-1 space-y-1">
         {visibleItems.slice(0, 1).map((item) => (
           <Link
-            key={item.href}
+            key={item.label}
             href={item.href}
             onClick={onClose}
             aria-current={pathname === item.href ? "page" : undefined}
@@ -157,12 +178,22 @@ function Sidebar({ onClose }: SidebarProps) {
             hidden={!contestsOpen}
             className="ml-5 mt-1 space-y-1 border-l border-slate-700 pl-3"
           >
-            {contestMenuItems.map((item) => {
+            {[
+              ...contestMenuItems,
+              ...(role === "Organizer"
+                ? [{ label: "Bài dự thi", href: submissionHref, icon: Film }]
+                : []),
+            ].map((item) => {
               const Icon = item.icon;
-              const active = activeContestHref === item.href;
+              const isSubmission =
+                /\/portal\/contests\/[^/]+\/submissions(?:\/|$)/.test(pathname);
+              const active =
+                item.label === "Bài dự thi"
+                  ? isSubmission
+                  : activeContestHref === item.href && !isSubmission;
               return (
                 <Link
-                  key={item.href}
+                  key={item.label}
                   href={item.href}
                   onClick={onClose}
                   aria-current={active ? "page" : undefined}
@@ -182,7 +213,7 @@ function Sidebar({ onClose }: SidebarProps) {
 
           return (
             <Link
-              key={item.href}
+              key={item.label}
               href={item.href}
               aria-current={isActive ? "page" : undefined}
               onClick={onClose}

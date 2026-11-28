@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Plus, Search } from "lucide-react";
+import { ChevronDown, Copy, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -318,6 +318,14 @@ export default function OrganizerContestsPage() {
                               href={`/portal/contests/${contest.id}/submissions`}
                             >
                               Bài dự thi
+                            </Link>
+                          </Button>
+                          <Button asChild variant="outline" size="sm">
+                            <Link
+                              href={`/portal/contests/create?duplicateFrom=${contest.id}`}
+                            >
+                              <Copy />
+                              Sao chép
                             </Link>
                           </Button>
                         </div>

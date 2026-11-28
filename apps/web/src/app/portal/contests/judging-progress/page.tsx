@@ -3,14 +3,25 @@
 import { useCallback, useEffect, useState } from "react";
 import { http } from "@/lib/http";
 
+interface JudgeProgressItem {
+  judgeId: string;
+  judgeName?: string;
+  categoryName?: string;
+  assignedCount?: number;
+  scoredCount?: number;
+  isLocked: boolean;
+}
+
 interface RoundProgress {
   roundId: string;
   roundName: string;
   status: "ACTIVE" | "LOCKED";
+  deadlineAt?: string | null;
   totalAssignments: number;
   scoredAssignments: number;
   judgesCompleted: number;
   totalJudges: number;
+  judges: JudgeProgressItem[];
 }
 
 interface ContestOption {
@@ -29,13 +40,17 @@ interface ProgressPayload {
     id: string;
     name: string;
     lockedAt?: string | null;
+    deadlineAt?: string | null;
   } | null;
-  judges?: { isLocked: boolean }[];
+  judges?: JudgeProgressItem[];
   overall?: {
     totalAssigned?: number;
     totalScored?: number;
   };
 }
+
+type ProgressRound = NonNullable<ProgressPayload["round"]>;
+type ProgressJudge = NonNullable<ProgressPayload["judges"]>[number];
 
 function getErrorMessage(error: unknown): string {
   const fallback = "Đã xảy ra lỗi. Vui lòng thử lại.";
@@ -64,10 +79,12 @@ function toProgressCards(payload: ProgressPayload | undefined): RoundProgress[] 
       roundId: round.id,
       roundName: round.name,
       status: round.lockedAt ? "LOCKED" : "ACTIVE",
+      deadlineAt: round.deadlineAt,
       totalAssignments: overall?.totalAssigned ?? 0,
       scoredAssignments: overall?.totalScored ?? 0,
       judgesCompleted: judges.filter((judge) => judge.isLocked).length,
       totalJudges: judges.length,
+      judges,
     },
   ];
 }
@@ -76,20 +93,33 @@ export default function JudgingProgressPage() {
   const [contestOptions, setContestOptions] = useState<ContestOption[]>([]);
   const [selectedContest, setSelectedContest] = useState("");
   const [rounds, setRounds] = useState<RoundProgress[]>([]);
+  const [progressPayload, setProgressPayload] = useState<ProgressPayload | null>(
+    null,
+  );
+  const [now, setNow] = useState<Date>(() => new Date());
   const [loading, setLoading] = useState(true);
   const [lockingId, setLockingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
   const loadProgress = useCallback(async (contestId: string) => {
     setLoading(true);
+    setMessage(null);
+    setRounds([]);
     try {
       const res = await http.get<{ data?: ProgressPayload }>(
         `/api/v1/contests/${contestId}/judging-progress`,
       );
       setRounds(toProgressCards(res.data?.data));
+      setProgressPayload(res.data?.data ?? null);
       return true;
     } catch (error) {
       setRounds([]);
+      setProgressPayload(null);
       const status = (error as { response?: { status?: number } })?.response?.status;
       if (status === 404) {
         setMessage(null);
@@ -163,6 +193,56 @@ export default function JudgingProgressPage() {
     }
   }
 
+  const reminders: {
+    round: ProgressRound;
+    judge: ProgressJudge;
+    hoursLeft: number;
+  }[] = [];
+  const reminderRound = progressPayload?.round;
+  if (reminderRound && !reminderRound.lockedAt && reminderRound.deadlineAt) {
+    const deadline = new Date(reminderRound.deadlineAt).getTime();
+    if (!Number.isNaN(deadline)) {
+      for (const judge of progressPayload?.judges ?? []) {
+        const assignedCount = judge.assignedCount ?? 0;
+        const scoredCount = judge.scoredCount ?? 0;
+        if (judge.isLocked || scoredCount >= assignedCount) continue;
+        const hoursLeft = (deadline - now.getTime()) / 3_600_000;
+        if (hoursLeft <= 24) {
+          reminders.push({ round: reminderRound, judge, hoursLeft });
+        }
+      }
+    }
+  }
+
+  function deadlineLabel(hoursLeft: number): string {
+    return hoursLeft <= 0
+      ? `Đã quá hạn ${Math.abs(Math.floor(hoursLeft))} giờ`
+      : `Còn ${Math.floor(hoursLeft)} giờ`;
+  }
+
+  function openReminderEmail(round: ProgressRound, judge: ProgressJudge) {
+    const to = judge.judgeEmail ?? "";
+    const judgeName = judge.judgeName ?? judge.judgeId ?? "Giám khảo";
+    const categoryName = judge.categoryName ?? "chưa xác định";
+    const contestName =
+      contestOptions.find((option) => option.id === selectedContest)?.name ??
+      "cuộc thi";
+    const deadline = round.deadlineAt
+      ? new Date(round.deadlineAt).toLocaleString("vi-VN")
+      : "chưa xác định";
+    const subject = `Nhắc hoàn tất chấm điểm — ${contestName} — ${round.name}`;
+    const body = [
+      `Giám khảo ${judgeName},`,
+      `Hạng mục: ${categoryName}`,
+      `Vòng chấm: ${round.name}`,
+      `Hạn chót: ${deadline}`,
+      `Tiến độ: ${judge.scoredCount ?? 0}/${judge.assignedCount ?? 0} bài (${judge.progressPercent ?? 0}%).`,
+      "Vui lòng hoàn tất trước hạn.",
+      `Liên kết: ${window.location.href}`,
+    ].join("\n");
+    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -195,6 +275,54 @@ export default function JudgingProgressPage() {
           {message}
         </div>
       )}
+
+      <section className="space-y-3 rounded-lg border border-neutral-200 bg-white p-5">
+        <div>
+          <h2 className="text-lg font-semibold">
+            Nhắc giám khảo sắp trễ hạn (FPC-070)
+          </h2>
+          <p className="text-xs text-neutral-500">
+            Mở bản nhập email với nội dung nhắc kèm tiến độ và hạn chót. FE
+            không tự gửi khi chưa có API gửi email.
+          </p>
+        </div>
+        {reminders.length === 0 ? (
+          <p className="text-sm text-neutral-500">
+            Không có giám khảo nào sắp trễ hạn.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {reminders.map(({ round, judge, hoursLeft }, index) => (
+              <li
+                key={`${round.id}-${judge.judgeId ?? judge.judgeName ?? index}`}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-neutral-200 px-4 py-3"
+              >
+                <div>
+                  <p className="text-sm font-medium">
+                    {judge.judgeName ?? judge.judgeId ?? "Giám khảo"}
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    {judge.categoryName ?? "Chưa rõ hạng mục"} · Tiến độ{" "}
+                    {judge.scoredCount ?? 0}/{judge.assignedCount ?? 0}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                    {deadlineLabel(hoursLeft)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => openReminderEmail(round, judge)}
+                    className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50"
+                  >
+                    Soạn email nhắc
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {loading ? (
         <p className="text-sm text-neutral-500">Đang tải dữ liệu...</p>
@@ -252,11 +380,39 @@ export default function JudgingProgressPage() {
                   </div>
                 </div>
 
+                {round.judges.length > 0 && (
+                  <div className="space-y-1.5 border-t border-neutral-100 pt-3">
+                    <p className="text-xs font-medium text-neutral-500">
+                      Chi tiết từng giám khảo
+                    </p>
+                    <ul className="space-y-1 text-xs text-neutral-700">
+                      {round.judges.map((judge, idx) => (
+                        <li
+                          key={`${judge.judgeId}-${idx}`}
+                          className="flex items-center justify-between gap-2"
+                        >
+                          <span className="truncate">
+                            {judge.judgeName ?? judge.judgeId}
+                            {judge.categoryName ? ` · ${judge.categoryName}` : ""}
+                          </span>
+                          <span className="shrink-0 font-mono text-neutral-600">
+                            {judge.scoredCount ?? 0}/{judge.assignedCount ?? 0}{" "}
+                            {judge.isLocked ? "· Đã khóa" : ""}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 <div className="flex justify-end">
                   <button
                     type="button"
                     disabled={
-                      round.status === "LOCKED" || lockingId === round.roundId
+                      round.status === "LOCKED" ||
+                      lockingId === round.roundId ||
+                      round.totalAssignments === 0 ||
+                      round.scoredAssignments < round.totalAssignments
                     }
                     onClick={() => handleLockRound(round.roundId)}
                     className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"

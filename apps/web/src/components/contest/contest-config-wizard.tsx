@@ -3,13 +3,17 @@
 import {
   ArrowLeft,
   ArrowRight,
+  Image as ImageIcon,
   LoaderCircle,
   Plus,
   RefreshCw,
   Save,
   Trash2,
   TriangleAlert,
+  UploadCloud,
+  X,
 } from "lucide-react";
+import { cn } from "cn";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -27,9 +31,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   createContestConfig,
+  deleteCategory,
   duplicateContestConfig,
   fetchContestCategories,
   fetchContestConfig,
+  fetchCriteria,
+  saveCategory,
+  saveCriteria,
   splitDescription,
   toContestConfigError,
   toDateTimeLocal,
@@ -40,8 +48,8 @@ import {
   hasValidationErrors,
   MSG008_INVALID_TIMELINE,
   validateContestConfig,
-  validateContestUpdateInput,
 } from "@/lib/contest-config-validation";
+import { http } from "@/lib/http";
 import {
   type AwardConfig,
   type CategoryConfig,
@@ -52,6 +60,7 @@ import {
   type ContestConfigRecord,
   type ContestStatus,
   type ContestTimeline,
+  type CriterionConfig,
   DEFAULT_MAX_SCORE,
   FORMAT_RESTRICTION_LABELS,
   type FormatRestriction,
@@ -85,6 +94,36 @@ const TIMELINE_FIELDS: (keyof ContestTimeline)[] = [
   "publishedAt",
 ];
 
+const TIMELINE_DEFAULT_TIMES: Record<keyof ContestTimeline, string> = {
+  registrationStartAt: "09:00",
+  submissionDeadlineAt: "23:59",
+  judgingStartAt: "09:00",
+  judgingDeadlineAt: "17:00",
+  publishedAt: "10:00",
+};
+
+const TIMELINE_DESCRIPTIONS: Record<keyof ContestTimeline, string> = {
+  registrationStartAt: "Mở cổng đăng ký cho thí sinh.",
+  submissionDeadlineAt: "Khóa cổng nộp bài; quá hạn không nộp hoặc sửa bài.",
+  judgingStartAt: "Bắt đầu chấm điểm và phân bài cho giám khảo.",
+  judgingDeadlineAt: "Kết thúc chấm và khóa phiếu điểm.",
+  publishedAt: "Công bố kết quả và bảng vàng.",
+};
+
+function splitDateTime(value?: string): { date: string; time: string } {
+  const [date = "", time = ""] = (value ?? "").split("T");
+  return { date, time: time.slice(0, 5) };
+}
+
+function joinDateTime(
+  date: string,
+  time: string,
+  key: keyof ContestTimeline,
+): string {
+  if (!date) return "";
+  return `${date}T${time || TIMELINE_DEFAULT_TIMES[key]}`;
+}
+
 function defaultCriteria(): ContestConfigInput["categories"][number]["criteria"] {
   return [
     {
@@ -106,6 +145,20 @@ function defaultCriteria(): ContestConfigInput["categories"][number]["criteria"]
       maxScore: DEFAULT_MAX_SCORE,
     },
   ];
+}
+
+function normalizeAwards(awards: AwardConfig[]): AwardConfig[] {
+  const usedCodes = new Set<string>();
+  return awards.map((award, index) => {
+    const baseCode = award.code?.trim() || `AWARD-${index + 1}`;
+    let code = baseCode;
+    let suffix = index + 1;
+    while (usedCodes.has(code)) {
+      code = `${baseCode}-${suffix++}`;
+    }
+    usedCodes.add(code);
+    return { ...award, code };
+  });
 }
 
 function defaultAwards(): AwardConfig[] {
@@ -158,12 +211,14 @@ function emptyInput(): ContestConfigInput {
 function categoryFromRecord(
   record: CategoryRecord,
   index: number,
+  criteria?: CriterionConfig[],
 ): CategoryConfig {
   const format = record.formatRestriction ?? record.format_restriction ?? "ALL";
   return {
     id: record.id,
     code: record.code || `CAT-${index + 1}`,
     name: record.name,
+    description: record.description,
     formatRestriction: isFormatRestriction(format) ? format : "ALL",
     maxEntriesPerParticipant:
       record.maxEntriesPerParticipant ??
@@ -173,7 +228,7 @@ function categoryFromRecord(
       record.requireNegativeProofUpfront ??
       record.require_negative_proof_upfront ??
       false,
-    criteria: defaultCriteria(),
+    criteria: criteria ?? defaultCriteria(),
   };
 }
 
@@ -209,6 +264,7 @@ function timelineFromRecord(record: ContestConfigRecord): ContestTimeline {
 function inputFromRecords(
   record: ContestConfigRecord,
   categories: CategoryRecord[],
+  criteriaByCategory?: Map<string, CriterionConfig[]>,
 ): ContestConfigInput {
   const { theme, rules } = splitDescription(record.description);
   const base = emptyInput();
@@ -222,17 +278,51 @@ function inputFromRecords(
     ...timelineFromRecord(record),
     maxEntriesPerUser: record.maxEntriesPerUser ?? base.maxEntriesPerUser,
     categories: categories.length
-      ? categories.map(categoryFromRecord)
+      ? categories.map((category, index) =>
+          categoryFromRecord(
+            category,
+            index,
+            criteriaByCategory?.get(category.id),
+          ),
+        )
       : record.categories?.length
         ? record.categories
         : base.categories,
-    awards: record.awards?.length ? record.awards : base.awards,
+    awards: record.awards?.length
+      ? normalizeAwards(record.awards)
+      : base.awards,
     status: normalizeContestStatus(record.status),
   };
 }
 
 function isLockedStatus(status: ContestStatus): boolean {
   return ["RESULTS_PUBLISHED", "ARCHIVED", "IN_JUDGING"].includes(status);
+}
+
+async function syncCategoriesForEdit(
+  contestId: string,
+  categories: CategoryConfig[],
+  existingCategories: CategoryRecord[],
+): Promise<void> {
+  const keptIds = new Set(
+    categories
+      .map((category) => category.id)
+      .filter((id): id is string => Boolean(id)),
+  );
+
+  for (const existing of existingCategories) {
+    if (!keptIds.has(existing.id)) {
+      await deleteCategory(contestId, existing.id);
+    }
+  }
+
+  for (const category of categories) {
+    const saved = category.id
+      ? await saveCategory(contestId, category, category.id)
+      : await saveCategory(contestId, category);
+    if (!saved?.id) throw new Error("Thiếu mã hạng mục sau khi lưu.");
+    await saveCriteria(contestId, saved.id, category.criteria ?? []);
+  }
 }
 
 export function ContestConfigWizard({
@@ -246,12 +336,23 @@ export function ContestConfigWizard({
   const [selectedCategory, setSelectedCategory] = useState(0);
   const [loading, setLoading] = useState(mode !== "create");
   const [saving, setSaving] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [coverFileName, setCoverFileName] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [validationMessage, setValidationMessage] = useState<string | null>(
+    null,
+  );
   const [banner, setBanner] = useState<string | null>(null);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [sourceCategories, setSourceCategories] = useState<CategoryRecord[]>(
+    [],
+  );
   const requestRef = useRef(0);
+  const coverFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadSource = useCallback(async () => {
+    setSourceCategories([]);
+    setCoverFileName(null);
     if (mode === "create") return;
     const id = mode === "edit" ? contestId : sourceId;
     if (!id) {
@@ -272,7 +373,16 @@ export function ContestConfigWizard({
         fetchContestCategories(id),
       ]);
       if (requestId !== requestRef.current) return;
-      const next = inputFromRecords(record, categories);
+      const criteriaByCategory = new Map<string, CriterionConfig[]>();
+      await Promise.all(
+        categories.map(async (category) => {
+          const criteria = await fetchCriteria(id, category.id);
+          criteriaByCategory.set(category.id, criteria);
+        }),
+      );
+      if (requestId !== requestRef.current) return;
+      const next = inputFromRecords(record, categories, criteriaByCategory);
+      setSourceCategories(categories);
       if (mode === "duplicate") {
         setInput({
           ...next,
@@ -286,7 +396,7 @@ export function ContestConfigWizard({
           status: "DRAFT",
         });
         setBanner(
-          "Chỉ sao chép cấu hình; không sao chép đăng ký/bài/điểm/kết quả (UC-11).",
+          "Chỉ tên và 5 mốc được chỉnh; các cấu hình khác được sao chép nguyên bản từ nguồn. Muốn đổi hãy mở trang Chỉnh sửa sau khi tạo.",
         );
       } else {
         setInput(next);
@@ -309,12 +419,16 @@ export function ContestConfigWizard({
     void loadSource();
   }, [loadSource]);
 
+  const normalizedInput = useMemo(
+    () => ({ ...input, awards: normalizeAwards(input.awards) }),
+    [input],
+  );
   const errors = useMemo(
-    () =>
-      mode === "edit"
-        ? validateContestUpdateInput(input)
-        : validateContestConfig(input),
-    [input, mode],
+    () => validateContestConfig(normalizedInput),
+    [normalizedInput],
+  );
+  const errorsWithoutSlug = Object.fromEntries(
+    Object.entries(errors).filter(([key]) => key !== "slug"),
   );
   const markTouched = (key: string) =>
     setTouched((previous) =>
@@ -338,25 +452,180 @@ export function ContestConfigWizard({
   const showTimelineError =
     timelineError !== null && TIMELINE_FIELDS.some((key) => touched[key]);
   const locked = mode === "edit" && isLockedStatus(input.status);
+  const readOnlyConfig = mode === "duplicate";
   const canSave =
-    !hasValidationErrors(errors) && !locked && !saving && !loading;
+    !hasValidationErrors(errorsWithoutSlug) &&
+    !locked &&
+    !saving &&
+    !loading &&
+    !loadError;
   const firstStepKeys: (keyof ContestConfigInput)[] = [
     "name",
-    "slug",
     "theme",
     "rules",
     "maxEntriesPerUser",
     "status",
     ...TIMELINE_FIELDS,
   ];
+  const categoryBasicErrorKeys = (): string[] =>
+    input.categories.flatMap((_, index) => [
+      `categories.${index}.name`,
+      `categories.${index}.formatRestriction`,
+      `categories.${index}.maxEntriesPerParticipant`,
+    ]);
+  const criteriaErrorKeys = (): string[] =>
+    Object.keys(errors).filter(
+      (key) => key.startsWith("categories.") && key.includes(".criteria"),
+    );
+  const criteriaTotalErrorForCategory = (index: number) =>
+    criteriaErrorForTotal(
+      criteriaTotal(input.categories[index]?.criteria ?? []),
+    );
+
+  const currentCriteriaInvalid = (): boolean =>
+    criteriaTotalErrorForCategory(categoryIndex) !== null ||
+    criteriaErrorKeys().some((key) =>
+      key.startsWith(`categories.${categoryIndex}.criteria`),
+    );
+
+  const anyCriteriaInvalid = (): boolean =>
+    input.categories.some(
+      (_, index) =>
+        criteriaTotalErrorForCategory(index) !== null ||
+        criteriaErrorKeys().some((key) =>
+          key.startsWith(`categories.${index}.criteria`),
+        ),
+    );
+
   const canContinue =
     step === 0
       ? !firstStepKeys.some((key) => errors[key as string])
       : step === 1
-        ? !Object.keys(errors).some((key) => key.startsWith("categories."))
+        ? !errors.categories &&
+          !categoryBasicErrorKeys().some((key) => errors[key])
         : step === 2
-          ? totalError === null
+          ? !currentCriteriaInvalid()
           : true;
+
+  const firstInvalidStep = (): number | null => {
+    if (firstStepKeys.some((key) => errors[key as string])) return 0;
+    if (
+      errors.categories ||
+      categoryBasicErrorKeys().some((key) => errors[key])
+    )
+      return 1;
+    if (anyCriteriaInvalid()) return 2;
+    if (Object.keys(errors).some((key) => key.startsWith("awards."))) return 3;
+    return null;
+  };
+
+  const touchedKeysForStep = (targetStep: number): string[] => {
+    if (targetStep === 0) {
+      return firstStepKeys.filter(
+        (key) => key !== "status" || Boolean(errors[key as string]),
+      );
+    }
+    if (targetStep === 1) {
+      return [
+        "categories",
+        ...input.categories.flatMap((_, index) => [
+          `categories.${index}.name`,
+          `categories.${index}.formatRestriction`,
+          `categories.${index}.maxEntriesPerParticipant`,
+          `categories.${index}.criteria`,
+          ...(input.categories[index]?.criteria ?? []).flatMap(
+            (_, criterionIndex) => [
+              `categories.${index}.criteria.${criterionIndex}.name`,
+              `categories.${index}.criteria.${criterionIndex}.weight`,
+            ],
+          ),
+        ]),
+      ];
+    }
+    if (targetStep === 2) {
+      return [
+        `categories.${categoryIndex}.criteria`,
+        ...criteria.flatMap((_, index) => [
+          `categories.${categoryIndex}.criteria.${index}.name`,
+          `categories.${categoryIndex}.criteria.${index}.weight`,
+        ]),
+      ];
+    }
+    return Object.keys(errors).filter((key) => key.startsWith("awards."));
+  };
+
+  const applyTouchedKeys = (keys: string[]) => {
+    setTouched((previous) => ({
+      ...previous,
+      ...Object.fromEntries(keys.map((key) => [key, true])),
+    }));
+  };
+
+  const markTouchedForStep = (targetStep: number) =>
+    applyTouchedKeys(touchedKeysForStep(targetStep));
+
+  const markStepTouched = () => markTouchedForStep(step);
+
+  const markAllTouched = () =>
+    applyTouchedKeys(
+      [0, 1, 2, 3].flatMap((targetStep) => touchedKeysForStep(targetStep)),
+    );
+
+  const goToStep = (target: number) => {
+    if (target <= step) {
+      setStep(target);
+      return;
+    }
+    const invalidStep = firstInvalidStep();
+    if (invalidStep !== null && invalidStep < target) {
+      markAllTouched();
+      setStep(invalidStep);
+      setValidationMessage(
+        `Vui lòng hoàn tất bước ${invalidStep + 1}: ${STEPS[invalidStep]} trước khi tiếp tục.`,
+      );
+      return;
+    }
+    setStep(target);
+  };
+
+  const goNext = () => {
+    if (!canContinue) {
+      markStepTouched();
+      setValidationMessage(
+        `Vui lòng hoàn tất bước ${step + 1}: ${STEPS[step]} trước khi tiếp tục.`,
+      );
+      return;
+    }
+    setValidationMessage(null);
+    setStep((current) => Math.min(current + 1, STEPS.length - 1));
+  };
+
+  const goSave = (status: ContestStatus) => {
+    if (locked || loading) return;
+    const invalidStep = firstInvalidStep();
+    if (invalidStep !== null) {
+      if (invalidStep === 2) {
+        const firstCriteriaKey = criteriaErrorKeys()[0];
+        const categoryMatch = firstCriteriaKey?.match(
+          /^categories\.(\d+)\.criteria/,
+        );
+        const invalidCategory = categoryMatch
+          ? Number(categoryMatch[1])
+          : input.categories.findIndex(
+              (_, index) => criteriaTotalErrorForCategory(index) !== null,
+            );
+        if (invalidCategory >= 0) setSelectedCategory(invalidCategory);
+      }
+      markAllTouched();
+      setStep(invalidStep);
+      setValidationMessage(
+        `Vui lòng hoàn tất bước ${invalidStep + 1}: ${STEPS[invalidStep]} trước khi lưu.`,
+      );
+      return;
+    }
+    setValidationMessage(null);
+    void submit(status);
+  };
 
   const setField = <K extends keyof ContestConfigInput>(
     key: K,
@@ -367,6 +636,39 @@ export function ContestConfigWizard({
 
   const setTimeline = (key: keyof ContestTimeline, value: string) => {
     setInput((previous) => ({ ...previous, [key]: value }));
+  };
+
+  const uploadCoverImage = async (file: File | null) => {
+    if (!file) return;
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Vui lòng chọn ảnh JPG, PNG hoặc WebP.");
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error("Ảnh bìa tối đa 50 MB.");
+      return;
+    }
+
+    setCoverFileName(file.name);
+    setUploadingCover(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await http.post("/api/v1/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const key = response.data?.data?.key;
+      if (typeof key !== "string" || !key) {
+        throw new Error("Thiếu key ảnh bìa.");
+      }
+      setField("coverImageUrl", key);
+      toast.success("Đã tải ảnh bìa.");
+    } catch (error) {
+      toast.error(toContestConfigError(error).message);
+    } finally {
+      setUploadingCover(false);
+    }
   };
 
   const updateCategory = (index: number, patch: Partial<CategoryConfig>) => {
@@ -390,17 +692,24 @@ export function ContestConfigWizard({
   const submit = async (status: ContestStatus) => {
     if (!canSave) return;
     setSaving(true);
+    setValidationMessage(null);
     setLoadError(null);
-    const payload: ContestConfigInput = { ...input, status };
+    const payload: ContestConfigInput = { ...normalizedInput, status };
 
     try {
       if (mode === "duplicate" && sourceId) {
         const created = await duplicateContestConfig(sourceId, payload);
         if (!created?.id) throw new Error("Thiếu mã cuộc thi sau khi sao chép.");
+        await updateContestConfig(created.id, payload);
         toast.success(`Sao chép cuộc thi "${payload.name}" thành công.`);
         router.push(`/portal/contests/${created.id}`);
       } else if (mode === "edit" && contestId) {
         await updateContestConfig(contestId, payload);
+        await syncCategoriesForEdit(
+          contestId,
+          payload.categories,
+          sourceCategories,
+        );
         toast.success("Đã cập nhật cấu hình cuộc thi.");
         router.push(`/portal/contests/${contestId}`);
       } else {
@@ -437,7 +746,7 @@ export function ContestConfigWizard({
           href="/portal/contests"
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="mr-2 size-4" /> Quay lại danh sách
+          <ArrowLeft className="mr-2 size-4" /> Quay lại danh sách cuộc thi
         </Link>
         <Badge variant="outline">
           {mode === "create"
@@ -468,17 +777,25 @@ export function ContestConfigWizard({
           <span>{banner}</span>
         </div>
       )}
+      {validationMessage && (
+        <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-destructive">
+          <span>{validationMessage}</span>
+        </div>
+      )}
       {loadError && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-destructive">
           <span>{loadError}</span>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => void loadSource()}
-          >
-            <RefreshCw /> Thử lại
-          </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setLoadError(null);
+                void loadSource();
+              }}
+            >
+              <RefreshCw /> Thử lại
+            </Button>
         </div>
       )}
 
@@ -487,7 +804,7 @@ export function ContestConfigWizard({
           <li key={label}>
             <button
               type="button"
-              onClick={() => setStep(index)}
+              onClick={() => goToStep(index)}
               className={`w-full rounded-lg border p-2 text-left text-xs font-medium transition ${
                 step === index
                   ? "border-brand-solid bg-brand-soft text-brand-solid"
@@ -524,27 +841,8 @@ export function ContestConfigWizard({
                     aria-invalid={Boolean(errorFor("name"))}
                   />
                   {errorFor("name") && (
-                    <p className="text-xs text-red-600">
+                    <p className="text-xs text-destructive">
                       {errorFor("name")?.message}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="config-slug">Slug (tùy chọn)</Label>
-                  <Input
-                    id="config-slug"
-                    value={input.slug ?? ""}
-                    onChange={(event) => {
-                      markTouched("slug");
-                      setField("slug", event.target.value);
-                    }}
-                    onBlur={() => markTouched("slug")}
-                    placeholder="huong-sac-phim-mau-2026"
-                    aria-invalid={Boolean(errorFor("slug"))}
-                  />
-                  {errorFor("slug") && (
-                    <p className="text-xs text-red-600">
-                      {errorFor("slug")?.message}
                     </p>
                   )}
                 </div>
@@ -555,6 +853,7 @@ export function ContestConfigWizard({
                 <Input
                   id="config-theme"
                   value={input.theme}
+                  disabled={readOnlyConfig}
                   onChange={(event) => {
                     markTouched("theme");
                     setField("theme", event.target.value);
@@ -563,7 +862,7 @@ export function ContestConfigWizard({
                   aria-invalid={Boolean(errorFor("theme"))}
                 />
                 {errorFor("theme") && (
-                  <p className="text-xs text-red-600">
+                  <p className="text-xs text-destructive">
                     {errorFor("theme")?.message}
                   </p>
                 )}
@@ -574,16 +873,20 @@ export function ContestConfigWizard({
                 <textarea
                   id="config-rules"
                   value={input.rules}
+                  disabled={readOnlyConfig}
                   onChange={(event) => {
                     markTouched("rules");
                     setField("rules", event.target.value);
                   }}
                   onBlur={() => markTouched("rules")}
-                  className="min-h-24 w-full rounded-lg border border-input bg-transparent p-2.5 text-sm"
+                  className={cn(
+                    "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+                    "min-h-24",
+                  )}
                   aria-invalid={Boolean(errorFor("rules"))}
                 />
                 {errorFor("rules") && (
-                  <p className="text-xs text-red-600">
+                  <p className="text-xs text-destructive">
                     {errorFor("rules")?.message}
                   </p>
                 )}
@@ -592,12 +895,79 @@ export function ContestConfigWizard({
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="config-cover">URL ảnh bìa</Label>
+                  <input
+                    ref={coverFileInputRef}
+                    id="config-cover-file"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    disabled={uploadingCover || readOnlyConfig}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      void uploadCoverImage(file);
+                    }}
+                  />
+                  <div className="flex items-center gap-3 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                      <ImageIcon className="size-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">
+                        {coverFileName ?? "Chưa chọn ảnh bìa"}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {uploadingCover
+                          ? "Đang tải ảnh bìa..."
+                          : input.coverImageUrl
+                            ? "Ảnh sẵn sàng · có thể lưu cùng cuộc thi"
+                            : "JPG, PNG hoặc WebP · tối đa 50 MB"}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={uploadingCover || readOnlyConfig}
+                        onClick={() => {
+                          if (coverFileInputRef.current) {
+                            coverFileInputRef.current.value = "";
+                            coverFileInputRef.current.click();
+                          }
+                        }}
+                      >
+                        <UploadCloud />
+                        {coverFileName ? "Đổi ảnh" : "Chọn ảnh"}
+                      </Button>
+                      {(coverFileName || input.coverImageUrl) &&
+                        !readOnlyConfig && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="Xóa ảnh bìa"
+                            disabled={uploadingCover}
+                            onClick={() => {
+                              if (coverFileInputRef.current) {
+                                coverFileInputRef.current.value = "";
+                              }
+                              setCoverFileName(null);
+                              setField("coverImageUrl", "");
+                            }}
+                          >
+                            <X />
+                          </Button>
+                        )}
+                    </div>
+                  </div>
                   <Input
                     id="config-cover"
                     value={input.coverImageUrl ?? ""}
+                    disabled={readOnlyConfig}
                     onChange={(event) =>
                       setField("coverImageUrl", event.target.value)
                     }
+                    placeholder="Hoặc dán URL ảnh bìa"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -609,6 +979,7 @@ export function ContestConfigWizard({
                     type="number"
                     min={1}
                     max={10}
+                    disabled={readOnlyConfig}
                     value={input.maxEntriesPerUser}
                     onChange={(event) => {
                       markTouched("maxEntriesPerUser");
@@ -621,7 +992,7 @@ export function ContestConfigWizard({
                     aria-invalid={Boolean(errorFor("maxEntriesPerUser"))}
                   />
                   {errorFor("maxEntriesPerUser") && (
-                    <p className="text-xs text-red-600">
+                    <p className="text-xs text-destructive">
                       {errorFor("maxEntriesPerUser")?.message}
                     </p>
                   )}
@@ -638,33 +1009,98 @@ export function ContestConfigWizard({
                     &lt; Công bố.
                   </p>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {TIMELINE_FIELDS.map((key) => (
-                    <div key={key} className="space-y-1.5">
-                      <Label htmlFor={`timeline-${key}`}>
-                        {CONTEST_TIMELINE_LABELS[key]} *
-                      </Label>
-                      <Input
-                        id={`timeline-${key}`}
-                        type="datetime-local"
-                        value={input[key]}
-                        onChange={(event) => {
-                          markTouched(key);
-                          setTimeline(key, event.target.value);
-                        }}
-                        onBlur={() => markTouched(key)}
-                        aria-invalid={Boolean(errorFor(key))}
-                      />
-                      {errorFor(key) && (
-                        <p className="text-xs text-red-600">
-                          {errorFor(key)?.message}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                <div>
+                  {TIMELINE_FIELDS.map((key, index) => {
+                    const { date, time } = splitDateTime(input[key]);
+                    return (
+                      <div key={key} className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-xs font-medium text-muted-foreground">
+                            {index + 1}
+                          </span>
+                          {index < TIMELINE_FIELDS.length - 1 && (
+                            <span className="mt-1 w-px flex-1 bg-border" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1 space-y-2 pb-4">
+                          <div className="grid gap-3 sm:grid-cols-[1fr_16rem]">
+                            <div className="space-y-1">
+                              <Label>
+                                {index + 1}. {CONTEST_TIMELINE_LABELS[key]} *
+                              </Label>
+                              <p className="text-xs text-muted-foreground">
+                                {TIMELINE_DESCRIPTIONS[key]}
+                              </p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="space-y-1.5">
+                                <Label
+                                  htmlFor={`timeline-${key}-date`}
+                                  className="sr-only"
+                                >
+                                  Ngày {CONTEST_TIMELINE_LABELS[key]}
+                                </Label>
+                                <Input
+                                  id={`timeline-${key}-date`}
+                                  type="date"
+                                  value={date}
+                                  disabled={readOnlyConfig}
+                                  onChange={(event) => {
+                                    markTouched(key);
+                                    setTimeline(
+                                      key,
+                                      joinDateTime(
+                                        event.target.value,
+                                        time,
+                                        key,
+                                      ),
+                                    );
+                                  }}
+                                  onBlur={() => markTouched(key)}
+                                  aria-invalid={Boolean(errorFor(key))}
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label
+                                  htmlFor={`timeline-${key}-time`}
+                                  className="sr-only"
+                                >
+                                  Giờ {CONTEST_TIMELINE_LABELS[key]}
+                                </Label>
+                                <Input
+                                  id={`timeline-${key}-time`}
+                                  type="time"
+                                  value={time}
+                                  disabled={readOnlyConfig}
+                                  onChange={(event) => {
+                                    markTouched(key);
+                                    setTimeline(
+                                      key,
+                                      joinDateTime(
+                                        date,
+                                        event.target.value,
+                                        key,
+                                      ),
+                                    );
+                                  }}
+                                  onBlur={() => markTouched(key)}
+                                  aria-invalid={Boolean(errorFor(key))}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          {errorFor(key) && (
+                            <p className="text-xs text-destructive">
+                              {errorFor(key)?.message}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
                 {showTimelineError && (
-                  <p className="rounded-md border border-red-200 bg-red-50 p-2 text-xs font-medium text-red-600">
+                  <p className="rounded-md border border-red-200 bg-red-50 p-2 text-xs font-medium text-destructive">
                     {MSG008_INVALID_TIMELINE}
                   </p>
                 )}
@@ -680,7 +1116,7 @@ export function ContestConfigWizard({
                 </p>
               )}
               {errorFor("categories") && (
-                <p className="text-xs font-medium text-red-600">
+                <p className="text-xs font-medium text-destructive">
                   {errorFor("categories")?.message}
                 </p>
               )}
@@ -698,7 +1134,7 @@ export function ContestConfigWizard({
                       size="icon"
                       variant="destructive"
                       aria-label={`Xóa hạng mục ${index + 1}`}
-                      disabled={input.categories.length <= 1}
+                      disabled={readOnlyConfig || input.categories.length <= 1}
                       onClick={() =>
                         setInput((previous) => ({
                           ...previous,
@@ -719,6 +1155,7 @@ export function ContestConfigWizard({
                       <Input
                         id={`category-code-${index}`}
                         value={category.code}
+                        disabled={readOnlyConfig}
                         onChange={(event) =>
                           updateCategory(index, { code: event.target.value })
                         }
@@ -731,6 +1168,7 @@ export function ContestConfigWizard({
                       <Input
                         id={`category-name-${index}`}
                         value={category.name}
+                        disabled={readOnlyConfig}
                         onChange={(event) => {
                           markTouched("categories");
                           markTouched(`categories.${index}.name`);
@@ -745,7 +1183,7 @@ export function ContestConfigWizard({
                         )}
                       />
                       {errorFor(`categories.${index}.name`) && (
-                        <p className="text-xs text-red-600">
+                        <p className="text-xs text-destructive">
                           {errorFor(`categories.${index}.name`)?.message}
                         </p>
                       )}
@@ -756,6 +1194,7 @@ export function ContestConfigWizard({
                       </Label>
                       <select
                         id={`category-format-${index}`}
+                        disabled
                         value={category.formatRestriction}
                         onChange={(event) =>
                           updateCategory(index, {
@@ -785,6 +1224,7 @@ export function ContestConfigWizard({
                         type="number"
                         min={1}
                         max={10}
+                        disabled
                         value={category.maxEntriesPerParticipant}
                         onChange={(event) => {
                           markTouched("categories");
@@ -812,7 +1252,7 @@ export function ContestConfigWizard({
                       {errorFor(
                         `categories.${index}.maxEntriesPerParticipant`,
                       ) && (
-                        <p className="text-xs text-red-600">
+                        <p className="text-xs text-destructive">
                           {errorFor(
                             `categories.${index}.maxEntriesPerParticipant`,
                           )?.message}
@@ -820,9 +1260,13 @@ export function ContestConfigWizard({
                       )}
                     </div>
                   </div>
+                  <p className="text-xs text-amber-600">
+                    API hiện chưa lưu 2 trường này; cần backend bổ sung.
+                  </p>
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id={`category-proof-${index}`}
+                      disabled={readOnlyConfig}
                       checked={category.requireNegativeProofUpfront}
                       onCheckedChange={(checked) =>
                         updateCategory(index, {
@@ -840,6 +1284,7 @@ export function ContestConfigWizard({
                 type="button"
                 variant="outline"
                 className="w-full border-dashed"
+                disabled={readOnlyConfig}
                 onClick={() =>
                   setInput((previous) => ({
                     ...previous,
@@ -869,6 +1314,7 @@ export function ContestConfigWizard({
                 <select
                   id="criteria-category"
                   value={categoryIndex}
+                  disabled={readOnlyConfig}
                   onChange={(event) =>
                     setSelectedCategory(Number(event.target.value))
                   }
@@ -886,6 +1332,7 @@ export function ContestConfigWizard({
               </div>
               <CriteriaEditor
                 criteria={criteria}
+                disabled={readOnlyConfig}
                 onChange={(next) =>
                   updateCategory(categoryIndex, { criteria: next })
                 }
@@ -902,7 +1349,7 @@ export function ContestConfigWizard({
                   {errors[
                     `categories.${categoryIndex}.criteria.${index}.name`
                   ] && (
-                    <p className="text-red-600">
+                    <p className="text-destructive">
                       {
                         errors[
                           `categories.${categoryIndex}.criteria.${index}.name`
@@ -913,7 +1360,7 @@ export function ContestConfigWizard({
                   {errors[
                     `categories.${categoryIndex}.criteria.${index}.weight`
                   ] && (
-                    <p className="text-red-600">
+                    <p className="text-destructive">
                       {
                         errors[
                           `categories.${categoryIndex}.criteria.${index}.weight`
@@ -932,29 +1379,28 @@ export function ContestConfigWizard({
                 {input.awards.map((award, index) => (
                   <div
                     key={award.code}
-                    className="grid gap-3 rounded-lg border p-4 sm:grid-cols-5"
+                    className="grid gap-3 rounded-lg border p-4 sm:grid-cols-4"
                   >
-                    <div className="space-y-1.5">
-                      <Label htmlFor={`award-code-${index}`}>Mã giải</Label>
-                      <Input
-                        id={`award-code-${index}`}
-                        value={award.code}
-                        onChange={(event) =>
-                          updateAward(index, { code: event.target.value })
-                        }
-                        aria-invalid={Boolean(errors[`awards.${index}.code`])}
-                      />
-                    </div>
                     <div className="space-y-1.5 sm:col-span-2">
                       <Label htmlFor={`award-name-${index}`}>Tên giải</Label>
                       <Input
                         id={`award-name-${index}`}
                         value={award.name}
-                        onChange={(event) =>
-                          updateAward(index, { name: event.target.value })
-                        }
-                        aria-invalid={Boolean(errors[`awards.${index}.name`])}
+                        disabled={readOnlyConfig}
+                        onChange={(event) => {
+                          markTouched(`awards.${index}.name`);
+                          updateAward(index, { name: event.target.value });
+                        }}
+                        onBlur={() => markTouched(`awards.${index}.name`)}
+                        aria-invalid={Boolean(
+                          errorFor(`awards.${index}.name`),
+                        )}
                       />
+                      {errorFor(`awards.${index}.name`) && (
+                        <p className="text-xs text-destructive">
+                          {errorFor(`awards.${index}.name`)?.message}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-1.5">
                       <Label htmlFor={`award-rank-${index}`}>Thứ hạng</Label>
@@ -962,13 +1408,24 @@ export function ContestConfigWizard({
                         id={`award-rank-${index}`}
                         type="number"
                         min={1}
+                        disabled={readOnlyConfig}
                         value={award.rankOrder}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          markTouched(`awards.${index}.rankOrder`);
                           updateAward(index, {
                             rankOrder: Number(event.target.value),
-                          })
-                        }
+                          });
+                        }}
+                        onBlur={() => markTouched(`awards.${index}.rankOrder`)}
+                        aria-invalid={Boolean(
+                          errorFor(`awards.${index}.rankOrder`),
+                        )}
                       />
+                      {errorFor(`awards.${index}.rankOrder`) && (
+                        <p className="text-xs text-destructive">
+                          {errorFor(`awards.${index}.rankOrder`)?.message}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-end justify-between gap-2">
                       <Button
@@ -976,6 +1433,7 @@ export function ContestConfigWizard({
                         size="icon"
                         variant="destructive"
                         aria-label={`Xóa giải ${index + 1}`}
+                        disabled={readOnlyConfig}
                         onClick={() =>
                           setInput((previous) => ({
                             ...previous,
@@ -996,6 +1454,7 @@ export function ContestConfigWizard({
                         id={`award-prize-${index}`}
                         type="number"
                         min={0}
+                        disabled={readOnlyConfig}
                         value={award.prizeValueVnd}
                         onChange={(event) =>
                           updateAward(index, {
@@ -1004,7 +1463,7 @@ export function ContestConfigWizard({
                         }
                       />
                       {errors[`awards.${index}.prizeValueVnd`] && (
-                        <p className="text-xs text-red-600">
+                        <p className="text-xs text-destructive">
                           {errors[`awards.${index}.prizeValueVnd`].message}
                         </p>
                       )}
@@ -1015,6 +1474,7 @@ export function ContestConfigWizard({
                         id={`award-quota-${index}`}
                         type="number"
                         min={1}
+                        disabled={readOnlyConfig}
                         value={award.quota}
                         onChange={(event) =>
                           updateAward(index, {
@@ -1023,7 +1483,7 @@ export function ContestConfigWizard({
                         }
                       />
                       {errors[`awards.${index}.quota`] && (
-                        <p className="text-xs text-red-600">
+                        <p className="text-xs text-destructive">
                           {errors[`awards.${index}.quota`].message}
                         </p>
                       )}
@@ -1034,6 +1494,7 @@ export function ContestConfigWizard({
                   type="button"
                   variant="outline"
                   className="w-full border-dashed"
+                  disabled={readOnlyConfig}
                   onClick={() =>
                     setInput((previous) => ({
                       ...previous,
@@ -1090,40 +1551,52 @@ export function ContestConfigWizard({
         </CardContent>
       </Card>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button
           type="button"
           variant="outline"
+          className="w-full sm:w-auto"
           disabled={step === 0}
           onClick={() => setStep((current) => Math.max(current - 1, 0))}
         >
           <ArrowLeft /> Quay lại bước trước
         </Button>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full flex-wrap justify-end gap-2 sm:w-auto">
           {step < STEPS.length - 1 ? (
             <Button
               type="button"
-              disabled={!canContinue}
-              onClick={() =>
-                setStep((current) => Math.min(current + 1, STEPS.length - 1))
-              }
+              className="w-full sm:w-auto"
+              disabled={saving}
+              onClick={() => goNext()}
             >
               Tiếp tục <ArrowRight />
+            </Button>
+          ) : readOnlyConfig ? (
+            <Button
+              type="button"
+              className="w-full sm:w-auto"
+              disabled={saving || locked || loading}
+              onClick={() => goSave("DRAFT")}
+            >
+              {saving ? <LoaderCircle className="animate-spin" /> : <Save />}{" "}
+              Sao chép
             </Button>
           ) : (
             <>
               <Button
                 type="button"
                 variant="outline"
-                disabled={!canSave}
-                onClick={() => void submit("DRAFT")}
+                className="w-full sm:w-auto"
+                disabled={saving || locked || loading}
+                onClick={() => goSave("DRAFT")}
               >
                 <Save /> Lưu DRAFT
               </Button>
               <Button
                 type="button"
-                disabled={!canSave}
-                onClick={() => void submit("OPEN")}
+                className="w-full sm:w-auto"
+                disabled={saving || locked || loading}
+                onClick={() => goSave("OPEN")}
               >
                 {saving ? <LoaderCircle className="animate-spin" /> : <Save />}{" "}
                 Lưu & Xuất bản
