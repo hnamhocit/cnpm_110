@@ -10,7 +10,7 @@ test("concurrent BFF callers share a rotation and later calls rotate again", asy
     calls++;
     await new Promise((resolve) => setTimeout(resolve, 10));
     return Response.json({ data: { accessToken: "new-access", refreshToken: "new-refresh" } });
-  }) as typeof fetch;
+  }) as unknown as typeof fetch;
   const [first, second] = await Promise.all([refreshSession("old"), refreshSession("old")]);
   expect(calls).toBe(1);
   expect(first).toEqual(second);
@@ -20,8 +20,8 @@ test("concurrent BFF callers share a rotation and later calls rotate again", asy
 });
 
 test("service outages remain distinguishable from expired credentials", async () => {
-  globalThis.fetch = (async () => new Response(null, { status: 503 })) as typeof fetch;
+  globalThis.fetch = (async () => new Response(null, { status: 503 })) as unknown as typeof fetch;
   await expect(refreshSession("outage")).rejects.toThrow("503");
-  globalThis.fetch = (async () => new Response(null, { status: 401 })) as typeof fetch;
+  globalThis.fetch = (async () => new Response(null, { status: 401 })) as unknown as typeof fetch;
   expect(await refreshSession("expired")).toBeNull();
 });

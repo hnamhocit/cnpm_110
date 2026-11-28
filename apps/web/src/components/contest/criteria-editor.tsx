@@ -32,6 +32,7 @@ type CriteriaEditorProps = {
   onChange: (criteria: CriterionConfig[]) => void;
   error?: string;
   compact?: boolean;
+  disabled?: boolean;
 };
 
 export function CriteriaEditor({
@@ -39,6 +40,7 @@ export function CriteriaEditor({
   onChange,
   error,
   compact = false,
+  disabled = false,
 }: CriteriaEditorProps) {
   const total = criteriaTotal(criteria);
   const totalPercent = toPercent(total);
@@ -84,6 +86,7 @@ export function CriteriaEditor({
             <Input
               id={`criterion-name-${index}`}
               value={criterion.name}
+              disabled={disabled}
               placeholder="VD: Bố cục & Ánh sáng"
               onChange={(event) => update(index, { name: event.target.value })}
             />
@@ -96,6 +99,7 @@ export function CriteriaEditor({
               min={1}
               max={100}
               step={0.01}
+              disabled={disabled}
               value={toPercent(criterion.weight) || ""}
               onChange={(event) =>
                 update(index, {
@@ -111,7 +115,7 @@ export function CriteriaEditor({
               size="icon"
               aria-label={`Xóa tiêu chí ${index + 1}`}
               onClick={() => remove(index)}
-              disabled={criteria.length <= 1}
+              disabled={disabled || criteria.length <= 1}
             >
               <Minus />
             </Button>
@@ -123,6 +127,7 @@ export function CriteriaEditor({
         type="button"
         variant="outline"
         onClick={add}
+        disabled={disabled}
         className="w-full border-dashed"
       >
         <Plus /> Thêm tiêu chí
