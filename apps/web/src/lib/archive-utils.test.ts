@@ -1,6 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import type { ArchiveArtwork, ArchiveFilterState } from "@/types/archive";
-import { filterArchiveArtworks } from "./archive-utils";
+import {
+  filterArchiveArtworks,
+  hasActiveArchiveFilters,
+} from "./archive-utils";
 
 const sampleArtworks: ArchiveArtwork[] = [
   {
@@ -123,5 +126,58 @@ describe("FPC-99 / FPC-97 Archive Utils", () => {
     const res = filterArchiveArtworks(sampleArtworks, filters);
     expect(res).toHaveLength(1);
     expect(res[0].title).toBe("Không tên");
+  });
+});
+
+describe("hasActiveArchiveFilters", () => {
+  const defaultFilters: ArchiveFilterState = {
+    searchQuery: "",
+    year: "all",
+    filmStock: "all",
+    filmFormat: "all",
+    awardOnly: false,
+    contestId: "",
+    camera: "",
+    aiTag: "",
+  };
+
+  it("trả false với bộ lọc mặc định", () => {
+    expect(hasActiveArchiveFilters(defaultFilters)).toBe(false);
+  });
+
+  it("trả true khi searchQuery có khoảng trắng thừa", () => {
+    expect(
+      hasActiveArchiveFilters({ ...defaultFilters, searchQuery: "  hp5  " }),
+    ).toBe(true);
+  });
+
+  it("trả true khi awardOnly là true", () => {
+    expect(hasActiveArchiveFilters({ ...defaultFilters, awardOnly: true })).toBe(
+      true,
+    );
+  });
+
+  it("trả true khi contestId, camera hoặc aiTag có giá trị", () => {
+    expect(
+      hasActiveArchiveFilters({ ...defaultFilters, contestId: "c-1" }),
+    ).toBe(true);
+    expect(
+      hasActiveArchiveFilters({ ...defaultFilters, camera: "  Nikon FM2 " }),
+    ).toBe(true);
+    expect(hasActiveArchiveFilters({ ...defaultFilters, aiTag: "street" })).toBe(
+      true,
+    );
+  });
+
+  it("trả true khi year, filmStock hoặc filmFormat khác all", () => {
+    expect(hasActiveArchiveFilters({ ...defaultFilters, year: "2026" })).toBe(
+      true,
+    );
+    expect(
+      hasActiveArchiveFilters({ ...defaultFilters, filmStock: "Portra 400" }),
+    ).toBe(true);
+    expect(
+      hasActiveArchiveFilters({ ...defaultFilters, filmFormat: "35mm" }),
+    ).toBe(true);
   });
 });

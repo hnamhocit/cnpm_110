@@ -49,3 +49,15 @@ export function filterArchiveArtworks(
     return true;
   });
 }
+
+export function hasActiveArchiveFilters(filters: ArchiveFilterState): boolean {
+  if (filters.searchQuery.trim()) return true;
+  if (filters.contestId?.trim()) return true;
+  if (filters.camera?.trim()) return true;
+  if (filters.aiTag?.trim()) return true;
+  if (filters.year !== "" && filters.year !== "all") return true;
+  if (filters.filmStock !== "" && filters.filmStock !== "all") return true;
+  if (filters.filmFormat !== "" && filters.filmFormat !== "all") return true;
+  if (filters.awardOnly === true) return true;
+  return false;
+}

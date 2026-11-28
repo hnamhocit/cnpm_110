@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Film, Sparkles } from "lucide-react";
 import type { ArchiveArtwork, ArchiveFilterState } from "@/types/archive";
-import { filterArchiveArtworks } from "@/lib/archive-utils";
+import {
+  filterArchiveArtworks,
+  hasActiveArchiveFilters,
+} from "@/lib/archive-utils";
 import {
   getExhibition,
   getExhibitionErrorMessage,
@@ -125,6 +128,7 @@ export function ArchiveClientView({ initialContestId }: ArchiveClientViewProps) 
     () => filterArchiveArtworks(allArtworks, filters),
     [allArtworks, filters],
   );
+  const activeFilters = hasActiveArchiveFilters(filters);
   const totalPages = Math.max(
     1,
     Math.ceil(filteredArtworks.length / CLIENT_PAGE_SIZE),
@@ -214,6 +218,11 @@ export function ArchiveClientView({ initialContestId }: ArchiveClientViewProps) 
         </div>
       ) : filteredArtworks.length > 0 ? (
         <>
+          {activeFilters ? (
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Tìm thấy {filteredArtworks.length} tác phẩm phù hợp
+            </p>
+          ) : null}
           <MasonryGrid artworks={pageArtworks} onSelectArtwork={handleSelectArtwork} />
           <div className="flex items-center justify-center gap-3 pt-2">
             <Button
@@ -235,14 +244,20 @@ export function ArchiveClientView({ initialContestId }: ArchiveClientViewProps) 
             </Button>
           </div>
         </>
-      ) : (
+      ) : allArtworks.length === 0 && !activeFilters ? (
+        <EmptyState
+          icon={<Film className="w-8 h-8 text-sky-600" />}
+          title="Kho lưu trữ số đang chờ tác phẩm được công bố"
+          description="Chưa có tác phẩm nào được đưa vào triển lãm. Vui lòng dùng trang Organizer → Triển lãm số để đưa tác phẩm vào kho lưu trữ."
+        />
+      ) : activeFilters && filteredArtworks.length === 0 ? (
         <EmptyState
           icon={<Film className="w-8 h-8 text-sky-600" />}
           title="Không tìm thấy tác phẩm triển lãm phù hợp"
           description="Rất tiếc không có tác phẩm nào khớp với bộ lọc tìm kiếm hiện tại. Hãy thử đổi từ khóa hoặc đặt lại bộ lọc."
           action={{ label: "Đặt lại bộ lọc", onClick: handleResetFilters }}
         />
-      )}
+      ) : null}
 
       <ArtworkDetailModal artwork={selectedArtwork} onClose={handleCloseModal} />
     </div>
