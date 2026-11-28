@@ -91,5 +91,11 @@ describe("FPC-126 Audit Log Utils", () => {
     );
     expect(formatAuditAction("CUSTOM_ACTION")).toBe("CUSTOM_ACTION");
     expect(formatAuditResourceType("UnknownResource")).toBe("UnknownResource");
+    expect(formatAuditAction(null)).toBe("");
+    expect(formatAuditAction(undefined)).toBe("");
+    expect(formatAuditAction("")).toBe("");
+    expect(formatAuditResourceType(null)).toBe("");
+    expect(formatAuditResourceType(undefined)).toBe("");
+    expect(formatAuditResourceType("")).toBe("");
   });
 });
