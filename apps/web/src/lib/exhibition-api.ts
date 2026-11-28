@@ -1,6 +1,7 @@
 import { http } from "@/lib/http/client";
 import type { ArchiveArtwork } from "@/types/archive";
 import type {
+  ApiEnvelope,
   ArchiveContestInput,
   ArchiveContestResponse,
   ContestExhibitionItem,
@@ -32,6 +33,14 @@ type ArchiveFilmFormat = ArchiveArtwork["film_format"];
 
 export function unwrap<T>(response: { data: T }): T {
   return response.data;
+}
+
+export function unwrapApiData<T>(response: { data: ApiEnvelope<T> }): T {
+  const envelope = response.data;
+  if (!envelope || envelope.data === null || envelope.data === undefined) {
+    throw new Error(envelope?.error || "API returned null or missing data envelope");
+  }
+  return envelope.data;
 }
 
 function asApiError(error: unknown): ApiError {
@@ -264,8 +273,8 @@ export async function archiveContest(
   contestId: string,
   input: ArchiveContestInput = {},
 ): Promise<ArchiveContestResponse> {
-  return unwrap(
-    await http.post<ArchiveContestResponse>(
+  return unwrapApiData<ArchiveContestResponse>(
+    await http.post<ApiEnvelope<ArchiveContestResponse>>(
       `/api/v1/contests/${encodeURIComponent(contestId)}/archive`,
       buildArchiveContestInput(input),
     ),
@@ -276,8 +285,8 @@ export async function getContestExhibitions(
   contestId: string,
   signal?: AbortSignal,
 ): Promise<ContestExhibitionItem[]> {
-  return unwrap(
-    await http.get<ContestExhibitionItem[]>(
+  return unwrapApiData<ContestExhibitionItem[]>(
+    await http.get<ApiEnvelope<ContestExhibitionItem[]>>(
       `/api/v1/contests/${encodeURIComponent(contestId)}/exhibitions`,
       { signal },
     ),
@@ -288,8 +297,8 @@ export async function getExhibitions(
   filters: ExhibitionQueryFilters = {},
   signal?: AbortSignal,
 ): Promise<ExhibitionListResponse> {
-  return unwrap(
-    await http.get<ExhibitionListResponse>("/api/v1/exhibitions", {
+  return unwrapApiData<ExhibitionListResponse>(
+    await http.get<ApiEnvelope<ExhibitionListResponse>>("/api/v1/exhibitions", {
       params: buildExhibitionQuery(filters),
       signal,
     }),
@@ -300,8 +309,8 @@ export async function getExhibition(
   exhibitionId: string,
   signal?: AbortSignal,
 ): Promise<PublicExhibitionDetail> {
-  return unwrap(
-    await http.get<PublicExhibitionDetail>(exhibitionPath(exhibitionId), {
+  return unwrapApiData<PublicExhibitionDetail>(
+    await http.get<ApiEnvelope<PublicExhibitionDetail>>(exhibitionPath(exhibitionId), {
       signal,
     }),
   );
@@ -318,8 +327,8 @@ export async function processExhibition(
   exhibitionId: string,
   input: ProcessExhibitionInput = {},
 ): Promise<ExhibitionActionResponse> {
-  return unwrap(
-    await http.post<ExhibitionActionResponse>(
+  return unwrapApiData<ExhibitionActionResponse>(
+    await http.post<ApiEnvelope<ExhibitionActionResponse>>(
       `${exhibitionPath(exhibitionId)}/process`,
       buildProcessExhibitionInput(input),
     ),
@@ -330,8 +339,8 @@ export async function getExhibitionStatus(
   exhibitionId: string,
   signal?: AbortSignal,
 ): Promise<ExhibitionActionResponse> {
-  return unwrap(
-    await http.get<ExhibitionActionResponse>(
+  return unwrapApiData<ExhibitionActionResponse>(
+    await http.get<ApiEnvelope<ExhibitionActionResponse>>(
       `${exhibitionPath(exhibitionId)}/status`,
       { signal },
     ),
@@ -342,8 +351,8 @@ export async function updateExhibitionStatus(
   exhibitionId: string,
   input: ExhibitionStatusUpdate,
 ): Promise<ExhibitionActionResponse> {
-  return unwrap(
-    await http.patch<ExhibitionActionResponse>(exhibitionPath(exhibitionId), {
+  return unwrapApiData<ExhibitionActionResponse>(
+    await http.patch<ApiEnvelope<ExhibitionActionResponse>>(exhibitionPath(exhibitionId), {
       status: input.status,
     }),
   );
@@ -352,7 +361,7 @@ export async function updateExhibitionStatus(
 export async function deleteExhibition(
   exhibitionId: string,
 ): Promise<ExhibitionActionResponse> {
-  return unwrap(
-    await http.delete<ExhibitionActionResponse>(exhibitionPath(exhibitionId)),
+  return unwrapApiData<ExhibitionActionResponse>(
+    await http.delete<ApiEnvelope<ExhibitionActionResponse>>(exhibitionPath(exhibitionId)),
   );
 }

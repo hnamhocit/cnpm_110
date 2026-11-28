@@ -75,7 +75,8 @@ export function ArchiveClientView({ initialContestId }: ArchiveClientViewProps) 
         );
         if (controller.signal.aborted) return;
 
-        const collected = firstPage.items.map(toArchiveArtwork);
+        const items = Array.isArray(firstPage?.items) ? firstPage.items : [];
+        const collected = items.map(toArchiveArtwork);
         const totalPages = Math.max(1, firstPage.pagination?.totalPages ?? 1);
 
         for (let nextPage = 2; nextPage <= totalPages; nextPage += 1) {
@@ -94,7 +95,8 @@ export function ArchiveClientView({ initialContestId }: ArchiveClientViewProps) 
             controller.signal,
           );
           if (controller.signal.aborted) return;
-          collected.push(...response.items.map(toArchiveArtwork));
+          const nextItems = Array.isArray(response?.items) ? response.items : [];
+          collected.push(...nextItems.map(toArchiveArtwork));
         }
 
         if (controller.signal.aborted) return;

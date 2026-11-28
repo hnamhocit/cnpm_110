@@ -94,7 +94,7 @@ export function ContestExhibitionManager({
       setError(null);
       try {
         const data = await getContestExhibitions(contestId, signal);
-        setItems(data ?? []);
+        setItems(Array.isArray(data) ? data : []);
       } catch (err: unknown) {
         if (signal?.aborted || isAbortError(err)) return;
         setError(getExhibitionErrorMessage(err));
@@ -410,7 +410,7 @@ export function ContestExhibitionManager({
         open={archiveOpen}
         onOpenChange={setArchiveOpen}
         contestId={contestId}
-        existingSubmissionIds={items.map((item) => item.submissionId)}
+        existingSubmissionIds={Array.isArray(items) ? items.map((item) => item.submissionId) : []}
         onSuccess={() => void loadItems()}
       />
     </div>

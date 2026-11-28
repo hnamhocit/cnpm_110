@@ -6,6 +6,13 @@ export type ExhibitionStatus =
   | "PUBLISHED"
   | "ARCHIVED";
 
+export type ApiEnvelope<T> = {
+  code: number;
+  message: string;
+  data: T | null;
+  error: string | null;
+};
+
 export interface ContestExhibitionItem {
   id: string;
   submissionId: string;

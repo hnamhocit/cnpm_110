@@ -9,6 +9,7 @@ import {
   resolveExhibitionImageUrl,
   toArchiveArtwork,
   toArchiveFilmFormat,
+  unwrapApiData,
 } from "./exhibition-api";
 
 const publicItem: PublicExhibitionItem = {
@@ -189,5 +190,28 @@ describe("exhibition-api helpers", () => {
         response: { status: 409, data: { message: "BR-06 proof required" } },
       }),
     ).toContain("MSG026: Không thể công bố: Tác phẩm ?");
+  });
+
+  it("unwrapApiData bóc dữ liệu chính xác từ API envelope", () => {
+    const mockResponse = {
+      data: {
+        code: 200,
+        message: "ok",
+        data: { success: true, count: 5 },
+        error: null,
+      },
+    };
+    const result = unwrapApiData(mockResponse);
+    expect(result).toEqual({ success: true, count: 5 });
+
+    const nullResponse = {
+      data: {
+        code: 400,
+        message: "bad request",
+        data: null,
+        error: "Not found",
+      },
+    };
+    expect(() => unwrapApiData(nullResponse)).toThrow();
   });
 });
