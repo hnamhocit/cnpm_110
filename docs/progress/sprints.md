@@ -155,7 +155,7 @@ Mã FPC là mã công việc nội bộ, đánh số liên tục; không phải 
 | FPC-123 | Mobile | M08 · UC-42: Tích hợp portfolio cá nhân và lịch sử giải thưởng | Huỳnh Trần Gia Bảo | IN REVIEW |
 | FPC-124 | Mobile | M08 · UC-43: Tích hợp Digital Archive và bộ lọc | Dương Nguyễn | DONE |
 | FPC-125 | Backend | M11 · UC-10: API tra cứu Audit Log | Huỳnh Trần Gia Bảo | IN REVIEW |
-| FPC-126 | Web | M11 · UC-10: Giao diện tra cứu Audit Log | Vĩ Nguyễn | TODO |
+| FPC-126 | Web | M11 · UC-10: Giao diện tra cứu Audit Log | Vĩ Nguyễn | DONE |
 | FPC-127 | Backend/AI | M11 · UC-28: Kiểm chứng thống kê phim, ISO, lab theo phạm vi SRS; không viết lại Backend đã nghiệm thu | Hà Đức Bình | DONE |
 | FPC-128 | Web | M11 · UC-28: Tích hợp dashboard thống kê và xuất báo cáo | Vĩ Nguyễn | TODO |
 | FPC-129 | AI | M06/M11 · UC-09,19,20,28: Kiểm thử ảnh thật, AI Analytics thật và xử lý lỗi | Hà Đức Bình | IN REVIEW |
