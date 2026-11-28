@@ -2,13 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { http } from "@/lib/http";
+import { calculateProgressPercent } from "@/lib/judging-progress";
 
 interface JudgeProgressItem {
   judgeId: string;
   judgeName?: string;
+  // The progress endpoint may omit email; the composer then leaves the recipient blank.
+  judgeEmail?: string;
   categoryName?: string;
   assignedCount?: number;
   scoredCount?: number;
+  progressPercent?: number;
   isLocked: boolean;
 }
 
@@ -69,7 +73,9 @@ function getErrorMessage(error: unknown): string {
   return fallback;
 }
 
-function toProgressCards(payload: ProgressPayload | undefined): RoundProgress[] {
+function toProgressCards(
+  payload: ProgressPayload | undefined,
+): RoundProgress[] {
   const round = payload?.round;
   if (!round) return [];
   const judges = payload?.judges ?? [];
@@ -93,9 +99,8 @@ export default function JudgingProgressPage() {
   const [contestOptions, setContestOptions] = useState<ContestOption[]>([]);
   const [selectedContest, setSelectedContest] = useState("");
   const [rounds, setRounds] = useState<RoundProgress[]>([]);
-  const [progressPayload, setProgressPayload] = useState<ProgressPayload | null>(
-    null,
-  );
+  const [progressPayload, setProgressPayload] =
+    useState<ProgressPayload | null>(null);
   const [now, setNow] = useState<Date>(() => new Date());
   const [loading, setLoading] = useState(true);
   const [lockingId, setLockingId] = useState<string | null>(null);
@@ -120,7 +125,8 @@ export default function JudgingProgressPage() {
     } catch (error) {
       setRounds([]);
       setProgressPayload(null);
-      const status = (error as { response?: { status?: number } })?.response?.status;
+      const status = (error as { response?: { status?: number } })?.response
+        ?.status;
       if (status === 404) {
         setMessage(null);
       } else {
@@ -151,7 +157,9 @@ export default function JudgingProgressPage() {
         if (options.length === 0) setLoading(false);
       } catch (error) {
         if (!active) return;
-        setMessage(`Không thể tải danh sách cuộc thi: ${getErrorMessage(error)}`);
+        setMessage(
+          `Không thể tải danh sách cuộc thi: ${getErrorMessage(error)}`,
+        );
         setLoading(false);
       }
     }
@@ -173,11 +181,9 @@ export default function JudgingProgressPage() {
     try {
       const res = await http.post<{
         data?: { alreadyLocked?: boolean };
-      }>(
-        `/api/v1/contests/${selectedContest}/close-judging`,
-        undefined,
-        { params: { roundId } },
-      );
+      }>(`/api/v1/contests/${selectedContest}/close-judging`, undefined, {
+        params: { roundId },
+      });
       const refreshed = await loadProgress(selectedContest);
       if (refreshed) {
         setMessage(
@@ -236,7 +242,7 @@ export default function JudgingProgressPage() {
       `Hạng mục: ${categoryName}`,
       `Vòng chấm: ${round.name}`,
       `Hạn chót: ${deadline}`,
-      `Tiến độ: ${judge.scoredCount ?? 0}/${judge.assignedCount ?? 0} bài (${judge.progressPercent ?? 0}%).`,
+      `Tiến độ: ${judge.scoredCount ?? 0}/${judge.assignedCount ?? 0} bài (${judge.progressPercent ?? calculateProgressPercent(judge.scoredCount ?? 0, judge.assignedCount ?? 0)}%).`,
       "Vui lòng hoàn tất trước hạn.",
       `Liên kết: ${window.location.href}`,
     ].join("\n");
@@ -367,8 +373,8 @@ export default function JudgingProgressPage() {
                 <div>
                   <div className="mb-1 flex justify-between text-xs text-neutral-600">
                     <span>
-                      Đã chấm {round.scoredAssignments}/
-                      {round.totalAssignments} phiếu
+                      Đã chấm {round.scoredAssignments}/{round.totalAssignments}{" "}
+                      phiếu
                     </span>
                     <span className="font-semibold">{percent}%</span>
                   </div>
@@ -393,7 +399,9 @@ export default function JudgingProgressPage() {
                         >
                           <span className="truncate">
                             {judge.judgeName ?? judge.judgeId}
-                            {judge.categoryName ? ` · ${judge.categoryName}` : ""}
+                            {judge.categoryName
+                              ? ` · ${judge.categoryName}`
+                              : ""}
                           </span>
                           <span className="shrink-0 font-mono text-neutral-600">
                             {judge.scoredCount ?? 0}/{judge.assignedCount ?? 0}{" "}

@@ -312,3 +312,5 @@ Theo Module 01, access token 15 phút và refresh token 7 ngày. Hai route BFF `
 - Portal account menu readability (UC-03, BR-02): show user name as primary trigger text, Vietnamese role beneath, name-based avatar initials, and readable name/email/role in the dropdown. Remove assumed Organizer identity while user loads. Shared UI components retained. Targeted Biome passes; no browser visual verification.
 
 - Develop integration: preserve upstream duplicate-contest action and submission navigation within the collapsed contest group. Post-merge: 27 tests pass and changed UI components pass Biome. Upstream fixes the old refresh-session test casts; full TypeScript now reports upstream judging-progress references to missing judgeEmail/progressPercent on JudgeProgressItem.
+
+- UC-24 judging progress TypeScript follow-up: declare optional judgeEmail/progressPercent fields used by the reminder composer; calculate percentage from scored/assigned counts when omitted. Current progress API omits email, so composer recipient remains blank for manual entry. No API change. Web check-types passes, 14 judging-progress tests pass, targeted Biome passes.
