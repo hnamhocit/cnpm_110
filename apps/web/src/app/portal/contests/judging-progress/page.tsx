@@ -3,6 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { http } from "@/lib/http";
 
+interface JudgeProgressItem {
+  judgeId: string;
+  judgeName?: string;
+  categoryName?: string;
+  assignedCount?: number;
+  scoredCount?: number;
+  isLocked: boolean;
+}
+
 interface RoundProgress {
   roundId: string;
   roundName: string;
@@ -12,6 +21,7 @@ interface RoundProgress {
   scoredAssignments: number;
   judgesCompleted: number;
   totalJudges: number;
+  judges: JudgeProgressItem[];
 }
 
 interface ContestOption {
@@ -32,16 +42,7 @@ interface ProgressPayload {
     lockedAt?: string | null;
     deadlineAt?: string | null;
   } | null;
-  judges?: {
-    judgeId?: string;
-    judgeName?: string;
-    judgeEmail?: string | null;
-    categoryName?: string;
-    assignedCount?: number;
-    scoredCount?: number;
-    isLocked: boolean;
-    progressPercent?: number;
-  }[];
+  judges?: JudgeProgressItem[];
   overall?: {
     totalAssigned?: number;
     totalScored?: number;
@@ -83,6 +84,7 @@ function toProgressCards(payload: ProgressPayload | undefined): RoundProgress[] 
       scoredAssignments: overall?.totalScored ?? 0,
       judgesCompleted: judges.filter((judge) => judge.isLocked).length,
       totalJudges: judges.length,
+      judges,
     },
   ];
 }
@@ -106,6 +108,8 @@ export default function JudgingProgressPage() {
 
   const loadProgress = useCallback(async (contestId: string) => {
     setLoading(true);
+    setMessage(null);
+    setRounds([]);
     try {
       const res = await http.get<{ data?: ProgressPayload }>(
         `/api/v1/contests/${contestId}/judging-progress`,
@@ -376,11 +380,39 @@ export default function JudgingProgressPage() {
                   </div>
                 </div>
 
+                {round.judges.length > 0 && (
+                  <div className="space-y-1.5 border-t border-neutral-100 pt-3">
+                    <p className="text-xs font-medium text-neutral-500">
+                      Chi tiết từng giám khảo
+                    </p>
+                    <ul className="space-y-1 text-xs text-neutral-700">
+                      {round.judges.map((judge, idx) => (
+                        <li
+                          key={`${judge.judgeId}-${idx}`}
+                          className="flex items-center justify-between gap-2"
+                        >
+                          <span className="truncate">
+                            {judge.judgeName ?? judge.judgeId}
+                            {judge.categoryName ? ` · ${judge.categoryName}` : ""}
+                          </span>
+                          <span className="shrink-0 font-mono text-neutral-600">
+                            {judge.scoredCount ?? 0}/{judge.assignedCount ?? 0}{" "}
+                            {judge.isLocked ? "· Đã khóa" : ""}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 <div className="flex justify-end">
                   <button
                     type="button"
                     disabled={
-                      round.status === "LOCKED" || lockingId === round.roundId
+                      round.status === "LOCKED" ||
+                      lockingId === round.roundId ||
+                      round.totalAssignments === 0 ||
+                      round.scoredAssignments < round.totalAssignments
                     }
                     onClick={() => handleLockRound(round.roundId)}
                     className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
