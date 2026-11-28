@@ -41,6 +41,23 @@ function firstNumber(...values: unknown[]): number | undefined {
   return undefined;
 }
 
+export function normalizeMasterDataKeys(value: unknown): unknown {
+  const record = asRecord(value);
+  if (!record) return value;
+
+  const normalized: UnknownRecord = { ...record };
+  for (const [key, fieldValue] of Object.entries(record)) {
+    const snakeKey = key
+      .replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2")
+      .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+      .toLowerCase();
+    if (snakeKey !== key && !Object.hasOwn(normalized, snakeKey)) {
+      normalized[snakeKey] = fieldValue;
+    }
+  }
+  return normalized;
+}
+
 function unwrapList<T>(
   body: unknown,
   fallbackLimit: number,
@@ -57,7 +74,7 @@ function unwrapList<T>(
         : [];
 
   const meta = asRecord(root.meta) ?? asRecord(dataRecord?.meta) ?? {};
-  const items = rawItems as T[];
+  const items = rawItems.map(normalizeMasterDataKeys) as T[];
   const total =
     firstNumber(meta.total, dataRecord?.total, root.total) ?? items.length;
   const limit =
@@ -76,7 +93,7 @@ function unwrapList<T>(
 
 function unwrapOne<T>(body: unknown): T {
   const root = asRecord(body) ?? {};
-  return (root.data ?? root) as T;
+  return normalizeMasterDataKeys(root.data ?? root) as T;
 }
 
 export async function listMasterData<T>(

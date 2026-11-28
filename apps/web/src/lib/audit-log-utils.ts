@@ -50,7 +50,10 @@ export const RESOURCE_LABELS: Record<string, string> = {
   MASTERDATA: "Danh mục dùng chung",
 };
 
-function lookupLabel(labels: Record<string, string>, value: string): string {
+function lookupLabel(labels: Record<string, string>, value: string | null | undefined): string {
+  if (!value || typeof value !== "string") {
+    return typeof value === "string" ? value : "";
+  }
   const compact = value
     .trim()
     .toUpperCase()
@@ -68,11 +71,11 @@ function lookupLabel(labels: Record<string, string>, value: string): string {
   return value;
 }
 
-export function formatAuditAction(value: string): string {
+export function formatAuditAction(value: string | null | undefined): string {
   return lookupLabel(ACTION_LABELS, value);
 }
 
-export function formatAuditResourceType(value: string): string {
+export function formatAuditResourceType(value: string | null | undefined): string {
   return lookupLabel(RESOURCE_LABELS, value);
 }
 
