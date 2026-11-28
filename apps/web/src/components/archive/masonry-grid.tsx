@@ -2,7 +2,11 @@
 
 import { Award, Camera, Eye, Film } from "lucide-react";
 import Image from "next/image";
+import { useState } from "react";
 import type { ArchiveArtwork } from "@/types/archive";
+
+const FALLBACK_IMAGE =
+  "https://placehold.co/800x540/0f172a/e2e8f0?text=No+image";
 
 interface MasonryGridProps {
   artworks: ArchiveArtwork[];
@@ -10,6 +14,8 @@ interface MasonryGridProps {
 }
 
 export function MasonryGrid({ artworks, onSelectArtwork }: MasonryGridProps) {
+  const [failedIds, setFailedIds] = useState<Set<string>>(() => new Set());
+
   return (
     <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
       {artworks.map((item) => (
@@ -21,12 +27,21 @@ export function MasonryGrid({ artworks, onSelectArtwork }: MasonryGridProps) {
           {/* Image */}
           <div className="relative w-full overflow-hidden">
             <Image
-              src={item.image_url}
+              src={failedIds.has(item.id) ? FALLBACK_IMAGE : item.image_url}
               alt={item.title}
               width={800}
               height={item.aspect_ratio === "portrait" ? 1100 : item.aspect_ratio === "square" ? 800 : 540}
               className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
               loading="lazy"
+              unoptimized
+              onError={() =>
+                setFailedIds((previous) => {
+                  if (previous.has(item.id)) return previous;
+                  const next = new Set(previous);
+                  next.add(item.id);
+                  return next;
+                })
+              }
             />
           </div>
 

@@ -193,7 +193,7 @@ Cột Backend/Web/Mobile là người phụ trách theo Sprint 5; riêng UC đã
 | UC | Chức năng | Backend / Web / Mobile | Backend đạt | Toàn luồng | GV đạt | GV chưa đạt |
 | --- | --- | --- | --- | --- | --- | --- |
 | UC-26 | Approve & Publish Results | Nam / Vĩ / — | DONE | PARTIAL | | |
-| UC-27 | Manage Digital Archive & Exhibition | Nam / Vĩ / — | DONE | PARTIAL | | |
+| UC-27 | Manage Digital Archive & Exhibition | Nam / Vĩ / — | DONE | DONE | | |
 | UC-41 | View Contest Results & Judge Feedback | Nam / Dương / Dương | DONE | DONE | | |
 | UC-42 | Manage Personal Film Portfolio | Bảo / Bảo* / Bảo | PARTIAL | PARTIAL | | |
 | UC-43 | Explore Digital Archive & Gallery | Dương / Nhân / Dương | DONE | DONE | | |

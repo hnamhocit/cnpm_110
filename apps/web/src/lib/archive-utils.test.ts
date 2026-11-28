@@ -1,6 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { filterArchiveArtworks } from "./archive-utils";
 import type { ArchiveArtwork, ArchiveFilterState } from "@/types/archive";
+import {
+  filterArchiveArtworks,
+  hasActiveArchiveFilters,
+} from "./archive-utils";
 
 const sampleArtworks: ArchiveArtwork[] = [
   {
@@ -98,5 +101,83 @@ describe("FPC-99 / FPC-97 Archive Utils", () => {
     expect(res).toHaveLength(2);
     expect(res.map((r) => r.id)).toEqual(["1", "2"]);
   });
+
+  it("bỏ khoảng trắng thừa ở từ khoá tìm kiếm", () => {
+    const filters: ArchiveFilterState = {
+      searchQuery: "  Nắng Sài Gòn  ",
+      year: "all",
+      filmStock: "all",
+      filmFormat: "all",
+      awardOnly: false,
+    };
+    const res = filterArchiveArtworks(sampleArtworks, filters);
+    expect(res).toHaveLength(1);
+    expect(res[0].id).toBe("1");
+  });
+
+  it("tìm kiếm theo film stock trong từ khoá", () => {
+    const filters: ArchiveFilterState = {
+      searchQuery: "  hp5  ",
+      year: "all",
+      filmStock: "all",
+      filmFormat: "all",
+      awardOnly: false,
+    };
+    const res = filterArchiveArtworks(sampleArtworks, filters);
+    expect(res).toHaveLength(1);
+    expect(res[0].title).toBe("Không tên");
+  });
 });
 
+describe("hasActiveArchiveFilters", () => {
+  const defaultFilters: ArchiveFilterState = {
+    searchQuery: "",
+    year: "all",
+    filmStock: "all",
+    filmFormat: "all",
+    awardOnly: false,
+    contestId: "",
+    camera: "",
+    aiTag: "",
+  };
+
+  it("trả false với bộ lọc mặc định", () => {
+    expect(hasActiveArchiveFilters(defaultFilters)).toBe(false);
+  });
+
+  it("trả true khi searchQuery có khoảng trắng thừa", () => {
+    expect(
+      hasActiveArchiveFilters({ ...defaultFilters, searchQuery: "  hp5  " }),
+    ).toBe(true);
+  });
+
+  it("trả true khi awardOnly là true", () => {
+    expect(hasActiveArchiveFilters({ ...defaultFilters, awardOnly: true })).toBe(
+      true,
+    );
+  });
+
+  it("trả true khi contestId, camera hoặc aiTag có giá trị", () => {
+    expect(
+      hasActiveArchiveFilters({ ...defaultFilters, contestId: "c-1" }),
+    ).toBe(true);
+    expect(
+      hasActiveArchiveFilters({ ...defaultFilters, camera: "  Nikon FM2 " }),
+    ).toBe(true);
+    expect(hasActiveArchiveFilters({ ...defaultFilters, aiTag: "street" })).toBe(
+      true,
+    );
+  });
+
+  it("trả true khi year, filmStock hoặc filmFormat khác all", () => {
+    expect(hasActiveArchiveFilters({ ...defaultFilters, year: "2026" })).toBe(
+      true,
+    );
+    expect(
+      hasActiveArchiveFilters({ ...defaultFilters, filmStock: "Portra 400" }),
+    ).toBe(true);
+    expect(
+      hasActiveArchiveFilters({ ...defaultFilters, filmFormat: "35mm" }),
+    ).toBe(true);
+  });
+});
