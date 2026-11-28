@@ -2,6 +2,12 @@ import type { Context } from "hono";
 import { verify } from "hono/jwt";
 import { UUID_PATTERN, type AuthEnv } from "../middlewares/auth";
 import {
+  toCameraDto,
+  toFilmLabDto,
+  toFilmStockDto,
+  toLensDto,
+} from "../services/master-data.dto";
+import {
   createCamera,
   createFilmLab,
   createFilmStock,
@@ -98,38 +104,38 @@ async function parseJsonBody(c: Context): Promise<unknown> {
 export async function handleListFilmStocks(c: Context) {
   const opts = await parseListOptions(c);
   const result = await listFilmStocks(opts);
-  return c.ok(result);
+  return c.ok({ items: result.items.map(toFilmStockDto), meta: result.meta });
 }
 
 export async function handleGetFilmStock(c: Context) {
   const id = requireUuid(c.req.param("id"), "film stock");
   const item = await getFilmStockById(id);
-  return c.ok(item);
+  return c.ok(toFilmStockDto(item));
 }
 
 export async function handleCreateFilmStock(c: Context<AuthEnv>) {
   const body = await parseJsonBody(c);
   const item = await createFilmStock(body, c.get("user").id);
-  return c.created(item, "Film stock created");
+  return c.created(toFilmStockDto(item), "Film stock created");
 }
 
 export async function handleUpdateFilmStock(c: Context<AuthEnv>) {
   const id = requireUuid(c.req.param("id"), "film stock");
   const body = await parseJsonBody(c);
   const item = await updateFilmStock(id, body, c.get("user").id);
-  return c.ok(item, "Film stock updated");
+  return c.ok(toFilmStockDto(item), "Film stock updated");
 }
 
 export async function handleDeleteFilmStock(c: Context<AuthEnv>) {
   const id = requireUuid(c.req.param("id"), "film stock");
   const item = await softDeleteFilmStock(id, c.get("user").id);
-  return c.ok(item, "Film stock soft-deleted");
+  return c.ok(toFilmStockDto(item), "Film stock soft-deleted");
 }
 
 export async function handleRestoreFilmStock(c: Context<AuthEnv>) {
   const id = requireUuid(c.req.param("id"), "film stock");
   const item = await restoreFilmStock(id, c.get("user").id);
-  return c.ok(item, "Film stock restored");
+  return c.ok(toFilmStockDto(item), "Film stock restored");
 }
 
 // --- Cameras ---
@@ -137,38 +143,38 @@ export async function handleRestoreFilmStock(c: Context<AuthEnv>) {
 export async function handleListCameras(c: Context) {
   const opts = await parseListOptions(c);
   const result = await listCameras(opts);
-  return c.ok(result);
+  return c.ok({ items: result.items.map(toCameraDto), meta: result.meta });
 }
 
 export async function handleGetCamera(c: Context) {
   const id = requireUuid(c.req.param("id"), "camera");
   const item = await getCameraById(id);
-  return c.ok(item);
+  return c.ok(toCameraDto(item));
 }
 
 export async function handleCreateCamera(c: Context<AuthEnv>) {
   const body = await parseJsonBody(c);
   const item = await createCamera(body, c.get("user").id);
-  return c.created(item, "Camera created");
+  return c.created(toCameraDto(item), "Camera created");
 }
 
 export async function handleUpdateCamera(c: Context<AuthEnv>) {
   const id = requireUuid(c.req.param("id"), "camera");
   const body = await parseJsonBody(c);
   const item = await updateCamera(id, body, c.get("user").id);
-  return c.ok(item, "Camera updated");
+  return c.ok(toCameraDto(item), "Camera updated");
 }
 
 export async function handleDeleteCamera(c: Context<AuthEnv>) {
   const id = requireUuid(c.req.param("id"), "camera");
   const item = await softDeleteCamera(id, c.get("user").id);
-  return c.ok(item, "Camera soft-deleted");
+  return c.ok(toCameraDto(item), "Camera soft-deleted");
 }
 
 export async function handleRestoreCamera(c: Context<AuthEnv>) {
   const id = requireUuid(c.req.param("id"), "camera");
   const item = await restoreCamera(id, c.get("user").id);
-  return c.ok(item, "Camera restored");
+  return c.ok(toCameraDto(item), "Camera restored");
 }
 
 // --- Lenses ---
@@ -176,38 +182,38 @@ export async function handleRestoreCamera(c: Context<AuthEnv>) {
 export async function handleListLenses(c: Context) {
   const opts = await parseListOptions(c);
   const result = await listLenses(opts);
-  return c.ok(result);
+  return c.ok({ items: result.items.map(toLensDto), meta: result.meta });
 }
 
 export async function handleGetLens(c: Context) {
   const id = requireUuid(c.req.param("id"), "lens");
   const item = await getLensById(id);
-  return c.ok(item);
+  return c.ok(toLensDto(item));
 }
 
 export async function handleCreateLens(c: Context<AuthEnv>) {
   const body = await parseJsonBody(c);
   const item = await createLens(body, c.get("user").id);
-  return c.created(item, "Lens created");
+  return c.created(toLensDto(item), "Lens created");
 }
 
 export async function handleUpdateLens(c: Context<AuthEnv>) {
   const id = requireUuid(c.req.param("id"), "lens");
   const body = await parseJsonBody(c);
   const item = await updateLens(id, body, c.get("user").id);
-  return c.ok(item, "Lens updated");
+  return c.ok(toLensDto(item), "Lens updated");
 }
 
 export async function handleDeleteLens(c: Context<AuthEnv>) {
   const id = requireUuid(c.req.param("id"), "lens");
   const item = await softDeleteLens(id, c.get("user").id);
-  return c.ok(item, "Lens soft-deleted");
+  return c.ok(toLensDto(item), "Lens soft-deleted");
 }
 
 export async function handleRestoreLens(c: Context<AuthEnv>) {
   const id = requireUuid(c.req.param("id"), "lens");
   const item = await restoreLens(id, c.get("user").id);
-  return c.ok(item, "Lens restored");
+  return c.ok(toLensDto(item), "Lens restored");
 }
 
 // --- Film Labs ---
@@ -215,36 +221,36 @@ export async function handleRestoreLens(c: Context<AuthEnv>) {
 export async function handleListFilmLabs(c: Context) {
   const opts = await parseListOptions(c);
   const result = await listFilmLabs(opts);
-  return c.ok(result);
+  return c.ok({ items: result.items.map(toFilmLabDto), meta: result.meta });
 }
 
 export async function handleGetFilmLab(c: Context) {
   const id = requireUuid(c.req.param("id"), "film lab");
   const item = await getFilmLabById(id);
-  return c.ok(item);
+  return c.ok(toFilmLabDto(item));
 }
 
 export async function handleCreateFilmLab(c: Context<AuthEnv>) {
   const body = await parseJsonBody(c);
   const item = await createFilmLab(body, c.get("user").id);
-  return c.created(item, "Film lab created");
+  return c.created(toFilmLabDto(item), "Film lab created");
 }
 
 export async function handleUpdateFilmLab(c: Context<AuthEnv>) {
   const id = requireUuid(c.req.param("id"), "film lab");
   const body = await parseJsonBody(c);
   const item = await updateFilmLab(id, body, c.get("user").id);
-  return c.ok(item, "Film lab updated");
+  return c.ok(toFilmLabDto(item), "Film lab updated");
 }
 
 export async function handleDeleteFilmLab(c: Context<AuthEnv>) {
   const id = requireUuid(c.req.param("id"), "film lab");
   const item = await softDeleteFilmLab(id, c.get("user").id);
-  return c.ok(item, "Film lab soft-deleted");
+  return c.ok(toFilmLabDto(item), "Film lab soft-deleted");
 }
 
 export async function handleRestoreFilmLab(c: Context<AuthEnv>) {
   const id = requireUuid(c.req.param("id"), "film lab");
   const item = await restoreFilmLab(id, c.get("user").id);
-  return c.ok(item, "Film lab restored");
+  return c.ok(toFilmLabDto(item), "Film lab restored");
 }

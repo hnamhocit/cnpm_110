@@ -3,6 +3,12 @@ import { Hono } from "hono";
 import { sign } from "hono/jwt";
 import { env } from "../src/config/env";
 import {
+  toCameraDto,
+  toFilmLabDto,
+  toFilmStockDto,
+  toLensDto,
+} from "../src/services/master-data.dto";
+import {
   createAuthenticator,
   requirePermission,
   type AuthEnv,
@@ -302,5 +308,141 @@ describe("M02 Analog Master Data - RBAC (BR-02)", () => {
     expect(deleteRes.status).toBe(200);
     const body = (await deleteRes.json()) as { data: { isDeleted: boolean } };
     expect(body.data.isDeleted).toBe(true);
+  });
+});
+
+describe("M02 Analog Master Data - snake_case DTO Serialization", () => {
+  const now = new Date("2026-11-28T05:00:00.000Z");
+
+  function assertNoCamelCaseKeys(obj: object) {
+    for (const key of Object.keys(obj)) {
+      expect(key).toBe(key.toLowerCase());
+    }
+  }
+
+  it("serializes FilmStock in snake_case without camelCase keys", () => {
+    const dto = toFilmStockDto({
+      id: USER_ID,
+      code: "FILM-KODAK-PORTRA-400",
+      brand: "Kodak",
+      name: "Portra 400",
+      nominalIso: 400,
+      process: "C-41",
+      colorType: "COLOR_NEGATIVE",
+      supportedFormats: ["135", "120"],
+      isDxCoded: true,
+      description: null,
+      status: "ACTIVE",
+      isDeleted: false,
+      deletedAt: null,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: USER_ID,
+      updatedBy: USER_ID,
+      version: 1,
+    });
+    assertNoCamelCaseKeys(dto);
+    expect(dto.nominal_iso).toBe(400);
+    expect(dto.color_type).toBe("COLOR_NEGATIVE");
+    expect(dto.supported_formats).toEqual(["135", "120"]);
+    expect(dto.is_dx_coded).toBe(true);
+    expect(dto.is_deleted).toBe(false);
+    expect(dto.created_at).toEqual(now);
+  });
+
+  it("serializes Camera in snake_case without camelCase keys", () => {
+    const dto = toCameraDto({
+      id: USER_ID,
+      code: "CAM-LEICA-M6",
+      brand: "Leica",
+      model: "M6",
+      cameraType: "RANGEFINDER",
+      supportedFormat: "135",
+      defaultLensMount: "Leica M",
+      hasFixedLens: false,
+      fixedLensSpecs: null,
+      shutterMechanism: "MECHANICAL",
+      productionStartYear: 1984,
+      productionEndYear: 1998,
+      status: "ACTIVE",
+      isDeleted: false,
+      deletedAt: null,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: USER_ID,
+      updatedBy: USER_ID,
+      version: 1,
+    });
+    assertNoCamelCaseKeys(dto);
+    expect(dto.camera_type).toBe("RANGEFINDER");
+    expect(dto.supported_format).toBe("135");
+    expect(dto.default_lens_mount).toBe("Leica M");
+    expect(dto.has_fixed_lens).toBe(false);
+    expect(dto.shutter_mechanism).toBe("MECHANICAL");
+    expect(dto.production_start_year).toBe(1984);
+    expect(dto.production_end_year).toBe(1998);
+  });
+
+  it("serializes Lens in snake_case with numeric fields as numbers", () => {
+    const dto = toLensDto({
+      id: USER_ID,
+      code: "LENS-LEICA-35",
+      brand: "Leica",
+      model: "Summicron 35mm",
+      mountType: "Leica M",
+      focalLengthMinMm: "35.00",
+      focalLengthMaxMm: null,
+      isPrime: true,
+      maxAperture: "2.0",
+      minAperture: "16.0",
+      formatCoverage: ["135"],
+      status: "ACTIVE",
+      isDeleted: false,
+      deletedAt: null,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: USER_ID,
+      updatedBy: USER_ID,
+      version: 1,
+    });
+    assertNoCamelCaseKeys(dto);
+    expect(dto.mount_type).toBe("Leica M");
+    expect(dto.focal_length_min_mm).toBe(35);
+    expect(typeof dto.focal_length_min_mm).toBe("number");
+    expect(dto.focal_length_max_mm).toBeNull();
+    expect(dto.is_prime).toBe(true);
+    expect(dto.max_aperture).toBe(2);
+    expect(dto.min_aperture).toBe(16);
+    expect(dto.format_coverage).toEqual(["135"]);
+  });
+
+  it("serializes FilmLab in snake_case without camelCase keys", () => {
+    const dto = toFilmLabDto({
+      id: USER_ID,
+      code: "LAB-VN-LLAB",
+      name: "LLab Saigon",
+      countryCode: "VN",
+      city: "Ho Chi Minh City",
+      address: null,
+      websiteUrl: "https://llab.vn",
+      email: null,
+      phone: null,
+      supportedProcesses: ["C-41", "B&W"],
+      scanners: ["NORITSU_HS1800"],
+      isVerifiedPartner: true,
+      status: "ACTIVE",
+      isDeleted: false,
+      deletedAt: null,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: USER_ID,
+      updatedBy: USER_ID,
+      version: 1,
+    });
+    assertNoCamelCaseKeys(dto);
+    expect(dto.country_code).toBe("VN");
+    expect(dto.website_url).toBe("https://llab.vn");
+    expect(dto.supported_processes).toEqual(["C-41", "B&W"]);
+    expect(dto.is_verified_partner).toBe(true);
   });
 });
